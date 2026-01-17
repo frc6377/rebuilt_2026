@@ -30,4 +30,8 @@ public final class Constants {
         /** Running a physics simulator. */
         SIM,
     }
+
+    public static final class RebuiltIntakeConstants {
+        public static final int motorID = 15;
+    }
 }
