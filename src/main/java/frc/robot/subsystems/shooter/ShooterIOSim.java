@@ -58,11 +58,12 @@ public class ShooterIOSim implements ShooterIO {
 
     @Override
     public void setVelocity(AngularVelocity velocityRadPerSec) {
-        // Directly set the simulated angular velocity. Since this bypasses the
-        // motor model, treat the applied voltage as 0 so logging is consistent.
-        flywheelSim.setAngularVelocity(velocityRadPerSec.in(RadiansPerSecond));
-        appliedVolts = 0.0;
-        flywheelSim.setInputVoltage(appliedVolts);
+        // Use a simple proportional controller to command voltage based on velocity error,
+        // so the FlywheelSim physics model (inertia, motor dynamics) is respected.
+        double output = Constants.ShooterConstants.shooterSimPIDController.calculate(
+                flywheelSim.getAngularVelocity().in(RadiansPerSecond),
+                velocityRadPerSec.in(RadiansPerSecond));
+        setVoltage(Volts.of(output));
     }
 
     @Override
