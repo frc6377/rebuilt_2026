@@ -13,6 +13,8 @@
 
 package frc.robot.subsystems.shooter;
 
+import static frc.robot.util.PhoenixUtil.tryUntilOk;
+
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
@@ -44,7 +46,7 @@ public class ShooterIOTalonFX implements ShooterIO {
         // Ensure neutral mode is brake or coast as desired (override if needed, but using constant for now)
         // config.MotorOutput.NeutralMode = NeutralModeValue.Coast;
 
-        shooterMotor.getConfigurator().apply(config);
+        tryUntilOk(5, () -> shooterMotor.getConfigurator().apply(config, 0.25));
 
         // Signals
         position = shooterMotor.getPosition();
