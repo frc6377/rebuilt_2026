@@ -31,6 +31,11 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.commands.DriveCommands;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.*;
+import frc.robot.subsystems.indexer.Indexer;
+import frc.robot.subsystems.intake.IntakeIOReal;
+import frc.robot.subsystems.intake.IntakeIOSim;
+import frc.robot.subsystems.intake.IntakeRollerSubsystem;
+import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.ShooterIO;
 import frc.robot.subsystems.shooter.ShooterIOSim;
@@ -51,7 +56,6 @@ public class RobotContainer {
     // Subsystems
     private final Drive drive;
     private final Vision vision;
-    private final Shooter shooter;
 
     private SwerveDriveSimulation driveSimulation = null;
 
@@ -66,6 +70,7 @@ public class RobotContainer {
         switch (Constants.currentMode) {
             case REAL:
                 // Real robot, instantiate hardware IO implementations
+                intake = new IntakeRollerSubsystem(new IntakeIOReal());
                 drive = new Drive(
                         new GyroIOPigeon2(),
                         new ModuleIOTalonFXReal(TunerConstants.FrontLeft),
@@ -80,9 +85,10 @@ public class RobotContainer {
                 shooter = new Shooter(new ShooterIOTalonFX());
 
                 break;
+
             case SIM:
                 // Sim robot, instantiate physics sim IO implementations
-
+                intake = new IntakeRollerSubsystem(new IntakeIOSim());
                 driveSimulation = new SwerveDriveSimulation(Drive.mapleSimConfig, new Pose2d(3, 3, new Rotation2d()));
                 SimulatedArena.getInstance().addDriveTrainSimulation(driveSimulation);
                 drive = new Drive(
@@ -116,6 +122,7 @@ public class RobotContainer {
                         new ModuleIO() {},
                         (pose) -> {});
                 vision = new Vision(drive, new VisionIO() {}, new VisionIO() {});
+                intake = new IntakeRollerSubsystem(new IntakeIOReal());
                 shooter = new Shooter(new ShooterIO() {});
 
                 break;
@@ -157,7 +164,20 @@ public class RobotContainer {
         // Switch to X pattern when X button is pressed
         controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
-        // Reset gyro / odometry
+        // Intake control
+        controller.rightBumper().whileTrue(Commands.run(() -> intake.intakeCommand(), intake));
+        controller.leftBumper().whileTrue(Commands.run(() -> intake.outtakeCommand(), intake));
+
+        // Indexer control
+        controller.rightTrigger().whileTrue(Commands.run(() -> indexer.setIndexerSpeed(() -> 1), indexer));
+        controller.leftTrigger().whileTrue(Commands.run(() -> indexer.setIndexerSpeed(() -> -1), indexer));
+
+        // Shooter control
+        controller.povUp().whileTrue(Commands.run(() -> shooter.setShooterSpeed(1), shooter));
+        controller.povDown().whileTrue(Commands.run(() -> shooter.setShooterSpeed(-1), shooter));
+        controller.povLeft().whileTrue(Commands.run(() -> shooter.stopShooter(), shooter));
+
+        // Reset gyro / odometry1
         final Runnable resetGyro = Constants.currentMode == Constants.Mode.SIM
                 ? () -> drive.setPose(
                         driveSimulation.getSimulatedDriveTrainPose()) // reset odometry to actual robot pose during
