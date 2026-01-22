@@ -1,6 +1,7 @@
 package frc.robot.subsystems.shooter;
 
 import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import org.littletonrobotics.junction.Logger;
 
@@ -20,7 +21,7 @@ public class Shooter extends SubsystemBase {
     }
 
     /** Run the shooter at the specified voltage. */
-    public void setVoltage(double volts) {
+    public void setVoltage(Voltage volts) {
         io.setVoltage(volts);
     }
 
@@ -35,7 +36,7 @@ public class Shooter extends SubsystemBase {
     }
 
     /** Returns the current velocity in rad/s. */
-    public double getVelocityRadPerSec() {
-        return inputs.shooterVelocityRadPerSec;
+    public AngularVelocity getVelocity() {
+        return inputs.shooterVelocity;
     }
 }

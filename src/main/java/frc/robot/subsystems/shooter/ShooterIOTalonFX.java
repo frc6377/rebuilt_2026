@@ -51,14 +51,14 @@ public class ShooterIOTalonFX implements ShooterIO {
         BaseStatusSignal.refreshAll(position, velocity, appliedVolts, current);
 
         inputs.shooterMotorConnected = BaseStatusSignal.isAllGood(position, velocity, appliedVolts, current);
-        inputs.shooterPositionRad = Units.rotationsToRadians(position.getValueAsDouble());
-        inputs.shooterVelocityRadPerSec = Units.rotationsToRadians(velocity.getValueAsDouble());
-        inputs.shooterAppliedVolts = appliedVolts.getValueAsDouble();
-        inputs.shooterCurrentAmps = current.getValueAsDouble();
+        inputs.shooterPosition = position.getValue();
+        inputs.shooterVelocity = velocity.getValue();
+        inputs.shooterAppliedVolts = appliedVolts.getValue();
+        inputs.shooterCurrent= current.getValue();
     }
 
     @Override
-    public void setVoltage(double volts) {
+    public void setVoltage(Voltage volts) {
         shooterMotor.setControl(voltageRequest.withOutput(volts));
     }
 
