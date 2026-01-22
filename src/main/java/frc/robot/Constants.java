@@ -13,6 +13,10 @@
 
 package frc.robot;
 
+import com.ctre.phoenix6.configs.MotorOutputConfigs;
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.wpilibj.RobotBase;
 
 /**
@@ -29,5 +33,23 @@ public final class Constants {
 
         /** Running a physics simulator. */
         SIM,
+    }
+
+    public final class CANIDs {
+        public static final int SHOOTER_MOTOR = 7;
+    }
+
+    public final class ShooterConstants {
+        public static final InvertedValue shooterOuttakeDirection = InvertedValue.Clockwise_Positive;
+        public static final NeutralModeValue shooterNeutralMode = NeutralModeValue.Coast;
+        public static final MotorOutputConfigs shooterMotorOutputConfigs =
+                new MotorOutputConfigs().withInverted(shooterOuttakeDirection).withNeutralMode(shooterNeutralMode);
+        public static final TalonFXConfiguration shooterTalonFXConfiguration =
+                new TalonFXConfiguration().withMotorOutput(shooterMotorOutputConfigs);
+
+        // Simulation Constants
+        public static final double MOI = 0.01;
+        public static final double gearRatio = 1.0;
+        public static final int motorCount = 1;
     }
 }
