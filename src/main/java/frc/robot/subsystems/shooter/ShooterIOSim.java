@@ -31,7 +31,7 @@ public class ShooterIOSim implements ShooterIO {
 
         inputs.shooterMotorConnected = true;
         inputs.shooterPosition = inputs.shooterPosition.plus(
-                Radians.of(flywheelSim.getAngularVelocity().times(0.020).in(RadiansPerSecond)));
+                Radians.of(flywheelSim.getAngularVelocity().in(RadiansPerSecond) * 0.020));
         inputs.shooterVelocity = flywheelSim.getAngularVelocity();
         inputs.shooterAppliedVolts = Volts.of(appliedVolts);
         inputs.shooterCurrent = Amps.of(flywheelSim.getCurrentDrawAmps());
