@@ -18,7 +18,6 @@ import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj.RobotBase;
 
@@ -56,8 +55,7 @@ public final class Constants {
         // kV: Velocity feedforward - output per unit of requested velocity
         public static final Slot0Configs shooterGains =
                 new Slot0Configs().withKP(0.1).withKI(0).withKD(0).withKS(0).withKV(0.12);
-        public static final PIDController shooterSimPIDController
-                = new PIDController(0.1, 0.0, 0.0);
+        public static final PIDController shooterSimPIDController = new PIDController(0.1, 0.0, 0.0);
         public static final TalonFXConfiguration shooterTalonFXConfiguration = new TalonFXConfiguration()
                 .withMotorOutput(shooterMotorOutputConfigs)
                 .withSlot0(shooterGains);
