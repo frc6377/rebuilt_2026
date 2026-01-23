@@ -63,6 +63,39 @@ public class Vision extends SubsystemBase {
         return inputs[cameraIndex].latestTargetObservation.tx();
     }
 
+    /**
+     * Gets the starting pose from the Limelight (camera index 0).
+     *
+     * @return The robot pose as a Pose2d, or null if no valid pose is available.
+     */
+    public Pose2d getStartingPoseFromLimelight() {
+        return getStartingPoseFromCamera(0);
+    }
+
+    /**
+     * Gets the starting pose from the specified camera's vision data.
+     *
+     * @param cameraIndex The index of the camera to use.
+     * @return The robot pose as a Pose2d, or null if no valid pose is available.
+     */
+    public Pose2d getStartingPoseFromCamera(int cameraIndex) {
+        if (cameraIndex >= inputs.length || !inputs[cameraIndex].connected) {
+            return null;
+        }
+
+        var observations = inputs[cameraIndex].poseObservations;
+        if (observations.length == 0) {
+            return null;
+        }
+
+        // Return the most recent pose observation with at least one tag
+        var latestObservation = observations[observations.length - 1];
+        if (latestObservation.tagCount() > 0) {
+            return latestObservation.pose().toPose2d();
+        }
+        return null;
+    }
+
     @Override
     public void periodic() {
         for (int i = 0; i < io.length; i++) {
