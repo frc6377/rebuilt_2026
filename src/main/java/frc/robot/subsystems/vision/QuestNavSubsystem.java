@@ -8,8 +8,6 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
-import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.drive.Drive;
 import gg.questnav.questnav.PoseFrame;
@@ -56,9 +54,8 @@ public class QuestNavSubsystem extends SubsystemBase {
         Pose3d questPose = robotPose.transformBy(ROBOT_TO_QUEST);
         questNav.setPose(questPose);
     }
-    
 
-    public void setStartPose (Pose2d initialPose) {
+    public void setStartPose(Pose2d initialPose) {
         this.initialPose = initialPose;
     }
 }
