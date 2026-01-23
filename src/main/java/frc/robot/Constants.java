@@ -32,6 +32,6 @@ public final class Constants {
     }
 
     public static final class CANIDs {
-        public static final int SHOOTER_MOTOR = 7;
+        public static final int SHOOTER_MOTOR = 12;
     }
 }
