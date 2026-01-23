@@ -30,4 +30,9 @@ public final class Constants {
         /** Running a physics simulator. */
         SIM,
     }
+
+    public static final class CANIDs {
+        public static final int kClimbMotor1ID = 16;
+        public static final int kClimbMotor2ID = 17;
+    }
 }
