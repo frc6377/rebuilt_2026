@@ -21,6 +21,7 @@ import org.littletonrobotics.junction.Logger;
 public class Shooter extends SubsystemBase {
     private final ShooterIO io;
     private final ShooterIOInputsAutoLogged inputs = new ShooterIOInputsAutoLogged();
+    private final ShooterTuning tuning = new ShooterTuning();
 
     /** Creates a new Shooter. */
     public Shooter(ShooterIO io) {
@@ -49,7 +50,7 @@ public class Shooter extends SubsystemBase {
      * @param distanceMeters The distance to the target in meters.
      */
     public void shootAtDistance(double distanceMeters) {
-        AngularVelocity targetVelocity = ShooterTuning.getAngularVelocity(distanceMeters);
+        AngularVelocity targetVelocity = tuning.getAngularVelocity(distanceMeters);
         io.setVelocity(targetVelocity);
     }
 
