@@ -47,6 +47,10 @@ public class DriveCommands {
     private static final double WHEEL_RADIUS_MAX_VELOCITY = 0.25; // Rad/Sec
     private static final double WHEEL_RADIUS_RAMP_RATE = 0.05; // Rad/Sec^2
 
+    // QuestNav 5m test constants
+    private static final double QUESTNAV_TEST_DISTANCE = 5.0; // meters
+    private static final double QUESTNAV_TEST_VELOCITY = 1.0; // m/s
+
     private DriveCommands() {}
 
     private static Translation2d getLinearVelocityFromJoysticks(double x, double y) {
@@ -263,5 +267,60 @@ public class DriveCommands {
         double[] positions = new double[4];
         Rotation2d lastAngle = new Rotation2d();
         double gyroDelta = 0.0;
+    }
+
+    /**
+     * Creates a 5-meter straight-line test for QuestNav calibration/validation. Drives forward 5 meters at a constant
+     * velocity and prints the distance traveled according to wheel odometry for comparison with QuestNav.
+     */
+    public static Command questNav5mTest(Drive drive) {
+        QuestNav5mTestState state = new QuestNav5mTestState();
+
+        return Commands.sequence(
+                // Record starting pose
+                Commands.runOnce(() -> {
+                    state.startPose = drive.getPose();
+                    System.out.println("********** QuestNav 5m Test Starting **********");
+                    System.out.println("Start Pose: " + state.startPose);
+                }),
+
+                // Drive forward until 5m traveled
+                Commands.run(
+                                () -> {
+                                    // Drive forward at constant velocity (robot-relative)
+                                    drive.runVelocity(new ChassisSpeeds(QUESTNAV_TEST_VELOCITY, 0.0, 0.0));
+                                },
+                                drive)
+                        .until(() -> {
+                            Pose2d currentPose = drive.getPose();
+                            double distanceTraveled =
+                                    currentPose.getTranslation().getDistance(state.startPose.getTranslation());
+                            return distanceTraveled >= QUESTNAV_TEST_DISTANCE;
+                        }),
+
+                // Stop and print results
+                Commands.runOnce(
+                        () -> {
+                            drive.stop();
+                            Pose2d endPose = drive.getPose();
+                            double distanceTraveled =
+                                    endPose.getTranslation().getDistance(state.startPose.getTranslation());
+
+                            NumberFormat formatter = new DecimalFormat("#0.000");
+                            System.out.println("********** QuestNav 5m Test Results **********");
+                            System.out.println("End Pose: " + endPose);
+                            System.out.println(
+                                    "Distance Traveled (Odometry): " + formatter.format(distanceTraveled) + " meters");
+                            System.out.println(
+                                    "Expected Distance: " + formatter.format(QUESTNAV_TEST_DISTANCE) + " meters");
+                            System.out.println("Error: " + formatter.format(distanceTraveled - QUESTNAV_TEST_DISTANCE)
+                                    + " meters");
+                            System.out.println("Compare with QuestNav pose in AdvantageScope at Vision/QuestNav");
+                        },
+                        drive));
+    }
+
+    private static class QuestNav5mTestState {
+        Pose2d startPose = new Pose2d();
     }
 }

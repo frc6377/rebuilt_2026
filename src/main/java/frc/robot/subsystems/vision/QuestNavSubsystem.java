@@ -12,6 +12,9 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.drive.Drive;
 import gg.questnav.questnav.PoseFrame;
 import gg.questnav.questnav.QuestNav;
+
+import java.util.function.Supplier;
+
 import org.littletonrobotics.junction.Logger;
 
 public class QuestNavSubsystem extends SubsystemBase {
@@ -57,5 +60,14 @@ public class QuestNavSubsystem extends SubsystemBase {
 
     public void setStartPose(Pose2d initialPose) {
         this.initialPose = initialPose;
+    }
+
+    /**
+     * Returns a supplier for the current robot pose from QuestNav as a Pose2d.
+     *
+     * @return A supplier that provides the current robot pose in 2D field coordinates
+     */
+    public Supplier<Pose2d> getPoseSupplier() {
+        return () -> questPose.transformBy(ROBOT_TO_QUEST.inverse()).toPose2d();
     }
 }
