@@ -41,7 +41,7 @@ public class ShooterIOTalonFX implements ShooterIO {
         shooterMotor = new TalonFX(Constants.CANIDs.SHOOTER_MOTOR);
 
         // Apply configuration
-        TalonFXConfiguration config = ShooterConstants.shooterTalonFXConfiguration;
+        TalonFXConfiguration config = ShooterConstants.kShooterTalonFXConfiguration;
 
         // Ensure neutral mode is brake or coast as desired (override if needed, but using constant for now)
         // config.MotorOutput.NeutralMode = NeutralModeValue.Coast;

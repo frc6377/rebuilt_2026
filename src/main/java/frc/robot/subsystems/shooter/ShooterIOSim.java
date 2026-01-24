@@ -27,11 +27,11 @@ import edu.wpi.first.wpilibj.simulation.FlywheelSim;
 public class ShooterIOSim implements ShooterIO {
     private final FlywheelSim flywheelSim = new FlywheelSim(
             LinearSystemId.createFlywheelSystem(
-                    DCMotor.getFalcon500Foc(ShooterConstants.motorCount),
-                    ShooterConstants.MOI,
-                    ShooterConstants.gearRatio),
-            DCMotor.getFalcon500Foc(ShooterConstants.motorCount),
-            ShooterConstants.gearRatio);
+                    DCMotor.getFalcon500Foc(ShooterConstants.kMotorCount),
+                    ShooterConstants.kMOI,
+                    ShooterConstants.kGearRatio),
+            DCMotor.getFalcon500Foc(ShooterConstants.kMotorCount),
+            ShooterConstants.kGearRatio);
 
     private double appliedVolts = 0.0;
 
@@ -57,7 +57,7 @@ public class ShooterIOSim implements ShooterIO {
 
     @Override
     public void setVelocity(AngularVelocity velocityRadPerSec) {
-        double output = ShooterConstants.shooterSimPIDController.calculate(
+        double output = ShooterConstants.kShooterSimPIDController.calculate(
                 flywheelSim.getAngularVelocity().in(RadiansPerSecond), velocityRadPerSec.in(RadiansPerSecond));
         setVoltage(Volts.of(edu.wpi.first.math.MathUtil.clamp(output, -12.0, 12.0)));
     }
@@ -65,6 +65,6 @@ public class ShooterIOSim implements ShooterIO {
     @Override
     public void stop() {
         setVoltage(Volts.of(0.0));
-        ShooterConstants.shooterSimPIDController.reset();
+        ShooterConstants.kShooterSimPIDController.reset();
     }
 }

@@ -13,11 +13,11 @@ import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.units.measure.Distance;
 
 public final class ShooterConstants {
-    public static final InvertedValue shooterOuttakeDirection = InvertedValue.Clockwise_Positive;
-    public static final NeutralModeValue shooterNeutralMode = NeutralModeValue.Coast;
-    public static final MotorOutputConfigs shooterMotorOutputConfigs =
-            new MotorOutputConfigs().withInverted(shooterOuttakeDirection).withNeutralMode(shooterNeutralMode);
-    public static final CurrentLimitsConfigs shooterCurrentLimitsConfigs =
+    public static final InvertedValue kShooterOuttakeDirection = InvertedValue.Clockwise_Positive;
+    public static final NeutralModeValue kShooterNeutralMode = NeutralModeValue.Coast;
+    public static final MotorOutputConfigs kShooterMotorOutputConfigs =
+            new MotorOutputConfigs().withInverted(kShooterOuttakeDirection).withNeutralMode(kShooterNeutralMode);
+    public static final CurrentLimitsConfigs kShooterCurrentLimitsConfigs =
             new CurrentLimitsConfigs().withStatorCurrentLimit(Amps.of(40));
     // PID gains for velocity control (Slot0)
     // kP: Proportional gain - output per unit of error in velocity
@@ -25,17 +25,17 @@ public final class ShooterConstants {
     // kD: Derivative gain - output per unit of error derivative
     // kS: Static feedforward - output to overcome static friction
     // kV: Velocity feedforward - output per unit of requested velocity
-    public static final Slot0Configs shooterGains =
+    public static final Slot0Configs kShooterGains =
             new Slot0Configs().withKP(0.1).withKI(0).withKD(0).withKS(0).withKV(0.12);
-    public static final PIDController shooterSimPIDController = new PIDController(0.1, 0.0, 0.0);
-    public static final TalonFXConfiguration shooterTalonFXConfiguration = new TalonFXConfiguration()
-            .withMotorOutput(shooterMotorOutputConfigs)
-            .withSlot0(shooterGains)
-            .withCurrentLimits(shooterCurrentLimitsConfigs);
-    public static final Distance shooterWheelDiameter = Centimeters.of(10); // 10 cm diameter FIXME
-    public static final double shooterEfficiency = 0.85; // 85% efficiency
+    public static final PIDController kShooterSimPIDController = new PIDController(0.1, 0.0, 0.0);
+    public static final TalonFXConfiguration kShooterTalonFXConfiguration = new TalonFXConfiguration()
+            .withMotorOutput(kShooterMotorOutputConfigs)
+            .withSlot0(kShooterGains)
+            .withCurrentLimits(kShooterCurrentLimitsConfigs);
+    public static final Distance kShooterWheelDiameter = Centimeters.of(10); // 10 cm diameter FIXME
+    public static final double kShooterEfficiency = 0.85; // 85% efficiency
     // Simulation Constants
-    public static final double MOI = 0.01;
-    public static final double gearRatio = 1.0; // FIXME
-    public static final int motorCount = 1;
+    public static final double kMOI = 0.01;
+    public static final double kGearRatio = 1.0; // FIXME
+    public static final int kMotorCount = 1;
 }
