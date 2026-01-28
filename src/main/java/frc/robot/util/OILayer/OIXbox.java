@@ -68,4 +68,19 @@ public class OIXbox implements OI {
     public Trigger zeroDrivebase() {
         return start;
     }
+
+    @Override
+    public Trigger intake() {
+        return dPadUp;
+    }
+
+    @Override
+    public Trigger outtake() {
+        return leftTriggerAsButton;
+    }
+
+    @Override
+    public Trigger stopIntake() {
+        return b;
+    }
 }

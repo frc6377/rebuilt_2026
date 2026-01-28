@@ -20,7 +20,7 @@ public class IntakeIOSim implements IntakeIO {
         intakeMotorSim = intakeMotor.getSimState();
         intakeMotorSim.setMotorType(MotorType.KrakenX60);
         intakeSim = IntakeSimulation.OverTheBumperIntake(
-                "Fuel", driveSim, Inches.of(24), Inches.of(5), IntakeSimulation.IntakeSide.FRONT, 99);
+                "Fuel", driveSim, Inches.of(24), Inches.of(10), IntakeSimulation.IntakeSide.FRONT, 99);
     }
 
     @Override

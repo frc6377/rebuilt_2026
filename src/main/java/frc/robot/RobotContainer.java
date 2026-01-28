@@ -33,6 +33,7 @@ import frc.robot.subsystems.intake.Intake;
 import frc.robot.subsystems.intake.IntakeIOReal;
 import frc.robot.subsystems.intake.IntakeIOSim;
 import frc.robot.subsystems.vision.*;
+import frc.robot.util.OILayer.OIXbox;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
 import org.ironmaple.simulation.seasonspecific.reefscape2025.ReefscapeCoralOnFly;
@@ -51,6 +52,8 @@ public class RobotContainer {
     private final Intake intake;
 
     private SwerveDriveSimulation driveSimulation = null;
+
+    private OIXbox oiXbox = new OIXbox();
 
     // Controller
     private final CommandXboxController controller = new CommandXboxController(0);
@@ -161,6 +164,11 @@ public class RobotContainer {
                 // simulation
                 : () -> drive.setPose(new Pose2d(drive.getPose().getTranslation(), new Rotation2d())); // zero gyro
         controller.start().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
+
+        // Intake and Outtake
+        oiXbox.intake().whileTrue(intake.intakeCommand());
+        oiXbox.outtake().whileTrue(intake.outtakeCommand());
+        oiXbox.stopIntake().onTrue(intake.stopIntakeCommand());
 
         // Example Coral Placement Code
         // TODO: delete these code for your own project

@@ -25,4 +25,16 @@ public interface OI {
     default Trigger zeroDrivebase() {
         return noButton;
     }
+
+    default Trigger intake() {
+        return noButton;
+    }
+
+    default Trigger outtake() {
+        return noButton;
+    }
+
+    default Trigger stopIntake() {
+        return noButton;
+    }
 }

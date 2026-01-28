@@ -74,4 +74,19 @@ public class OIKeyboard implements OI {
     public Trigger zeroDrivebase() {
         return Z;
     }
+
+    @Override
+    public Trigger intake() {
+        return M;
+    }
+
+    @Override
+    public Trigger outtake() {
+        return Comma;
+    }
+
+    @Override
+    public Trigger stopIntake() {
+        return Slash;
+    }
 }
