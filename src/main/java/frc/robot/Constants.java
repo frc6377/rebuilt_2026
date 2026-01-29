@@ -30,4 +30,9 @@ public final class Constants {
         /** Running a physics simulator. */
         SIM,
     }
+
+    public class CANIDs {
+        public static final int kCollectorBelt = 12;
+        public static final int kFeederBelt = 13;
+    }
 }
