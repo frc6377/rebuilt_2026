@@ -41,6 +41,8 @@ public class ShooterIOKrakenX60 implements ShooterIO {
     // Control requests
     private final VelocityVoltage velocityRequest = new VelocityVoltage(0.0);
     private final VoltageOut voltageRequest = new VoltageOut(0.0);
+    private final com.ctre.phoenix6.controls.PositionVoltage positionRequest =
+            new com.ctre.phoenix6.controls.PositionVoltage(0.0);
 
     // Status signals - Left flywheel
     private final StatusSignal<AngularVelocity> leftFlywheelVelocity;
@@ -203,7 +205,7 @@ public class ShooterIOKrakenX60 implements ShooterIO {
     public void setHoodAngle(double angleDegrees) {
         // Convert degrees to rotations with gear ratio
         double positionRotations = Units.degreesToRotations(angleDegrees) * ShooterConstants.hoodGearRatio;
-        hoodMotor.setControl(voltageRequest.withOutput(positionRotations));
+        hoodMotor.setControl(positionRequest.withPosition(positionRotations));
     }
 
     @Override
