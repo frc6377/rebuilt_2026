@@ -187,4 +187,4 @@ compile_commands.json
 .factorypath
 
 # Don't track build artifact
-BuildConstants.java
+src/main/java/frc/robot/BuildConstants.java
