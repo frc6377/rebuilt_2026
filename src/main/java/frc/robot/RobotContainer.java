@@ -31,6 +31,7 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.commands.DriveCommands;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.*;
+import frc.robot.subsystems.shooter.*;
 import frc.robot.subsystems.vision.*;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
@@ -47,6 +48,7 @@ public class RobotContainer {
     // Subsystems
     private final Drive drive;
     private final Vision vision;
+    private final Shooter shooter;
 
     private SwerveDriveSimulation driveSimulation = null;
 
@@ -72,6 +74,7 @@ public class RobotContainer {
                         drive,
                         new VisionIOLimelight(VisionConstants.camera0Name, drive::getRotation),
                         new VisionIOLimelight(VisionConstants.camera1Name, drive::getRotation));
+                this.shooter = new Shooter(new ShooterIOKrakenX60());
 
                 break;
             case SIM:
@@ -96,6 +99,7 @@ public class RobotContainer {
                                 camera0Name, robotToCamera0, driveSimulation::getSimulatedDriveTrainPose),
                         new VisionIOPhotonVisionSim(
                                 camera1Name, robotToCamera1, driveSimulation::getSimulatedDriveTrainPose));
+                shooter = new Shooter(new ShooterIOSim());
 
                 break;
 
@@ -109,6 +113,7 @@ public class RobotContainer {
                         new ModuleIO() {},
                         (pose) -> {});
                 vision = new Vision(drive, new VisionIO() {}, new VisionIO() {});
+                shooter = new Shooter(new ShooterIO() {});
 
                 break;
         }
@@ -156,6 +161,17 @@ public class RobotContainer {
                 // simulation
                 : () -> drive.setPose(new Pose2d(drive.getPose().getTranslation(), new Rotation2d())); // zero gyro
         controller.start().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
+
+        // Shooter controls
+        // Right trigger: Spin up flywheels
+        controller
+                .rightTrigger()
+                .whileTrue(ShooterCommands.spinUpFlywheels(shooter, 3000.0))
+                .onFalse(ShooterCommands.stopShooter(shooter));
+
+        // Left trigger: Adjust hood angle (example presets)
+        controller.leftBumper().onTrue(ShooterCommands.setHoodAngle(shooter, 20.0)); // Low shot
+        controller.rightBumper().onTrue(ShooterCommands.setHoodAngle(shooter, 35.0)); // High shot
 
         // Example Coral Placement Code
         // TODO: delete these code for your own project
