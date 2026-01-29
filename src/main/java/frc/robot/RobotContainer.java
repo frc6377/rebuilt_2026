@@ -74,7 +74,9 @@ public class RobotContainer {
                         drive,
                         new VisionIOLimelight(VisionConstants.camera0Name, drive::getRotation),
                         new VisionIOLimelight(VisionConstants.camera1Name, drive::getRotation));
-                this.shooter = new Shooter(new ShooterIOKrakenX60());
+                var shooterIO = new ShooterIOKrakenX60();
+                this.shooter = new Shooter(shooterIO);
+                shooterIO.setShooter(shooter);
 
                 break;
             case SIM:
@@ -166,12 +168,12 @@ public class RobotContainer {
         // Right trigger: Spin up flywheels
         controller
                 .rightTrigger()
-                .whileTrue(ShooterCommands.spinUpFlywheels(shooter, 3000.0))
-                .onFalse(ShooterCommands.stopShooter(shooter));
+                .whileTrue(shooter.spinUpFlywheels(3000.0))
+                .onFalse(shooter.stopCommand());
 
         // Left trigger: Adjust hood angle (example presets)
-        controller.leftBumper().onTrue(ShooterCommands.setHoodAngle(shooter, 20.0)); // Low shot
-        controller.rightBumper().onTrue(ShooterCommands.setHoodAngle(shooter, 35.0)); // High shot
+        controller.leftBumper().onTrue(shooter.setHoodAngleCommand(20.0)); // Low shot
+        controller.rightBumper().onTrue(shooter.setHoodAngleCommand(35.0)); // High shot
 
         // Example Coral Placement Code
         // TODO: delete these code for your own project

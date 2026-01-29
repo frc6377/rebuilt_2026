@@ -13,6 +13,10 @@
 
 package frc.robot.subsystems.shooter;
 
+import static edu.wpi.first.units.Units.*;
+
+import edu.wpi.first.units.measure.*;
+
 public class ShooterConstants {
     // CAN IDs
     public static final int leftFlywheelMotorID = 20; // Kraken X60
@@ -22,31 +26,21 @@ public class ShooterConstants {
     // CAN bus name
     public static final String canBusName = "rio";
 
-    // Flywheel PID constants (velocity control)
-    public static final double flywheelKP = 0.1;
-    public static final double flywheelKI = 0.0;
-    public static final double flywheelKD = 0.0;
-    public static final double flywheelKV = 0.12;
-    public static final double flywheelKS = 0.0;
-
-    // Hood PID constants (position control)
-    public static final double hoodKP = 10.0;
-    public static final double hoodKI = 0.0;
-    public static final double hoodKD = 0.5;
-
     // Gear ratios
     public static final double hoodGearRatio = 100.0; // Adjust based on actual mechanism
 
-    // Current limits (Amps)
-    public static final double flywheelCurrentLimit = 60.0;
-    public static final double hoodCurrentLimit = 40.0;
+    // Current limits
+    public static final Current flywheelCurrentLimit = Amps.of(60.0);
+    public static final Current hoodCurrentLimit = Amps.of(40.0);
 
     // Operational limits
-    public static final double maxFlywheelRPM = 6000.0;
-    public static final double minHoodAngleDegrees = 0.0;
-    public static final double maxHoodAngleDegrees = 45.0;
+    public static final AngularVelocity maxFlywheelVelocity = RotationsPerSecond.of(100.0); // 6000 RPM
+    public static final Angle minHoodAngle = Degrees.of(0.0);
+    public static final Angle maxHoodAngle = Degrees.of(45.0);
 
     // Limp mode thresholds
-    public static final double flywheelVelocityTolerance = 100.0; // RPM
-    public static final double maxVelocityDifference = 500.0; // Max RPM difference between flywheels
+    public static final AngularVelocity flywheelVelocityTolerance =
+            RotationsPerSecond.of(100.0 / 60.0); // 100 RPM
+    public static final AngularVelocity maxVelocityDifference =
+            RotationsPerSecond.of(500.0 / 60.0); // 500 RPM difference between flywheels
 }

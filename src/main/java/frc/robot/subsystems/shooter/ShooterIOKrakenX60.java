@@ -13,6 +13,7 @@
 
 package frc.robot.subsystems.shooter;
 
+import static edu.wpi.first.units.Units.*;
 import static frc.robot.util.PhoenixUtil.tryUntilOk;
 
 import com.ctre.phoenix6.BaseStatusSignal;
@@ -37,6 +38,9 @@ public class ShooterIOKrakenX60 implements ShooterIO {
     private final TalonFX leftFlywheelMotor;
     private final TalonFX rightFlywheelMotor;
     private final TalonFX hoodMotor;
+
+    // Reference to shooter for tunable PID
+    private Shooter shooter;
 
     // Control requests
     private final VelocityVoltage velocityRequest = new VelocityVoltage(0.0);
@@ -73,12 +77,12 @@ public class ShooterIOKrakenX60 implements ShooterIO {
         leftFlywheelConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
         leftFlywheelConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
         leftFlywheelConfig.Slot0 = new Slot0Configs()
-                .withKP(ShooterConstants.flywheelKP)
-                .withKI(ShooterConstants.flywheelKI)
-                .withKD(ShooterConstants.flywheelKD)
-                .withKV(ShooterConstants.flywheelKV)
-                .withKS(ShooterConstants.flywheelKS);
-        leftFlywheelConfig.CurrentLimits.StatorCurrentLimit = ShooterConstants.flywheelCurrentLimit;
+                .withKP(0.1)
+                .withKI(0.0)
+                .withKD(0.0)
+                .withKV(0.12)
+                .withKS(0.0);
+        leftFlywheelConfig.CurrentLimits.StatorCurrentLimit = ShooterConstants.flywheelCurrentLimit.in(Amps);
         leftFlywheelConfig.CurrentLimits.StatorCurrentLimitEnable = true;
         tryUntilOk(5, () -> leftFlywheelMotor.getConfigurator().apply(leftFlywheelConfig, 0.25));
 
@@ -87,12 +91,12 @@ public class ShooterIOKrakenX60 implements ShooterIO {
         rightFlywheelConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
         rightFlywheelConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive; // Opposite of left
         rightFlywheelConfig.Slot0 = new Slot0Configs()
-                .withKP(ShooterConstants.flywheelKP)
-                .withKI(ShooterConstants.flywheelKI)
-                .withKD(ShooterConstants.flywheelKD)
-                .withKV(ShooterConstants.flywheelKV)
-                .withKS(ShooterConstants.flywheelKS);
-        rightFlywheelConfig.CurrentLimits.StatorCurrentLimit = ShooterConstants.flywheelCurrentLimit;
+                .withKP(0.1)
+                .withKI(0.0)
+                .withKD(0.0)
+                .withKV(0.12)
+                .withKS(0.0);
+        rightFlywheelConfig.CurrentLimits.StatorCurrentLimit = ShooterConstants.flywheelCurrentLimit.in(Amps);
         rightFlywheelConfig.CurrentLimits.StatorCurrentLimitEnable = true;
         tryUntilOk(5, () -> rightFlywheelMotor.getConfigurator().apply(rightFlywheelConfig, 0.25));
 
@@ -100,11 +104,8 @@ public class ShooterIOKrakenX60 implements ShooterIO {
         var hoodConfig = new TalonFXConfiguration();
         hoodConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
         hoodConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
-        hoodConfig.Slot0 = new Slot0Configs()
-                .withKP(ShooterConstants.hoodKP)
-                .withKI(ShooterConstants.hoodKI)
-                .withKD(ShooterConstants.hoodKD);
-        hoodConfig.CurrentLimits.StatorCurrentLimit = ShooterConstants.hoodCurrentLimit;
+        hoodConfig.Slot0 = new Slot0Configs().withKP(10.0).withKI(0.0).withKD(0.5);
+        hoodConfig.CurrentLimits.StatorCurrentLimit = ShooterConstants.hoodCurrentLimit.in(Amps);
         hoodConfig.CurrentLimits.StatorCurrentLimitEnable = true;
         hoodConfig.Feedback.SensorToMechanismRatio = ShooterConstants.hoodGearRatio;
         tryUntilOk(5, () -> hoodMotor.getConfigurator().apply(hoodConfig, 0.25));
@@ -148,8 +149,17 @@ public class ShooterIOKrakenX60 implements ShooterIO {
         ParentDevice.optimizeBusUtilizationForAll(leftFlywheelMotor, rightFlywheelMotor, hoodMotor);
     }
 
+    public void setShooter(Shooter shooter) {
+        this.shooter = shooter;
+    }
+
     @Override
     public void updateInputs(ShooterIOInputs inputs) {
+        // Update tunable PID gains if shooter reference is set
+        if (shooter != null) {
+            updatePIDGains();
+        }
+
         // Refresh all signals
         BaseStatusSignal.refreshAll(
                 leftFlywheelVelocity,
@@ -185,6 +195,25 @@ public class ShooterIOKrakenX60 implements ShooterIO {
         inputs.hoodAppliedVolts = hoodAppliedVolts.getValueAsDouble();
         inputs.hoodCurrentAmps = hoodCurrent.getValueAsDouble();
         inputs.hoodTempCelsius = hoodTemp.getValueAsDouble();
+    }
+
+    private void updatePIDGains() {
+        // Update flywheel PID gains
+        var flywheelGains = new Slot0Configs()
+                .withKP(shooter.getFlywheelKP())
+                .withKI(shooter.getFlywheelKI())
+                .withKD(shooter.getFlywheelKD())
+                .withKV(shooter.getFlywheelKV())
+                .withKS(shooter.getFlywheelKS());
+
+        leftFlywheelMotor.getConfigurator().apply(flywheelGains);
+        rightFlywheelMotor.getConfigurator().apply(flywheelGains);
+
+        // Update hood PID gains
+        var hoodGains =
+                new Slot0Configs().withKP(shooter.getHoodKP()).withKI(shooter.getHoodKI()).withKD(shooter.getHoodKD());
+
+        hoodMotor.getConfigurator().apply(hoodGains);
     }
 
     @Override
