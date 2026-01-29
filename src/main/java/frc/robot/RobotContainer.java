@@ -171,7 +171,7 @@ public class RobotContainer {
                 .whileTrue(shooter.spinUpFlywheels(3000.0))
                 .onFalse(shooter.stopCommand());
 
-        // Left trigger: Adjust hood angle (example presets)
+        // Bumpers: Adjust hood angle (example presets)
         controller.leftBumper().onTrue(shooter.setHoodAngleCommand(20.0)); // Low shot
         controller.rightBumper().onTrue(shooter.setHoodAngleCommand(35.0)); // High shot
 

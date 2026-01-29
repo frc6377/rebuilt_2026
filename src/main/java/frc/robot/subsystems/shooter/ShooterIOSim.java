@@ -54,11 +54,6 @@ public class ShooterIOSim implements ShooterIO {
 
     @Override
     public void updateInputs(ShooterIOInputs inputs) {
-        // Update flywheel simulations
-        leftFlywheelSim.update(0.02); // 20ms period
-        rightFlywheelSim.update(0.02);
-        hoodSim.update(0.02);
-
         // Simple P controller for flywheel velocity (simulation)
         double leftError = leftFlywheelSetpointRPM - (leftFlywheelSim.getAngularVelocityRPM());
         leftFlywheelAppliedVolts = MathUtil.clamp(leftError * 0.001, -12.0, 12.0);
@@ -72,6 +67,11 @@ public class ShooterIOSim implements ShooterIO {
         double hoodError = Math.toRadians(hoodSetpointDegrees) - hoodSim.getAngleRads();
         hoodAppliedVolts = MathUtil.clamp(hoodError * 10.0, -12.0, 12.0);
         hoodSim.setInputVoltage(hoodAppliedVolts);
+
+        // Update flywheel simulations
+        leftFlywheelSim.update(0.02); // 20ms period
+        rightFlywheelSim.update(0.02);
+        hoodSim.update(0.02);
 
         // Update inputs
         inputs.leftFlywheelVelocityRPM = leftFlywheelSim.getAngularVelocityRPM();

@@ -26,6 +26,9 @@ public class ShooterConstants {
     // CAN bus name
     public static final String canBusName = "rio";
 
+    // Feature flags
+    public static final boolean enableHood = true; // Set to false to disable hood motor initialization
+
     // Gear ratios
     public static final double hoodGearRatio = 100.0; // Adjust based on actual mechanism
 

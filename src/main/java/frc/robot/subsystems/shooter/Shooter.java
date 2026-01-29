@@ -43,6 +43,31 @@ public class Shooter extends SubsystemBase {
     private final LoggedDashboardNumber hoodKI = new LoggedDashboardNumber("Shooter/HoodKI", 0.0);
     private final LoggedDashboardNumber hoodKD = new LoggedDashboardNumber("Shooter/HoodKD", 0.5);
 
+    // Hood enable flag
+    private final LoggedDashboardNumber hoodEnabled = new LoggedDashboardNumber("Shooter/HoodEnabled", 1.0);
+
+    // Tunable shot maps for distance-based shooting
+    // Distance 1m
+    private final LoggedDashboardNumber dist1m = new LoggedDashboardNumber("Shooter/ShotMap/Dist1m", 1.0);
+    private final LoggedDashboardNumber vel1m = new LoggedDashboardNumber("Shooter/ShotMap/Vel1m", 2000.0);
+    private final LoggedDashboardNumber angle1m = new LoggedDashboardNumber("Shooter/ShotMap/Angle1m", 15.0);
+    // Distance 2m
+    private final LoggedDashboardNumber dist2m = new LoggedDashboardNumber("Shooter/ShotMap/Dist2m", 2.0);
+    private final LoggedDashboardNumber vel2m = new LoggedDashboardNumber("Shooter/ShotMap/Vel2m", 2500.0);
+    private final LoggedDashboardNumber angle2m = new LoggedDashboardNumber("Shooter/ShotMap/Angle2m", 20.0);
+    // Distance 3m
+    private final LoggedDashboardNumber dist3m = new LoggedDashboardNumber("Shooter/ShotMap/Dist3m", 3.0);
+    private final LoggedDashboardNumber vel3m = new LoggedDashboardNumber("Shooter/ShotMap/Vel3m", 3000.0);
+    private final LoggedDashboardNumber angle3m = new LoggedDashboardNumber("Shooter/ShotMap/Angle3m", 25.0);
+    // Distance 4m
+    private final LoggedDashboardNumber dist4m = new LoggedDashboardNumber("Shooter/ShotMap/Dist4m", 4.0);
+    private final LoggedDashboardNumber vel4m = new LoggedDashboardNumber("Shooter/ShotMap/Vel4m", 3500.0);
+    private final LoggedDashboardNumber angle4m = new LoggedDashboardNumber("Shooter/ShotMap/Angle4m", 30.0);
+    // Distance 5m
+    private final LoggedDashboardNumber dist5m = new LoggedDashboardNumber("Shooter/ShotMap/Dist5m", 5.0);
+    private final LoggedDashboardNumber vel5m = new LoggedDashboardNumber("Shooter/ShotMap/Vel5m", 4000.0);
+    private final LoggedDashboardNumber angle5m = new LoggedDashboardNumber("Shooter/ShotMap/Angle5m", 35.0);
+
     // Interpolation map for distance-based shooting
     // Maps distance (meters) to shooter settings (velocity RPM, hood angle degrees)
     private final InterpolatingDoubleTreeMap distanceToVelocityMap = new InterpolatingDoubleTreeMap();
@@ -59,31 +84,13 @@ public class Shooter extends SubsystemBase {
 
     public Shooter(ShooterIO io) {
         this.io = io;
-        configureShotMaps();
-    }
-
-    /**
-     * Configure distance-based shot interpolation maps.
-     * These values should be tuned based on actual robot performance.
-     */
-    private void configureShotMaps() {
-        // Distance in meters -> Flywheel velocity in RPM
-        distanceToVelocityMap.put(1.0, 2000.0); // 1m -> 2000 RPM
-        distanceToVelocityMap.put(2.0, 2500.0); // 2m -> 2500 RPM
-        distanceToVelocityMap.put(3.0, 3000.0); // 3m -> 3000 RPM
-        distanceToVelocityMap.put(4.0, 3500.0); // 4m -> 3500 RPM
-        distanceToVelocityMap.put(5.0, 4000.0); // 5m -> 4000 RPM
-
-        // Distance in meters -> Hood angle in degrees
-        distanceToAngleMap.put(1.0, 15.0); // 1m -> 15°
-        distanceToAngleMap.put(2.0, 20.0); // 2m -> 20°
-        distanceToAngleMap.put(3.0, 25.0); // 3m -> 25°
-        distanceToAngleMap.put(4.0, 30.0); // 4m -> 30°
-        distanceToAngleMap.put(5.0, 35.0); // 5m -> 35°
     }
 
     @Override
     public void periodic() {
+        // Update shot maps from tunable values
+        updateShotMaps();
+
         // Update and log inputs
         io.updateInputs(inputs);
         Logger.processInputs("Shooter", inputs);
@@ -98,6 +105,29 @@ public class Shooter extends SubsystemBase {
         Logger.recordOutput("Shooter/LeftFlywheelFailed", leftFlywheelFailed);
         Logger.recordOutput("Shooter/RightFlywheelFailed", rightFlywheelFailed);
         Logger.recordOutput("Shooter/InLimpMode", isInLimpMode());
+    }
+
+    /**
+     * Update distance-based shot interpolation maps from tunable values.
+     * Called each periodic cycle to allow real-time tuning.
+     */
+    private void updateShotMaps() {
+        distanceToVelocityMap.clear();
+        distanceToAngleMap.clear();
+
+        // Update velocity map
+        distanceToVelocityMap.put(dist1m.get(), vel1m.get());
+        distanceToVelocityMap.put(dist2m.get(), vel2m.get());
+        distanceToVelocityMap.put(dist3m.get(), vel3m.get());
+        distanceToVelocityMap.put(dist4m.get(), vel4m.get());
+        distanceToVelocityMap.put(dist5m.get(), vel5m.get());
+
+        // Update angle map
+        distanceToAngleMap.put(dist1m.get(), angle1m.get());
+        distanceToAngleMap.put(dist2m.get(), angle2m.get());
+        distanceToAngleMap.put(dist3m.get(), angle3m.get());
+        distanceToAngleMap.put(dist4m.get(), angle4m.get());
+        distanceToAngleMap.put(dist5m.get(), angle5m.get());
     }
 
     /**
@@ -137,12 +167,24 @@ public class Shooter extends SubsystemBase {
 
     /**
      * Set hood angle in degrees.
+     * Only sends commands if hood is enabled via NetworkTables.
      *
      * @param angleDegrees Target angle in degrees
      */
     public void setHoodAngle(double angleDegrees) {
         hoodAngleSetpoint = angleDegrees;
-        io.setHoodAngle(angleDegrees);
+        if (isHoodEnabled()) {
+            io.setHoodAngle(angleDegrees);
+        }
+    }
+
+    /**
+     * Check if hood is enabled.
+     *
+     * @return true if hood enabled flag is non-zero
+     */
+    public boolean isHoodEnabled() {
+        return hoodEnabled.get() != 0.0;
     }
 
     /**
@@ -226,19 +268,30 @@ public class Shooter extends SubsystemBase {
 
     /**
      * Detect motor failures based on velocity tracking.
-     * A motor is considered failed if it cannot reach the setpoint or
-     * if there's excessive difference between the two flywheels.
+     * A motor is considered failed if there's excessive difference between
+     * the two flywheels that cannot be explained by different setpoints.
      */
     private void detectMotorFailures() {
         // Only check for failures when motors are supposed to be running
         if (leftFlywheelSetpoint > 100 || rightFlywheelSetpoint > 100) {
-            // Check for excessive velocity difference (potential mechanical failure)
-            double velocityDifference = Math.abs(inputs.leftFlywheelVelocityRPM - inputs.rightFlywheelVelocityRPM);
+            // Calculate expected velocity difference based on setpoints
+            double expectedDifference = Math.abs(leftFlywheelSetpoint - rightFlywheelSetpoint);
+
+            // Calculate actual velocity difference
+            double actualDifference = Math.abs(inputs.leftFlywheelVelocityRPM - inputs.rightFlywheelVelocityRPM);
+
+            // Calculate unexplained difference (potential failure)
+            double unexplainedDifference = Math.abs(actualDifference - expectedDifference);
+
             double maxDifferenceRPM = ShooterConstants.maxVelocityDifference.in(RotationsPerSecond) * 60.0;
 
-            if (velocityDifference > maxDifferenceRPM) {
-                // Determine which motor is likely failed (the slower one)
-                if (inputs.leftFlywheelVelocityRPM < inputs.rightFlywheelVelocityRPM) {
+            // Only trigger failure if the difference can't be explained by different setpoints
+            if (unexplainedDifference > maxDifferenceRPM) {
+                // Determine which motor is likely failed (the slower one relative to its setpoint)
+                double leftError = Math.abs(inputs.leftFlywheelVelocityRPM - leftFlywheelSetpoint);
+                double rightError = Math.abs(inputs.rightFlywheelVelocityRPM - rightFlywheelSetpoint);
+
+                if (leftError > rightError) {
                     leftFlywheelFailed = true;
                     Logger.recordOutput("Shooter/Alert", "Left flywheel failure detected - entering limp mode");
                 } else {

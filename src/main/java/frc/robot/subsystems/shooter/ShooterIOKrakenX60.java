@@ -176,22 +176,19 @@ public class ShooterIOKrakenX60 implements ShooterIO {
                 hoodTemp);
 
         // Update left flywheel inputs
-        inputs.leftFlywheelVelocityRPM =
-                Units.radiansToRotations(leftFlywheelVelocity.getValueAsDouble()) * 60.0;
+        inputs.leftFlywheelVelocityRPM = leftFlywheelVelocity.getValueAsDouble() * 60.0;
         inputs.leftFlywheelAppliedVolts = leftFlywheelAppliedVolts.getValueAsDouble();
         inputs.leftFlywheelCurrentAmps = leftFlywheelCurrent.getValueAsDouble();
         inputs.leftFlywheelTempCelsius = leftFlywheelTemp.getValueAsDouble();
 
         // Update right flywheel inputs
-        inputs.rightFlywheelVelocityRPM =
-                Units.radiansToRotations(rightFlywheelVelocity.getValueAsDouble()) * 60.0;
+        inputs.rightFlywheelVelocityRPM = rightFlywheelVelocity.getValueAsDouble() * 60.0;
         inputs.rightFlywheelAppliedVolts = rightFlywheelAppliedVolts.getValueAsDouble();
         inputs.rightFlywheelCurrentAmps = rightFlywheelCurrent.getValueAsDouble();
         inputs.rightFlywheelTempCelsius = rightFlywheelTemp.getValueAsDouble();
 
-        // Update hood inputs
-        inputs.hoodAngleDegrees =
-                Units.rotationsToDegrees(hoodPosition.getValueAsDouble() / ShooterConstants.hoodGearRatio);
+        // Update hood inputs (SensorToMechanismRatio already accounts for gearing)
+        inputs.hoodAngleDegrees = Units.rotationsToDegrees(hoodPosition.getValueAsDouble());
         inputs.hoodAppliedVolts = hoodAppliedVolts.getValueAsDouble();
         inputs.hoodCurrentAmps = hoodCurrent.getValueAsDouble();
         inputs.hoodTempCelsius = hoodTemp.getValueAsDouble();
@@ -232,8 +229,8 @@ public class ShooterIOKrakenX60 implements ShooterIO {
 
     @Override
     public void setHoodAngle(double angleDegrees) {
-        // Convert degrees to rotations with gear ratio
-        double positionRotations = Units.degreesToRotations(angleDegrees) * ShooterConstants.hoodGearRatio;
+        // Convert degrees to rotations (SensorToMechanismRatio already accounts for gearing)
+        double positionRotations = Units.degreesToRotations(angleDegrees);
         hoodMotor.setControl(positionRequest.withPosition(positionRotations));
     }
 
