@@ -2,7 +2,6 @@ package frc.robot.subsystems.intake;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.subsystems.intake.IntakeConstants.RollerConstants;
 
 public class Intake extends SubsystemBase {
     private static IntakeIO intake;
@@ -14,11 +13,11 @@ public class Intake extends SubsystemBase {
     }
 
     public void intake() {
-        intake.setRollerSpeed(RollerConstants.INTAKE_SPEED);
+        intake.start();
     }
 
     public void outtake() {
-        intake.setRollerSpeed(RollerConstants.OUTAKE_SPEED);
+        intake.outtake();
     }
 
     public void stopIntake() {

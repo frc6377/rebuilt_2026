@@ -6,8 +6,8 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.sim.TalonFXSimState;
 import com.ctre.phoenix6.sim.TalonFXSimState.MotorType;
 import edu.wpi.first.wpilibj.RobotController;
+import frc.robot.Constants;
 import frc.robot.subsystems.intake.IntakeConstants.RollerConstants;
-
 import org.ironmaple.simulation.IntakeSimulation;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.AbstractDriveTrainSimulation;
@@ -19,7 +19,7 @@ public class IntakeIOSim implements IntakeIO {
     public final IntakeSimulation intakeSim;
 
     public IntakeIOSim(AbstractDriveTrainSimulation driveSim) {
-        intakeMotor = new TalonFX(IntakeConstants.MotorIDs.ROLLER_MOTOR_ID);
+        intakeMotor = new TalonFX(Constants.CANIDs.MotorIDs.kRollerMotorID);
         intakeMotorSim = intakeMotor.getSimState();
         intakeMotorSim.setMotorType(MotorType.KrakenX60);
         intakeSim = IntakeSimulation.OverTheBumperIntake(
@@ -28,11 +28,12 @@ public class IntakeIOSim implements IntakeIO {
 
     @Override
     public void setRollerSpeed(double speed) {
-        intakeMotorSim.setSupplyVoltage(speed * 12);
+        intakeMotorSim.setSupplyVoltage(speed * RobotController.getBatteryVoltage());
     }
 
+    @Override
     public void start() {
-        setRollerSpeed(RollerConstants.INTAKE_SPEED);
+        setRollerSpeed(RollerConstants.kIntakeSpeed);
         intakeSim.startIntake();
     }
 
@@ -44,7 +45,7 @@ public class IntakeIOSim implements IntakeIO {
 
     @Override
     public void outtake() {
-        setRollerSpeed(RollerConstants.OUTAKE_SPEED);
+        setRollerSpeed(RollerConstants.kOuttakeSpeed);
         intakeSim.removeObtainedGamePieces(SimulatedArena.getInstance());
     }
 

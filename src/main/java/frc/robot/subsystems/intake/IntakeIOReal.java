@@ -4,12 +4,14 @@ import static edu.wpi.first.units.Units.Volts;
 
 import com.ctre.phoenix6.hardware.TalonFX;
 
+import frc.robot.Constants;
+
 public class IntakeIOReal implements IntakeIO {
 
     public final TalonFX intakeMotor;
 
     public IntakeIOReal() {
-        intakeMotor = new TalonFX(IntakeConstants.MotorIDs.ROLLER_MOTOR_ID);
+        intakeMotor = new TalonFX(Constants.CANIDs.MotorIDs.kRollerMotorID);
     }
 
     @Override
@@ -24,13 +26,13 @@ public class IntakeIOReal implements IntakeIO {
 
     @Override
     public void start() {
-        setRollerSpeed(IntakeConstants.RollerConstants.INTAKE_SPEED);
+        setRollerSpeed(IntakeConstants.RollerConstants.kIntakeSpeed);
     }
 
+    @Override
     public void outtake() {
-        setRollerSpeed(IntakeConstants.RollerConstants.OUTAKE_SPEED);
+        setRollerSpeed(IntakeConstants.RollerConstants.kOuttakeSpeed);
     }
-
 
     @Override
     public void updateInputs(IntakeIO.IntakeIOInputs inputs) {

@@ -29,13 +29,12 @@ public interface IntakeIO {
     default void updateInputs(IntakeIOInputs inputs) {}
 
     default void setRollerSpeed(double speed) {}
-    ;
 
     default void start() {}
 
     default void stop() {}
 
     default void periodic() {}
-    
+
     default void outtake() {}
 }

@@ -22,6 +22,7 @@ import edu.wpi.first.wpilibj.RobotBase;
 public final class Constants {
     public static final Mode simMode = Mode.SIM;
     public static final Mode currentMode = RobotBase.isReal() ? Mode.REAL : simMode;
+    public static final boolean usingKeyboard = false;
 
     public static enum Mode {
         /** Running on a real robot. */
@@ -30,4 +31,16 @@ public final class Constants {
         /** Running a physics simulator. */
         SIM,
     }
+
+    public class CANIDs{
+        public class MotorIDs {
+        // TODO: Fix incorrect Constants
+            public static final int kRollerMotorID = 14;
+        }
+
+        public class SensorIDs {
+        // TODO: Fix incorrect Constants
+            public static final int kPivotEncoderID = 1;
+        }
+    }   
 }

@@ -30,9 +30,12 @@ import frc.robot.commands.DriveCommands;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.intake.Intake;
+import frc.robot.subsystems.intake.IntakeIO;
 import frc.robot.subsystems.intake.IntakeIOReal;
 import frc.robot.subsystems.intake.IntakeIOSim;
 import frc.robot.subsystems.vision.*;
+import frc.robot.util.OILayer.OI;
+import frc.robot.util.OILayer.OIKeyboard;
 import frc.robot.util.OILayer.OIXbox;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
@@ -53,7 +56,7 @@ public class RobotContainer {
 
     private SwerveDriveSimulation driveSimulation = null;
 
-    private OIXbox oiXbox = new OIXbox();
+    private final OI OI;
 
     // Controller
     private final CommandXboxController controller = new CommandXboxController(0);
@@ -117,8 +120,15 @@ public class RobotContainer {
                         new ModuleIO() {},
                         (pose) -> {});
                 vision = new Vision(drive, new VisionIO() {}, new VisionIO() {});
-                intake = new Intake(new IntakeIOReal());
+                intake = new Intake(new IntakeIO() {});
                 break;
+
+        }
+
+        if(Constants.usingKeyboard) {
+            OI = new OIKeyboard();
+        } else {
+            OI = new OIXbox();
         }
 
         // Set up auto routines
@@ -166,9 +176,9 @@ public class RobotContainer {
         controller.start().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
 
         // Intake and Outtake
-        oiXbox.intake().whileTrue(intake.intakeCommand());
-        oiXbox.outtake().whileTrue(intake.outtakeCommand());
-        oiXbox.stopIntake().onTrue(intake.stopIntakeCommand());
+        OI.intake().whileTrue(intake.intakeCommand());
+        OI.outtake().whileTrue(intake.outtakeCommand());
+        OI.stopIntake().onTrue(intake.stopIntakeCommand());
 
         // Example Coral Placement Code
         // TODO: delete these code for your own project
