@@ -2,7 +2,7 @@
 
 ## Overview
 
-This implementation features a dual-sided IO layer with independent Kraken X60 motors for redundancy and limp-mode operation. The hood angle is controlled by a Kraken x44 motor.
+This implementation features a dual-sided IO layer with independent Kraken X60 motors for redundancy and limp-mode operation. The hood angle is controlled by a Kraken x44 motor. Includes tunable PID gains and distance-based auto-aiming.
 
 ## Architecture
 
@@ -52,22 +52,39 @@ shooter.setHoodAngle(angleDegrees);
 ```
 Adjustable hood for variable shot angles (0° to 45°).
 
+### 4. Distance-Based Auto-Aiming
+```java
+shooter.prepareForDistance(distanceMeters);
+```
+Automatically calculates and sets optimal flywheel velocity and hood angle based on distance to target using interpolation maps.
+
+### 5. Tunable PID Gains
+All PID gains are tunable in real-time via NetworkTables:
+- Flywheel: kP, kI, kD, kV, kS
+- Hood: kP, kI, kD
+
 ## Usage
 
-### Basic Commands
+### Command Methods (in Shooter.java)
 
 ```java
 // Spin up flywheels to 3000 RPM
-ShooterCommands.spinUpFlywheels(shooter, 3000.0);
+shooter.spinUpFlywheels(3000.0);
 
 // Set hood angle to 30 degrees
-ShooterCommands.setHoodAngle(shooter, 30.0);
+shooter.setHoodAngleCommand(30.0);
 
 // Prepare for a shot (spin up + set angle)
-ShooterCommands.prepareShot(shooter, 3000.0, 30.0);
+shooter.prepareShot(3000.0, 30.0);
+
+// Auto-aim for a specific distance
+shooter.prepareForDistanceCommand(3.5); // 3.5 meters
+
+// Prepare and wait until ready
+shooter.prepareShotAndWait(3000.0, 30.0);
 
 // Stop all motors
-ShooterCommands.stopShooter(shooter);
+shooter.stopCommand();
 ```
 
 ### Button Bindings (in RobotContainer)
@@ -87,22 +104,49 @@ rightFlywheelMotorID = 21   // Kraken X60
 hoodMotorID = 22            // Kraken x44
 ```
 
-### PID Tuning
+### Units Library Constants
+All physical constants use WPILib's units library:
 ```java
-// Flywheel velocity control
-flywheelKP = 0.1
-flywheelKV = 0.12
-
-// Hood position control
-hoodKP = 10.0
-hoodKD = 0.5
+flywheelCurrentLimit = Amps.of(60.0)
+hoodCurrentLimit = Amps.of(40.0)
+maxFlywheelVelocity = RotationsPerSecond.of(100.0)  // 6000 RPM
+minHoodAngle = Degrees.of(0.0)
+maxHoodAngle = Degrees.of(45.0)
+flywheelVelocityTolerance = RotationsPerSecond.of(100.0 / 60.0)  // 100 RPM
+maxVelocityDifference = RotationsPerSecond.of(500.0 / 60.0)  // 500 RPM
 ```
 
-### Limp Mode Thresholds
+### Tunable PID Gains
+PID gains are tunable in real-time via NetworkTables under "Shooter/":
 ```java
-flywheelVelocityTolerance = 100.0 RPM    // Velocity tracking tolerance
-maxVelocityDifference = 500.0 RPM        // Max difference before failure detection
+// Flywheel velocity control (defaults)
+Shooter/FlywheelKP = 0.1
+Shooter/FlywheelKI = 0.0
+Shooter/FlywheelKD = 0.0
+Shooter/FlywheelKV = 0.12
+Shooter/FlywheelKS = 0.0
+
+// Hood position control (defaults)
+Shooter/HoodKP = 10.0
+Shooter/HoodKI = 0.0
+Shooter/HoodKD = 0.5
 ```
+
+### Distance-Based Shot Maps
+Configure shot parameters for different distances in `Shooter.configureShotMaps()`:
+```java
+// Distance (meters) -> Velocity (RPM)
+distanceToVelocityMap.put(1.0, 2000.0);
+distanceToVelocityMap.put(3.0, 3000.0);
+distanceToVelocityMap.put(5.0, 4000.0);
+
+// Distance (meters) -> Hood Angle (degrees)
+distanceToAngleMap.put(1.0, 15.0);
+distanceToAngleMap.put(3.0, 25.0);
+distanceToAngleMap.put(5.0, 35.0);
+```
+
+Values between defined points are automatically interpolated.
 
 ## AdvantageKit Integration
 
