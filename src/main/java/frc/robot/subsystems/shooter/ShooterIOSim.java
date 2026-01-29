@@ -112,6 +112,9 @@ public class ShooterIOSim implements ShooterIO {
         rightFlywheelSetpointRPM = 0.0;
         leftFlywheelAppliedVolts = 0.0;
         rightFlywheelAppliedVolts = 0.0;
+        // Stop hood control by setting setpoint to current angle and removing voltage
+        hoodSetpointDegrees = Math.toDegrees(hoodSim.getAngleRads());
         hoodAppliedVolts = 0.0;
+        hoodSim.setInputVoltage(0.0);
     }
 }
