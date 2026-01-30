@@ -25,4 +25,32 @@ public interface OI {
     default Trigger zeroDrivebase() {
         return noButton;
     }
+
+    default DoubleSupplier spinUpShooter() {
+        return noAxis;
+    }
+
+    default Trigger fireShooter() {
+        return noButton;
+    }
+
+    default DoubleSupplier intake() {
+        return noAxis;
+    }
+
+    default DoubleSupplier outtake() {
+        return noAxis;
+    }
+
+    default Trigger extendIntake() {
+        return noButton;
+    }
+
+    default Trigger lockOnTarget() {
+        return noButton;
+    }
+
+    default Trigger declimb() {
+        return noButton;
+    }
 }
