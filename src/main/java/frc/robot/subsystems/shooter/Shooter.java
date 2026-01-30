@@ -25,7 +25,7 @@ import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
 
 /**
- * Hooded shooter subsystem with dual-sided IO layer.
+ * Shooter subsystem with dual-sided IO layer.
  * Features independent Kraken X60 motors for redundancy and limp-mode operation.
  */
 public class Shooter extends SubsystemBase {
@@ -39,44 +39,30 @@ public class Shooter extends SubsystemBase {
     private final LoggedDashboardNumber flywheelKV = new LoggedDashboardNumber("Shooter/FlywheelKV", 0.12);
     private final LoggedDashboardNumber flywheelKS = new LoggedDashboardNumber("Shooter/FlywheelKS", 0.0);
 
-    private final LoggedDashboardNumber hoodKP = new LoggedDashboardNumber("Shooter/HoodKP", 10.0);
-    private final LoggedDashboardNumber hoodKI = new LoggedDashboardNumber("Shooter/HoodKI", 0.0);
-    private final LoggedDashboardNumber hoodKD = new LoggedDashboardNumber("Shooter/HoodKD", 0.5);
-
-    // Hood enable flag
-    private final LoggedDashboardNumber hoodEnabled = new LoggedDashboardNumber("Shooter/HoodEnabled", 1.0);
-
-    // Tunable shot maps for distance-based shooting
+    // Tunable shot map for distance-based shooting (velocity only)
     // Distance 1m
     private final LoggedDashboardNumber dist1m = new LoggedDashboardNumber("Shooter/ShotMap/Dist1m", 1.0);
     private final LoggedDashboardNumber vel1m = new LoggedDashboardNumber("Shooter/ShotMap/Vel1m", 2000.0);
-    private final LoggedDashboardNumber angle1m = new LoggedDashboardNumber("Shooter/ShotMap/Angle1m", 15.0);
     // Distance 2m
     private final LoggedDashboardNumber dist2m = new LoggedDashboardNumber("Shooter/ShotMap/Dist2m", 2.0);
     private final LoggedDashboardNumber vel2m = new LoggedDashboardNumber("Shooter/ShotMap/Vel2m", 2500.0);
-    private final LoggedDashboardNumber angle2m = new LoggedDashboardNumber("Shooter/ShotMap/Angle2m", 20.0);
     // Distance 3m
     private final LoggedDashboardNumber dist3m = new LoggedDashboardNumber("Shooter/ShotMap/Dist3m", 3.0);
     private final LoggedDashboardNumber vel3m = new LoggedDashboardNumber("Shooter/ShotMap/Vel3m", 3000.0);
-    private final LoggedDashboardNumber angle3m = new LoggedDashboardNumber("Shooter/ShotMap/Angle3m", 25.0);
     // Distance 4m
     private final LoggedDashboardNumber dist4m = new LoggedDashboardNumber("Shooter/ShotMap/Dist4m", 4.0);
     private final LoggedDashboardNumber vel4m = new LoggedDashboardNumber("Shooter/ShotMap/Vel4m", 3500.0);
-    private final LoggedDashboardNumber angle4m = new LoggedDashboardNumber("Shooter/ShotMap/Angle4m", 30.0);
     // Distance 5m
     private final LoggedDashboardNumber dist5m = new LoggedDashboardNumber("Shooter/ShotMap/Dist5m", 5.0);
     private final LoggedDashboardNumber vel5m = new LoggedDashboardNumber("Shooter/ShotMap/Vel5m", 4000.0);
-    private final LoggedDashboardNumber angle5m = new LoggedDashboardNumber("Shooter/ShotMap/Angle5m", 35.0);
 
     // Interpolation map for distance-based shooting
-    // Maps distance (meters) to shooter settings (velocity RPM, hood angle degrees)
+    // Maps distance (meters) to shooter velocity RPM
     private final InterpolatingDoubleTreeMap distanceToVelocityMap = new InterpolatingDoubleTreeMap();
-    private final InterpolatingDoubleTreeMap distanceToAngleMap = new InterpolatingDoubleTreeMap();
 
     // Setpoints
     private double leftFlywheelSetpoint = 0.0;
     private double rightFlywheelSetpoint = 0.0;
-    private double hoodAngleSetpoint = 0.0;
 
     // Limp mode state
     private boolean leftFlywheelFailed = false;
@@ -101,19 +87,17 @@ public class Shooter extends SubsystemBase {
         // Log additional state
         Logger.recordOutput("Shooter/LeftFlywheelSetpoint", leftFlywheelSetpoint);
         Logger.recordOutput("Shooter/RightFlywheelSetpoint", rightFlywheelSetpoint);
-        Logger.recordOutput("Shooter/HoodAngleSetpoint", hoodAngleSetpoint);
         Logger.recordOutput("Shooter/LeftFlywheelFailed", leftFlywheelFailed);
         Logger.recordOutput("Shooter/RightFlywheelFailed", rightFlywheelFailed);
         Logger.recordOutput("Shooter/InLimpMode", isInLimpMode());
     }
 
     /**
-     * Update distance-based shot interpolation maps from tunable values.
+     * Update distance-based shot interpolation map from tunable values.
      * Called each periodic cycle to allow real-time tuning.
      */
     private void updateShotMaps() {
         distanceToVelocityMap.clear();
-        distanceToAngleMap.clear();
 
         // Update velocity map
         distanceToVelocityMap.put(dist1m.get(), vel1m.get());
@@ -121,13 +105,6 @@ public class Shooter extends SubsystemBase {
         distanceToVelocityMap.put(dist3m.get(), vel3m.get());
         distanceToVelocityMap.put(dist4m.get(), vel4m.get());
         distanceToVelocityMap.put(dist5m.get(), vel5m.get());
-
-        // Update angle map
-        distanceToAngleMap.put(dist1m.get(), angle1m.get());
-        distanceToAngleMap.put(dist2m.get(), angle2m.get());
-        distanceToAngleMap.put(dist3m.get(), angle3m.get());
-        distanceToAngleMap.put(dist4m.get(), angle4m.get());
-        distanceToAngleMap.put(dist5m.get(), angle5m.get());
     }
 
     /**
@@ -166,43 +143,20 @@ public class Shooter extends SubsystemBase {
     }
 
     /**
-     * Set hood angle in degrees.
-     * Only sends commands if hood is enabled via NetworkTables.
-     *
-     * @param angleDegrees Target angle in degrees
-     */
-    public void setHoodAngle(double angleDegrees) {
-        hoodAngleSetpoint = angleDegrees;
-        if (isHoodEnabled()) {
-            io.setHoodAngle(Degrees.of(angleDegrees));
-        }
-    }
-
-    /**
-     * Check if hood is enabled.
-     *
-     * @return true if hood enabled flag is non-zero
-     */
-    public boolean isHoodEnabled() {
-        return hoodEnabled.get() != 0.0;
-    }
-
-    /**
      * Prepare shooter for a shot at a specific distance.
-     * Automatically calculates and sets the appropriate flywheel velocity and hood angle.
+     * Automatically calculates and sets the appropriate flywheel velocity.
      *
      * @param distanceMeters Distance to target in meters
+     * @return Target velocity in RPM for the given distance
      */
-    public void prepareForDistance(double distanceMeters) {
+    public double prepareForDistance(double distanceMeters) {
         double targetVelocity = distanceToVelocityMap.get(distanceMeters);
-        double targetAngle = distanceToAngleMap.get(distanceMeters);
-
         setFlywheelVelocity(targetVelocity);
-        setHoodAngle(targetAngle);
 
         Logger.recordOutput("Shooter/AutoAim/Distance", distanceMeters);
         Logger.recordOutput("Shooter/AutoAim/CalculatedVelocity", targetVelocity);
-        Logger.recordOutput("Shooter/AutoAim/CalculatedAngle", targetAngle);
+        
+        return targetVelocity;
     }
 
     /**
@@ -334,26 +288,6 @@ public class Shooter extends SubsystemBase {
     }
 
     /**
-     * Command to set hood angle.
-     *
-     * @param angleDegrees Target angle in degrees
-     * @return Command that sets the hood angle
-     */
-    public Command setHoodAngleCommand(double angleDegrees) {
-        return Commands.runOnce(() -> setHoodAngle(angleDegrees), this).withName("SetHoodAngle");
-    }
-
-    /**
-     * Command to set hood angle with a dynamic angle supplier.
-     *
-     * @param angleSupplier Supplier for target angle in degrees
-     * @return Command that sets the hood angle
-     */
-    public Command setHoodAngleCommand(DoubleSupplier angleSupplier) {
-        return Commands.run(() -> setHoodAngle(angleSupplier.getAsDouble()), this).withName("SetHoodAngle");
-    }
-
-    /**
      * Command to stop all shooter motors.
      *
      * @return Command that stops the shooter
@@ -363,20 +297,8 @@ public class Shooter extends SubsystemBase {
     }
 
     /**
-     * Command to prepare shooter for a shot (spin up and set hood angle).
-     *
-     * @param velocityRPM Target flywheel velocity in RPM
-     * @param angleDegrees Target hood angle in degrees
-     * @return Command that prepares the shooter
-     */
-    public Command prepareShot(double velocityRPM, double angleDegrees) {
-        return Commands.parallel(spinUpFlywheels(velocityRPM), setHoodAngleCommand(angleDegrees))
-                .withName("PrepareShot");
-    }
-
-    /**
      * Command to prepare shooter for a shot at a specific distance.
-     * Automatically calculates and sets appropriate velocity and angle.
+     * Automatically calculates and sets appropriate velocity.
      *
      * @param distanceMeters Distance to target in meters
      * @return Command that prepares the shooter for the distance
@@ -409,11 +331,10 @@ public class Shooter extends SubsystemBase {
      * Command to prepare shooter and wait until ready.
      *
      * @param velocityRPM Target flywheel velocity in RPM
-     * @param angleDegrees Target hood angle in degrees
      * @return Command that prepares and waits
      */
-    public Command prepareShotAndWait(double velocityRPM, double angleDegrees) {
-        return prepareShot(velocityRPM, angleDegrees).andThen(waitUntilReady()).withName("PrepareShotAndWait");
+    public Command spinUpAndWait(double velocityRPM) {
+        return spinUpFlywheels(velocityRPM).andThen(waitUntilReady()).withName("SpinUpAndWait");
     }
 
     /**
@@ -446,17 +367,5 @@ public class Shooter extends SubsystemBase {
 
     public double getFlywheelKS() {
         return flywheelKS.get();
-    }
-
-    public double getHoodKP() {
-        return hoodKP.get();
-    }
-
-    public double getHoodKI() {
-        return hoodKI.get();
-    }
-
-    public double getHoodKD() {
-        return hoodKD.get();
     }
 }
