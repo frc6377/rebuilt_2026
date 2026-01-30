@@ -10,6 +10,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.CANIDs;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
+import edu.wpi.first.units.measure.Current;
 
 public class IndexerSubsystem extends SubsystemBase {
 
@@ -20,8 +21,8 @@ public class IndexerSubsystem extends SubsystemBase {
     private TalonFXConfiguration feederBeltConfig = new TalonFXConfiguration();
 
     public IndexerSubsystem() {
-        collectorBelt = new TalonFX(CANIDs.kCollectorBelt);
-        feederBelt = new TalonFX(CANIDs.kFeederBelt);
+        collectorBelt = new TalonFX(Constants.CANIDs.MotorIDs.kCollectorBeltID);
+        feederBelt = new TalonFX(Constants.CANIDs.MotorIDs.kFeederBeltID);
 
         collectorBeltConfig = new TalonFXConfiguration();
         feederBeltConfig = new TalonFXConfiguration();
@@ -72,12 +73,12 @@ public class IndexerSubsystem extends SubsystemBase {
     // ---------------------------------------------------------
     // TODO: Implement current sensing to detect jams
 
-    public Voltage getFeederVoltage() {
-        return feederBelt.getMotorVoltage().getValue();
+    public Current getFeederCurrent() {
+        return feederBelt.getMotorCurrent().getValue();
     }
 
-    public Voltage getCollectorVoltage() {
-        return collectorBelt.getMotorVoltage().getValue();
+    public Current getCollectorCurrent() {
+        return collectorBelt.getMotorCurrent().getValue();
     }
 
     @Override
