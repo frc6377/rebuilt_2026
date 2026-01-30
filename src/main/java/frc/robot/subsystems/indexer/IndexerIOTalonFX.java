@@ -11,7 +11,7 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 
-package frc.robot.subsystems.shooter;
+package frc.robot.subsystems.indexer;
 
 import static frc.robot.util.PhoenixUtil.tryUntilOk;
 
@@ -28,8 +28,8 @@ import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import frc.robot.Constants;
 
-public class ShooterIOTalonFX implements ShooterIO {
-    private final TalonFX shooterMotor;
+public class IndexerIOTalonFX implements IndexerIO {
+    private final TalonFX IndexerMotor;
     private final StatusSignal<Angle> position;
     private final StatusSignal<AngularVelocity> velocity;
     private final StatusSignal<Voltage> appliedVolts;
@@ -38,54 +38,54 @@ public class ShooterIOTalonFX implements ShooterIO {
     private final VoltageOut voltageRequest = new VoltageOut(0.0);
     private final VelocityVoltage velocityRequest = new VelocityVoltage(0.0);
 
-    public ShooterIOTalonFX() {
-        shooterMotor = new TalonFX(Constants.CANIDs.kShooterFlywheelOneCANID, "Drive Base");
+    public IndexerIOTalonFX() {
+        IndexerMotor = new TalonFX(Constants.CANIDs.kIndexerFlywheelOneCANID, "Drive Base");
 
         // Apply configuration
-        TalonFXConfiguration config = ShooterConstants.kShooterTalonFXConfiguration;
+        TalonFXConfiguration config = IndexerConstants.kIndexerTalonFXConfiguration;
 
         // Ensure neutral mode is brake or coast as desired (override if needed, but using constant for now)
         // config.MotorOutput.NeutralMode = NeutralModeValue.Coast;
 
-        tryUntilOk(5, () -> shooterMotor.getConfigurator().apply(config, 0.25));
+        tryUntilOk(5, () -> IndexerMotor.getConfigurator().apply(config, 0.25));
 
         // Signals
-        position = shooterMotor.getPosition();
-        velocity = shooterMotor.getVelocity();
-        appliedVolts = shooterMotor.getMotorVoltage();
-        current = shooterMotor.getStatorCurrent();
+        position = IndexerMotor.getPosition();
+        velocity = IndexerMotor.getVelocity();
+        appliedVolts = IndexerMotor.getMotorVoltage();
+        current = IndexerMotor.getStatorCurrent();
 
         BaseStatusSignal.setUpdateFrequencyForAll(50.0, position, velocity, appliedVolts, current);
     }
 
     @Override
-    public void updateInputs(ShooterIOInputs inputs) {
+    public void updateInputs(IndexerIOInputs inputs) {
         BaseStatusSignal.refreshAll(position, velocity, appliedVolts, current);
 
-        inputs.shooterMotorConnected = BaseStatusSignal.isAllGood(position, velocity, appliedVolts, current);
-        inputs.shooterPosition = position.getValue();
-        inputs.shooterVelocity = velocity.getValue();
-        inputs.shooterAppliedVolts = appliedVolts.getValue();
-        inputs.shooterCurrent = current.getValue();
+        inputs.IndexerMotorConnected = BaseStatusSignal.isAllGood(position, velocity, appliedVolts, current);
+        inputs.IndexerPosition = position.getValue();
+        inputs.IndexerVelocity = velocity.getValue();
+        inputs.IndexerAppliedVolts = appliedVolts.getValue();
+        inputs.IndexerCurrent = current.getValue();
     }
 
     @Override
     public void setVoltage(Voltage volts) {
-        shooterMotor.setControl(voltageRequest.withOutput(volts));
+        IndexerMotor.setControl(voltageRequest.withOutput(volts));
     }
 
     @Override
     public void setVelocity(AngularVelocity velocity) {
-        shooterMotor.setControl(velocityRequest.withVelocity(velocity));
+        IndexerMotor.setControl(velocityRequest.withVelocity(velocity));
     }
 
     @Override
     public void stop() {
-        shooterMotor.setControl(voltageRequest.withOutput(0.0));
+        IndexerMotor.setControl(voltageRequest.withOutput(0.0));
     }
 
     @Override
     public void updatePIDConfig(Slot0Configs config) {
-        shooterMotor.getConfigurator().apply(config);
+        IndexerMotor.getConfigurator().apply(config);
     }
 }

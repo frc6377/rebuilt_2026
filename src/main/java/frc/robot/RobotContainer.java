@@ -32,6 +32,7 @@ import frc.robot.commands.DriveCommands;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.indexer.Indexer;
+import frc.robot.subsystems.indexer.IndexerIOTalonFX;
 import frc.robot.subsystems.intake.IntakeIOReal;
 import frc.robot.subsystems.intake.IntakeIOSim;
 import frc.robot.subsystems.intake.IntakeRollerSubsystem;
@@ -56,7 +57,7 @@ public class RobotContainer {
     private final Drive drive;
     private final Vision vision;
     private final IntakeRollerSubsystem intake;
-    private final Indexer indexer = new Indexer();
+    private final Indexer indexer = new Indexer(new IndexerIOTalonFX());
     private final Shooter shooter;
     private SwerveDriveSimulation driveSimulation = null;
 
@@ -170,13 +171,13 @@ public class RobotContainer {
         controller.leftBumper().whileTrue(intake.outtakeCommand());
 
         // Indexer control
-        controller.rightTrigger().whileTrue(Commands.run(() -> indexer.setIndexerSpeed(() -> 1), indexer));
-        controller.leftTrigger().whileTrue(Commands.run(() -> indexer.setIndexerSpeed(() -> -1), indexer));
+        controller.rightTrigger().whileTrue(indexer.runVelocityCommand(RotationsPerSecond.of(10)));
+        controller.leftTrigger().whileTrue(indexer.runVelocityCommand(RotationsPerSecond.of(-10)));
 
         // Shooter control
-        controller.povUp().whileTrue(Commands.run(() -> shooter.setVelocity(RotationsPerSecond.of(300)), shooter));
-        controller.povDown().whileTrue(Commands.run(() -> shooter.setVelocity(RotationsPerSecond.of(-300)), shooter));
-        controller.povLeft().whileTrue(Commands.run(() -> shooter.stop(), shooter));
+        controller.povUp().whileTrue(shooter.runVelocityCommand(RotationsPerSecond.of(10)));
+        controller.povDown().whileTrue(shooter.runVelocityCommand(RotationsPerSecond.of(-30)));
+        controller.povLeft().whileTrue(shooter.stopCommand());
 
         // Reset gyro / odometry1
         final Runnable resetGyro = Constants.currentMode == Constants.Mode.SIM

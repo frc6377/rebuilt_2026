@@ -13,11 +13,16 @@
 
 package frc.robot.subsystems.shooter;
 
+import static edu.wpi.first.units.Units.RadiansPerSecond;
+
 import com.ctre.phoenix6.configs.Slot0Configs;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
+import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
 
 public class Shooter extends SubsystemBase {
@@ -97,5 +102,93 @@ public class Shooter extends SubsystemBase {
     /** Returns the current velocity in rad/s. */
     public AngularVelocity getVelocity() {
         return inputs.shooterVelocity;
+    }
+
+    /**
+     * Returns true if the shooter is at the target velocity within tolerance.
+     *
+     * @param targetVelocity The target velocity to check against.
+     * @return true if at target velocity.
+     */
+    public boolean atTargetVelocity(AngularVelocity targetVelocity) {
+        double currentVel = inputs.shooterVelocity.in(RadiansPerSecond);
+        double targetVel = targetVelocity.in(RadiansPerSecond);
+        return Math.abs(currentVel - targetVel) < ShooterConstants.kVelocityTolerance.in(RadiansPerSecond);
+    }
+
+    // ==================== Command Factory Methods ====================
+
+    /**
+     * Creates a command to run the shooter at a specified velocity. The command runs until interrupted.
+     *
+     * @param velocity The target velocity.
+     * @return A command that runs the shooter at the specified velocity.
+     */
+    public Command runVelocityCommand(AngularVelocity velocity) {
+        return Commands.run(() -> setVelocity(velocity), this).withName("Shooter.RunVelocity");
+    }
+
+    /**
+     * Creates a command to run the shooter at a velocity supplied dynamically. The command runs until interrupted.
+     *
+     * @param velocitySupplier A supplier for the target velocity.
+     * @return A command that runs the shooter at the supplied velocity.
+     */
+    public Command runVelocityCommand(Supplier<AngularVelocity> velocitySupplier) {
+        return Commands.run(() -> setVelocity(velocitySupplier.get()), this).withName("Shooter.RunVelocityDynamic");
+    }
+
+    /**
+     * Creates a command to spin up the shooter to a target velocity and finish when at speed. Stops the shooter when
+     * the command ends.
+     *
+     * @param velocity The target velocity.
+     * @return A command that spins up and finishes when at velocity.
+     */
+    public Command spinUpCommand(AngularVelocity velocity) {
+        return Commands.run(() -> setVelocity(velocity), this)
+                .until(() -> atTargetVelocity(velocity))
+                .withName("Shooter.SpinUp");
+    }
+
+    /**
+     * Creates a command to spin up the shooter based on distance. The command runs until interrupted.
+     *
+     * @param distance The distance to the target.
+     * @return A command that runs the shooter at the velocity for the given distance.
+     */
+    public Command shootAtDistanceCommand(Distance distance) {
+        return Commands.run(() -> shootAtDistance(distance), this).withName("Shooter.ShootAtDistance");
+    }
+
+    /**
+     * Creates a command to spin up the shooter based on a dynamically supplied distance. The command runs until
+     * interrupted.
+     *
+     * @param distanceSupplier A supplier for the distance to the target.
+     * @return A command that runs the shooter at the velocity for the supplied distance.
+     */
+    public Command shootAtDistanceCommand(Supplier<Distance> distanceSupplier) {
+        return Commands.run(() -> shootAtDistance(distanceSupplier.get()), this)
+                .withName("Shooter.ShootAtDistanceDynamic");
+    }
+
+    /**
+     * Creates a command to stop the shooter.
+     *
+     * @return A command that stops the shooter.
+     */
+    public Command stopCommand() {
+        return Commands.runOnce(this::stop, this).withName("Shooter.Stop");
+    }
+
+    /**
+     * Creates a command to idle the shooter (keep running at a low speed for quick spin-up).
+     *
+     * @return A command that idles the shooter.
+     */
+    public Command idleCommand() {
+        return Commands.run(() -> setVelocity(ShooterConstants.kIdleVelocity), this)
+                .withName("Shooter.Idle");
     }
 }
