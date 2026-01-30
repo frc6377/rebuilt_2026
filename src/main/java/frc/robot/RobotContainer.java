@@ -28,8 +28,8 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
+import frc.robot.Constants.OperatingMode;
 import frc.robot.commands.DriveCommands;
-import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.vision.*;
 import org.ironmaple.simulation.SimulatedArena;
@@ -56,40 +56,34 @@ public class RobotContainer {
     // Dashboard inputs
     private final LoggedDashboardChooser<Command> autoChooser;
 
+    public OperatingMode getOperatingMode() {
+        // TODO: we should get this from the RIO in the future
+        return OperatingMode.COMPETITION;
+    }
+
     /** The container for the robot. Contains subsystems, OI devices, and commands. */
     public RobotContainer() {
+
+        var operatingMode = getOperatingMode();
+
         switch (Constants.currentMode) {
             case REAL:
                 // Real robot, instantiate hardware IO implementations
-                drive = new Drive(
-                        new GyroIOPigeon2(),
-                        new ModuleIOTalonFXReal(TunerConstants.FrontLeft),
-                        new ModuleIOTalonFXReal(TunerConstants.FrontRight),
-                        new ModuleIOTalonFXReal(TunerConstants.BackLeft),
-                        new ModuleIOTalonFXReal(TunerConstants.BackRight),
-                        (pose) -> {});
-                this.vision = new Vision(
+                drive = Drive.createReal(operatingMode);
+
+                vision = new Vision(
                         drive,
                         new VisionIOLimelight(VisionConstants.camera0Name, drive::getRotation),
                         new VisionIOLimelight(VisionConstants.camera1Name, drive::getRotation));
 
                 break;
-            case SIM:
+            case SIM: {
                 // Sim robot, instantiate physics sim IO implementations
 
-                driveSimulation = new SwerveDriveSimulation(Drive.mapleSimConfig, new Pose2d(3, 3, new Rotation2d()));
+                var driveSimulation =
+                        new SwerveDriveSimulation(Drive.mapleSimConfig, new Pose2d(3, 3, new Rotation2d()));
                 SimulatedArena.getInstance().addDriveTrainSimulation(driveSimulation);
-                drive = new Drive(
-                        new GyroIOSim(driveSimulation.getGyroSimulation()),
-                        new ModuleIOTalonFXSim(
-                                TunerConstants.FrontLeft, driveSimulation.getModules()[0]),
-                        new ModuleIOTalonFXSim(
-                                TunerConstants.FrontRight, driveSimulation.getModules()[1]),
-                        new ModuleIOTalonFXSim(
-                                TunerConstants.BackLeft, driveSimulation.getModules()[2]),
-                        new ModuleIOTalonFXSim(
-                                TunerConstants.BackRight, driveSimulation.getModules()[3]),
-                        driveSimulation::setSimulationWorldPose);
+                drive = Drive.createSim(operatingMode, driveSimulation);
                 vision = new Vision(
                         drive,
                         new VisionIOPhotonVisionSim(
@@ -98,16 +92,10 @@ public class RobotContainer {
                                 camera1Name, robotToCamera1, driveSimulation::getSimulatedDriveTrainPose));
 
                 break;
-
+            }
             default:
                 // Replayed robot, disable IO implementations
-                drive = new Drive(
-                        new GyroIO() {},
-                        new ModuleIO() {},
-                        new ModuleIO() {},
-                        new ModuleIO() {},
-                        new ModuleIO() {},
-                        (pose) -> {});
+                drive = Drive.createReplay(operatingMode);
                 vision = new Vision(drive, new VisionIO() {}, new VisionIO() {});
 
                 break;

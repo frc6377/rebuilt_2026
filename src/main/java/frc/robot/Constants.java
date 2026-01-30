@@ -30,4 +30,12 @@ public final class Constants {
         /** Running a physics simulator. */
         SIM,
     }
+
+    public static enum OperatingMode {
+        /** Normal speed for competition */
+        COMPETITION,
+
+        /** A nerfed mode that either disables certain operations or slows the robot down */
+        DEMO,
+    }
 }
