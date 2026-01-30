@@ -22,39 +22,39 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import java.util.function.DoubleSupplier;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
-import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
+import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 /**
- * Shooter subsystem with dual-sided IO layer.
- * Features independent Kraken X60 motors for redundancy and limp-mode operation.
+ * Shooter subsystem with dual-sided IO layer. Features independent Kraken X60 motors for redundancy and limp-mode
+ * operation.
  */
 public class Shooter extends SubsystemBase {
     private final ShooterIO io;
     private final ShooterIOInputsAutoLogged inputs = new ShooterIOInputsAutoLogged();
 
     // Tunable PID constants
-    private final LoggedDashboardNumber flywheelKP = new LoggedDashboardNumber("Shooter/FlywheelKP", 0.1);
-    private final LoggedDashboardNumber flywheelKI = new LoggedDashboardNumber("Shooter/FlywheelKI", 0.0);
-    private final LoggedDashboardNumber flywheelKD = new LoggedDashboardNumber("Shooter/FlywheelKD", 0.0);
-    private final LoggedDashboardNumber flywheelKV = new LoggedDashboardNumber("Shooter/FlywheelKV", 0.12);
-    private final LoggedDashboardNumber flywheelKS = new LoggedDashboardNumber("Shooter/FlywheelKS", 0.0);
+    private final LoggedNetworkNumber flywheelKP = new LoggedNetworkNumber("Shooter/FlywheelKP", 0.1);
+    private final LoggedNetworkNumber flywheelKI = new LoggedNetworkNumber("Shooter/FlywheelKI", 0.0);
+    private final LoggedNetworkNumber flywheelKD = new LoggedNetworkNumber("Shooter/FlywheelKD", 0.0);
+    private final LoggedNetworkNumber flywheelKV = new LoggedNetworkNumber("Shooter/FlywheelKV", 0.12);
+    private final LoggedNetworkNumber flywheelKS = new LoggedNetworkNumber("Shooter/FlywheelKS", 0.0);
 
     // Tunable shot map for distance-based shooting (velocity only)
     // Distance 1m
-    private final LoggedDashboardNumber dist1m = new LoggedDashboardNumber("Shooter/ShotMap/Dist1m", 1.0);
-    private final LoggedDashboardNumber vel1m = new LoggedDashboardNumber("Shooter/ShotMap/Vel1m", 2000.0);
+    private final LoggedNetworkNumber dist1m = new LoggedNetworkNumber("Shooter/ShotMap/Dist1m", 1.0);
+    private final LoggedNetworkNumber vel1m = new LoggedNetworkNumber("Shooter/ShotMap/Vel1m", 2000.0);
     // Distance 2m
-    private final LoggedDashboardNumber dist2m = new LoggedDashboardNumber("Shooter/ShotMap/Dist2m", 2.0);
-    private final LoggedDashboardNumber vel2m = new LoggedDashboardNumber("Shooter/ShotMap/Vel2m", 2500.0);
+    private final LoggedNetworkNumber dist2m = new LoggedNetworkNumber("Shooter/ShotMap/Dist2m", 2.0);
+    private final LoggedNetworkNumber vel2m = new LoggedNetworkNumber("Shooter/ShotMap/Vel2m", 2500.0);
     // Distance 3m
-    private final LoggedDashboardNumber dist3m = new LoggedDashboardNumber("Shooter/ShotMap/Dist3m", 3.0);
-    private final LoggedDashboardNumber vel3m = new LoggedDashboardNumber("Shooter/ShotMap/Vel3m", 3000.0);
+    private final LoggedNetworkNumber dist3m = new LoggedNetworkNumber("Shooter/ShotMap/Dist3m", 3.0);
+    private final LoggedNetworkNumber vel3m = new LoggedNetworkNumber("Shooter/ShotMap/Vel3m", 3000.0);
     // Distance 4m
-    private final LoggedDashboardNumber dist4m = new LoggedDashboardNumber("Shooter/ShotMap/Dist4m", 4.0);
-    private final LoggedDashboardNumber vel4m = new LoggedDashboardNumber("Shooter/ShotMap/Vel4m", 3500.0);
+    private final LoggedNetworkNumber dist4m = new LoggedNetworkNumber("Shooter/ShotMap/Dist4m", 4.0);
+    private final LoggedNetworkNumber vel4m = new LoggedNetworkNumber("Shooter/ShotMap/Vel4m", 3500.0);
     // Distance 5m
-    private final LoggedDashboardNumber dist5m = new LoggedDashboardNumber("Shooter/ShotMap/Dist5m", 5.0);
-    private final LoggedDashboardNumber vel5m = new LoggedDashboardNumber("Shooter/ShotMap/Vel5m", 4000.0);
+    private final LoggedNetworkNumber dist5m = new LoggedNetworkNumber("Shooter/ShotMap/Dist5m", 5.0);
+    private final LoggedNetworkNumber vel5m = new LoggedNetworkNumber("Shooter/ShotMap/Vel5m", 4000.0);
 
     // Interpolation map for distance-based shooting
     // Maps distance (meters) to shooter velocity RPM
@@ -93,8 +93,8 @@ public class Shooter extends SubsystemBase {
     }
 
     /**
-     * Update distance-based shot interpolation map from tunable values.
-     * Called each periodic cycle to allow real-time tuning.
+     * Update distance-based shot interpolation map from tunable values. Called each periodic cycle to allow real-time
+     * tuning.
      */
     private void updateShotMaps() {
         distanceToVelocityMap.clear();
@@ -108,8 +108,7 @@ public class Shooter extends SubsystemBase {
     }
 
     /**
-     * Set velocity for both flywheels independently.
-     * This allows for limp-mode operation if one side fails.
+     * Set velocity for both flywheels independently. This allows for limp-mode operation if one side fails.
      *
      * @param leftRPM Target velocity for left flywheel in RPM
      * @param rightRPM Target velocity for right flywheel in RPM
@@ -133,8 +132,7 @@ public class Shooter extends SubsystemBase {
     }
 
     /**
-     * Set velocity for both flywheels to the same value.
-     * Uses independent control to prevent "fighting" between motors.
+     * Set velocity for both flywheels to the same value. Uses independent control to prevent "fighting" between motors.
      *
      * @param velocityRPM Target velocity in RPM
      */
@@ -143,8 +141,8 @@ public class Shooter extends SubsystemBase {
     }
 
     /**
-     * Prepare shooter for a shot at a specific distance.
-     * Automatically calculates and sets the appropriate flywheel velocity.
+     * Prepare shooter for a shot at a specific distance. Automatically calculates and sets the appropriate flywheel
+     * velocity.
      *
      * @param distanceMeters Distance to target in meters
      * @return Target velocity in RPM for the given distance
@@ -155,13 +153,11 @@ public class Shooter extends SubsystemBase {
 
         Logger.recordOutput("Shooter/AutoAim/Distance", distanceMeters);
         Logger.recordOutput("Shooter/AutoAim/CalculatedVelocity", targetVelocity);
-        
+
         return targetVelocity;
     }
 
-    /**
-     * Stop all shooter motors.
-     */
+    /** Stop all shooter motors. */
     public void stop() {
         leftFlywheelSetpoint = 0.0;
         rightFlywheelSetpoint = 0.0;
@@ -187,15 +183,6 @@ public class Shooter extends SubsystemBase {
     }
 
     /**
-     * Get current hood angle.
-     *
-     * @return Angle in degrees
-     */
-    public double getHoodAngle() {
-        return inputs.hoodAngleDegrees;
-    }
-
-    /**
      * Check if flywheels are at target velocity.
      *
      * @return true if both active flywheels are within tolerance
@@ -203,10 +190,10 @@ public class Shooter extends SubsystemBase {
     @AutoLogOutput(key = "Shooter/AtTargetVelocity")
     public boolean atTargetVelocity() {
         double toleranceRPM = ShooterConstants.flywheelVelocityTolerance.in(RotationsPerSecond) * 60.0;
-        boolean leftAtTarget = leftFlywheelFailed
-                || Math.abs(inputs.leftFlywheelVelocityRPM - leftFlywheelSetpoint) < toleranceRPM;
-        boolean rightAtTarget = rightFlywheelFailed
-                || Math.abs(inputs.rightFlywheelVelocityRPM - rightFlywheelSetpoint) < toleranceRPM;
+        boolean leftAtTarget =
+                leftFlywheelFailed || Math.abs(inputs.leftFlywheelVelocityRPM - leftFlywheelSetpoint) < toleranceRPM;
+        boolean rightAtTarget =
+                rightFlywheelFailed || Math.abs(inputs.rightFlywheelVelocityRPM - rightFlywheelSetpoint) < toleranceRPM;
 
         return leftAtTarget && rightAtTarget;
     }
@@ -221,9 +208,8 @@ public class Shooter extends SubsystemBase {
     }
 
     /**
-     * Detect motor failures based on velocity tracking.
-     * A motor is considered failed if there's excessive difference between
-     * the two flywheels that cannot be explained by different setpoints.
+     * Detect motor failures based on velocity tracking. A motor is considered failed if there's excessive difference
+     * between the two flywheels that cannot be explained by different setpoints.
      */
     private void detectMotorFailures() {
         // Only check for failures when motors are supposed to be running
@@ -256,9 +242,7 @@ public class Shooter extends SubsystemBase {
         }
     }
 
-    /**
-     * Reset failure flags (for testing or after maintenance).
-     */
+    /** Reset failure flags (for testing or after maintenance). */
     public void resetFailureFlags() {
         leftFlywheelFailed = false;
         rightFlywheelFailed = false;
@@ -297,8 +281,8 @@ public class Shooter extends SubsystemBase {
     }
 
     /**
-     * Command to prepare shooter for a shot at a specific distance.
-     * Automatically calculates and sets appropriate velocity.
+     * Command to prepare shooter for a shot at a specific distance. Automatically calculates and sets appropriate
+     * velocity.
      *
      * @param distanceMeters Distance to target in meters
      * @return Command that prepares the shooter for the distance
@@ -344,7 +328,9 @@ public class Shooter extends SubsystemBase {
      * @return Command that prepares for distance and waits
      */
     public Command prepareForDistanceAndWait(double distanceMeters) {
-        return prepareForDistanceCommand(distanceMeters).andThen(waitUntilReady()).withName("PrepareForDistanceAndWait");
+        return prepareForDistanceCommand(distanceMeters)
+                .andThen(waitUntilReady())
+                .withName("PrepareForDistanceAndWait");
     }
 
     // ========== Tunable PID Getters ==========

@@ -18,6 +18,7 @@ import static edu.wpi.first.units.Units.*;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.simulation.FlywheelSim;
 
@@ -38,10 +39,17 @@ public class ShooterIOSim implements ShooterIO {
     private double leftFlywheelAppliedVolts = 0.0;
     private double rightFlywheelAppliedVolts = 0.0;
 
+    // Flywheel simulation constants
+    private static final double FLYWHEEL_GEARING = 1.0;
+    private static final double FLYWHEEL_MOI = 0.004; // kg*m^2
+
     public ShooterIOSim() {
-        // Create flywheel simulations (Kraken X60 motors)
-        leftFlywheelSim = new FlywheelSim(DCMotor.getKrakenX60(1), 1.0, 0.004);
-        rightFlywheelSim = new FlywheelSim(DCMotor.getKrakenX60(1), 1.0, 0.004);
+        // Create flywheel simulations (Kraken X60 motors) using LinearSystem
+        DCMotor krakenX60 = DCMotor.getKrakenX60(1);
+        var flywheelPlant = LinearSystemId.createFlywheelSystem(krakenX60, FLYWHEEL_MOI, FLYWHEEL_GEARING);
+
+        leftFlywheelSim = new FlywheelSim(flywheelPlant, krakenX60);
+        rightFlywheelSim = new FlywheelSim(flywheelPlant, krakenX60);
 
         // Create PID controllers
         leftFlywheelController = new PIDController(

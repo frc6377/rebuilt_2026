@@ -20,20 +20,17 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import java.util.function.DoubleSupplier;
 import org.littletonrobotics.junction.Logger;
-import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
+import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
-/**
- * Hood subsystem for adjustable pitch control.
- * Uses Kraken x44 motor for position-controlled adjustable hood.
- */
+/** Hood subsystem for adjustable pitch control. Uses Kraken x44 motor for position-controlled adjustable hood. */
 public class Hood extends SubsystemBase {
     private final HoodIO io;
     private final HoodIOInputsAutoLogged inputs = new HoodIOInputsAutoLogged();
 
     // Tunable PID constants
-    private final LoggedDashboardNumber kP = new LoggedDashboardNumber("Hood/KP", HoodConstants.defaultKP);
-    private final LoggedDashboardNumber kI = new LoggedDashboardNumber("Hood/KI", HoodConstants.defaultKI);
-    private final LoggedDashboardNumber kD = new LoggedDashboardNumber("Hood/KD", HoodConstants.defaultKD);
+    private final LoggedNetworkNumber kP = new LoggedNetworkNumber("Hood/KP", HoodConstants.defaultKP);
+    private final LoggedNetworkNumber kI = new LoggedNetworkNumber("Hood/KI", HoodConstants.defaultKI);
+    private final LoggedNetworkNumber kD = new LoggedNetworkNumber("Hood/KD", HoodConstants.defaultKD);
 
     // Setpoint
     private double angleSetpoint = 0.0;
@@ -62,9 +59,7 @@ public class Hood extends SubsystemBase {
         io.setAngle(Degrees.of(angleDegrees));
     }
 
-    /**
-     * Stop hood motor.
-     */
+    /** Stop hood motor. */
     public void stop() {
         angleSetpoint = 0.0;
         io.stop();

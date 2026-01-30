@@ -96,10 +96,7 @@ public class HoodIOKrakenX60 implements HoodIO {
     }
 
     private void updatePIDGains() {
-        var gains = new Slot0Configs()
-                .withKP(hood.getKP())
-                .withKI(hood.getKI())
-                .withKD(hood.getKD());
+        var gains = new Slot0Configs().withKP(hood.getKP()).withKI(hood.getKI()).withKD(hood.getKD());
         motor.getConfigurator().apply(gains);
     }
 

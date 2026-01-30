@@ -48,8 +48,8 @@ public class HoodIOSim implements HoodIO {
     @Override
     public void updateInputs(HoodIOInputs inputs) {
         // PID controller for position (simulation)
-        appliedVolts = MathUtil.clamp(
-                controller.calculate(Math.toDegrees(sim.getAngleRads()), setpointDegrees), -12.0, 12.0);
+        appliedVolts =
+                MathUtil.clamp(controller.calculate(Math.toDegrees(sim.getAngleRads()), setpointDegrees), -12.0, 12.0);
         sim.setInputVoltage(appliedVolts);
 
         // Update simulation

@@ -31,6 +31,7 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.commands.DriveCommands;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.*;
+import frc.robot.subsystems.hood.Hood;
 import frc.robot.subsystems.shooter.*;
 import frc.robot.subsystems.vision.*;
 import org.ironmaple.simulation.SimulatedArena;
@@ -78,7 +79,7 @@ public class RobotContainer {
                 var shooterIO = new ShooterIOKrakenX60();
                 this.shooter = new Shooter(shooterIO);
                 shooterIO.setShooter(shooter);
-                
+
                 var hoodIO = new frc.robot.subsystems.hood.HoodIOKrakenX60();
                 this.hood = new frc.robot.subsystems.hood.Hood(hoodIO);
                 hoodIO.setHood(hood);
@@ -173,10 +174,7 @@ public class RobotContainer {
 
         // Shooter controls
         // Right trigger: Spin up flywheels
-        controller
-                .rightTrigger()
-                .whileTrue(shooter.spinUpFlywheels(3000.0))
-                .onFalse(shooter.stopCommand());
+        controller.rightTrigger().whileTrue(shooter.spinUpFlywheels(3000.0)).onFalse(shooter.stopCommand());
 
         // Bumpers: Adjust hood angle (example presets)
         controller.leftBumper().onTrue(hood.setAngleCommand(20.0)); // Low shot

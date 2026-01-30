@@ -39,8 +39,7 @@ public class ShooterConstants {
     public static final AngularVelocity maxFlywheelVelocity = RotationsPerSecond.of(100.0); // 6000 RPM
 
     // Limp mode thresholds
-    public static final AngularVelocity flywheelVelocityTolerance =
-            RotationsPerSecond.of(100.0 / 60.0); // 100 RPM
+    public static final AngularVelocity flywheelVelocityTolerance = RotationsPerSecond.of(100.0 / 60.0); // 100 RPM
     public static final AngularVelocity maxVelocityDifference =
             RotationsPerSecond.of(500.0 / 60.0); // 500 RPM difference between flywheels
 }
