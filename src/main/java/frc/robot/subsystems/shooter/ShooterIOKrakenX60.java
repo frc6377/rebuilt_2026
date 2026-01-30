@@ -77,11 +77,11 @@ public class ShooterIOKrakenX60 implements ShooterIO {
         leftFlywheelConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
         leftFlywheelConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
         leftFlywheelConfig.Slot0 = new Slot0Configs()
-                .withKP(0.1)
-                .withKI(0.0)
-                .withKD(0.0)
-                .withKV(0.12)
-                .withKS(0.0);
+                .withKP(ShooterConstants.defaultFlywheelKP)
+                .withKI(ShooterConstants.defaultFlywheelKI)
+                .withKD(ShooterConstants.defaultFlywheelKD)
+                .withKV(ShooterConstants.defaultFlywheelKV)
+                .withKS(ShooterConstants.defaultFlywheelKS);
         leftFlywheelConfig.CurrentLimits.StatorCurrentLimit = ShooterConstants.flywheelCurrentLimit.in(Amps);
         leftFlywheelConfig.CurrentLimits.StatorCurrentLimitEnable = true;
         tryUntilOk(5, () -> leftFlywheelMotor.getConfigurator().apply(leftFlywheelConfig, 0.25));
@@ -91,11 +91,11 @@ public class ShooterIOKrakenX60 implements ShooterIO {
         rightFlywheelConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
         rightFlywheelConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive; // Opposite of left
         rightFlywheelConfig.Slot0 = new Slot0Configs()
-                .withKP(0.1)
-                .withKI(0.0)
-                .withKD(0.0)
-                .withKV(0.12)
-                .withKS(0.0);
+                .withKP(ShooterConstants.defaultFlywheelKP)
+                .withKI(ShooterConstants.defaultFlywheelKI)
+                .withKD(ShooterConstants.defaultFlywheelKD)
+                .withKV(ShooterConstants.defaultFlywheelKV)
+                .withKS(ShooterConstants.defaultFlywheelKS);
         rightFlywheelConfig.CurrentLimits.StatorCurrentLimit = ShooterConstants.flywheelCurrentLimit.in(Amps);
         rightFlywheelConfig.CurrentLimits.StatorCurrentLimitEnable = true;
         tryUntilOk(5, () -> rightFlywheelMotor.getConfigurator().apply(rightFlywheelConfig, 0.25));
@@ -104,7 +104,10 @@ public class ShooterIOKrakenX60 implements ShooterIO {
         var hoodConfig = new TalonFXConfiguration();
         hoodConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
         hoodConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
-        hoodConfig.Slot0 = new Slot0Configs().withKP(10.0).withKI(0.0).withKD(0.5);
+        hoodConfig.Slot0 = new Slot0Configs()
+                .withKP(ShooterConstants.defaultHoodKP)
+                .withKI(ShooterConstants.defaultHoodKI)
+                .withKD(ShooterConstants.defaultHoodKD);
         hoodConfig.CurrentLimits.StatorCurrentLimit = ShooterConstants.hoodCurrentLimit.in(Amps);
         hoodConfig.CurrentLimits.StatorCurrentLimitEnable = true;
         hoodConfig.Feedback.SensorToMechanismRatio = ShooterConstants.hoodGearRatio;
@@ -214,23 +217,23 @@ public class ShooterIOKrakenX60 implements ShooterIO {
     }
 
     @Override
-    public void setLeftFlywheelVelocity(double velocityRPM) {
-        // Convert RPM to rotations per second for TalonFX
-        double rotationsPerSecond = velocityRPM / 60.0;
+    public void setLeftFlywheelVelocity(AngularVelocity velocity) {
+        // Convert to rotations per second for TalonFX
+        double rotationsPerSecond = velocity.in(RotationsPerSecond);
         leftFlywheelMotor.setControl(velocityRequest.withVelocity(rotationsPerSecond));
     }
 
     @Override
-    public void setRightFlywheelVelocity(double velocityRPM) {
-        // Convert RPM to rotations per second for TalonFX
-        double rotationsPerSecond = velocityRPM / 60.0;
+    public void setRightFlywheelVelocity(AngularVelocity velocity) {
+        // Convert to rotations per second for TalonFX
+        double rotationsPerSecond = velocity.in(RotationsPerSecond);
         rightFlywheelMotor.setControl(velocityRequest.withVelocity(rotationsPerSecond));
     }
 
     @Override
-    public void setHoodAngle(double angleDegrees) {
-        // Convert degrees to rotations (SensorToMechanismRatio already accounts for gearing)
-        double positionRotations = Units.degreesToRotations(angleDegrees);
+    public void setHoodAngle(Angle angle) {
+        // Convert to rotations (SensorToMechanismRatio already accounts for gearing)
+        double positionRotations = angle.in(Rotations);
         hoodMotor.setControl(positionRequest.withPosition(positionRotations));
     }
 

@@ -32,6 +32,18 @@ public class ShooterConstants {
     // Gear ratios
     public static final double hoodGearRatio = 100.0; // Adjust based on actual mechanism
 
+    // Default PID constants for flywheel (velocity control)
+    public static final double defaultFlywheelKP = 0.1;
+    public static final double defaultFlywheelKI = 0.0;
+    public static final double defaultFlywheelKD = 0.0;
+    public static final double defaultFlywheelKV = 0.12;
+    public static final double defaultFlywheelKS = 0.0;
+
+    // Default PID constants for hood (position control)
+    public static final double defaultHoodKP = 10.0;
+    public static final double defaultHoodKI = 0.0;
+    public static final double defaultHoodKD = 0.5;
+
     // Current limits
     public static final Current flywheelCurrentLimit = Amps.of(60.0);
     public static final Current hoodCurrentLimit = Amps.of(40.0);

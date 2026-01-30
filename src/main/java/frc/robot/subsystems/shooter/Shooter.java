@@ -143,15 +143,15 @@ public class Shooter extends SubsystemBase {
 
         // Only send commands to non-failed motors
         if (!leftFlywheelFailed) {
-            io.setLeftFlywheelVelocity(leftRPM);
+            io.setLeftFlywheelVelocity(RPM.of(leftRPM));
         } else {
-            io.setLeftFlywheelVelocity(0.0); // Stop failed motor
+            io.setLeftFlywheelVelocity(RPM.of(0.0)); // Stop failed motor
         }
 
         if (!rightFlywheelFailed) {
-            io.setRightFlywheelVelocity(rightRPM);
+            io.setRightFlywheelVelocity(RPM.of(rightRPM));
         } else {
-            io.setRightFlywheelVelocity(0.0); // Stop failed motor
+            io.setRightFlywheelVelocity(RPM.of(0.0)); // Stop failed motor
         }
     }
 
@@ -174,7 +174,7 @@ public class Shooter extends SubsystemBase {
     public void setHoodAngle(double angleDegrees) {
         hoodAngleSetpoint = angleDegrees;
         if (isHoodEnabled()) {
-            io.setHoodAngle(angleDegrees);
+            io.setHoodAngle(Degrees.of(angleDegrees));
         }
     }
 

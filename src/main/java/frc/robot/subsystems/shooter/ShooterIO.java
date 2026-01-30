@@ -13,6 +13,9 @@
 
 package frc.robot.subsystems.shooter;
 
+import static edu.wpi.first.units.Units.*;
+
+import edu.wpi.first.units.measure.*;
 import org.littletonrobotics.junction.AutoLog;
 
 public interface ShooterIO {
@@ -40,14 +43,14 @@ public interface ShooterIO {
     /** Updates the set of loggable inputs. */
     default void updateInputs(ShooterIOInputs inputs) {}
 
-    /** Set left flywheel velocity in RPM */
-    default void setLeftFlywheelVelocity(double velocityRPM) {}
+    /** Set left flywheel velocity */
+    default void setLeftFlywheelVelocity(AngularVelocity velocity) {}
 
-    /** Set right flywheel velocity in RPM */
-    default void setRightFlywheelVelocity(double velocityRPM) {}
+    /** Set right flywheel velocity */
+    default void setRightFlywheelVelocity(AngularVelocity velocity) {}
 
-    /** Set hood angle in degrees */
-    default void setHoodAngle(double angleDegrees) {}
+    /** Set hood angle */
+    default void setHoodAngle(Angle angle) {}
 
     /** Stop all motors */
     default void stop() {}
