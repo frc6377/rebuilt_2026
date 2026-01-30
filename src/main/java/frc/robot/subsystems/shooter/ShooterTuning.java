@@ -1,10 +1,14 @@
 package frc.robot.subsystems.shooter;
 
+import static edu.wpi.first.units.Units.Amps;
+import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 
 import com.ctre.phoenix6.configs.Slot0Configs;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Current;
+import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class ShooterTuning {
@@ -12,16 +16,24 @@ public class ShooterTuning {
     private final InterpolatingDoubleTreeMap distanceToAngularVelocity = new InterpolatingDoubleTreeMap();
 
     // Keys for tuning - distance points
-    private final double[] distances = {2.0, 3.0, 4.0, 5.0, 6.0};
-    // Default angular velocities in rad/s for each distance
-    private final double[] defaultAngularVelocities = {240, 55.0, 60.0, 65.0, 70.0};
+    private final Distance[] distances = {Meters.of(2.0), Meters.of(3.0), Meters.of(4.0), Meters.of(5.0), Meters.of(6.0)
+    };
+    // Default angular velocities for each distance
+    private final AngularVelocity[] defaultAngularVelocities = {
+        RadiansPerSecond.of(1),
+        RadiansPerSecond.of(55.0),
+        RadiansPerSecond.of(60.0),
+        RadiansPerSecond.of(65.0),
+        RadiansPerSecond.of(70.0)
+    };
 
     public ShooterTuning() {
         // Initialize distance-to-velocity tuning
         for (int i = 0; i < distances.length; i++) {
-            distanceToAngularVelocity.put(distances[i], defaultAngularVelocities[i]);
+            distanceToAngularVelocity.put(distances[i].in(Meters), defaultAngularVelocities[i].in(RadiansPerSecond));
             SmartDashboard.setDefaultNumber(
-                    "ShooterTuning/AngularVelocity " + distances[i] + "m (rad_s)", defaultAngularVelocities[i]);
+                    "ShooterTuning/AngularVelocity " + distances[i].in(Meters) + "m (rad_s)",
+                    defaultAngularVelocities[i].in(RadiansPerSecond));
         }
 
         // Initialize PID/FF gains for real robot (defaults from ShooterConstants)
@@ -37,27 +49,29 @@ public class ShooterTuning {
         SmartDashboard.setDefaultNumber("ShooterTuning/Sim_kD", ShooterConstants.kSimD);
 
         // Initialize current limit (default from ShooterConstants)
-        SmartDashboard.setDefaultNumber("ShooterTuning/StatorCurrentLimit (A)", ShooterConstants.kStatorCurrentLimit);
+        SmartDashboard.setDefaultNumber(
+                "ShooterTuning/StatorCurrentLimit (A)", ShooterConstants.kStatorCurrentLimit.in(Amps));
     }
 
     /** Updates the distance-to-velocity map with the latest tunable values from the dashboard. */
     private void updateMap() {
         for (int i = 0; i < distances.length; i++) {
             double val = SmartDashboard.getNumber(
-                    "ShooterTuning/AngularVelocity " + distances[i] + "m (rad_s)", defaultAngularVelocities[i]);
-            distanceToAngularVelocity.put(distances[i], val);
+                    "ShooterTuning/AngularVelocity " + distances[i].in(Meters) + "m (rad_s)",
+                    defaultAngularVelocities[i].in(RadiansPerSecond));
+            distanceToAngularVelocity.put(distances[i].in(Meters), val);
         }
     }
 
     /**
      * Calculates the shooter angular velocity for a given distance.
      *
-     * @param distanceMeters The distance to the target in meters.
+     * @param distance The distance to the target.
      * @return The target angular velocity.
      */
-    public AngularVelocity getAngularVelocity(double distanceMeters) {
+    public AngularVelocity getAngularVelocity(Distance distance) {
         updateMap();
-        return RadiansPerSecond.of(distanceToAngularVelocity.get(distanceMeters));
+        return RadiansPerSecond.of(distanceToAngularVelocity.get(distance.in(Meters)));
     }
 
     /**
@@ -89,9 +103,10 @@ public class ShooterTuning {
         return SmartDashboard.getNumber("ShooterTuning/Sim_kD", ShooterConstants.kSimD);
     }
 
-    /** Gets the tunable stator current limit in Amps. */
-    public double getStatorCurrentLimit() {
-        return SmartDashboard.getNumber("ShooterTuning/StatorCurrentLimit (A)", ShooterConstants.kStatorCurrentLimit);
+    /** Gets the tunable stator current limit. */
+    public Current getStatorCurrentLimit() {
+        return Amps.of(SmartDashboard.getNumber(
+                "ShooterTuning/StatorCurrentLimit (A)", ShooterConstants.kStatorCurrentLimit.in(Amps)));
     }
 
     /**

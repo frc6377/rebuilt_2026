@@ -15,6 +15,7 @@ package frc.robot.subsystems.shooter;
 
 import com.ctre.phoenix6.configs.Slot0Configs;
 import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import org.littletonrobotics.junction.Logger;
@@ -81,10 +82,10 @@ public class Shooter extends SubsystemBase {
     /**
      * Shoot based on distance using the tuning map.
      *
-     * @param distanceMeters The distance to the target in meters.
+     * @param distance The distance to the target.
      */
-    public void shootAtDistance(double distanceMeters) {
-        AngularVelocity targetVelocity = tuning.getAngularVelocity(distanceMeters);
+    public void shootAtDistance(Distance distance) {
+        AngularVelocity targetVelocity = tuning.getAngularVelocity(distance);
         io.setVelocity(targetVelocity);
     }
 

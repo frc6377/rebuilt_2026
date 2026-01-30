@@ -2,6 +2,8 @@ package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Centimeters;
+import static edu.wpi.first.units.Units.KilogramSquareMeters;
+import static edu.wpi.first.units.Units.Percent;
 
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
@@ -10,7 +12,10 @@ import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.units.measure.Current;
+import edu.wpi.first.units.measure.Dimensionless;
 import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.units.measure.MomentOfInertia;
 
 public final class ShooterConstants {
     public static final InvertedValue kShooterOuttakeDirection = InvertedValue.Clockwise_Positive;
@@ -19,9 +24,9 @@ public final class ShooterConstants {
             new MotorOutputConfigs().withInverted(kShooterOuttakeDirection).withNeutralMode(kShooterNeutralMode);
 
     // Current limits
-    public static final double kStatorCurrentLimit = 80.0;
+    public static final Current kStatorCurrentLimit = Amps.of(80.0);
     public static final CurrentLimitsConfigs kShooterCurrentLimitsConfigs = new CurrentLimitsConfigs()
-            .withStatorCurrentLimit(Amps.of(kStatorCurrentLimit))
+            .withStatorCurrentLimit(kStatorCurrentLimit)
             .withStatorCurrentLimitEnable(false);
 
     // PID/FF gains for velocity control (Slot0) - Real Robot
@@ -30,9 +35,9 @@ public final class ShooterConstants {
     // kD: Derivative gain - output per unit of error derivative
     // kS: Static feedforward - output to overcome static friction
     // kV: Velocity feedforward - output per unit of requested velocity
-    public static final double kP = 8;
+    public static final double kP = 0.75;
     public static final double kI = 0.0;
-    public static final double kD = 0.1;
+    public static final double kD = 0;
     public static final double kS = 0.0;
     public static final double kV = 0.12;
 
@@ -51,9 +56,10 @@ public final class ShooterConstants {
             .withSlot0(kShooterGains)
             .withCurrentLimits(kShooterCurrentLimitsConfigs);
     public static final Distance kShooterWheelDiameter = Centimeters.of(10); // 10 cm diameter FIXME
-    public static final double kShooterEfficiency = 0.85; // 85% efficiency
+    public static final Dimensionless kShooterEfficiency = Percent.of(85); // 85% efficiency
+
     // Simulation Constants
-    public static final double kMOI = 0.01;
+    public static final MomentOfInertia kMOI = KilogramSquareMeters.of(0.01);
     public static final double kGearRatio = 1.0; // FIXME
     public static final int kMotorCount = 1;
 }

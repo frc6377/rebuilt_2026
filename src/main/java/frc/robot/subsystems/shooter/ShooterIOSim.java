@@ -14,6 +14,7 @@
 package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Amps;
+import static edu.wpi.first.units.Units.KilogramSquareMeters;
 import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.Volts;
@@ -31,7 +32,7 @@ public class ShooterIOSim implements ShooterIO {
     private final FlywheelSim flywheelSim = new FlywheelSim(
             LinearSystemId.createFlywheelSystem(
                     DCMotor.getFalcon500Foc(ShooterConstants.kMotorCount),
-                    ShooterConstants.kMOI,
+                    ShooterConstants.kMOI.in(KilogramSquareMeters),
                     ShooterConstants.kGearRatio),
             DCMotor.getFalcon500Foc(ShooterConstants.kMotorCount),
             ShooterConstants.kGearRatio);
