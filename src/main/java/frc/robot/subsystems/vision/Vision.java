@@ -20,14 +20,19 @@ import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.vision.VisionIO.PoseObservationType;
+import gg.questnav.questnav.PoseFrame;
+import gg.questnav.questnav.QuestNav;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
 
 public class Vision extends SubsystemBase {
@@ -35,6 +40,12 @@ public class Vision extends SubsystemBase {
     private final VisionIO[] io;
     private final VisionIOInputsAutoLogged[] inputs;
     private final Alert[] disconnectedAlerts;
+
+    // QuestNav fields
+    private final QuestNav questNav;
+    private Pose3d questPose;
+    private static final Transform3d ROBOT_TO_QUEST = new Transform3d(0.0, 0.0, 0.0, new Rotation3d());
+    private static final Matrix<N3, N1> QUESTNAV_STD_DEVS = VecBuilder.fill(0.02, 0.02, 0.035);
 
     public Vision(VisionConsumer consumer, VisionIO... io) {
         this.consumer = consumer;
@@ -52,6 +63,14 @@ public class Vision extends SubsystemBase {
             disconnectedAlerts[i] =
                     new Alert("Vision camera " + Integer.toString(i) + " is disconnected.", AlertType.kWarning);
         }
+
+        // Initialize QuestNav
+        questNav = new QuestNav();
+        questPose = new Pose3d();
+        questNav.setPose(questPose);
+
+        this.setQuestNavStartPose(this.getStartingPoseFromLimelight());
+
     }
 
     /**
@@ -61,6 +80,39 @@ public class Vision extends SubsystemBase {
      */
     public Rotation2d getTargetX(int cameraIndex) {
         return inputs[cameraIndex].latestTargetObservation.tx();
+    }
+
+    /**
+     * Gets the starting pose from the Limelight (camera index 0).
+     *
+     * @return The robot pose as a Pose3d, or null if no valid pose is available.
+     */
+    public Pose3d getStartingPoseFromLimelight() {
+        return getStartingPoseFromCamera(0);
+    }
+
+    /**
+     * Gets the starting pose from the specified camera's vision data.
+     *
+     * @param cameraIndex The index of the camera to use.
+     * @return The robot pose as a Pose2d, or null if no valid pose is available.
+     */
+    public Pose3d getStartingPoseFromCamera(int cameraIndex) {
+        if (cameraIndex >= inputs.length || !inputs[cameraIndex].connected) {
+            return null;
+        }
+
+        var observations = inputs[cameraIndex].poseObservations;
+        if (observations.length == 0) {
+            return null;
+        }
+
+        // Return the most recent pose observation with at least one tag
+        var latestObservation = observations[observations.length - 1];
+        if (latestObservation.tagCount() > 0) {
+            return latestObservation.pose();
+        }
+        return null;
     }
 
     @Override
@@ -170,6 +222,49 @@ public class Vision extends SubsystemBase {
         Logger.recordOutput(
                 "Vision/Summary/RobotPosesRejected",
                 allRobotPosesRejected.toArray(new Pose3d[allRobotPosesRejected.size()]));
+
+        // QuestNav periodic
+        questNav.commandPeriodic();
+        PoseFrame[] questFrames = questNav.getAllUnreadPoseFrames();
+        for (PoseFrame questFrame : questFrames) {
+            if (questFrame.isTracking()) {
+                questPose = questFrame.questPose3d();
+                double timestamp = questFrame.dataTimestamp();
+                Pose3d robotPose = questPose.transformBy(ROBOT_TO_QUEST.inverse());
+                consumer.accept(robotPose.toPose2d(), timestamp, QUESTNAV_STD_DEVS);
+            }
+        }
+
+        Logger.recordOutput("Vision/QuestNav/Connected", questNav.isConnected());
+        Logger.recordOutput("Vision/QuestNav/Pose", questPose);
+    }
+
+    /**
+     * Resets the QuestNav pose to the specified robot pose.
+     *
+     * @param robotPose The robot pose to set.
+     */
+    public void resetQuestNavPose(Pose3d robotPose) {
+        Pose3d newQuestPose = robotPose.transformBy(ROBOT_TO_QUEST);
+        questNav.setPose(newQuestPose);
+    }
+
+    /**
+     * Sets the starting pose for QuestNav using the provided robot pose.
+     *
+     * @param pose The starting robot pose as a Pose3d.
+     */
+    public void setQuestNavStartPose(Pose3d pose) {
+        questNav.setPose(pose);
+        }
+
+    /**
+     * Returns a supplier for the current robot pose from QuestNav as a Pose3d.
+     *
+     * @return A supplier that provides the current robot pose in 3D field coordinates.
+     */
+    public Supplier<Pose2d> getQuestNavPoseSupplier() {
+        return () -> questPose.transformBy(ROBOT_TO_QUEST.inverse()).toPose2d();
     }
 
     @FunctionalInterface

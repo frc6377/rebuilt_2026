@@ -113,6 +113,8 @@ public class RobotContainer {
                 break;
         }
 
+        drive.setPoseSupplier(vision.getQuestNavPoseSupplier());
+
         // Set up auto routines
         autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
 

@@ -47,6 +47,10 @@ public class DriveCommands {
     private static final double WHEEL_RADIUS_MAX_VELOCITY = 0.25; // Rad/Sec
     private static final double WHEEL_RADIUS_RAMP_RATE = 0.05; // Rad/Sec^2
 
+    // QuestNav 5m test constants
+    private static final double QUESTNAV_TEST_DISTANCE = 5.0; // meters
+    private static final double QUESTNAV_TEST_VELOCITY = 1.0; // m/s
+
     private DriveCommands() {}
 
     private static Translation2d getLinearVelocityFromJoysticks(double x, double y) {
@@ -265,3 +269,4 @@ public class DriveCommands {
         double gyroDelta = 0.0;
     }
 }
+  
