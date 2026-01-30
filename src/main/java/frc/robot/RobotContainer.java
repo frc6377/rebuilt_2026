@@ -49,6 +49,7 @@ public class RobotContainer {
     private final Drive drive;
     private final Vision vision;
     private final Shooter shooter;
+    private final Hood hood;
 
     private SwerveDriveSimulation driveSimulation = null;
 
@@ -77,6 +78,10 @@ public class RobotContainer {
                 var shooterIO = new ShooterIOKrakenX60();
                 this.shooter = new Shooter(shooterIO);
                 shooterIO.setShooter(shooter);
+                
+                var hoodIO = new frc.robot.subsystems.hood.HoodIOKrakenX60();
+                this.hood = new frc.robot.subsystems.hood.Hood(hoodIO);
+                hoodIO.setHood(hood);
 
                 break;
             case SIM:
@@ -102,6 +107,7 @@ public class RobotContainer {
                         new VisionIOPhotonVisionSim(
                                 camera1Name, robotToCamera1, driveSimulation::getSimulatedDriveTrainPose));
                 shooter = new Shooter(new ShooterIOSim());
+                hood = new frc.robot.subsystems.hood.Hood(new frc.robot.subsystems.hood.HoodIOSim());
 
                 break;
 
@@ -116,6 +122,7 @@ public class RobotContainer {
                         (pose) -> {});
                 vision = new Vision(drive, new VisionIO() {}, new VisionIO() {});
                 shooter = new Shooter(new ShooterIO() {});
+                hood = new frc.robot.subsystems.hood.Hood(new frc.robot.subsystems.hood.HoodIO() {});
 
                 break;
         }
@@ -172,8 +179,8 @@ public class RobotContainer {
                 .onFalse(shooter.stopCommand());
 
         // Bumpers: Adjust hood angle (example presets)
-        controller.leftBumper().onTrue(shooter.setHoodAngleCommand(20.0)); // Low shot
-        controller.rightBumper().onTrue(shooter.setHoodAngleCommand(35.0)); // High shot
+        controller.leftBumper().onTrue(hood.setAngleCommand(20.0)); // Low shot
+        controller.rightBumper().onTrue(hood.setAngleCommand(35.0)); // High shot
 
         // Example Coral Placement Code
         // TODO: delete these code for your own project
