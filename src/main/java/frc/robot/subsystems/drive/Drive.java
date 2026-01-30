@@ -151,7 +151,7 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
 
         // Configure AutoBuilder for PathPlanner
         AutoBuilder.configure(
-                poseSupplier,
+                () -> poseSupplier.get(),
                 this::setPose,
                 this::getChassisSpeeds,
                 this::runVelocity,

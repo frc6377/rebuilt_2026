@@ -44,7 +44,6 @@ public class Vision extends SubsystemBase {
     // QuestNav fields
     private final QuestNav questNav;
     private Pose3d questPose;
-    private Pose2d initialPose;
     private static final Transform3d ROBOT_TO_QUEST = new Transform3d(0.0, 0.0, 0.0, new Rotation3d());
     private static final Matrix<N3, N1> QUESTNAV_STD_DEVS = VecBuilder.fill(0.02, 0.02, 0.035);
 
@@ -69,6 +68,9 @@ public class Vision extends SubsystemBase {
         questNav = new QuestNav();
         questPose = new Pose3d();
         questNav.setPose(questPose);
+
+        this.setQuestNavStartPose(this.getStartingPoseFromLimelight());
+
     }
 
     /**
@@ -83,9 +85,9 @@ public class Vision extends SubsystemBase {
     /**
      * Gets the starting pose from the Limelight (camera index 0).
      *
-     * @return The robot pose as a Pose2d, or null if no valid pose is available.
+     * @return The robot pose as a Pose3d, or null if no valid pose is available.
      */
-    public Pose2d getStartingPoseFromLimelight() {
+    public Pose3d getStartingPoseFromLimelight() {
         return getStartingPoseFromCamera(0);
     }
 
@@ -95,7 +97,7 @@ public class Vision extends SubsystemBase {
      * @param cameraIndex The index of the camera to use.
      * @return The robot pose as a Pose2d, or null if no valid pose is available.
      */
-    public Pose2d getStartingPoseFromCamera(int cameraIndex) {
+    public Pose3d getStartingPoseFromCamera(int cameraIndex) {
         if (cameraIndex >= inputs.length || !inputs[cameraIndex].connected) {
             return null;
         }
@@ -108,7 +110,7 @@ public class Vision extends SubsystemBase {
         // Return the most recent pose observation with at least one tag
         var latestObservation = observations[observations.length - 1];
         if (latestObservation.tagCount() > 0) {
-            return latestObservation.pose().toPose2d();
+            return latestObservation.pose();
         }
         return null;
     }
@@ -248,18 +250,18 @@ public class Vision extends SubsystemBase {
     }
 
     /**
-     * Sets the initial pose for QuestNav.
+     * Sets the starting pose for QuestNav using the provided robot pose.
      *
-     * @param initialPose The initial pose to set.
+     * @param pose The starting robot pose as a Pose3d.
      */
-    public void setQuestNavStartPose(Pose2d initialPose) {
-        this.initialPose = initialPose;
-    }
+    public void setQuestNavStartPose(Pose3d pose) {
+        questNav.setPose(pose);
+        }
 
     /**
-     * Returns a supplier for the current robot pose from QuestNav as a Pose2d.
+     * Returns a supplier for the current robot pose from QuestNav as a Pose3d.
      *
-     * @return A supplier that provides the current robot pose in 2D field coordinates.
+     * @return A supplier that provides the current robot pose in 3D field coordinates.
      */
     public Supplier<Pose2d> getQuestNavPoseSupplier() {
         return () -> questPose.transformBy(ROBOT_TO_QUEST.inverse()).toPose2d();
