@@ -16,9 +16,9 @@ public class Climb extends SubsystemBase {
     }
 
     public Command climbUp() {
-        return Commands.runEnd(
+        return Commands.startEnd(
                 () -> {
-                    climberIO.set(1);
+                    climberIO.set(ClimbConstants.kClimbSpeed);
                 },
                 () -> {
                     climberIO.set(0);
@@ -26,9 +26,9 @@ public class Climb extends SubsystemBase {
     }
 
     public Command climbDown() {
-        return Commands.runEnd(
+        return Commands.startEnd(
                 () -> {
-                    climberIO.set(-1);
+                    climberIO.set(-ClimbConstants.kClimbSpeed);
                 },
                 () -> {
                     climberIO.set(0);
@@ -36,11 +36,11 @@ public class Climb extends SubsystemBase {
     }
 
     public Command extendUp() {
-        return Commands.run(() -> {});
+        return Commands.none();
     }
 
     public Command extendDown() {
-        return Commands.run(() -> {});
+        return Commands.none();
     }
 
     @Override

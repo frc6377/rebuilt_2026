@@ -31,6 +31,7 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.commands.DriveCommands;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.climb.Climb;
+import frc.robot.subsystems.climb.ClimberIO;
 import frc.robot.subsystems.climb.ClimberIOReal;
 import frc.robot.subsystems.climb.ClimberIOSim;
 import frc.robot.subsystems.drive.*;
@@ -114,7 +115,7 @@ public class RobotContainer {
                         new ModuleIO() {},
                         (pose) -> {});
                 vision = new Vision(drive, new VisionIO() {}, new VisionIO() {});
-                climb = new Climb(new ClimberIOReal());
+                climb = new Climb(new ClimberIO() {});
                 break;
         }
 

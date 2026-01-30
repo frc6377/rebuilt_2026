@@ -41,4 +41,5 @@ public class ClimbConstants {
     public static final Distance kClimbMaxHeight = Inches.of(30); // inches
     public static final boolean kSimulateGravity = true;
     public static final Distance kStartHeight = Inches.zero();
+    public static final double kClimbSpeed = 0.5;
 }
