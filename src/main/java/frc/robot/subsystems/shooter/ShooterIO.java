@@ -32,12 +32,6 @@ public interface ShooterIO {
         public double rightFlywheelAppliedVolts = 0.0;
         public double rightFlywheelCurrentAmps = 0.0;
         public double rightFlywheelTempCelsius = 0.0;
-
-        // Hood angle control
-        public double hoodAngleDegrees = 0.0;
-        public double hoodAppliedVolts = 0.0;
-        public double hoodCurrentAmps = 0.0;
-        public double hoodTempCelsius = 0.0;
     }
 
     /** Updates the set of loggable inputs. */
@@ -49,9 +43,6 @@ public interface ShooterIO {
     /** Set right flywheel velocity */
     default void setRightFlywheelVelocity(AngularVelocity velocity) {}
 
-    /** Set hood angle */
-    default void setHoodAngle(Angle angle) {}
-
-    /** Stop all motors */
+    /** Stop flywheel motors */
     default void stop() {}
 }

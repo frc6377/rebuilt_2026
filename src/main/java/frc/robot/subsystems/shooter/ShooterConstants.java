@@ -21,16 +21,9 @@ public class ShooterConstants {
     // CAN IDs
     public static final int leftFlywheelMotorID = 20; // Kraken X60
     public static final int rightFlywheelMotorID = 21; // Kraken X60
-    public static final int hoodMotorID = 22; // Kraken x44
 
     // CAN bus name
     public static final String canBusName = "rio";
-
-    // Feature flags
-    public static final boolean enableHood = true; // Set to false to disable hood motor initialization
-
-    // Gear ratios
-    public static final double hoodGearRatio = 100.0; // Adjust based on actual mechanism
 
     // Default PID constants for flywheel (velocity control)
     public static final double defaultFlywheelKP = 0.1;
@@ -39,19 +32,11 @@ public class ShooterConstants {
     public static final double defaultFlywheelKV = 0.12;
     public static final double defaultFlywheelKS = 0.0;
 
-    // Default PID constants for hood (position control)
-    public static final double defaultHoodKP = 10.0;
-    public static final double defaultHoodKI = 0.0;
-    public static final double defaultHoodKD = 0.5;
-
     // Current limits
     public static final Current flywheelCurrentLimit = Amps.of(60.0);
-    public static final Current hoodCurrentLimit = Amps.of(40.0);
 
     // Operational limits
     public static final AngularVelocity maxFlywheelVelocity = RotationsPerSecond.of(100.0); // 6000 RPM
-    public static final Angle minHoodAngle = Degrees.of(0.0);
-    public static final Angle maxHoodAngle = Degrees.of(45.0);
 
     // Limp mode thresholds
     public static final AngularVelocity flywheelVelocityTolerance =
