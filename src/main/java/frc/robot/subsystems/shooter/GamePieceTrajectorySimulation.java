@@ -36,28 +36,6 @@ import org.ironmaple.simulation.gamepieces.GamePieceProjectile;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
-/**
- * Simulates game piece trajectory for the shooter using analytical physics calculations. Handles launching game pieces
- * with realistic projectile motion based on flywheel velocity and hood angle.
- *
- * <p>This implementation uses closed-form kinematic equations for efficient, instantaneous trajectory calculation
- * without iterative simulation. The trajectory is computed analytically using:
- *
- * <ul>
- *   <li>Projectile motion equations: x(t) = x₀ + vₓt, y(t) = y₀ + vᵧt, z(t) = z₀ + vᵤt - ½gt²
- *   <li>Quadratic formula for time-of-flight calculation
- *   <li>Robot velocity contribution to initial projectile velocity
- * </ul>
- *
- * <p>The simulation accounts for:
- * 
- * <ul>
- *   <li>Flywheel velocity to linear launch speed conversion
- *   <li>Hood angle for launch trajectory
- *   <li>Robot chassis velocity contribution to projectile velocity
- *   <li>Projectile physics (gravity, no air drag)
- * </ul>
- */
 public class GamePieceTrajectorySimulation {
     // Physics constants
     private static final double GRAVITY = 11.0; // Maple-sim adjusted gravity (m/s²)
@@ -75,265 +53,265 @@ public class GamePieceTrajectorySimulation {
      * </ul>
      */
     public static final GamePieceOnFieldSimulation.GamePieceInfo FUEL_INFO =
-            new GamePieceOnFieldSimulation.GamePieceInfo(
-                    "Fuel", // Game piece type name
-                    new Circle(0.075), // Radius: 5.91"/2 = 2.955" = 0.075m
-                    Inches.of(5.91), // Height (diameter for a sphere)
-                    Kilograms.of(0.215), // Average mass: (0.203 + 0.227) / 2
-                    2.0, // Linear damping (foam has some air resistance)
-                    3.0, // Angular damping
-                    0.6); // Coefficient of restitution (foam bounces moderately)
-
-    // Game piece configuration
-    private final GamePieceOnFieldSimulation.GamePieceInfo gamePieceInfo;
-
-    // Robot state suppliers
-    private final Supplier<Translation2d> robotPositionSupplier;
-    private final Supplier<Rotation2d> robotRotationSupplier;
-    private final Supplier<ChassisSpeeds> chassisSpeedsSupplier;
-
-    // Shooter state suppliers
-    private final Supplier<Double> flywheelVelocityRPMSupplier;
-    private final Supplier<Double> hoodAngleDegreesSupplier;
-
-    // Indexer state for automatic firing
-    private BooleanSupplier indexerRunningSupplier = () -> false;
-    private final Timer autoFireTimer = new Timer();
-    private double autoFireIntervalSeconds = 1.0;
-    private boolean autoFireEnabled = false;
-    private int gamePiecesLaunched = 0;
-
-    // Ball count / hopper simulation
-    private final LoggedNetworkNumber ballsInHopper =
-            new LoggedNetworkNumber("Shooter/Sim/BallsInHopper", 5); // Default to 5 balls
-    private boolean hopperEmptyStopsIndexer = true; // Whether to stop indexer when hopper is empty
-
-    // Shooter configuration (tunable)
-    private final LoggedNetworkNumber shooterHeightMeters;
-    private final LoggedNetworkNumber shooterOffsetXMeters;
-    private final LoggedNetworkNumber shooterOffsetYMeters;
-    private final LoggedNetworkNumber flywheelRadiusMeters;
-    private final LoggedNetworkNumber launchEfficiency; // Account for energy loss (0.0 - 1.0)
-
-    // Trajectory visualization
-    private Pose3d[] lastTrajectory = new Pose3d[0];
-
-    /**
-     * Creates a new GamePieceTrajectorySimulation using 2017 FUEL game pieces.
-     *
-     * @param driveSimulation The swerve drive simulation for robot state
-     * @param flywheelVelocityRPMSupplier Supplier for current flywheel velocity in RPM
-     * @param hoodAngleDegreesSupplier Supplier for current hood angle in degrees
-     */
-    public GamePieceTrajectorySimulation(
+    new GamePieceOnFieldSimulation.GamePieceInfo(
+        "Fuel", // Game piece type name
+        new Circle(0.075), // Radius: 5.91"/2 = 2.955" = 0.075m
+        Inches.of(5.91), // Height (diameter for a sphere)
+        Kilograms.of(0.215), // Average mass: (0.203 + 0.227) / 2
+        2.0, // Linear damping (foam has some air resistance)
+        3.0, // Angular damping
+        0.6); // Coefficient of restitution (foam bounces moderately)
+        
+        // Game piece configuration
+        private final GamePieceOnFieldSimulation.GamePieceInfo gamePieceInfo;
+        
+        // Robot state suppliers
+        private final Supplier<Translation2d> robotPositionSupplier;
+        private final Supplier<Rotation2d> robotRotationSupplier;
+        private final Supplier<ChassisSpeeds> chassisSpeedsSupplier;
+        
+        // Shooter state suppliers
+        private final Supplier<Double> flywheelVelocityRPMSupplier;
+        private final Supplier<Double> hoodAngleDegreesSupplier;
+        
+        // Indexer state for automatic firing
+        private BooleanSupplier indexerRunningSupplier = () -> false;
+        private final Timer autoFireTimer = new Timer();
+        private double autoFireIntervalSeconds = 1.0;
+        private boolean autoFireEnabled = false;
+        private int gamePiecesLaunched = 0;
+        
+        // Ball count / hopper simulation
+        private final LoggedNetworkNumber ballsInHopper =
+        new LoggedNetworkNumber("Shooter/Sim/BallsInHopper", 5); // Default to 5 balls
+        private boolean hopperEmptyStopsIndexer = true; // Whether to stop indexer when hopper is empty
+        
+        // Shooter configuration (tunable)
+        private final LoggedNetworkNumber shooterHeightMeters;
+        private final LoggedNetworkNumber shooterOffsetXMeters;
+        private final LoggedNetworkNumber shooterOffsetYMeters;
+        private final LoggedNetworkNumber flywheelRadiusMeters;
+        private final LoggedNetworkNumber launchEfficiency; // Account for energy loss (0.0 - 1.0)
+        
+        // Trajectory visualization
+        private Pose3d[] lastTrajectory = new Pose3d[0];
+        
+        /**
+         * Creates a new GamePieceTrajectorySimulation using 2017 FUEL game pieces.
+         *
+         * @param driveSimulation The swerve drive simulation for robot state
+         * @param flywheelVelocityRPMSupplier Supplier for current flywheel velocity in RPM
+         * @param hoodAngleDegreesSupplier Supplier for current hood angle in degrees
+         */
+        public GamePieceTrajectorySimulation(
             SwerveDriveSimulation driveSimulation,
             Supplier<Double> flywheelVelocityRPMSupplier,
             Supplier<Double> hoodAngleDegreesSupplier) {
-        this(FUEL_INFO, driveSimulation, flywheelVelocityRPMSupplier, hoodAngleDegreesSupplier);
-    }
-
-    /**
-     * Creates a new GamePieceTrajectorySimulation.
-     *
-     * @param gamePieceInfo Info about the game piece being launched (size, mass, etc.)
-     * @param driveSimulation The swerve drive simulation for robot state
-     * @param flywheelVelocityRPMSupplier Supplier for current flywheel velocity in RPM
-     * @param hoodAngleDegreesSupplier Supplier for current hood angle in degrees
-     */
-    public GamePieceTrajectorySimulation(
-            GamePieceOnFieldSimulation.GamePieceInfo gamePieceInfo,
-            SwerveDriveSimulation driveSimulation,
-            Supplier<Double> flywheelVelocityRPMSupplier,
-            Supplier<Double> hoodAngleDegreesSupplier) {
-        this(
-                gamePieceInfo,
-                () -> driveSimulation.getSimulatedDriveTrainPose().getTranslation(),
-                () -> driveSimulation.getSimulatedDriveTrainPose().getRotation(),
-                driveSimulation::getDriveTrainSimulatedChassisSpeedsFieldRelative,
-                flywheelVelocityRPMSupplier,
-                hoodAngleDegreesSupplier);
-    }
-
-    /**
-     * Creates a new GamePieceTrajectorySimulation with custom suppliers using 2017 FUEL game pieces.
-     *
-     * @param robotPositionSupplier Supplier for robot position on field
-     * @param robotRotationSupplier Supplier for robot rotation
-     * @param chassisSpeedsSupplier Supplier for chassis speeds (field-relative)
-     * @param flywheelVelocityRPMSupplier Supplier for flywheel velocity in RPM
-     * @param hoodAngleDegreesSupplier Supplier for hood angle in degrees
-     */
-    public GamePieceTrajectorySimulation(
-            Supplier<Translation2d> robotPositionSupplier,
-            Supplier<Rotation2d> robotRotationSupplier,
-            Supplier<ChassisSpeeds> chassisSpeedsSupplier,
-            Supplier<Double> flywheelVelocityRPMSupplier,
-            Supplier<Double> hoodAngleDegreesSupplier) {
-        this(
-                FUEL_INFO,
-                robotPositionSupplier,
-                robotRotationSupplier,
-                chassisSpeedsSupplier,
-                flywheelVelocityRPMSupplier,
-                hoodAngleDegreesSupplier);
-    }
-
-    /**
-     * Creates a new GamePieceTrajectorySimulation with custom suppliers.
-     *
-     * @param gamePieceInfo Info about the game piece being launched
-     * @param robotPositionSupplier Supplier for robot position on field
-     * @param robotRotationSupplier Supplier for robot rotation
-     * @param chassisSpeedsSupplier Supplier for chassis speeds (field-relative)
-     * @param flywheelVelocityRPMSupplier Supplier for flywheel velocity in RPM
-     * @param hoodAngleDegreesSupplier Supplier for hood angle in degrees
-     */
-    public GamePieceTrajectorySimulation(
-            GamePieceOnFieldSimulation.GamePieceInfo gamePieceInfo,
-            Supplier<Translation2d> robotPositionSupplier,
-            Supplier<Rotation2d> robotRotationSupplier,
-            Supplier<ChassisSpeeds> chassisSpeedsSupplier,
-            Supplier<Double> flywheelVelocityRPMSupplier,
-            Supplier<Double> hoodAngleDegreesSupplier) {
-        this.gamePieceInfo = gamePieceInfo;
-        this.robotPositionSupplier = robotPositionSupplier;
-        this.robotRotationSupplier = robotRotationSupplier;
-        this.chassisSpeedsSupplier = chassisSpeedsSupplier;
-        this.flywheelVelocityRPMSupplier = flywheelVelocityRPMSupplier;
-        this.hoodAngleDegreesSupplier = hoodAngleDegreesSupplier;
-
-        // Default shooter configuration (tunable via NetworkTables)
-        this.shooterHeightMeters = new LoggedNetworkNumber("Shooter/Sim/HeightMeters", 0.5);
-        this.shooterOffsetXMeters = new LoggedNetworkNumber("Shooter/Sim/OffsetXMeters", 0.3);
-        this.shooterOffsetYMeters = new LoggedNetworkNumber("Shooter/Sim/OffsetYMeters", 0.0);
-        this.flywheelRadiusMeters = new LoggedNetworkNumber("Shooter/Sim/FlywheelRadiusMeters", 0.05);
-        this.launchEfficiency = new LoggedNetworkNumber("Shooter/Sim/LaunchEfficiency", 0.85);
-    }
-
-    /**
-     * Calculates the linear launch velocity from flywheel RPM.
-     *
-     * @param flywheelRPM Flywheel velocity in RPM
-     * @return Launch velocity in meters per second
-     */
-    public double calculateLaunchVelocityMPS(double flywheelRPM) {
-        // Convert RPM to rad/s: RPM * 2π / 60
-        double angularVelocityRadPerSec = flywheelRPM * 2.0 * Math.PI / 60.0;
-
-        // Linear velocity = angular velocity * radius * efficiency
-        return angularVelocityRadPerSec * flywheelRadiusMeters.get() * launchEfficiency.get();
-    }
-
-    /**
-     * Gets the current calculated launch velocity based on flywheel state.
-     *
-     * @return Launch velocity in meters per second
-     */
-    public double getCurrentLaunchVelocityMPS() {
-        return calculateLaunchVelocityMPS(flywheelVelocityRPMSupplier.get());
-    }
-
-    /**
-     * Gets the shooter position offset from robot center (in robot frame).
-     *
-     * @return Translation2d representing shooter offset
-     */
-    public Translation2d getShooterOffset() {
-        return new Translation2d(shooterOffsetXMeters.get(), shooterOffsetYMeters.get());
-    }
-
-    /**
-     * Gets the shooter height from ground.
-     *
-     * @return Shooter height in meters
-     */
-    public Distance getShooterHeight() {
-        return Meters.of(shooterHeightMeters.get());
-    }
-
-    /**
-     * Gets the current hood angle.
-     *
-     * @return Hood angle
-     */
-    public Angle getHoodAngle() {
-        return Degrees.of(hoodAngleDegreesSupplier.get());
-    }
-
-    /**
-     * Creates and launches a game piece projectile based on current shooter state.
-     *
-     * @return The launched GamePieceProjectile
-     */
-    public GamePieceProjectile launchGamePiece() {
-        Translation2d robotPosition = robotPositionSupplier.get();
-        Rotation2d robotRotation = robotRotationSupplier.get();
-        ChassisSpeeds chassisSpeeds = chassisSpeedsSupplier.get();
-
-        double launchVelocityMPS = getCurrentLaunchVelocityMPS();
-        Distance height = getShooterHeight();
-        Angle hoodAngle = getHoodAngle();
-
-        GamePieceProjectile projectile = new GamePieceProjectile(
-                gamePieceInfo,
-                robotPosition,
-                getShooterOffset(),
-                chassisSpeeds,
-                robotRotation,
-                height,
-                MetersPerSecond.of(launchVelocityMPS),
-                hoodAngle);
-
-        // Configure trajectory callback for visualization
-        projectile.withProjectileTrajectoryDisplayCallBack(trajectory -> {
-            lastTrajectory = trajectory.toArray(new Pose3d[0]);
-            Logger.recordOutput("Shooter/Sim/Trajectory", lastTrajectory);
-        });
-
-        // Configure to become game piece on field after touching ground
-        projectile.enableBecomesGamePieceOnFieldAfterTouchGround();
-
-        // Add to simulation arena and launch
-        SimulatedArena.getInstance().addGamePieceProjectile(projectile);
-
-        // Log launch parameters
-        Logger.recordOutput("Shooter/Sim/LaunchVelocityMPS", launchVelocityMPS);
-        Logger.recordOutput("Shooter/Sim/LaunchAngleDegrees", hoodAngle.in(Degrees));
-        Logger.recordOutput("Shooter/Sim/LaunchHeightMeters", height.in(Meters));
-        Logger.recordOutput(
-                "Shooter/Sim/LaunchPosition",
-                new Pose2d(robotPosition.plus(getShooterOffset().rotateBy(robotRotation)), robotRotation));
-
-        return projectile;
-    }
-
-    /**
-     * Creates a game piece projectile with custom velocity override.
-     *
-     * @param launchVelocityMPS Launch velocity in meters per second
-     * @return The launched GamePieceProjectile
-     */
-    public GamePieceProjectile launchGamePiece(double launchVelocityMPS) {
-        Translation2d robotPosition = robotPositionSupplier.get();
-        Rotation2d robotRotation = robotRotationSupplier.get();
-        ChassisSpeeds chassisSpeeds = chassisSpeedsSupplier.get();
-
-        Distance height = getShooterHeight();
-        Angle hoodAngle = getHoodAngle();
-
-        GamePieceProjectile projectile = new GamePieceProjectile(
-                gamePieceInfo,
-                robotPosition,
-                getShooterOffset(),
-                chassisSpeeds,
-                robotRotation,
-                height,
-                MetersPerSecond.of(launchVelocityMPS),
-                hoodAngle);
-
-        projectile
-                .withProjectileTrajectoryDisplayCallBack(trajectory -> {
-                    lastTrajectory = trajectory.toArray(new Pose3d[0]);
+                this(FUEL_INFO, driveSimulation, flywheelVelocityRPMSupplier, hoodAngleDegreesSupplier);
+            }
+            
+            /**
+             * Creates a new GamePieceTrajectorySimulation.
+             *
+             * @param gamePieceInfo Info about the game piece being launched (size, mass, etc.)
+             * @param driveSimulation The swerve drive simulation for robot state
+             * @param flywheelVelocityRPMSupplier Supplier for current flywheel velocity in RPM
+             * @param hoodAngleDegreesSupplier Supplier for current hood angle in degrees
+             */
+            public GamePieceTrajectorySimulation(
+                GamePieceOnFieldSimulation.GamePieceInfo gamePieceInfo,
+                SwerveDriveSimulation driveSimulation,
+                Supplier<Double> flywheelVelocityRPMSupplier,
+                Supplier<Double> hoodAngleDegreesSupplier) {
+                    this(
+                        gamePieceInfo,
+                        () -> driveSimulation.getSimulatedDriveTrainPose().getTranslation(),
+                        () -> driveSimulation.getSimulatedDriveTrainPose().getRotation(),
+                        driveSimulation::getDriveTrainSimulatedChassisSpeedsFieldRelative,
+                        flywheelVelocityRPMSupplier,
+                        hoodAngleDegreesSupplier);
+                    }
+                    
+                    /**
+                     * Creates a new GamePieceTrajectorySimulation with custom suppliers using 2017 FUEL game pieces.
+                     *
+                     * @param robotPositionSupplier Supplier for robot position on field
+                     * @param robotRotationSupplier Supplier for robot rotation
+                     * @param chassisSpeedsSupplier Supplier for chassis speeds (field-relative)
+                     * @param flywheelVelocityRPMSupplier Supplier for flywheel velocity in RPM
+                     * @param hoodAngleDegreesSupplier Supplier for hood angle in degrees
+                     */
+                    public GamePieceTrajectorySimulation(
+                        Supplier<Translation2d> robotPositionSupplier,
+                        Supplier<Rotation2d> robotRotationSupplier,
+                        Supplier<ChassisSpeeds> chassisSpeedsSupplier,
+                        Supplier<Double> flywheelVelocityRPMSupplier,
+                        Supplier<Double> hoodAngleDegreesSupplier) {
+                            this(
+                                FUEL_INFO,
+                                robotPositionSupplier,
+                                robotRotationSupplier,
+                                chassisSpeedsSupplier,
+                                flywheelVelocityRPMSupplier,
+                                hoodAngleDegreesSupplier);
+                            }
+                            
+                            /**
+                             * Creates a new GamePieceTrajectorySimulation with custom suppliers.
+                             *
+                             * @param gamePieceInfo Info about the game piece being launched
+                             * @param robotPositionSupplier Supplier for robot position on field
+                             * @param robotRotationSupplier Supplier for robot rotation
+                             * @param chassisSpeedsSupplier Supplier for chassis speeds (field-relative)
+                             * @param flywheelVelocityRPMSupplier Supplier for flywheel velocity in RPM
+                             * @param hoodAngleDegreesSupplier Supplier for hood angle in degrees
+                             */
+                            public GamePieceTrajectorySimulation(
+                                GamePieceOnFieldSimulation.GamePieceInfo gamePieceInfo,
+                                Supplier<Translation2d> robotPositionSupplier,
+                                Supplier<Rotation2d> robotRotationSupplier,
+                                Supplier<ChassisSpeeds> chassisSpeedsSupplier,
+                                Supplier<Double> flywheelVelocityRPMSupplier,
+                                Supplier<Double> hoodAngleDegreesSupplier) {
+                                    this.gamePieceInfo = gamePieceInfo;
+                                    this.robotPositionSupplier = robotPositionSupplier;
+                                    this.robotRotationSupplier = robotRotationSupplier;
+                                    this.chassisSpeedsSupplier = chassisSpeedsSupplier;
+                                    this.flywheelVelocityRPMSupplier = flywheelVelocityRPMSupplier;
+                                    this.hoodAngleDegreesSupplier = hoodAngleDegreesSupplier;
+                                    
+                                    // Default shooter configuration (tunable via NetworkTables)
+                                    this.shooterHeightMeters = new LoggedNetworkNumber("Shooter/Sim/HeightMeters", 0.5);
+                                    this.shooterOffsetXMeters = new LoggedNetworkNumber("Shooter/Sim/OffsetXMeters", 0.3);
+                                    this.shooterOffsetYMeters = new LoggedNetworkNumber("Shooter/Sim/OffsetYMeters", 0.0);
+                                    this.flywheelRadiusMeters = new LoggedNetworkNumber("Shooter/Sim/FlywheelRadiusMeters", 0.05);
+                                    this.launchEfficiency = new LoggedNetworkNumber("Shooter/Sim/LaunchEfficiency", 0.85);
+                                }
+                                
+                                /**
+                                 * Calculates the linear launch velocity from flywheel RPM.
+                                 *
+                                 * @param flywheelRPM Flywheel velocity in RPM
+                                 * @return Launch velocity in meters per second
+                                 */
+                                public double calculateLaunchVelocityMPS(double flywheelRPM) {
+                                    // Convert RPM to rad/s: RPM * 2π / 60
+                                    double angularVelocityRadPerSec = flywheelRPM * 2.0 * Math.PI / 60.0;
+                                    
+                                    // Linear velocity = angular velocity * radius * efficiency
+                                    return angularVelocityRadPerSec * flywheelRadiusMeters.get() * launchEfficiency.get();
+                                }
+                                
+                                /**
+                                 * Gets the current calculated launch velocity based on flywheel state.
+                                 *
+                                 * @return Launch velocity in meters per second
+                                 */
+                                public double getCurrentLaunchVelocityMPS() {
+                                    return calculateLaunchVelocityMPS(flywheelVelocityRPMSupplier.get());
+                                }
+                                
+                                /**
+                                 * Gets the shooter position offset from robot center (in robot frame).
+                                 *
+                                 * @return Translation2d representing shooter offset
+                                 */
+                                public Translation2d getShooterOffset() {
+                                    return new Translation2d(shooterOffsetXMeters.get(), shooterOffsetYMeters.get());
+                                }
+                                
+                                /**
+                                 * Gets the shooter height from ground.
+                                 *
+                                 * @return Shooter height in meters
+                                 */
+                                public Distance getShooterHeight() {
+                                    return Meters.of(shooterHeightMeters.get());
+                                }
+                                
+                                /**
+                                 * Gets the current hood angle.
+                                 *
+                                 * @return Hood angle
+                                 */
+                                public Angle getHoodAngle() {
+                                    return Degrees.of(hoodAngleDegreesSupplier.get());
+                                }
+                                
+                                /**
+                                 * Creates and launches a game piece projectile based on current shooter state.
+                                 *
+                                 * @return The launched GamePieceProjectile
+                                 */
+                                public GamePieceProjectile launchGamePiece() {
+                                    Translation2d robotPosition = robotPositionSupplier.get();
+                                    Rotation2d robotRotation = robotRotationSupplier.get();
+                                    ChassisSpeeds chassisSpeeds = chassisSpeedsSupplier.get();
+                                    
+                                    double launchVelocityMPS = getCurrentLaunchVelocityMPS();
+                                    Distance height = getShooterHeight();
+                                    Angle hoodAngle = getHoodAngle();
+                                    
+                                    GamePieceProjectile projectile = new GamePieceProjectile(
+                                        gamePieceInfo,
+                                        robotPosition,
+                                        getShooterOffset(),
+                                        chassisSpeeds,
+                                        robotRotation,
+                                        height,
+                                        MetersPerSecond.of(launchVelocityMPS),
+                                        hoodAngle);
+                                        
+                                        // Configure trajectory callback for visualization
+                                        projectile.withProjectileTrajectoryDisplayCallBack(trajectory -> {
+                                            lastTrajectory = trajectory.toArray(new Pose3d[0]);
+                                            Logger.recordOutput("Shooter/Sim/Trajectory", lastTrajectory);
+                                        });
+                                        
+                                        // Configure to become game piece on field after touching ground
+                                        projectile.enableBecomesGamePieceOnFieldAfterTouchGround();
+                                        
+                                        // Add to simulation arena and launch
+                                        SimulatedArena.getInstance().addGamePieceProjectile(projectile);
+                                        
+                                        // Log launch parameters
+                                        Logger.recordOutput("Shooter/Sim/LaunchVelocityMPS", launchVelocityMPS);
+                                        Logger.recordOutput("Shooter/Sim/LaunchAngleDegrees", hoodAngle.in(Degrees));
+                                        Logger.recordOutput("Shooter/Sim/LaunchHeightMeters", height.in(Meters));
+                                        Logger.recordOutput(
+                                            "Shooter/Sim/LaunchPosition",
+                                            new Pose2d(robotPosition.plus(getShooterOffset().rotateBy(robotRotation)), robotRotation));
+                                            
+                                            return projectile;
+                                        }
+                                        
+                                        /**
+                                         * Creates a game piece projectile with custom velocity override.
+                                         *
+                                         * @param launchVelocityMPS Launch velocity in meters per second
+                                         * @return The launched GamePieceProjectile
+                                         */
+                                        public GamePieceProjectile launchGamePiece(double launchVelocityMPS) {
+                                            Translation2d robotPosition = robotPositionSupplier.get();
+                                            Rotation2d robotRotation = robotRotationSupplier.get();
+                                            ChassisSpeeds chassisSpeeds = chassisSpeedsSupplier.get();
+                                            
+                                            Distance height = getShooterHeight();
+                                            Angle hoodAngle = getHoodAngle();
+                                            
+                                            GamePieceProjectile projectile = new GamePieceProjectile(
+                                                gamePieceInfo,
+                                                robotPosition,
+                                                getShooterOffset(),
+                                                chassisSpeeds,
+                                                robotRotation,
+                                                height,
+                                                MetersPerSecond.of(launchVelocityMPS),
+                                                hoodAngle);
+                                                
+                                                projectile
+                                                .withProjectileTrajectoryDisplayCallBack(trajectory -> {
+                                                    lastTrajectory = trajectory.toArray(new Pose3d[0]);
                     Logger.recordOutput("Shooter/Sim/Trajectory", lastTrajectory);
                 })
                 .enableBecomesGamePieceOnFieldAfterTouchGround();
