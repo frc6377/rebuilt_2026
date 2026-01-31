@@ -2,6 +2,7 @@ package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Centimeters;
+import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.KilogramSquareMeters;
 import static edu.wpi.first.units.Units.Percent;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
@@ -57,12 +58,12 @@ public final class ShooterConstants {
             .withMotorOutput(kShooterMotorOutputConfigs)
             .withSlot0(kShooterGains)
             .withCurrentLimits(kShooterCurrentLimitsConfigs);
-    public static final Distance kShooterWheelDiameter = Centimeters.of(10); // 10 cm diameter FIXME
+    public static final Distance kShooterWheelDiameter = Inches.of(4);
     public static final Dimensionless kShooterEfficiency = Percent.of(85); // 85% efficiency
 
     // Simulation Constants
     public static final MomentOfInertia kMOI = KilogramSquareMeters.of(0.01);
-    public static final double kGearRatio = 1.0; // FIXME
+    public static final double kGearRatio = 1.8; // FIXME
     public static final int kMotorCount = 1;
 
     // Command-based constants

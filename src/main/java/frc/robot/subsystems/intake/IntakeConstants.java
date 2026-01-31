@@ -8,7 +8,6 @@ import edu.wpi.first.units.measure.AngularMomentum;
 
 public class IntakeConstants {
     public class MotorIDs {
-        // TODO: Fix incorrect Constants
         // public static final int PIVOT_MOTOR_ID = 0;
         public static final int ROLLER_MOTOR_ID = 7;
     }

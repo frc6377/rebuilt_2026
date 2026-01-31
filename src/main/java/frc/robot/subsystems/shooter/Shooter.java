@@ -39,11 +39,6 @@ public class Shooter extends SubsystemBase {
         Logger.processInputs("Shooter", inputs);
     }
 
-    // /** Run the shooter at the specified voltage. */
-    // public void setVoltage(Voltage volts) {
-    //     io.setVoltage(volts);
-    // }
-
     /** Run the shooter at the specified velocity. */
     public void setVelocity(AngularVelocity velocity) {
         io.setVelocity(velocity);
