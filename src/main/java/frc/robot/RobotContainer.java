@@ -211,4 +211,8 @@ public class RobotContainer {
         Logger.recordOutput(
                 "FieldSimulation/Algae", SimulatedArena.getInstance().getGamePiecesArrayByType("Algae"));
     }
+
+    public Command getRobotStartPose() {
+        return vision.getRobotStartPose(0);
+    }
 }

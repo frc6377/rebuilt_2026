@@ -26,6 +26,8 @@ import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.vision.VisionIO.PoseObservationType;
 import gg.questnav.questnav.PoseFrame;
@@ -43,7 +45,7 @@ public class Vision extends SubsystemBase {
 
     // QuestNav fields
     private final QuestNav questNav;
-    private Pose3d questPose;
+    private Pose3d questPose = new Pose3d();
     private static final Transform3d ROBOT_TO_QUEST = new Transform3d(0.0, 0.0, 0.0, new Rotation3d());
     private static final Matrix<N3, N1> QUESTNAV_STD_DEVS = VecBuilder.fill(0.02, 0.02, 0.035);
 
@@ -69,8 +71,7 @@ public class Vision extends SubsystemBase {
         questPose = new Pose3d();
         questNav.setPose(questPose);
 
-        this.setQuestNavStartPose(this.getStartingPoseFromLimelight());
-
+        // this.setQuestNavStartPose(this.getStartingPoseFromLimelight());
     }
 
     /**
@@ -114,6 +115,23 @@ public class Vision extends SubsystemBase {
         }
         return null;
     }
+
+    public int getTagCount(int cameraIndex) {
+        var observations = inputs[cameraIndex].poseObservations;
+        var latestObservation = observations[observations.length - 1];
+        return latestObservation.tagCount();
+    }
+
+    public Command getRobotStartPose(int cameraIndex) {
+        return Commands.run(() -> {
+                    Pose3d cameraPose = getStartingPoseFromCamera(cameraIndex);
+                    if (getTagCount(0) >= 1 && cameraPose != null) {
+                        questNav.setPose(cameraPose);
+                    }
+                })
+                .onlyWhile(() -> getStartingPoseFromLimelight() == null);
+    }
+    ;
 
     @Override
     public void periodic() {
@@ -256,7 +274,7 @@ public class Vision extends SubsystemBase {
      */
     public void setQuestNavStartPose(Pose3d pose) {
         questNav.setPose(pose);
-        }
+    }
 
     /**
      * Returns a supplier for the current robot pose from QuestNav as a Pose3d.
