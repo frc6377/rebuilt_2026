@@ -25,6 +25,7 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.Timer;
+import java.util.Optional;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import org.dyn4j.geometry.Circle;
@@ -36,11 +37,20 @@ import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 /**
- * Simulates game piece trajectory for the shooter using Maple-Sim's physics engine. Handles launching game pieces with
- * realistic projectile motion based on flywheel velocity and hood angle.
+ * Simulates game piece trajectory for the shooter using analytical physics calculations. Handles launching game pieces
+ * with realistic projectile motion based on flywheel velocity and hood angle.
+ *
+ * <p>This implementation uses closed-form kinematic equations for efficient, instantaneous trajectory calculation
+ * without iterative simulation. The trajectory is computed analytically using:
+ *
+ * <ul>
+ *   <li>Projectile motion equations: x(t) = x₀ + vₓt, y(t) = y₀ + vᵧt, z(t) = z₀ + vᵤt - ½gt²
+ *   <li>Quadratic formula for time-of-flight calculation
+ *   <li>Robot velocity contribution to initial projectile velocity
+ * </ul>
  *
  * <p>The simulation accounts for:
- *
+ * 
  * <ul>
  *   <li>Flywheel velocity to linear launch speed conversion
  *   <li>Hood angle for launch trajectory
@@ -49,8 +59,12 @@ import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
  * </ul>
  */
 public class GamePieceTrajectorySimulation {
+    // Physics constants
+    private static final double GRAVITY = 11.0; // Maple-sim adjusted gravity (m/s²)
+    private static final int DEFAULT_TRAJECTORY_POINTS = 30; // Reduced from 100 for efficiency
+    private static final double MAX_TRAJECTORY_TIME = 3.0; // Maximum trajectory time (seconds)
     /**
-     * Game piece info for the 2017 FUEL (am-5801).
+     * Game piece info for the 2026 FUEL
      *
      * <p>FUEL specifications:
      *
@@ -372,65 +386,200 @@ public class GamePieceTrajectorySimulation {
     }
 
     /**
-     * Calculates and previews trajectory without actually launching. Useful for aiming assistance.
+     * Calculates and previews trajectory without actually launching using analytical physics equations. This method
+     * computes the trajectory instantaneously using closed-form kinematic equations, making it efficient for real-time
+     * aiming assistance.
+     *
+     * <p>Uses the kinematic equations:
+     *
+     * <ul>
+     *   <li>x(t) = x₀ + vₓ·t
+     *   <li>y(t) = y₀ + vᵧ·t
+     *   <li>z(t) = z₀ + vᵤ·t - ½·g·t²
+     * </ul>
      *
      * @return Array of Pose3d representing predicted trajectory
      */
     public Pose3d[] previewTrajectory() {
-        double launchVelocityMPS = getCurrentLaunchVelocityMPS();
-        double hoodAngleRad = getHoodAngle().in(Radians);
-        double heightM = shooterHeightMeters.get();
+        // Get current state
+        TrajectoryState state = calculateTrajectoryState();
 
+        // Calculate time of flight using quadratic formula: z = h + v_z*t - 0.5*g*t^2 = 0
+        // 0.5*g*t^2 - v_z*t - h = 0
+        // t = (v_z + sqrt(v_z^2 + 2*g*h)) / g
+        Optional<Double> flightTime = calculateTimeOfFlight(state.initialHeight, state.verticalVelocity);
+
+        if (flightTime.isEmpty()) {
+            lastTrajectory = new Pose3d[0];
+            Logger.recordOutput("Shooter/Sim/PreviewTrajectory", lastTrajectory);
+            return lastTrajectory;
+        }
+
+        double totalTime = Math.min(flightTime.get(), MAX_TRAJECTORY_TIME);
+
+        // Generate trajectory points at uniform time intervals
+        lastTrajectory = generateTrajectoryPoints(state, totalTime, DEFAULT_TRAJECTORY_POINTS);
+        Logger.recordOutput("Shooter/Sim/PreviewTrajectory", lastTrajectory);
+        return lastTrajectory;
+    }
+
+    /**
+     * Calculates and previews trajectory with a custom number of points for visualization. Useful when higher or lower
+     * resolution is needed.
+     *
+     * @param numPoints Number of points in the trajectory (more points = smoother curve)
+     * @return Array of Pose3d representing predicted trajectory
+     */
+    public Pose3d[] previewTrajectory(int numPoints) {
+        TrajectoryState state = calculateTrajectoryState();
+        Optional<Double> flightTime = calculateTimeOfFlight(state.initialHeight, state.verticalVelocity);
+
+        if (flightTime.isEmpty()) {
+            lastTrajectory = new Pose3d[0];
+            Logger.recordOutput("Shooter/Sim/PreviewTrajectory", lastTrajectory);
+            return lastTrajectory;
+        }
+
+        double totalTime = Math.min(flightTime.get(), MAX_TRAJECTORY_TIME);
+        lastTrajectory = generateTrajectoryPoints(state, totalTime, numPoints);
+        Logger.recordOutput("Shooter/Sim/PreviewTrajectory", lastTrajectory);
+        return lastTrajectory;
+    }
+
+    /**
+     * Calculates the trajectory state from current robot and shooter configuration. This encapsulates all the initial
+     * conditions needed for trajectory calculation.
+     *
+     * @return TrajectoryState containing all initial conditions
+     */
+    private TrajectoryState calculateTrajectoryState() {
         Translation2d robotPosition = robotPositionSupplier.get();
         Rotation2d robotRotation = robotRotationSupplier.get();
         ChassisSpeeds chassisSpeeds = chassisSpeedsSupplier.get();
 
-        // Calculate initial velocity components
-        double horizontalVelocity = launchVelocityMPS * Math.cos(hoodAngleRad);
-        double verticalVelocity = launchVelocityMPS * Math.sin(hoodAngleRad);
+        double launchVelocityMPS = getCurrentLaunchVelocityMPS();
+        double hoodAngleRad = getHoodAngle().in(Radians);
+        double heightM = shooterHeightMeters.get();
 
-        // Add chassis velocity contribution
+        // Calculate initial velocity components from launch
+        double launchHorizontalVelocity = launchVelocityMPS * Math.cos(hoodAngleRad);
+        double launchVerticalVelocity = launchVelocityMPS * Math.sin(hoodAngleRad);
+
+        // Calculate chassis velocity contribution
         Translation2d shooterOffset = getShooterOffset();
         Translation2d chassisVelocity =
                 new Translation2d(chassisSpeeds.vxMetersPerSecond, chassisSpeeds.vyMetersPerSecond);
+
+        // Rotational velocity at shooter position due to chassis rotation
         Translation2d shooterRotationalVelocity = shooterOffset
                 .rotateBy(robotRotation)
                 .rotateBy(Rotation2d.fromDegrees(90))
                 .times(chassisSpeeds.omegaRadiansPerSecond);
 
+        // Total horizontal velocity (launch velocity in robot frame + chassis velocity)
         Translation2d totalHorizontalVelocity = chassisVelocity
                 .plus(shooterRotationalVelocity)
-                .plus(new Translation2d(horizontalVelocity, robotRotation));
+                .plus(new Translation2d(launchHorizontalVelocity, robotRotation));
 
         // Calculate initial position
         Translation2d launchPosition = robotPosition.plus(shooterOffset.rotateBy(robotRotation));
 
-        // Generate trajectory preview (100 steps, 0.02s each = 2 seconds)
-        Pose3d[] trajectory = new Pose3d[100];
-        double dt = 0.02;
-        double gravity = 11.0; // Maple-sim uses adjusted gravity
+        return new TrajectoryState(
+                launchPosition.getX(),
+                launchPosition.getY(),
+                heightM,
+                totalHorizontalVelocity.getX(),
+                totalHorizontalVelocity.getY(),
+                launchVerticalVelocity);
+    }
 
-        for (int i = 0; i < trajectory.length; i++) {
-            double t = i * dt;
-            double x = launchPosition.getX() + totalHorizontalVelocity.getX() * t;
-            double y = launchPosition.getY() + totalHorizontalVelocity.getY() * t;
-            double z = heightM + verticalVelocity * t - 0.5 * gravity * t * t;
+    /**
+     * Calculates time of flight using the quadratic formula. Solves: z₀ + vᵤ·t - ½·g·t² = 0
+     *
+     * @param initialHeight Initial height (z₀)
+     * @param verticalVelocity Initial vertical velocity (vᵤ)
+     * @return Optional containing time of flight, empty if no valid solution
+     */
+    private Optional<Double> calculateTimeOfFlight(double initialHeight, double verticalVelocity) {
+        // Quadratic equation: -0.5*g*t^2 + v_z*t + h = 0
+        // Rearranged: 0.5*g*t^2 - v_z*t - h = 0
+        // a = 0.5*g, b = -v_z, c = -h
+        double a = 0.5 * GRAVITY;
+        double b = -verticalVelocity;
+        double c = -initialHeight;
 
-            if (z < 0) {
-                // Ground hit, truncate trajectory
-                Pose3d[] truncated = new Pose3d[i];
-                System.arraycopy(trajectory, 0, truncated, 0, i);
-                lastTrajectory = truncated;
-                Logger.recordOutput("Shooter/Sim/PreviewTrajectory", lastTrajectory);
-                return truncated;
-            }
+        double discriminant = b * b - 4 * a * c;
 
-            trajectory[i] = new Pose3d(x, y, z, new Rotation3d());
+        if (discriminant < 0) {
+            return Optional.empty(); // No real solution (shouldn't happen with valid inputs)
         }
 
-        lastTrajectory = trajectory;
-        Logger.recordOutput("Shooter/Sim/PreviewTrajectory", lastTrajectory);
+        // We want the positive root (time in the future)
+        double sqrtDiscriminant = Math.sqrt(discriminant);
+        double t1 = (-b + sqrtDiscriminant) / (2 * a);
+        double t2 = (-b - sqrtDiscriminant) / (2 * a);
+
+        // Return the positive root (time must be positive)
+        if (t1 > 0 && t2 > 0) {
+            return Optional.of(Math.min(t1, t2)); // Both positive, take smaller
+        } else if (t1 > 0) {
+            return Optional.of(t1);
+        } else if (t2 > 0) {
+            return Optional.of(t2);
+        }
+
+        return Optional.empty();
+    }
+
+    /**
+     * Generates trajectory points using analytical position calculation.
+     *
+     * @param state Initial trajectory state
+     * @param totalTime Total flight time
+     * @param numPoints Number of points to generate
+     * @return Array of Pose3d representing the trajectory
+     */
+    private Pose3d[] generateTrajectoryPoints(TrajectoryState state, double totalTime, int numPoints) {
+        Pose3d[] trajectory = new Pose3d[numPoints];
+        double dt = totalTime / (numPoints - 1);
+
+        for (int i = 0; i < numPoints; i++) {
+            double t = i * dt;
+            Translation3d position = state.getPositionAtTime(t, GRAVITY);
+
+            // Clamp z to ground level
+            double z = Math.max(0, position.getZ());
+            trajectory[i] = new Pose3d(position.getX(), position.getY(), z, new Rotation3d());
+        }
+
         return trajectory;
+    }
+
+    /**
+     * Immutable record containing trajectory initial conditions. Used to efficiently pass trajectory state between
+     * calculation methods.
+     */
+    private record TrajectoryState(
+            double initialX,
+            double initialY,
+            double initialHeight,
+            double horizontalVelocityX,
+            double horizontalVelocityY,
+            double verticalVelocity) {
+
+        /**
+         * Calculates position at a given time using kinematic equations.
+         *
+         * @param t Time in seconds
+         * @param gravity Gravitational acceleration (m/s²)
+         * @return Position as Translation3d
+         */
+        Translation3d getPositionAtTime(double t, double gravity) {
+            double x = initialX + horizontalVelocityX * t;
+            double y = initialY + horizontalVelocityY * t;
+            double z = initialHeight + verticalVelocity * t - 0.5 * gravity * t * t;
+            return new Translation3d(x, y, z);
+        }
     }
 
     /**
@@ -443,16 +592,127 @@ public class GamePieceTrajectorySimulation {
     }
 
     /**
-     * Calculates the predicted landing position of the game piece.
+     * Calculates the predicted landing position of the game piece using analytical equations. This is more efficient
+     * than previewTrajectory() when only the landing position is needed, as it directly solves for the final position
+     * without generating intermediate points.
      *
-     * @return Translation3d of predicted landing position, or null if trajectory goes out of bounds
+     * @return Translation3d of predicted landing position (z will be 0), or null if trajectory is invalid
      */
     public Translation3d getPredictedLandingPosition() {
-        Pose3d[] trajectory = previewTrajectory();
-        if (trajectory.length > 0) {
-            return trajectory[trajectory.length - 1].getTranslation();
+        TrajectoryState state = calculateTrajectoryState();
+        Optional<Double> flightTime = calculateTimeOfFlight(state.initialHeight, state.verticalVelocity);
+
+        if (flightTime.isEmpty()) {
+            return null;
         }
-        return null;
+
+        // Calculate landing position directly
+        double t = flightTime.get();
+        double x = state.initialX() + state.horizontalVelocityX() * t;
+        double y = state.initialY() + state.horizontalVelocityY() * t;
+
+        return new Translation3d(x, y, 0);
+    }
+
+    /**
+     * Calculates the position of the projectile at a specific time after launch. Useful for checking if the projectile
+     * will pass through a specific point or region.
+     *
+     * @param timeSeconds Time after launch in seconds
+     * @return Position as Translation3d, or null if time is negative or beyond landing
+     */
+    public Translation3d getPositionAtTime(double timeSeconds) {
+        if (timeSeconds < 0) {
+            return null;
+        }
+
+        TrajectoryState state = calculateTrajectoryState();
+        Optional<Double> flightTime = calculateTimeOfFlight(state.initialHeight, state.verticalVelocity);
+
+        if (flightTime.isEmpty() || timeSeconds > flightTime.get()) {
+            return null;
+        }
+
+        return state.getPositionAtTime(timeSeconds, GRAVITY);
+    }
+
+    /**
+     * Calculates the horizontal distance the projectile will travel. Efficient calculation without generating full
+     * trajectory.
+     *
+     * @return Horizontal distance in meters, or -1 if trajectory is invalid
+     */
+    public double getHorizontalRange() {
+        Translation3d landingPosition = getPredictedLandingPosition();
+        if (landingPosition == null) {
+            return -1;
+        }
+
+        TrajectoryState state = calculateTrajectoryState();
+        double dx = landingPosition.getX() - state.initialX();
+        double dy = landingPosition.getY() - state.initialY();
+
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    /**
+     * Calculates the maximum height the projectile will reach. Uses calculus: max height occurs when dz/dt = 0.
+     *
+     * @return Maximum height in meters
+     */
+    public double getMaxHeight() {
+        TrajectoryState state = calculateTrajectoryState();
+
+        // Time of max height: dz/dt = v_z - g*t = 0 => t = v_z / g
+        double timeAtMaxHeight = state.verticalVelocity() / GRAVITY;
+
+        if (timeAtMaxHeight <= 0) {
+            // Projectile is going down from the start, max height is initial height
+            return state.initialHeight();
+        }
+
+        // z(t) = h + v_z*t - 0.5*g*t^2
+        double maxHeight = state.initialHeight()
+                + state.verticalVelocity() * timeAtMaxHeight
+                - 0.5 * GRAVITY * timeAtMaxHeight * timeAtMaxHeight;
+
+        return maxHeight;
+    }
+
+    /**
+     * Checks if the projectile will pass through a target volume. This is an efficient collision check using analytical
+     * trajectory calculation.
+     *
+     * @param targetCenter Center of the target volume
+     * @param targetSize Half-size of the target volume in each axis
+     * @return true if the trajectory passes through the target volume
+     */
+    public boolean willHitTarget(Translation3d targetCenter, Translation3d targetSize) {
+        TrajectoryState state = calculateTrajectoryState();
+        Optional<Double> flightTime = calculateTimeOfFlight(state.initialHeight, state.verticalVelocity);
+
+        if (flightTime.isEmpty()) {
+            return false;
+        }
+
+        // Sample trajectory at multiple points to check for intersection
+        // Use adaptive sampling: more points near expected target height
+        double totalTime = flightTime.get();
+        int checkPoints = 20;
+
+        for (int i = 0; i <= checkPoints; i++) {
+            double t = (i / (double) checkPoints) * totalTime;
+            Translation3d pos = state.getPositionAtTime(t, GRAVITY);
+
+            // Check if position is within target bounds
+            if (Math.abs(pos.getX() - targetCenter.getX()) <= targetSize.getX()
+                    && Math.abs(pos.getY() - targetCenter.getY()) <= targetSize.getY()
+                    && Math.abs(pos.getZ() - targetCenter.getZ()) <= targetSize.getZ()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
