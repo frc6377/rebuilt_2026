@@ -39,6 +39,6 @@ public class HoodConstants {
     public static final Current currentLimit = Amps.of(40.0);
 
     // Operational limits
-    public static final Angle minAngle = Degrees.of(0.0);
-    public static final Angle maxAngle = Degrees.of(45.0);
+    public static final Angle minAngle = Degrees.of(20.0);
+    public static final Angle maxAngle = Degrees.of(80.0);
 }

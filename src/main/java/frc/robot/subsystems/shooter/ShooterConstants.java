@@ -29,7 +29,7 @@ public class ShooterConstants {
     public static final double defaultFlywheelKP = 0.1;
     public static final double defaultFlywheelKI = 0.0;
     public static final double defaultFlywheelKD = 0.0;
-    public static final double defaultFlywheelKV = 0.12;
+    public static final double defaultFlywheelKV = 0;
     public static final double defaultFlywheelKS = 0.0;
 
     // Current limits
@@ -42,4 +42,11 @@ public class ShooterConstants {
     public static final AngularVelocity flywheelVelocityTolerance = RotationsPerSecond.of(100.0 / 60.0); // 100 RPM
     public static final AngularVelocity maxVelocityDifference =
             RotationsPerSecond.of(500.0 / 60.0); // 500 RPM difference between flywheels
+
+    // Simulation constants
+    public static final Distance shooterHeight = Meters.of(0.5); // Height of shooter from ground
+    public static final Distance shooterOffsetX = Meters.of(0.3); // Forward offset from robot center
+    public static final Distance shooterOffsetY = Meters.of(0.0); // Lateral offset from robot center
+    public static final Distance flywheelRadius = Inches.of(2); // Flywheel wheel radius
+    public static final double launchEfficiency = 0.85; // Energy transfer efficiency (0.0 - 1.0)
 }

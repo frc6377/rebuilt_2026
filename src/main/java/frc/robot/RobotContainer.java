@@ -14,9 +14,7 @@
 package frc.robot;
 
 import static edu.wpi.first.units.Units.*;
-import static edu.wpi.first.units.Units.Degrees;
 import static frc.robot.subsystems.vision.VisionConstants.*;
-import static frc.robot.subsystems.vision.VisionConstants.robotToCamera1;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -29,9 +27,12 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.commands.DriveCommands;
+import frc.robot.commands.ShooterCalibrationCommand;
+import frc.robot.commands.ShootingCommands;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.hood.Hood;
+import frc.robot.subsystems.hood.HoodIOSim;
 import frc.robot.subsystems.shooter.*;
 import frc.robot.subsystems.vision.*;
 import org.ironmaple.simulation.SimulatedArena;
@@ -51,12 +52,12 @@ public class RobotContainer {
     private final Vision vision;
     private final Shooter shooter;
     private final Hood hood;
+    private GamePieceTrajectorySimulation gamePieceTrajectorySimulation = null;
 
     private SwerveDriveSimulation driveSimulation = null;
 
     // Controller
     private final CommandXboxController controller = new CommandXboxController(0);
-
     // Dashboard inputs
     private final LoggedDashboardChooser<Command> autoChooser;
 
@@ -86,10 +87,12 @@ public class RobotContainer {
 
                 break;
             case SIM:
-                // Sim robot, instantiate physics sim IO implementations
 
-                driveSimulation = new SwerveDriveSimulation(Drive.mapleSimConfig, new Pose2d(3, 3, new Rotation2d()));
+                // Sim robot, instantiate physics sim IO implementations
+                driveSimulation =
+                        new SwerveDriveSimulation(Drive.createMapleSimConfig(), new Pose2d(3, 3, new Rotation2d()));
                 SimulatedArena.getInstance().addDriveTrainSimulation(driveSimulation);
+
                 drive = new Drive(
                         new GyroIOSim(driveSimulation.getGyroSimulation()),
                         new ModuleIOTalonFXSim(
@@ -108,7 +111,12 @@ public class RobotContainer {
                         new VisionIOPhotonVisionSim(
                                 camera1Name, robotToCamera1, driveSimulation::getSimulatedDriveTrainPose));
                 shooter = new Shooter(new ShooterIOSim());
-                hood = new frc.robot.subsystems.hood.Hood(new frc.robot.subsystems.hood.HoodIOSim());
+                hood = new Hood(new HoodIOSim());
+
+                gamePieceTrajectorySimulation = new GamePieceTrajectorySimulation(
+                        driveSimulation,
+                        () -> (shooter.getLeftFlywheelVelocity() + shooter.getRightFlywheelVelocity()) / 2.0,
+                        () -> hood.getAngle());
 
                 break;
 
@@ -141,6 +149,14 @@ public class RobotContainer {
         autoChooser.addOption("Drive SysId (Dynamic Forward)", drive.sysIdDynamic(SysIdRoutine.Direction.kForward));
         autoChooser.addOption("Drive SysId (Dynamic Reverse)", drive.sysIdDynamic(SysIdRoutine.Direction.kReverse));
 
+        // Add shooter calibration mode (simulation only)
+        if (Constants.currentMode == Constants.Mode.SIM && gamePieceTrajectorySimulation != null) {
+            autoChooser.addOption(
+                    "Shooter Calibration",
+                    new ShooterCalibrationCommand(
+                            hood, shooter, gamePieceTrajectorySimulation, driveSimulation, drive::setPose));
+        }
+
         // Configure the button bindings
         configureButtonBindings();
     }
@@ -172,14 +188,31 @@ public class RobotContainer {
                 : () -> drive.setPose(new Pose2d(drive.getPose().getTranslation(), new Rotation2d())); // zero gyro
         controller.start().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
 
-        // Shooter controls
-        // Right trigger: Spin up flywheels
-        controller.rightTrigger().whileTrue(shooter.spinUpFlywheels(3000.0)).onFalse(shooter.stopCommand());
+        // Left trigger: Full auto-aim - aims at hub, sets hood angle, AND spins up flywheels
+        controller
+                .leftTrigger()
+                .whileTrue(ShootingCommands.fullAutoAim(
+                        drive, hood, shooter, () -> -controller.getLeftY(), () -> -controller.getLeftX()))
+                .onFalse(shooter.stopCommand());
 
-        // Bumpers: Adjust hood angle (example presets)
-        controller.leftBumper().onTrue(hood.setAngleCommand(20.0)); // Low shot
-        controller.rightBumper().onTrue(hood.setAngleCommand(35.0)); // High shot
-
+        // POV Up: Launch FUEL in simulation
+        if (Constants.currentMode == Constants.Mode.SIM && gamePieceTrajectorySimulation != null) {
+            controller
+                    .rightTrigger()
+                    .onTrue(Commands.startEnd(
+                            () -> gamePieceTrajectorySimulation.setIndexerRunningSupplier(
+                                    () -> gamePieceTrajectorySimulation.shouldIndexerRun()),
+                            () -> gamePieceTrajectorySimulation.setIndexerRunningSupplier(() -> false)));
+            controller.povUp().onTrue(Commands.runOnce(() -> SimulatedArena.getInstance()
+                    .addGamePieceProjectile(gamePieceTrajectorySimulation.launchGamePiece())));
+            controller.povDown().onTrue(Commands.runOnce(() -> gamePieceTrajectorySimulation.addBalls(10)));
+            controller
+                    .povLeft()
+                    .onFalse(Commands.runOnce(() -> gamePieceTrajectorySimulation.setAutoFireEnabled(false)));
+            controller
+                    .povRight()
+                    .onTrue(Commands.runOnce(() -> gamePieceTrajectorySimulation.setAutoFireEnabled(false)));
+        }
         // Example Coral Placement Code
         // TODO: delete these code for your own project
         if (Constants.currentMode == Constants.Mode.SIM) {
@@ -231,5 +264,7 @@ public class RobotContainer {
                 "FieldSimulation/Coral", SimulatedArena.getInstance().getGamePiecesArrayByType("Coral"));
         Logger.recordOutput(
                 "FieldSimulation/Algae", SimulatedArena.getInstance().getGamePiecesArrayByType("Algae"));
+        gamePieceTrajectorySimulation.updateAutoFire();
+        Logger.recordOutput("FieldSimulation/Fuel", SimulatedArena.getInstance().getGamePiecesArrayByType("Fuel"));
     }
 }

@@ -25,24 +25,26 @@ public class HoodIOSim implements HoodIO {
     private final SingleJointedArmSim sim;
     private final PIDController controller;
 
-    private double setpointDegrees = 0.0;
+    private double setpointDegrees = 35.0;
     private double appliedVolts = 0.0;
 
     public HoodIOSim() {
         // Create hood simulation (Kraken x44 motor, single jointed arm)
+        // Using lower MOI and shorter arm for more responsive simulation
         sim = new SingleJointedArmSim(
                 DCMotor.getKrakenX60Foc(1), // Kraken x44 approximated with Kraken X60
                 HoodConstants.gearRatio,
-                0.1, // MOI (kg*m^2) - adjust based on actual hood mass
-                0.3, // Arm length (m) - adjust based on actual hood geometry
+                0.01, // MOI (kg*m^2) - small hood mechanism
+                0.15, // Arm length (m) - short hood
                 HoodConstants.minAngle.in(Radians),
                 HoodConstants.maxAngle.in(Radians),
-                true, // Simulate gravity
-                HoodConstants.minAngle.in(Radians) // Starting angle
+                false, // Disable gravity for smoother simulation
+                Degrees.of(35.0).in(Radians) // Starting angle (middle of range)
                 );
 
-        // Create PID controller
-        controller = new PIDController(HoodConstants.defaultKP, HoodConstants.defaultKI, HoodConstants.defaultKD);
+        // Create PID controller with lower gains for simulation stability
+        // Simulation PID is separate from real robot PID
+        controller = new PIDController(0.5, 0.0, 0.02);
     }
 
     @Override
