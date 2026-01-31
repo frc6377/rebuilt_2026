@@ -20,10 +20,10 @@ public final class IndexerConstants {
             new MotorOutputConfigs().withInverted(kIndexerDirection).withNeutralMode(kIndexerNeutralMode);
 
     // Current limits
-    public static final Current kStatorCurrentLimit = Amps.of(40.0);
+    public static final Current kStatorCurrentLimit = Amps.of(80);
     public static final CurrentLimitsConfigs kIndexerCurrentLimitsConfigs = new CurrentLimitsConfigs()
             .withStatorCurrentLimit(kStatorCurrentLimit)
-            .withStatorCurrentLimitEnable(true);
+            .withStatorCurrentLimitEnable(false);
 
     // PID gains (for velocity control if needed)
     public static final double kP = 0.1;
@@ -45,8 +45,8 @@ public final class IndexerConstants {
     public static final double kGearRatio = 1.0;
 
     // Default speeds for indexer operations (duty cycle -1.0 to 1.0)
-    public static final double kFeedSpeed = 0.5; // Speed to feed game pieces forward
-    public static final double kReverseSpeed = -0.3; // Speed to reverse/eject
+    public static final double kFeedSpeed = -0.5; // Speed to feed game pieces forward
+    public static final double kReverseSpeed = 0.3; // Speed to reverse/eject
 
     private IndexerConstants() {}
 }

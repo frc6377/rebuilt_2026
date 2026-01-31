@@ -177,9 +177,8 @@ public class RobotContainer {
         driverController.leftTrigger().whileTrue(intake.outtakeCommand());
 
         // Indexer control
-        operatorController.rightBumper().whileTrue(indexer.reverseCommand());
-        operatorController.leftBumper().whileTrue(indexer.feedCommand());
-
+        operatorController.rightBumper().whileTrue(indexer.feedCommand());
+        operatorController.leftBumper().whileTrue(indexer.reverseCommand());
         // Shooter control
         operatorController.rightTrigger().whileTrue(shooter.shootAtDistanceCommand(Meters.of(2.0)));
         operatorController.leftTrigger().whileTrue(shooter.stopCommand());

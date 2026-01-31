@@ -21,7 +21,7 @@ public class ShooterTuning {
     };
     // Default angular velocities for each distance
     private final AngularVelocity[] defaultAngularVelocities = {
-        RotationsPerSecond.of(-50),
+        RotationsPerSecond.of(-60),
         RotationsPerSecond.of(-55.0),
         RotationsPerSecond.of(-60.0),
         RotationsPerSecond.of(-65.0),

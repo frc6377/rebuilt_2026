@@ -40,10 +40,8 @@ public class ShooterIOTalonFX implements ShooterIO {
 
     public ShooterIOTalonFX() {
         // Create TunableTalonFX with initial gains from ShooterConstants
-        shooterMotor = new TunableTalonFX(
-                Constants.CANIDs.kShooterFlywheelOneCANID,
-                "Drive Base",
-                "Shooter/ShooterMotor");
+        shooterMotor =
+                new TunableTalonFX(Constants.CANIDs.kShooterFlywheelOneCANID, "Drive Base", "Shooter/ShooterMotor");
 
         // Apply full configuration (motor output, current limits, etc.)
         TalonFXConfiguration config = ShooterConstants.kShooterTalonFXConfiguration;
