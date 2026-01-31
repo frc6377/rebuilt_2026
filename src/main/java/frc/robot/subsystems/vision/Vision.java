@@ -20,8 +20,6 @@ import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.Alert;
@@ -46,7 +44,6 @@ public class Vision extends SubsystemBase {
     // QuestNav fields
     private final QuestNav questNav;
     private Pose3d questPose = new Pose3d();
-    private static final Transform3d ROBOT_TO_QUEST = new Transform3d(0.0, 0.0, 0.0, new Rotation3d());
     private static final Matrix<N3, N1> QUESTNAV_STD_DEVS = VecBuilder.fill(0.02, 0.02, 0.035);
 
     public Vision(VisionConsumer consumer, VisionIO... io) {
@@ -70,6 +67,10 @@ public class Vision extends SubsystemBase {
         questNav = new QuestNav();
         questPose = new Pose3d();
         questNav.setPose(questPose);
+
+        // var observations = inputs[cameraIndex].poseObservations;
+        // var latestObservation = observations[observations.length - 1];
+        // return latestObservation.tagCount();
 
         // this.setQuestNavStartPose(this.getStartingPoseFromLimelight());
     }
@@ -117,19 +118,20 @@ public class Vision extends SubsystemBase {
     }
 
     public int getTagCount(int cameraIndex) {
-        var observations = inputs[cameraIndex].poseObservations;
-        var latestObservation = observations[observations.length - 1];
-        return latestObservation.tagCount();
+        return 2;
     }
 
     public Command getRobotStartPose(int cameraIndex) {
         return Commands.run(() -> {
                     Pose3d cameraPose = getStartingPoseFromCamera(cameraIndex);
+                    Logger.recordOutput("CameraPose", cameraPose);
                     if (getTagCount(0) >= 1 && cameraPose != null) {
+
                         questNav.setPose(cameraPose);
                     }
                 })
-                .onlyWhile(() -> getStartingPoseFromLimelight() == null);
+                .ignoringDisable(true);
+        // .onlyWhile(() -> getStartingPoseFromLimelight() != null);
     }
     ;
 
@@ -248,7 +250,7 @@ public class Vision extends SubsystemBase {
             if (questFrame.isTracking()) {
                 questPose = questFrame.questPose3d();
                 double timestamp = questFrame.dataTimestamp();
-                Pose3d robotPose = questPose.transformBy(ROBOT_TO_QUEST.inverse());
+                Pose3d robotPose = questPose.transformBy(VisionConstants.ROBOT_TO_QUEST.inverse());
                 consumer.accept(robotPose.toPose2d(), timestamp, QUESTNAV_STD_DEVS);
             }
         }
@@ -263,8 +265,12 @@ public class Vision extends SubsystemBase {
      * @param robotPose The robot pose to set.
      */
     public void resetQuestNavPose(Pose3d robotPose) {
-        Pose3d newQuestPose = robotPose.transformBy(ROBOT_TO_QUEST);
+        Pose3d newQuestPose = robotPose.transformBy(VisionConstants.ROBOT_TO_QUEST);
         questNav.setPose(newQuestPose);
+    }
+
+    public void zeroQuestNav() {
+        questNav.setPose(new Pose3d(questPose.getTranslation(), VisionConstants.ROBOT_TO_QUEST.getRotation()));
     }
 
     /**
@@ -282,7 +288,8 @@ public class Vision extends SubsystemBase {
      * @return A supplier that provides the current robot pose in 3D field coordinates.
      */
     public Supplier<Pose2d> getQuestNavPoseSupplier() {
-        return () -> questPose.transformBy(ROBOT_TO_QUEST.inverse()).toPose2d();
+        return () ->
+                questPose.transformBy(VisionConstants.ROBOT_TO_QUEST.inverse()).toPose2d();
     }
 
     @FunctionalInterface

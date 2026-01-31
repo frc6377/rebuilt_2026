@@ -154,9 +154,12 @@ public class RobotContainer {
         // Reset gyro / odometry
         final Runnable resetGyro = Constants.currentMode == Constants.Mode.SIM
                 ? () -> drive.setPose(
-                        driveSimulation.getSimulatedDriveTrainPose()) // reset odometry to actual robot pose during
-                // simulation
-                : () -> drive.setPose(new Pose2d(drive.getPose().getTranslation(), new Rotation2d())); // zero gyro
+                        driveSimulation
+                                .getSimulatedDriveTrainPose()) // reset odometry to actual robot pose during simulation
+                : () -> {
+                    drive.setPose(new Pose2d(drive.getPose().getTranslation(), new Rotation2d()));
+                    vision.zeroQuestNav();
+                }; // zero gyro
         controller.start().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
 
         // Example Coral Placement Code
