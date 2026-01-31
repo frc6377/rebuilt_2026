@@ -17,75 +17,64 @@ import static frc.robot.util.PhoenixUtil.tryUntilOk;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
-import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.VelocityVoltage;
-import com.ctre.phoenix6.controls.VoltageOut;
-import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.controls.DutyCycleOut;
+import com.ctre.phoenix6.controls.NeutralOut;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import frc.robot.Constants;
+import frc.robot.util.TunableTalonFX;
 
 public class IndexerIOTalonFX implements IndexerIO {
-    private final TalonFX IndexerMotor;
+    private final TunableTalonFX indexerMotor;
     private final StatusSignal<Angle> position;
     private final StatusSignal<AngularVelocity> velocity;
     private final StatusSignal<Voltage> appliedVolts;
     private final StatusSignal<Current> current;
 
-    private final VoltageOut voltageRequest = new VoltageOut(0.0);
-    private final VelocityVoltage velocityRequest = new VelocityVoltage(0.0);
+    private final DutyCycleOut dutyCycleRequest = new DutyCycleOut(0.0);
 
     public IndexerIOTalonFX() {
-        IndexerMotor = new TalonFX(Constants.CANIDs.kIndexerFlywheelOneCANID, "Drive Base");
+        // Create TunableTalonFX with initial gains from IndexerConstants
+        indexerMotor = new TunableTalonFX(
+                Constants.CANIDs.kIndexerFlywheelOneCANID, "Drive Base", "Indexer", IndexerConstants.kIndexerGains);
 
-        // Apply configuration
+        // Apply full configuration (motor output, current limits, etc.)
         TalonFXConfiguration config = IndexerConstants.kIndexerTalonFXConfiguration;
-
-        // Ensure neutral mode is brake or coast as desired (override if needed, but using constant for now)
-        // config.MotorOutput.NeutralMode = NeutralModeValue.Coast;
-
-        tryUntilOk(5, () -> IndexerMotor.getConfigurator().apply(config, 0.25));
+        tryUntilOk(5, () -> indexerMotor.getConfigurator().apply(config, 0.25));
 
         // Signals
-        position = IndexerMotor.getPosition();
-        velocity = IndexerMotor.getVelocity();
-        appliedVolts = IndexerMotor.getMotorVoltage();
-        current = IndexerMotor.getStatorCurrent();
+        position = indexerMotor.getPosition();
+        velocity = indexerMotor.getVelocity();
+        appliedVolts = indexerMotor.getMotorVoltage();
+        current = indexerMotor.getStatorCurrent();
 
         BaseStatusSignal.setUpdateFrequencyForAll(50.0, position, velocity, appliedVolts, current);
     }
 
     @Override
     public void updateInputs(IndexerIOInputs inputs) {
+        // Update tunable gains from NetworkTables if changed
+        indexerMotor.updateTunableGains();
+
         BaseStatusSignal.refreshAll(position, velocity, appliedVolts, current);
 
-        inputs.IndexerMotorConnected = BaseStatusSignal.isAllGood(position, velocity, appliedVolts, current);
-        inputs.IndexerPosition = position.getValue();
-        inputs.IndexerVelocity = velocity.getValue();
-        inputs.IndexerAppliedVolts = appliedVolts.getValue();
-        inputs.IndexerCurrent = current.getValue();
+        inputs.indexerConnected = BaseStatusSignal.isAllGood(position, velocity, appliedVolts, current);
+        inputs.indexerPosition = position.getValue();
+        inputs.indexerVelocity = velocity.getValue();
+        inputs.indexerAppliedVolts = appliedVolts.getValue();
+        inputs.indexerCurrent = current.getValue();
     }
 
     @Override
-    public void setVoltage(Voltage volts) {
-        IndexerMotor.setControl(voltageRequest.withOutput(volts));
-    }
-
-    @Override
-    public void setVelocity(AngularVelocity velocity) {
-        IndexerMotor.setControl(velocityRequest.withVelocity(velocity));
+    public void setSpeed(double speed) {
+        indexerMotor.setControl(dutyCycleRequest.withOutput(speed));
     }
 
     @Override
     public void stop() {
-        IndexerMotor.setControl(voltageRequest.withOutput(0.0));
-    }
-
-    @Override
-    public void updatePIDConfig(Slot0Configs config) {
-        IndexerMotor.getConfigurator().apply(config);
+        indexerMotor.setControl(new NeutralOut());
     }
 }

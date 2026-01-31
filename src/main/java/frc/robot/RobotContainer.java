@@ -62,8 +62,8 @@ public class RobotContainer {
     private SwerveDriveSimulation driveSimulation = null;
 
     // Controller
-    private final CommandXboxController controller = new CommandXboxController(0);
-
+    private final CommandXboxController driverController = new CommandXboxController(0);
+    private final CommandXboxController operatorController = new CommandXboxController(1);
     // Dashboard inputs
     private final LoggedDashboardChooser<Command> autoChooser;
 
@@ -155,29 +155,34 @@ public class RobotContainer {
     private void configureButtonBindings() {
         // Default command, normal field-relative drive
         drive.setDefaultCommand(DriveCommands.joystickDrive(
-                drive, () -> controller.getLeftY(), () -> controller.getLeftX(), () -> -controller.getRightX()));
+                drive,
+                () -> driverController.getLeftY(),
+                () -> driverController.getLeftX(),
+                () -> -driverController.getRightX()));
 
         // Lock to 0° when A button is held
-        controller
+        driverController
                 .a()
                 .whileTrue(DriveCommands.joystickDriveAtAngle(
-                        drive, () -> -controller.getLeftY(), () -> controller.getLeftX(), () -> new Rotation2d()));
+                        drive,
+                        () -> -driverController.getLeftY(),
+                        () -> driverController.getLeftX(),
+                        () -> new Rotation2d()));
 
         // Switch to X pattern when X button is pressed
-        controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
+        driverController.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
         // Intake control
-        controller.rightBumper().whileTrue(intake.intakeCommand());
-        controller.leftBumper().whileTrue(intake.outtakeCommand());
+        driverController.rightTrigger().whileTrue(intake.intakeCommand());
+        driverController.leftTrigger().whileTrue(intake.outtakeCommand());
 
         // Indexer control
-        controller.rightTrigger().whileTrue(indexer.runVelocityCommand(RotationsPerSecond.of(10)));
-        controller.leftTrigger().whileTrue(indexer.runVelocityCommand(RotationsPerSecond.of(-10)));
+        operatorController.rightBumper().whileTrue(indexer.reverseCommand());
+        operatorController.leftBumper().whileTrue(indexer.feedCommand());
 
         // Shooter control
-        controller.povUp().whileTrue(shooter.runVelocityCommand(RotationsPerSecond.of(10)));
-        controller.povDown().whileTrue(shooter.runVelocityCommand(RotationsPerSecond.of(-30)));
-        controller.povLeft().whileTrue(shooter.stopCommand());
+        operatorController.rightTrigger().whileTrue(shooter.shootAtDistanceCommand(Meters.of(2.0)));
+        operatorController.leftTrigger().whileTrue(shooter.stopCommand());
 
         // Reset gyro / odometry1
         final Runnable resetGyro = Constants.currentMode == Constants.Mode.SIM
@@ -185,13 +190,13 @@ public class RobotContainer {
                         driveSimulation.getSimulatedDriveTrainPose()) // reset odometry to actual robot pose during
                 // simulation
                 : () -> drive.setPose(new Pose2d(drive.getPose().getTranslation(), new Rotation2d())); // zero gyro
-        controller.start().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
+        driverController.start().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
 
         // Example Coral Placement Code
         // TODO: delete these code for your own project
         if (Constants.currentMode == Constants.Mode.SIM) {
             // L4 placement
-            controller.y().onTrue(Commands.runOnce(() -> SimulatedArena.getInstance()
+            driverController.y().onTrue(Commands.runOnce(() -> SimulatedArena.getInstance()
                     .addGamePieceProjectile(new ReefscapeCoralOnFly(
                             driveSimulation.getSimulatedDriveTrainPose().getTranslation(),
                             new Translation2d(0.4, 0),
@@ -201,7 +206,7 @@ public class RobotContainer {
                             MetersPerSecond.of(1.5),
                             Degrees.of(-80)))));
             // L3 placement
-            controller.b().onTrue(Commands.runOnce(() -> SimulatedArena.getInstance()
+            driverController.b().onTrue(Commands.runOnce(() -> SimulatedArena.getInstance()
                     .addGamePieceProjectile(new ReefscapeCoralOnFly(
                             driveSimulation.getSimulatedDriveTrainPose().getTranslation(),
                             new Translation2d(0.4, 0),

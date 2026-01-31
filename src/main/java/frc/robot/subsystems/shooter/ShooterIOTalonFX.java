@@ -17,19 +17,19 @@ import static frc.robot.util.PhoenixUtil.tryUntilOk;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
-import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.NeutralOut;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
-import com.ctre.phoenix6.hardware.TalonFX;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import frc.robot.Constants;
+import frc.robot.util.TunableTalonFX;
 
 public class ShooterIOTalonFX implements ShooterIO {
-    private final TalonFX shooterMotor;
+    private final TunableTalonFX shooterMotor;
     private final StatusSignal<Angle> position;
     private final StatusSignal<AngularVelocity> velocity;
     private final StatusSignal<Voltage> appliedVolts;
@@ -39,14 +39,14 @@ public class ShooterIOTalonFX implements ShooterIO {
     private final VelocityVoltage velocityRequest = new VelocityVoltage(0.0);
 
     public ShooterIOTalonFX() {
-        shooterMotor = new TalonFX(Constants.CANIDs.kShooterFlywheelOneCANID, "Drive Base");
+        // Create TunableTalonFX with initial gains from ShooterConstants
+        shooterMotor = new TunableTalonFX(
+                Constants.CANIDs.kShooterFlywheelOneCANID,
+                "Drive Base",
+                "Shooter/ShooterMotor");
 
-        // Apply configuration
+        // Apply full configuration (motor output, current limits, etc.)
         TalonFXConfiguration config = ShooterConstants.kShooterTalonFXConfiguration;
-
-        // Ensure neutral mode is brake or coast as desired (override if needed, but using constant for now)
-        // config.MotorOutput.NeutralMode = NeutralModeValue.Coast;
-
         tryUntilOk(5, () -> shooterMotor.getConfigurator().apply(config, 0.25));
 
         // Signals
@@ -60,6 +60,9 @@ public class ShooterIOTalonFX implements ShooterIO {
 
     @Override
     public void updateInputs(ShooterIOInputs inputs) {
+        // Update tunable gains from NetworkTables if changed
+        shooterMotor.updateTunableGains();
+
         BaseStatusSignal.refreshAll(position, velocity, appliedVolts, current);
 
         inputs.shooterMotorConnected = BaseStatusSignal.isAllGood(position, velocity, appliedVolts, current);
@@ -81,11 +84,6 @@ public class ShooterIOTalonFX implements ShooterIO {
 
     @Override
     public void stop() {
-        shooterMotor.setControl(voltageRequest.withOutput(0.0));
-    }
-
-    @Override
-    public void updatePIDConfig(Slot0Configs config) {
-        shooterMotor.getConfigurator().apply(config);
+        shooterMotor.setControl(new NeutralOut());
     }
 }

@@ -3,6 +3,7 @@ package frc.robot.subsystems.shooter;
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
+import static edu.wpi.first.units.Units.RotationsPerSecond;
 
 import com.ctre.phoenix6.configs.Slot0Configs;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
@@ -20,11 +21,11 @@ public class ShooterTuning {
     };
     // Default angular velocities for each distance
     private final AngularVelocity[] defaultAngularVelocities = {
-        RadiansPerSecond.of(1),
-        RadiansPerSecond.of(55.0),
-        RadiansPerSecond.of(60.0),
-        RadiansPerSecond.of(65.0),
-        RadiansPerSecond.of(70.0)
+        RotationsPerSecond.of(-50),
+        RotationsPerSecond.of(-55.0),
+        RotationsPerSecond.of(-60.0),
+        RotationsPerSecond.of(-65.0),
+        RotationsPerSecond.of(-70.0)
     };
 
     public ShooterTuning() {
@@ -35,13 +36,6 @@ public class ShooterTuning {
                     "ShooterTuning/AngularVelocity " + distances[i].in(Meters) + "m (rad_s)",
                     defaultAngularVelocities[i].in(RadiansPerSecond));
         }
-
-        // Initialize PID/FF gains for real robot (defaults from ShooterConstants)
-        SmartDashboard.setDefaultNumber("ShooterTuning/kP", ShooterConstants.kP);
-        SmartDashboard.setDefaultNumber("ShooterTuning/kI", ShooterConstants.kI);
-        SmartDashboard.setDefaultNumber("ShooterTuning/kD", ShooterConstants.kD);
-        SmartDashboard.setDefaultNumber("ShooterTuning/kS", ShooterConstants.kS);
-        SmartDashboard.setDefaultNumber("ShooterTuning/kV", ShooterConstants.kV);
 
         // Initialize simulation PID gains (defaults from ShooterConstants)
         SmartDashboard.setDefaultNumber("ShooterTuning/Sim_kP", ShooterConstants.kSimP);
@@ -72,20 +66,6 @@ public class ShooterTuning {
     public AngularVelocity getAngularVelocity(Distance distance) {
         updateMap();
         return RadiansPerSecond.of(distanceToAngularVelocity.get(distance.in(Meters)));
-    }
-
-    /**
-     * Gets the current Slot0Configs with tunable PID/FF values from SmartDashboard.
-     *
-     * @return Slot0Configs with current tuned values.
-     */
-    public Slot0Configs getSlot0Configs() {
-        return new Slot0Configs()
-                .withKP(SmartDashboard.getNumber("ShooterTuning/kP", ShooterConstants.kP))
-                .withKI(SmartDashboard.getNumber("ShooterTuning/kI", ShooterConstants.kI))
-                .withKD(SmartDashboard.getNumber("ShooterTuning/kD", ShooterConstants.kD))
-                .withKS(SmartDashboard.getNumber("ShooterTuning/kS", ShooterConstants.kS))
-                .withKV(SmartDashboard.getNumber("ShooterTuning/kV", ShooterConstants.kV));
     }
 
     /** Gets the tunable kP value for simulation PID controller. */

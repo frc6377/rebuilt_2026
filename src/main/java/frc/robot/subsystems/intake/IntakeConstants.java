@@ -20,8 +20,8 @@ public class IntakeConstants {
 
     public class RollerConstants {
         // TODO: Fix incorrect Constants
-        public static final double INTAKE_SPEED = 1;
-        public static final double OUTAKE_SPEED = -1;
+        public static final double INTAKE_SPEED = -1;
+        public static final double OUTAKE_SPEED = 1;
 
         public static final AngularMomentum ROLLER_MOI = KilogramMetersSquaredPerSecond.of(0.00032);
         public static final double ROLLER_GEARING = 1.0;

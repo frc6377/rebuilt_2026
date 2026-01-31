@@ -15,13 +15,11 @@ package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 
-import com.ctre.phoenix6.configs.Slot0Configs;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.Constants;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
 
@@ -29,9 +27,6 @@ public class Shooter extends SubsystemBase {
     private final ShooterIO io;
     private final ShooterIOInputsAutoLogged inputs = new ShooterIOInputsAutoLogged();
     private final ShooterTuning tuning = new ShooterTuning();
-
-    // Track last applied PID values to avoid unnecessary updates
-    private Slot0Configs lastAppliedConfig = null;
 
     /** Creates a new Shooter. */
     public Shooter(ShooterIO io) {
@@ -42,36 +37,6 @@ public class Shooter extends SubsystemBase {
     public void periodic() {
         io.updateInputs(inputs);
         Logger.processInputs("Shooter", inputs);
-
-        // Check for updated PID values and apply if changed
-        Slot0Configs currentConfig;
-        if (Constants.currentMode == Constants.Mode.SIM) {
-            currentConfig = tuning.getSimSlot0Configs();
-        } else {
-            currentConfig = tuning.getSlot0Configs();
-        }
-
-        if (hasConfigChanged(currentConfig)) {
-            io.updatePIDConfig(currentConfig);
-            lastAppliedConfig = currentConfig;
-        }
-    }
-
-    /**
-     * Checks if the PID/FF configuration has changed from the last applied values.
-     *
-     * @param currentConfig The current configuration from tuning.
-     * @return true if the configuration has changed.
-     */
-    private boolean hasConfigChanged(Slot0Configs currentConfig) {
-        if (lastAppliedConfig == null) {
-            return true;
-        }
-        return currentConfig.kP != lastAppliedConfig.kP
-                || currentConfig.kI != lastAppliedConfig.kI
-                || currentConfig.kD != lastAppliedConfig.kD
-                || currentConfig.kS != lastAppliedConfig.kS
-                || currentConfig.kV != lastAppliedConfig.kV;
     }
 
     // /** Run the shooter at the specified voltage. */
