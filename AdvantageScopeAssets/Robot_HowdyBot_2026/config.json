@@ -6,7 +6,7 @@
     "position": [0, 0, 0],
     "cameras": [
       {
-        "name" : "LimeLight-ElvCam",
+        "name" : "Shooter-Cam",
         "rotations": [{"axis": "y", "degrees": -25}, {"axis": "z", "degrees": -90}],
         "position": [-0.007426, 0.092737, 0.496115],
         "resolution": [1280, 960],
