@@ -186,5 +186,8 @@ compile_commands.json
 # Eclipse generated file for annotation processors
 .factorypath
 
-# Don't track build artifact
+## HOWDY BOT ADDITIONS
 BuildConstants.java
+
+simgui-ds.json
+.vscode
