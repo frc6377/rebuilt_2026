@@ -92,13 +92,13 @@ public class Robot extends LoggedRobot {
     @Override
     public void disabledInit() {
         robotContainer.resetSimulationField();
-
-        robotContainer.getRobotStartPose().schedule();
     }
 
     /** This function is called periodically when disabled. */
     @Override
-    public void disabledPeriodic() {}
+    public void disabledPeriodic() {
+        robotContainer.getRobotStartPose().schedule();
+    }
 
     /** This autonomous runs the autonomous command selected by your {@link RobotContainer} class. */
     @Override

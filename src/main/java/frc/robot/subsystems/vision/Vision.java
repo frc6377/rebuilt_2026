@@ -126,8 +126,8 @@ public class Vision extends SubsystemBase {
                     Pose3d cameraPose = getStartingPoseFromCamera(cameraIndex);
                     Logger.recordOutput("CameraPose", cameraPose);
                     if (getTagCount(0) >= 1 && cameraPose != null) {
-
                         questNav.setPose(cameraPose);
+                        Logger.recordOutput("Is Called In Disabled", true);
                     }
                 })
                 .ignoringDisable(true);
