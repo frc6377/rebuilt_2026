@@ -131,7 +131,6 @@ public class Vision extends SubsystemBase {
                     }
                 })
                 .ignoringDisable(true);
-        // .onlyWhile(() -> getStartingPoseFromLimelight() != null);
     }
     ;
 
