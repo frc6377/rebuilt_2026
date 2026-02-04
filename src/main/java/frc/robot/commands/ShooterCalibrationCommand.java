@@ -38,6 +38,8 @@ import org.littletonrobotics.junction.Logger;
  * A calibration command that systematically tests different shooting parameters from various positions to find values
  * that successfully score in the hub.
  *
+ * <p>ONLY FOR USE IN SIMULATION!
+ *
  * <p>The command will:
  *
  * <ol>

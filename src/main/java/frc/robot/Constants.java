@@ -32,7 +32,7 @@ public final class Constants {
 
     /** Field dimensions and hub positions for 2026 FUEL game */
     public static final class FieldConstants {
-        // Standard FRC field dimensions
+        // Standard FRC field dimensions (2026 FUEL)
         public static final Distance FIELD_LENGTH = Feet.of(54.0); // ~16.46m
         public static final Distance FIELD_WIDTH = Feet.of(27.0); // ~8.23m
 

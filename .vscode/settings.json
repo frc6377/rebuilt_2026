@@ -62,5 +62,7 @@
     null
   ],
   "java.dependency.enableDependencyCheckup": false,
-  "java.debug.settings.onBuildFailureProceed": true
+  "java.debug.settings.onBuildFailureProceed": true,
+  "editor.aiStats.enabled": true,
+  "editor.detectIndentation": false
 }

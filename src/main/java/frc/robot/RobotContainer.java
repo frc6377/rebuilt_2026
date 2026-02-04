@@ -188,13 +188,6 @@ public class RobotContainer {
                 : () -> drive.setPose(new Pose2d(drive.getPose().getTranslation(), new Rotation2d())); // zero gyro
         controller.start().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
 
-        // Left trigger: Full auto-aim - aims at hub, sets hood angle, AND spins up flywheels
-        controller
-                .leftTrigger()
-                .whileTrue(ShootingCommands.fullAutoAim(
-                        drive, hood, shooter, () -> -controller.getLeftY(), () -> -controller.getLeftX()))
-                .onFalse(shooter.stopCommand());
-
         // POV Up: Launch FUEL in simulation
         if (Constants.currentMode == Constants.Mode.SIM && gamePieceTrajectorySimulation != null) {
             controller
@@ -212,6 +205,12 @@ public class RobotContainer {
             controller
                     .povRight()
                     .onTrue(Commands.runOnce(() -> gamePieceTrajectorySimulation.setAutoFireEnabled(false)));
+            // Left trigger: Full auto-aim - aims at hub, sets hood angle, AND spins up flywheels
+            controller
+                    .leftTrigger()
+                    .whileTrue(ShootingCommands.fullAutoAim(
+                            drive, hood, shooter, () -> -controller.getLeftY(), () -> -controller.getLeftX()))
+                    .onFalse(shooter.stopCommand());
         }
         // Example Coral Placement Code
         // TODO: delete these code for your own project

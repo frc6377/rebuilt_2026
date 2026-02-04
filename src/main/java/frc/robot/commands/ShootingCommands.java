@@ -21,7 +21,6 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Distance;
-import edu.wpi.first.units.measure.LinearAcceleration;
 import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -29,36 +28,25 @@ import frc.robot.Constants.FieldConstants;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.hood.Hood;
 import frc.robot.subsystems.shooter.Shooter;
+import frc.robot.subsystems.shooter.ShooterConstants;
 import java.util.function.DoubleSupplier;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 /** Commands for auto-aiming and shooting at the hub. */
 public class ShootingCommands {
-    // Shooter physical properties
-    private static final Distance SHOOTER_HEIGHT = Meters.of(0.5); // Height ball exits shooter
-    private static final Distance FLYWHEEL_RADIUS = Inches.of(2.0); // 2-inch radius
-    private static final double LAUNCH_EFFICIENCY = 1;
-    private static final LinearAcceleration GRAVITY = MetersPerSecondPerSecond.of(9.8); // accounts for drag etc.
-
-    // Hood angle limits
-    private static final Angle MIN_HOOD_ANGLE = Degrees.of(25.0);
-    private static final Angle MAX_HOOD_ANGLE = Degrees.of(80.0);
-
-    // Flywheel limits
-    private static final AngularVelocity MIN_FLYWHEEL_VELOCITY = RPM.of(1500.0);
-    private static final AngularVelocity MAX_FLYWHEEL_VELOCITY = RPM.of(6000.0);
-
     // Trajectory target heights (tunable via NetworkTables)
     // Ball peaks at 8ft, lands at hub opening at 6ft
     private static final LoggedNetworkNumber maxHeightFeet =
-            new LoggedNetworkNumber("Shooting/MaxHeightFeet", 8.0); // Peak height
+            new LoggedNetworkNumber("Shooting/MaxHeightFeet", ShooterConstants.defaultMaxHeightFeet);
     private static final LoggedNetworkNumber targetHeightFeet =
-            new LoggedNetworkNumber("Shooting/TargetHeightFeet", 6.0); // Hub opening height
+            new LoggedNetworkNumber("Shooting/TargetHeightFeet", ShooterConstants.defaultTargetHeightFeet);
 
     // Fine-tuning offsets
-    private static final LoggedNetworkNumber hoodAngleOffset = new LoggedNetworkNumber("Shooting/HoodAngleOffset", 0.0);
-    private static final LoggedNetworkNumber rpmMultiplier = new LoggedNetworkNumber("Shooting/RPMMultiplier", 1.0);
+    private static final LoggedNetworkNumber hoodAngleOffset =
+            new LoggedNetworkNumber("Shooting/HoodAngleOffset", ShooterConstants.defaultHoodAngleOffset);
+    private static final LoggedNetworkNumber rpmMultiplier =
+            new LoggedNetworkNumber("Shooting/RPMMultiplier", ShooterConstants.defaultRpmMultiplier);
 
     private ShootingCommands() {}
 
@@ -92,6 +80,8 @@ public class ShootingCommands {
      * Calculate shooting parameters for a trajectory that: 1. Starts at shooter height 2. Peaks at maxHeight (default
      * 8ft) 3. Lands at targetHeight (default 6ft / hub opening)
      *
+     * <p>When hood is disabled, uses fixed angle and calculates velocity to compensate.
+     *
      * <p>The math: - Given: start height h0, max height hMax, target height hTarget, horizontal distance d - The ball
      * rises (hMax - h0), then falls (hMax - hTarget) to reach the hub - Time to rise: t1 = sqrt(2 * (hMax - h0) / g) -
      * Time to fall: t2 = sqrt(2 * (hMax - hTarget) / g) - Total time: t = t1 + t2 - Horizontal velocity: vx = d / t -
@@ -102,10 +92,15 @@ public class ShootingCommands {
      * @return ShootingParameters with hood angle and flywheel velocity
      */
     public static ShootingParameters calculateShootingParameters(Distance distance) {
+        // If hood is disabled, use fixed angle and calculate velocity for that angle
+        if (!ShooterConstants.hoodEnabled) {
+            return calculateParametersForFixedAngle(distance, ShooterConstants.fixedHoodAngle);
+        }
+
         // Get tunable heights as Distance
         Distance maxHeight = Feet.of(maxHeightFeet.get());
         Distance targetHeight = Feet.of(targetHeightFeet.get());
-        Distance startHeight = SHOOTER_HEIGHT;
+        Distance startHeight = ShooterConstants.shooterHeight;
 
         // Calculate rise and fall distances
         Distance riseHeight = maxHeight.minus(startHeight); // How high the ball rises
@@ -113,11 +108,11 @@ public class ShootingCommands {
 
         // Ensure valid trajectory (max height must be above both start and target)
         if (riseHeight.in(Meters) <= 0 || fallHeight.in(Meters) < 0) {
-            return new ShootingParameters(Degrees.of(45.0), MIN_FLYWHEEL_VELOCITY);
+            return new ShootingParameters(Degrees.of(45.0), ShooterConstants.minShootingFlywheelVelocity);
         }
 
         // Time calculations (using raw doubles for intermediate math)
-        double gravityMps2 = GRAVITY.in(MetersPerSecondPerSecond);
+        double gravityMps2 = ShooterConstants.gravity.in(MetersPerSecondPerSecond);
         double riseMeters = riseHeight.in(Meters);
         double fallMeters = fallHeight.in(Meters);
         double distanceMeters = distance.in(Meters);
@@ -141,22 +136,72 @@ public class ShootingCommands {
 
         // Clamp hood angle to limits
         double hoodDegrees = hoodAngle.in(Degrees);
-        hoodDegrees = Math.max(MIN_HOOD_ANGLE.in(Degrees), Math.min(MAX_HOOD_ANGLE.in(Degrees), hoodDegrees));
+        hoodDegrees = Math.max(
+                ShooterConstants.minHoodAngle.in(Degrees),
+                Math.min(ShooterConstants.maxHoodAngle.in(Degrees), hoodDegrees));
         hoodAngle = Degrees.of(hoodDegrees);
 
         // Convert launch speed to flywheel angular velocity
         // v = omega * r, so omega = v / r
-        double flywheelRadiusMeters = FLYWHEEL_RADIUS.in(Meters);
+        double flywheelRadiusMeters = ShooterConstants.flywheelRadius.in(Meters);
         double launchSpeedMps = launchSpeed.in(MetersPerSecond);
-        double angularVelocityRadPerSec = (launchSpeedMps / LAUNCH_EFFICIENCY) / flywheelRadiusMeters;
+        double angularVelocityRadPerSec = (launchSpeedMps / ShooterConstants.launchEfficiency) / flywheelRadiusMeters;
         AngularVelocity flywheelVelocity = RadiansPerSecond.of(angularVelocityRadPerSec * rpmMultiplier.get());
 
         // Clamp flywheel velocity to limits
         double rpm = flywheelVelocity.in(RPM);
-        rpm = Math.max(MIN_FLYWHEEL_VELOCITY.in(RPM), Math.min(MAX_FLYWHEEL_VELOCITY.in(RPM), rpm));
+        rpm = Math.max(
+                ShooterConstants.minShootingFlywheelVelocity.in(RPM),
+                Math.min(ShooterConstants.maxShootingFlywheelVelocity.in(RPM), rpm));
         flywheelVelocity = RPM.of(rpm);
 
         return new ShootingParameters(hoodAngle, flywheelVelocity);
+    }
+
+    /**
+     * Calculate shooting parameters for a fixed hood angle. Uses projectile motion to determine required velocity for
+     * given distance and fixed angle.
+     *
+     * <p>For projectile motion with fixed angle theta: - Range R = v^2 * sin(2*theta) / g (for flat ground) - Adjusted
+     * for height difference: v = sqrt(g * d / sin(2*theta)) approximately
+     *
+     * @param distance Horizontal distance to target
+     * @param fixedAngle The fixed hood angle
+     * @return ShootingParameters with the fixed angle and calculated velocity
+     */
+    private static ShootingParameters calculateParametersForFixedAngle(Distance distance, Angle fixedAngle) {
+        double distanceMeters = distance.in(Meters);
+        double angleRadians = fixedAngle.in(Radians);
+        double gravityMps2 = ShooterConstants.gravity.in(MetersPerSecondPerSecond);
+
+        // For projectile motion: R = v^2 * sin(2*theta) / g
+        // Solving for v: v = sqrt(R * g / sin(2*theta))
+        double sin2Theta = Math.sin(2.0 * angleRadians);
+
+        // Avoid division by zero
+        if (Math.abs(sin2Theta) < 0.001) {
+            return new ShootingParameters(fixedAngle, ShooterConstants.maxShootingFlywheelVelocity);
+        }
+
+        // Calculate required launch speed
+        double launchSpeedMps = Math.sqrt(distanceMeters * gravityMps2 / sin2Theta);
+
+        // Apply multiplier for tuning
+        launchSpeedMps *= rpmMultiplier.get();
+
+        // Convert to flywheel angular velocity
+        double flywheelRadiusMeters = ShooterConstants.flywheelRadius.in(Meters);
+        double angularVelocityRadPerSec = (launchSpeedMps / ShooterConstants.launchEfficiency) / flywheelRadiusMeters;
+        AngularVelocity flywheelVelocity = RadiansPerSecond.of(angularVelocityRadPerSec);
+
+        // Clamp flywheel velocity to limits
+        double rpm = flywheelVelocity.in(RPM);
+        rpm = Math.max(
+                ShooterConstants.minShootingFlywheelVelocity.in(RPM),
+                Math.min(ShooterConstants.maxShootingFlywheelVelocity.in(RPM), rpm));
+        flywheelVelocity = RPM.of(rpm);
+
+        return new ShootingParameters(fixedAngle, flywheelVelocity);
     }
 
     /** @deprecated Use calculateShootingParameters(Distance) instead */
@@ -195,8 +240,10 @@ public class ShootingCommands {
                             Logger.recordOutput("Shooting/CalculatedHoodAngle", hoodAngle.in(Degrees));
                             Logger.recordOutput("Shooting/CalculatedRPM", flywheelVelocity.in(RPM));
 
-                            // Set subsystem targets (subsystems still use doubles for now)
-                            hood.setAngle(hoodAngle.in(Degrees));
+                            // Set subsystem targets (only set hood if enabled)
+                            if (ShooterConstants.hoodEnabled) {
+                                hood.setAngle(hoodAngle.in(Degrees));
+                            }
                             shooter.setFlywheelVelocity(flywheelVelocity.in(RPM));
                         },
                         hood,

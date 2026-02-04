@@ -32,13 +32,6 @@ public class Shooter extends SubsystemBase {
     private final ShooterIO io;
     private final ShooterIOInputsAutoLogged inputs = new ShooterIOInputsAutoLogged();
 
-    // Tunable PID constants
-    private final LoggedNetworkNumber flywheelKP = new LoggedNetworkNumber("Shooter/FlywheelKP", 0.1);
-    private final LoggedNetworkNumber flywheelKI = new LoggedNetworkNumber("Shooter/FlywheelKI", 0.0);
-    private final LoggedNetworkNumber flywheelKD = new LoggedNetworkNumber("Shooter/FlywheelKD", 0.0);
-    private final LoggedNetworkNumber flywheelKV = new LoggedNetworkNumber("Shooter/FlywheelKV", 0.12);
-    private final LoggedNetworkNumber flywheelKS = new LoggedNetworkNumber("Shooter/FlywheelKS", 0.0);
-
     // Tunable shot map for distance-based shooting (velocity only)
     // Distance 1m
     private final LoggedNetworkNumber dist1m = new LoggedNetworkNumber("Shooter/ShotMap/Dist1m", 1.0);
@@ -56,6 +49,22 @@ public class Shooter extends SubsystemBase {
     private final LoggedNetworkNumber dist5m = new LoggedNetworkNumber("Shooter/ShotMap/Dist5m", 5.0);
     private final LoggedNetworkNumber vel5m = new LoggedNetworkNumber("Shooter/ShotMap/Vel5m", 4000.0);
 
+    // Tunable spin ratio (spin motor velocity as fraction of main flywheel velocity)
+    private final LoggedNetworkNumber spinRatio =
+            new LoggedNetworkNumber("Shooter/SpinRatio", ShooterConstants.defaultSpinRatio);
+
+    // Tunable PID gains for flywheel velocity control
+    private final LoggedNetworkNumber flywheelKP =
+            new LoggedNetworkNumber("Shooter/Flywheel/kP", ShooterConstants.defaultFlywheelKP);
+    private final LoggedNetworkNumber flywheelKI =
+            new LoggedNetworkNumber("Shooter/Flywheel/kI", ShooterConstants.defaultFlywheelKI);
+    private final LoggedNetworkNumber flywheelKD =
+            new LoggedNetworkNumber("Shooter/Flywheel/kD", ShooterConstants.defaultFlywheelKD);
+    private final LoggedNetworkNumber flywheelKV =
+            new LoggedNetworkNumber("Shooter/Flywheel/kV", ShooterConstants.defaultFlywheelKV);
+    private final LoggedNetworkNumber flywheelKS =
+            new LoggedNetworkNumber("Shooter/Flywheel/kS", ShooterConstants.defaultFlywheelKS);
+
     // Interpolation map for distance-based shooting
     // Maps distance (meters) to shooter velocity RPM
     private final InterpolatingDoubleTreeMap distanceToVelocityMap = new InterpolatingDoubleTreeMap();
@@ -63,6 +72,8 @@ public class Shooter extends SubsystemBase {
     // Setpoints
     private double leftFlywheelSetpoint = 0.0;
     private double rightFlywheelSetpoint = 0.0;
+    private double leftSpinSetpoint = 0.0;
+    private double rightSpinSetpoint = 0.0;
 
     // Limp mode state
     private boolean leftFlywheelFailed = false;
@@ -85,8 +96,13 @@ public class Shooter extends SubsystemBase {
         detectMotorFailures();
 
         // Log additional state
+        Logger.recordOutput("Shooter/LeftFlywheelEnabled", ShooterConstants.leftFlywheelEnabled);
+        Logger.recordOutput("Shooter/RightFlywheelEnabled", ShooterConstants.rightFlywheelEnabled);
         Logger.recordOutput("Shooter/LeftFlywheelSetpoint", leftFlywheelSetpoint);
         Logger.recordOutput("Shooter/RightFlywheelSetpoint", rightFlywheelSetpoint);
+        Logger.recordOutput("Shooter/LeftSpinSetpoint", leftSpinSetpoint);
+        Logger.recordOutput("Shooter/RightSpinSetpoint", rightSpinSetpoint);
+        Logger.recordOutput("Shooter/SpinRatio", spinRatio.get());
         Logger.recordOutput("Shooter/LeftFlywheelFailed", leftFlywheelFailed);
         Logger.recordOutput("Shooter/RightFlywheelFailed", rightFlywheelFailed);
         Logger.recordOutput("Shooter/InLimpMode", isInLimpMode());
@@ -108,7 +124,8 @@ public class Shooter extends SubsystemBase {
     }
 
     /**
-     * Set velocity for both flywheels independently. This allows for limp-mode operation if one side fails.
+     * Set velocity for both flywheels independently. This allows for limp-mode operation if one side fails. Respects
+     * ShooterConstants enable flags for each motor. Also sets spin motors based on the tunable spin ratio.
      *
      * @param leftRPM Target velocity for left flywheel in RPM
      * @param rightRPM Target velocity for right flywheel in RPM
@@ -117,17 +134,49 @@ public class Shooter extends SubsystemBase {
         leftFlywheelSetpoint = leftRPM;
         rightFlywheelSetpoint = rightRPM;
 
-        // Only send commands to non-failed motors
-        if (!leftFlywheelFailed) {
+        // Calculate spin motor velocities based on spin ratio
+        double currentSpinRatio = spinRatio.get();
+        leftSpinSetpoint = leftRPM * currentSpinRatio;
+        rightSpinSetpoint = rightRPM * currentSpinRatio;
+
+        // Only send commands to enabled and non-failed motors
+        if (ShooterConstants.leftFlywheelEnabled && !leftFlywheelFailed) {
             io.setLeftFlywheelVelocity(RPM.of(leftRPM));
+            io.setLeftSpinVelocity(RPM.of(leftSpinSetpoint));
         } else {
-            io.setLeftFlywheelVelocity(RPM.of(0.0)); // Stop failed motor
+            io.setLeftFlywheelVelocity(RPM.of(0.0)); // Stop disabled/failed motor
+            io.setLeftSpinVelocity(RPM.of(0.0));
         }
 
-        if (!rightFlywheelFailed) {
+        if (ShooterConstants.rightFlywheelEnabled && !rightFlywheelFailed) {
             io.setRightFlywheelVelocity(RPM.of(rightRPM));
+            io.setRightSpinVelocity(RPM.of(rightSpinSetpoint));
         } else {
-            io.setRightFlywheelVelocity(RPM.of(0.0)); // Stop failed motor
+            io.setRightFlywheelVelocity(RPM.of(0.0)); // Stop disabled/failed motor
+            io.setRightSpinVelocity(RPM.of(0.0));
+        }
+    }
+
+    /**
+     * Set spin motor velocities directly.
+     *
+     * @param leftRPM Target velocity for left spin motor in RPM
+     * @param rightRPM Target velocity for right spin motor in RPM
+     */
+    public void setSpinVelocities(double leftRPM, double rightRPM) {
+        leftSpinSetpoint = leftRPM;
+        rightSpinSetpoint = rightRPM;
+
+        if (ShooterConstants.leftFlywheelEnabled && !leftFlywheelFailed) {
+            io.setLeftSpinVelocity(RPM.of(leftRPM));
+        } else {
+            io.setLeftSpinVelocity(RPM.of(0.0));
+        }
+
+        if (ShooterConstants.rightFlywheelEnabled && !rightFlywheelFailed) {
+            io.setRightSpinVelocity(RPM.of(rightRPM));
+        } else {
+            io.setRightSpinVelocity(RPM.of(0.0));
         }
     }
 
@@ -248,6 +297,33 @@ public class Shooter extends SubsystemBase {
         rightFlywheelFailed = false;
     }
 
+    // ========== Tunable PID Getters ==========
+
+    /** Get current flywheel kP from NetworkTables. */
+    public double getFlywheelKP() {
+        return flywheelKP.get();
+    }
+
+    /** Get current flywheel kI from NetworkTables. */
+    public double getFlywheelKI() {
+        return flywheelKI.get();
+    }
+
+    /** Get current flywheel kD from NetworkTables. */
+    public double getFlywheelKD() {
+        return flywheelKD.get();
+    }
+
+    /** Get current flywheel kV from NetworkTables. */
+    public double getFlywheelKV() {
+        return flywheelKV.get();
+    }
+
+    /** Get current flywheel kS from NetworkTables. */
+    public double getFlywheelKS() {
+        return flywheelKS.get();
+    }
+
     // ========== Command Factory Methods ==========
 
     /**
@@ -331,27 +407,5 @@ public class Shooter extends SubsystemBase {
         return prepareForDistanceCommand(distanceMeters)
                 .andThen(waitUntilReady())
                 .withName("PrepareForDistanceAndWait");
-    }
-
-    // ========== Tunable PID Getters ==========
-
-    public double getFlywheelKP() {
-        return flywheelKP.get();
-    }
-
-    public double getFlywheelKI() {
-        return flywheelKI.get();
-    }
-
-    public double getFlywheelKD() {
-        return flywheelKD.get();
-    }
-
-    public double getFlywheelKV() {
-        return flywheelKV.get();
-    }
-
-    public double getFlywheelKS() {
-        return flywheelKS.get();
     }
 }

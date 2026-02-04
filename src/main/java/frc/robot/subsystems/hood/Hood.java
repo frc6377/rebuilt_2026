@@ -18,6 +18,7 @@ import static edu.wpi.first.units.Units.*;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.subsystems.shooter.ShooterConstants;
 import java.util.function.DoubleSupplier;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
@@ -41,11 +42,18 @@ public class Hood extends SubsystemBase {
 
     @Override
     public void periodic() {
+        // Skip if hood is disabled
+        if (!ShooterConstants.hoodEnabled) {
+            Logger.recordOutput("Hood/Enabled", false);
+            return;
+        }
+
         // Update and log inputs
         io.updateInputs(inputs);
         Logger.processInputs("Hood", inputs);
 
         // Log setpoint
+        Logger.recordOutput("Hood/Enabled", true);
         Logger.recordOutput("Hood/AngleSetpoint", angleSetpoint);
     }
 
@@ -55,12 +63,14 @@ public class Hood extends SubsystemBase {
      * @param angleDegrees Target angle in degrees
      */
     public void setAngle(double angleDegrees) {
+        if (!ShooterConstants.hoodEnabled) return;
         angleSetpoint = angleDegrees;
         io.setAngle(Degrees.of(angleDegrees));
     }
 
     /** Stop hood motor. */
     public void stop() {
+        if (!ShooterConstants.hoodEnabled) return;
         angleSetpoint = 0.0;
         io.stop();
     }
@@ -68,10 +78,20 @@ public class Hood extends SubsystemBase {
     /**
      * Get current hood angle.
      *
-     * @return Angle in degrees
+     * @return Angle in degrees (0.0 if hood disabled)
      */
     public double getAngle() {
+        if (!ShooterConstants.hoodEnabled) return 0.0;
         return inputs.angleDegrees;
+    }
+
+    /**
+     * Check if hood is enabled.
+     *
+     * @return true if hood functionality is enabled
+     */
+    public boolean isEnabled() {
+        return ShooterConstants.hoodEnabled;
     }
 
     /**

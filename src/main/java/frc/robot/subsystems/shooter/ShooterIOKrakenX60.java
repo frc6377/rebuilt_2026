@@ -35,11 +35,16 @@ public class ShooterIOKrakenX60 implements ShooterIO {
     private final TalonFX leftFlywheelMotor;
     private final TalonFX rightFlywheelMotor;
 
+    // Hardware - Dual Kraken X44 for spin adjustment on each hood
+    private final TalonFX leftSpinMotor;
+    private final TalonFX rightSpinMotor;
+
     // Reference to shooter for tunable PID
     private Shooter shooter;
 
     // Control requests
     private final VelocityVoltage velocityRequest = new VelocityVoltage(0.0);
+    private final VelocityVoltage spinVelocityRequest = new VelocityVoltage(0.0);
 
     // Status signals - Left flywheel
     private final StatusSignal<AngularVelocity> leftFlywheelVelocity;
@@ -53,10 +58,26 @@ public class ShooterIOKrakenX60 implements ShooterIO {
     private final StatusSignal<Current> rightFlywheelCurrent;
     private final StatusSignal<Temperature> rightFlywheelTemp;
 
+    // Status signals - Left spin motor
+    private final StatusSignal<AngularVelocity> leftSpinVelocity;
+    private final StatusSignal<Voltage> leftSpinAppliedVolts;
+    private final StatusSignal<Current> leftSpinCurrent;
+    private final StatusSignal<Temperature> leftSpinTemp;
+
+    // Status signals - Right spin motor
+    private final StatusSignal<AngularVelocity> rightSpinVelocity;
+    private final StatusSignal<Voltage> rightSpinAppliedVolts;
+    private final StatusSignal<Current> rightSpinCurrent;
+    private final StatusSignal<Temperature> rightSpinTemp;
+
     public ShooterIOKrakenX60() {
-        // Initialize motors with CAN IDs from ShooterConstants
+        // Initialize flywheel motors with CAN IDs from ShooterConstants
         leftFlywheelMotor = new TalonFX(ShooterConstants.leftFlywheelMotorID, ShooterConstants.canBusName);
         rightFlywheelMotor = new TalonFX(ShooterConstants.rightFlywheelMotorID, ShooterConstants.canBusName);
+
+        // Initialize spin motors (Kraken X44 on each hood)
+        leftSpinMotor = new TalonFX(ShooterConstants.leftSpinMotorID, ShooterConstants.canBusName);
+        rightSpinMotor = new TalonFX(ShooterConstants.rightSpinMotorID, ShooterConstants.canBusName);
 
         // Configure left flywheel motor
         var leftFlywheelConfig = new TalonFXConfiguration();
@@ -86,6 +107,34 @@ public class ShooterIOKrakenX60 implements ShooterIO {
         rightFlywheelConfig.CurrentLimits.StatorCurrentLimitEnable = true;
         tryUntilOk(5, () -> rightFlywheelMotor.getConfigurator().apply(rightFlywheelConfig, 0.25));
 
+        // Configure left spin motor (Kraken X44)
+        var leftSpinConfig = new TalonFXConfiguration();
+        leftSpinConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
+        leftSpinConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
+        leftSpinConfig.Slot0 = new Slot0Configs()
+                .withKP(ShooterConstants.defaultSpinKP)
+                .withKI(ShooterConstants.defaultSpinKI)
+                .withKD(ShooterConstants.defaultSpinKD)
+                .withKV(ShooterConstants.defaultSpinKV)
+                .withKS(ShooterConstants.defaultSpinKS);
+        leftSpinConfig.CurrentLimits.StatorCurrentLimit = ShooterConstants.spinMotorCurrentLimit.in(Amps);
+        leftSpinConfig.CurrentLimits.StatorCurrentLimitEnable = true;
+        tryUntilOk(5, () -> leftSpinMotor.getConfigurator().apply(leftSpinConfig, 0.25));
+
+        // Configure right spin motor (Kraken X44)
+        var rightSpinConfig = new TalonFXConfiguration();
+        rightSpinConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
+        rightSpinConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive; // Opposite of left
+        rightSpinConfig.Slot0 = new Slot0Configs()
+                .withKP(ShooterConstants.defaultSpinKP)
+                .withKI(ShooterConstants.defaultSpinKI)
+                .withKD(ShooterConstants.defaultSpinKD)
+                .withKV(ShooterConstants.defaultSpinKV)
+                .withKS(ShooterConstants.defaultSpinKS);
+        rightSpinConfig.CurrentLimits.StatorCurrentLimit = ShooterConstants.spinMotorCurrentLimit.in(Amps);
+        rightSpinConfig.CurrentLimits.StatorCurrentLimitEnable = true;
+        tryUntilOk(5, () -> rightSpinMotor.getConfigurator().apply(rightSpinConfig, 0.25));
+
         // Create status signals for left flywheel
         leftFlywheelVelocity = leftFlywheelMotor.getVelocity();
         leftFlywheelAppliedVolts = leftFlywheelMotor.getMotorVoltage();
@@ -98,6 +147,18 @@ public class ShooterIOKrakenX60 implements ShooterIO {
         rightFlywheelCurrent = rightFlywheelMotor.getStatorCurrent();
         rightFlywheelTemp = rightFlywheelMotor.getDeviceTemp();
 
+        // Create status signals for left spin motor
+        leftSpinVelocity = leftSpinMotor.getVelocity();
+        leftSpinAppliedVolts = leftSpinMotor.getMotorVoltage();
+        leftSpinCurrent = leftSpinMotor.getStatorCurrent();
+        leftSpinTemp = leftSpinMotor.getDeviceTemp();
+
+        // Create status signals for right spin motor
+        rightSpinVelocity = rightSpinMotor.getVelocity();
+        rightSpinAppliedVolts = rightSpinMotor.getMotorVoltage();
+        rightSpinCurrent = rightSpinMotor.getStatorCurrent();
+        rightSpinTemp = rightSpinMotor.getDeviceTemp();
+
         // Configure update frequencies
         BaseStatusSignal.setUpdateFrequencyForAll(
                 50.0,
@@ -108,10 +169,18 @@ public class ShooterIOKrakenX60 implements ShooterIO {
                 rightFlywheelVelocity,
                 rightFlywheelAppliedVolts,
                 rightFlywheelCurrent,
-                rightFlywheelTemp);
+                rightFlywheelTemp,
+                leftSpinVelocity,
+                leftSpinAppliedVolts,
+                leftSpinCurrent,
+                leftSpinTemp,
+                rightSpinVelocity,
+                rightSpinAppliedVolts,
+                rightSpinCurrent,
+                rightSpinTemp);
 
         // Optimize CAN bus utilization
-        ParentDevice.optimizeBusUtilizationForAll(leftFlywheelMotor, rightFlywheelMotor);
+        ParentDevice.optimizeBusUtilizationForAll(leftFlywheelMotor, rightFlywheelMotor, leftSpinMotor, rightSpinMotor);
     }
 
     public void setShooter(Shooter shooter) {
@@ -134,7 +203,15 @@ public class ShooterIOKrakenX60 implements ShooterIO {
                 rightFlywheelVelocity,
                 rightFlywheelAppliedVolts,
                 rightFlywheelCurrent,
-                rightFlywheelTemp);
+                rightFlywheelTemp,
+                leftSpinVelocity,
+                leftSpinAppliedVolts,
+                leftSpinCurrent,
+                leftSpinTemp,
+                rightSpinVelocity,
+                rightSpinAppliedVolts,
+                rightSpinCurrent,
+                rightSpinTemp);
 
         // Update left flywheel inputs
         inputs.leftFlywheelVelocityRPM = leftFlywheelVelocity.getValueAsDouble() * 60.0;
@@ -147,6 +224,18 @@ public class ShooterIOKrakenX60 implements ShooterIO {
         inputs.rightFlywheelAppliedVolts = rightFlywheelAppliedVolts.getValueAsDouble();
         inputs.rightFlywheelCurrentAmps = rightFlywheelCurrent.getValueAsDouble();
         inputs.rightFlywheelTempCelsius = rightFlywheelTemp.getValueAsDouble();
+
+        // Update left spin motor inputs
+        inputs.leftSpinVelocityRPM = leftSpinVelocity.getValueAsDouble() * 60.0;
+        inputs.leftSpinAppliedVolts = leftSpinAppliedVolts.getValueAsDouble();
+        inputs.leftSpinCurrentAmps = leftSpinCurrent.getValueAsDouble();
+        inputs.leftSpinTempCelsius = leftSpinTemp.getValueAsDouble();
+
+        // Update right spin motor inputs
+        inputs.rightSpinVelocityRPM = rightSpinVelocity.getValueAsDouble() * 60.0;
+        inputs.rightSpinAppliedVolts = rightSpinAppliedVolts.getValueAsDouble();
+        inputs.rightSpinCurrentAmps = rightSpinCurrent.getValueAsDouble();
+        inputs.rightSpinTempCelsius = rightSpinTemp.getValueAsDouble();
     }
 
     private void updatePIDGains() {
@@ -177,8 +266,24 @@ public class ShooterIOKrakenX60 implements ShooterIO {
     }
 
     @Override
+    public void setLeftSpinVelocity(edu.wpi.first.units.measure.AngularVelocity velocity) {
+        // Convert to rotations per second for TalonFX
+        double rotationsPerSecond = velocity.in(RotationsPerSecond);
+        leftSpinMotor.setControl(spinVelocityRequest.withVelocity(rotationsPerSecond));
+    }
+
+    @Override
+    public void setRightSpinVelocity(edu.wpi.first.units.measure.AngularVelocity velocity) {
+        // Convert to rotations per second for TalonFX
+        double rotationsPerSecond = velocity.in(RotationsPerSecond);
+        rightSpinMotor.setControl(spinVelocityRequest.withVelocity(rotationsPerSecond));
+    }
+
+    @Override
     public void stop() {
         leftFlywheelMotor.stopMotor();
         rightFlywheelMotor.stopMotor();
+        leftSpinMotor.stopMotor();
+        rightSpinMotor.stopMotor();
     }
 }

@@ -32,6 +32,18 @@ public interface ShooterIO {
         public double rightFlywheelAppliedVolts = 0.0;
         public double rightFlywheelCurrentAmps = 0.0;
         public double rightFlywheelTempCelsius = 0.0;
+
+        // Left spin motor (Kraken X44 on top of left hood)
+        public double leftSpinVelocityRPM = 0.0;
+        public double leftSpinAppliedVolts = 0.0;
+        public double leftSpinCurrentAmps = 0.0;
+        public double leftSpinTempCelsius = 0.0;
+
+        // Right spin motor (Kraken X44 on top of right hood)
+        public double rightSpinVelocityRPM = 0.0;
+        public double rightSpinAppliedVolts = 0.0;
+        public double rightSpinCurrentAmps = 0.0;
+        public double rightSpinTempCelsius = 0.0;
     }
 
     /** Updates the set of loggable inputs. */
@@ -42,6 +54,12 @@ public interface ShooterIO {
 
     /** Set right flywheel velocity */
     default void setRightFlywheelVelocity(AngularVelocity velocity) {}
+
+    /** Set left spin motor velocity */
+    default void setLeftSpinVelocity(AngularVelocity velocity) {}
+
+    /** Set right spin motor velocity */
+    default void setRightSpinVelocity(AngularVelocity velocity) {}
 
     /** Stop flywheel motors */
     default void stop() {}

@@ -24,8 +24,9 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.simulation.FlywheelSim;
 
 public class ShooterIOSim implements ShooterIO {
-    // Motor model - Kraken X60 FOC for better performance
-    private static final DCMotor FLYWHEEL_MOTOR = DCMotor.getKrakenX60Foc(1);
+    // Motor models
+    private static final DCMotor FLYWHEEL_MOTOR = DCMotor.getKrakenX60Foc(1); // Kraken X60 for flywheels
+    private static final DCMotor SPIN_MOTOR = DCMotor.getKrakenX44Foc(1); // Kraken X44 for spin adjustment
 
     // Flywheel physical properties
     // MOI = 0.5 * m * r^2 for solid cylinder
@@ -35,28 +36,51 @@ public class ShooterIOSim implements ShooterIO {
     private static final double FLYWHEEL_MOI = 0.5 * FLYWHEEL_MASS_KG * FLYWHEEL_RADIUS_M * FLYWHEEL_RADIUS_M;
     private static final double FLYWHEEL_GEARING = 1.0; // Direct drive
 
-    // Simulation models
+    // Spin motor physical properties (smaller, lighter roller)
+    private static final double SPIN_MASS_KG = 0.2;
+    private static final double SPIN_RADIUS_M = 0.025; // 1 inch radius
+    private static final double SPIN_MOI = 0.5 * SPIN_MASS_KG * SPIN_RADIUS_M * SPIN_RADIUS_M;
+    private static final double SPIN_GEARING = 1.0;
+
+    // Simulation models - Flywheels
     private final FlywheelSim leftFlywheelSim;
     private final FlywheelSim rightFlywheelSim;
 
-    // PID Controllers for simulation (velocity control in RPM)
+    // Simulation models - Spin motors
+    private final FlywheelSim leftSpinSim;
+    private final FlywheelSim rightSpinSim;
+
+    // PID Controllers for flywheels (velocity control in RPM)
     private final PIDController leftFlywheelController;
     private final PIDController rightFlywheelController;
 
-    // Feedforward for better velocity tracking
-    private final SimpleMotorFeedforward feedforward;
+    // PID Controllers for spin motors
+    private final PIDController leftSpinController;
+    private final PIDController rightSpinController;
 
-    // Setpoints
+    // Feedforward for better velocity tracking
+    private final SimpleMotorFeedforward flywheelFeedforward;
+    private final SimpleMotorFeedforward spinFeedforward;
+
+    // Flywheel setpoints
     private double leftFlywheelSetpointRPM = 0.0;
     private double rightFlywheelSetpointRPM = 0.0;
+
+    // Spin motor setpoints
+    private double leftSpinSetpointRPM = 0.0;
+    private double rightSpinSetpointRPM = 0.0;
 
     // Applied voltages
     private double leftFlywheelAppliedVolts = 0.0;
     private double rightFlywheelAppliedVolts = 0.0;
+    private double leftSpinAppliedVolts = 0.0;
+    private double rightSpinAppliedVolts = 0.0;
 
     // Temperature simulation (simple thermal model)
     private double leftMotorTempCelsius = 25.0;
     private double rightMotorTempCelsius = 25.0;
+    private double leftSpinTempCelsius = 25.0;
+    private double rightSpinTempCelsius = 25.0;
     private static final double AMBIENT_TEMP = 25.0;
     private static final double THERMAL_RESISTANCE = 0.5; // °C/W - how fast motor heats up
     private static final double THERMAL_TIME_CONSTANT = 30.0; // seconds - thermal mass
@@ -64,67 +88,81 @@ public class ShooterIOSim implements ShooterIO {
     public ShooterIOSim() {
         // Create flywheel plant using proper physics
         var flywheelPlant = LinearSystemId.createFlywheelSystem(FLYWHEEL_MOTOR, FLYWHEEL_MOI, FLYWHEEL_GEARING);
+        var spinPlant = LinearSystemId.createFlywheelSystem(SPIN_MOTOR, SPIN_MOI, SPIN_GEARING);
 
         leftFlywheelSim = new FlywheelSim(flywheelPlant, FLYWHEEL_MOTOR);
         rightFlywheelSim = new FlywheelSim(flywheelPlant, FLYWHEEL_MOTOR);
+        leftSpinSim = new FlywheelSim(spinPlant, SPIN_MOTOR);
+        rightSpinSim = new FlywheelSim(spinPlant, SPIN_MOTOR);
 
         // PID controllers tuned for simulation
-        // P gain for fast response, I gain to eliminate steady-state error
         leftFlywheelController = new PIDController(0.001, 0.0005, 0.0);
         rightFlywheelController = new PIDController(0.001, 0.0005, 0.0);
+        leftSpinController = new PIDController(0.001, 0.0005, 0.0);
+        rightSpinController = new PIDController(0.001, 0.0005, 0.0);
 
         // Feedforward based on actual motor model
-        // kV = Voltage / (rad/s) from motor model, converted to V/RPM
-        // For Kraken X60 FOC: kV_motor = 12V / (freeSpeedRadPerSec)
-        // freeSpeedRadPerSec = 6000 RPM * 2*pi/60 = 628.3 rad/s
-        // kV in V/RPM = 12 / 6000 = 0.002, but we need to account for MOI
-        // Using motor nominal voltage / free speed for feedforward
-        double freeSpeedRPM = FLYWHEEL_MOTOR.freeSpeedRadPerSec * 60.0 / (2.0 * Math.PI);
-        double kV = 12.0 / freeSpeedRPM; // Volts per RPM
+        double flywheelFreeSpeedRPM = FLYWHEEL_MOTOR.freeSpeedRadPerSec * 60.0 / (2.0 * Math.PI);
+        double flywheelKV = 12.0 / flywheelFreeSpeedRPM;
+        flywheelFeedforward = new SimpleMotorFeedforward(0.0, flywheelKV, 0.0);
 
-        feedforward = new SimpleMotorFeedforward(
-                0.0, // kS - no static friction in sim
-                kV, // kV calculated from motor model
-                0.0); // kA
+        double spinFreeSpeedRPM = SPIN_MOTOR.freeSpeedRadPerSec * 60.0 / (2.0 * Math.PI);
+        double spinKV = 12.0 / spinFreeSpeedRPM;
+        spinFeedforward = new SimpleMotorFeedforward(0.0, spinKV, 0.0);
     }
 
     @Override
     public void updateInputs(ShooterIOInputs inputs) {
-        // Calculate control output using feedforward + feedback
-        double leftFF = feedforward.calculate(leftFlywheelSetpointRPM);
+        // Calculate control output for flywheels using feedforward + feedback
+        double leftFF = flywheelFeedforward.calculate(leftFlywheelSetpointRPM);
         double leftFB =
                 leftFlywheelController.calculate(leftFlywheelSim.getAngularVelocityRPM(), leftFlywheelSetpointRPM);
         leftFlywheelAppliedVolts = MathUtil.clamp(leftFF + leftFB, -12.0, 12.0);
 
-        double rightFF = feedforward.calculate(rightFlywheelSetpointRPM);
+        double rightFF = flywheelFeedforward.calculate(rightFlywheelSetpointRPM);
         double rightFB =
                 rightFlywheelController.calculate(rightFlywheelSim.getAngularVelocityRPM(), rightFlywheelSetpointRPM);
         rightFlywheelAppliedVolts = MathUtil.clamp(rightFF + rightFB, -12.0, 12.0);
 
+        // Calculate control output for spin motors
+        double leftSpinFF = spinFeedforward.calculate(leftSpinSetpointRPM);
+        double leftSpinFB = leftSpinController.calculate(leftSpinSim.getAngularVelocityRPM(), leftSpinSetpointRPM);
+        leftSpinAppliedVolts = MathUtil.clamp(leftSpinFF + leftSpinFB, -12.0, 12.0);
+
+        double rightSpinFF = spinFeedforward.calculate(rightSpinSetpointRPM);
+        double rightSpinFB = rightSpinController.calculate(rightSpinSim.getAngularVelocityRPM(), rightSpinSetpointRPM);
+        rightSpinAppliedVolts = MathUtil.clamp(rightSpinFF + rightSpinFB, -12.0, 12.0);
+
         // Apply voltage to simulations
         leftFlywheelSim.setInputVoltage(leftFlywheelAppliedVolts);
         rightFlywheelSim.setInputVoltage(rightFlywheelAppliedVolts);
+        leftSpinSim.setInputVoltage(leftSpinAppliedVolts);
+        rightSpinSim.setInputVoltage(rightSpinAppliedVolts);
 
-        // Update flywheel simulations
+        // Update all simulations
         leftFlywheelSim.update(0.02); // 20ms period
         rightFlywheelSim.update(0.02);
+        leftSpinSim.update(0.02);
+        rightSpinSim.update(0.02);
 
         // Update temperature simulation (simple first-order thermal model)
-        // Power dissipated = I^2 * R (approximated by current * voltage losses)
-        double leftPowerDissipated =
-                leftFlywheelSim.getCurrentDrawAmps() * Math.abs(leftFlywheelAppliedVolts) * 0.1; // 10% losses
+        double leftPowerDissipated = leftFlywheelSim.getCurrentDrawAmps() * Math.abs(leftFlywheelAppliedVolts) * 0.1;
         double rightPowerDissipated = rightFlywheelSim.getCurrentDrawAmps() * Math.abs(rightFlywheelAppliedVolts) * 0.1;
+        double leftSpinPowerDissipated = leftSpinSim.getCurrentDrawAmps() * Math.abs(leftSpinAppliedVolts) * 0.1;
+        double rightSpinPowerDissipated = rightSpinSim.getCurrentDrawAmps() * Math.abs(rightSpinAppliedVolts) * 0.1;
 
-        // Temperature rises toward equilibrium based on power and thermal resistance
         double leftEquilibriumTemp = AMBIENT_TEMP + leftPowerDissipated * THERMAL_RESISTANCE;
         double rightEquilibriumTemp = AMBIENT_TEMP + rightPowerDissipated * THERMAL_RESISTANCE;
+        double leftSpinEquilibriumTemp = AMBIENT_TEMP + leftSpinPowerDissipated * THERMAL_RESISTANCE;
+        double rightSpinEquilibriumTemp = AMBIENT_TEMP + rightSpinPowerDissipated * THERMAL_RESISTANCE;
 
-        // First-order thermal response: T_new = T_old + (T_eq - T_old) * dt / tau
         double dt = 0.02;
         leftMotorTempCelsius += (leftEquilibriumTemp - leftMotorTempCelsius) * dt / THERMAL_TIME_CONSTANT;
         rightMotorTempCelsius += (rightEquilibriumTemp - rightMotorTempCelsius) * dt / THERMAL_TIME_CONSTANT;
+        leftSpinTempCelsius += (leftSpinEquilibriumTemp - leftSpinTempCelsius) * dt / THERMAL_TIME_CONSTANT;
+        rightSpinTempCelsius += (rightSpinEquilibriumTemp - rightSpinTempCelsius) * dt / THERMAL_TIME_CONSTANT;
 
-        // Update inputs
+        // Update flywheel inputs
         inputs.leftFlywheelVelocityRPM = leftFlywheelSim.getAngularVelocityRPM();
         inputs.leftFlywheelAppliedVolts = leftFlywheelAppliedVolts;
         inputs.leftFlywheelCurrentAmps = leftFlywheelSim.getCurrentDrawAmps();
@@ -134,6 +172,17 @@ public class ShooterIOSim implements ShooterIO {
         inputs.rightFlywheelAppliedVolts = rightFlywheelAppliedVolts;
         inputs.rightFlywheelCurrentAmps = rightFlywheelSim.getCurrentDrawAmps();
         inputs.rightFlywheelTempCelsius = rightMotorTempCelsius;
+
+        // Update spin motor inputs
+        inputs.leftSpinVelocityRPM = leftSpinSim.getAngularVelocityRPM();
+        inputs.leftSpinAppliedVolts = leftSpinAppliedVolts;
+        inputs.leftSpinCurrentAmps = leftSpinSim.getCurrentDrawAmps();
+        inputs.leftSpinTempCelsius = leftSpinTempCelsius;
+
+        inputs.rightSpinVelocityRPM = rightSpinSim.getAngularVelocityRPM();
+        inputs.rightSpinAppliedVolts = rightSpinAppliedVolts;
+        inputs.rightSpinCurrentAmps = rightSpinSim.getCurrentDrawAmps();
+        inputs.rightSpinTempCelsius = rightSpinTempCelsius;
     }
 
     @Override
@@ -147,13 +196,29 @@ public class ShooterIOSim implements ShooterIO {
     }
 
     @Override
+    public void setLeftSpinVelocity(AngularVelocity velocity) {
+        leftSpinSetpointRPM = velocity.in(RPM);
+    }
+
+    @Override
+    public void setRightSpinVelocity(AngularVelocity velocity) {
+        rightSpinSetpointRPM = velocity.in(RPM);
+    }
+
+    @Override
     public void stop() {
         leftFlywheelSetpointRPM = 0.0;
         rightFlywheelSetpointRPM = 0.0;
+        leftSpinSetpointRPM = 0.0;
+        rightSpinSetpointRPM = 0.0;
         leftFlywheelAppliedVolts = 0.0;
         rightFlywheelAppliedVolts = 0.0;
+        leftSpinAppliedVolts = 0.0;
+        rightSpinAppliedVolts = 0.0;
         leftFlywheelSim.setInputVoltage(0.0);
         rightFlywheelSim.setInputVoltage(0.0);
+        leftSpinSim.setInputVoltage(0.0);
+        rightSpinSim.setInputVoltage(0.0);
     }
 
     /**
