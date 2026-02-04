@@ -30,9 +30,12 @@ import frc.robot.commands.DriveCommands;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.intake.Intake;
-import frc.robot.subsystems.intake.IntakeIO;
-import frc.robot.subsystems.intake.IntakeIOReal;
-import frc.robot.subsystems.intake.IntakeIOSim;
+import frc.robot.subsystems.intake.extender.ExtenderIO;
+import frc.robot.subsystems.intake.extender.ExtenderIOReal;
+import frc.robot.subsystems.intake.extender.ExtenderIOSim;
+import frc.robot.subsystems.intake.roller.RollerIO;
+import frc.robot.subsystems.intake.roller.RollerIOReal;
+import frc.robot.subsystems.intake.roller.RollerIOSim;
 import frc.robot.subsystems.vision.*;
 import frc.robot.util.OILayer.OI;
 import frc.robot.util.OILayer.OIKeyboard;
@@ -69,7 +72,7 @@ public class RobotContainer {
         switch (Constants.currentMode) {
             case REAL:
                 // Real robot, instantiate hardware IO implementations
-                intake = new Intake(new IntakeIOReal());
+                intake = new Intake(new RollerIOReal(), new ExtenderIOReal());
                 drive = new Drive(
                         new GyroIOPigeon2(),
                         new ModuleIOTalonFXReal(TunerConstants.FrontLeft),
@@ -88,7 +91,7 @@ public class RobotContainer {
                 // Sim robot, instantiate physics sim IO implementations
 
                 driveSimulation = new SwerveDriveSimulation(Drive.mapleSimConfig, new Pose2d(3, 3, new Rotation2d()));
-                intake = new Intake(new IntakeIOSim(driveSimulation));
+                intake = new Intake(new RollerIOSim(driveSimulation), new ExtenderIOSim());
                 SimulatedArena.getInstance().addDriveTrainSimulation(driveSimulation);
                 drive = new Drive(
                         new GyroIOSim(driveSimulation.getGyroSimulation()),
@@ -120,12 +123,11 @@ public class RobotContainer {
                         new ModuleIO() {},
                         (pose) -> {});
                 vision = new Vision(drive, new VisionIO() {}, new VisionIO() {});
-                intake = new Intake(new IntakeIO() {});
+                intake = new Intake(new RollerIO() {}, new ExtenderIO() {});
                 break;
-
         }
 
-        if(Constants.usingKeyboard) {
+        if (Constants.usingKeyboard) {
             OI = new OIKeyboard();
         } else {
             OI = new OIXbox();
@@ -177,8 +179,6 @@ public class RobotContainer {
 
         // Intake and Outtake
         OI.intake().whileTrue(intake.intakeCommand());
-        OI.outtake().whileTrue(intake.outtakeCommand());
-        OI.stopIntake().onTrue(intake.stopIntakeCommand());
 
         // Example Coral Placement Code
         // TODO: delete these code for your own project

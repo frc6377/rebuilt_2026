@@ -1,8 +1,11 @@
-package frc.robot.subsystems.intake;
+package frc.robot.subsystems.intake.roller;
 
 import static edu.wpi.first.units.Units.Inches;
 
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.sim.TalonFXSimState;
 import com.ctre.phoenix6.sim.TalonFXSimState.MotorType;
 import edu.wpi.first.wpilibj.RobotController;
@@ -12,15 +15,23 @@ import org.ironmaple.simulation.IntakeSimulation;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.AbstractDriveTrainSimulation;
 
-public class IntakeIOSim implements IntakeIO {
+public class RollerIOSim implements RollerIO {
 
-    public final TalonFX intakeMotor;
-    public final TalonFXSimState intakeMotorSim;
-    public final IntakeSimulation intakeSim;
+    private final TalonFX rollerMotor;
+    private final TalonFXConfiguration rollerMotorConfig;
+    private final TalonFXSimState intakeMotorSim;
+    private final IntakeSimulation intakeSim;
 
-    public IntakeIOSim(AbstractDriveTrainSimulation driveSim) {
-        intakeMotor = new TalonFX(Constants.CANIDs.MotorIDs.kRollerMotorID);
-        intakeMotorSim = intakeMotor.getSimState();
+    public RollerIOSim(AbstractDriveTrainSimulation driveSim) {
+        rollerMotorConfig = new TalonFXConfiguration();
+        rollerMotorConfig.ClosedLoopRamps.VoltageClosedLoopRampPeriod = 0.02;
+        rollerMotorConfig.TorqueCurrent.PeakForwardTorqueCurrent = 40;
+        rollerMotorConfig.TorqueCurrent.PeakReverseTorqueCurrent = -40;
+        rollerMotorConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
+        rollerMotorConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
+
+        rollerMotor = new TalonFX(Constants.CANIDs.MotorIDs.kRollerMotorID);
+        intakeMotorSim = rollerMotor.getSimState();
         intakeMotorSim.setMotorType(MotorType.KrakenX60);
         intakeSim = IntakeSimulation.OverTheBumperIntake(
                 "Fuel", driveSim, Inches.of(24), Inches.of(10), IntakeSimulation.IntakeSide.FRONT, 99);
@@ -28,7 +39,7 @@ public class IntakeIOSim implements IntakeIO {
 
     @Override
     public void setRollerSpeed(double speed) {
-        intakeMotorSim.setSupplyVoltage(speed * RobotController.getBatteryVoltage());
+        rollerMotor.set(speed);
     }
 
     @Override
@@ -50,7 +61,7 @@ public class IntakeIOSim implements IntakeIO {
     }
 
     @Override
-    public void updateInputs(IntakeIO.IntakeIOInputs inputs) {
+    public void updateInputs(RollerIO.IntakeIOInputs inputs) {
         inputs.rollerSpeedPercentile = intakeMotorSim.getMotorVoltage() / RobotController.getBatteryVoltage();
         inputs.rollerAppliedVolts = intakeMotorSim.getMotorVoltageMeasure();
     }

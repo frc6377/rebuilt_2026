@@ -11,14 +11,14 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 
-package frc.robot.subsystems.intake;
+package frc.robot.subsystems.intake.roller;
 
 import static edu.wpi.first.units.Units.Volts;
 
 import edu.wpi.first.units.measure.Voltage;
 import org.littletonrobotics.junction.AutoLog;
 
-public interface IntakeIO {
+public interface RollerIO {
 
     @AutoLog
     class IntakeIOInputs {
@@ -33,8 +33,6 @@ public interface IntakeIO {
     default void start() {}
 
     default void stop() {}
-
-    default void periodic() {}
 
     default void outtake() {}
 }
