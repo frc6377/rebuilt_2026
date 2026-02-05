@@ -26,7 +26,7 @@ import frc.robot.Robot;
 
 public class ShooterIOSim implements ShooterIO {
     // Motor models
-    private static final DCMotor FLYWHEEL_MOTOR = DCMotor.getKrakenX60Foc(1); // Kraken X60 for flywheels
+    private static final DCMotor FLYWHEEL_MOTOR = DCMotor.getKrakenX60Foc(2); // Two Kraken X60s per flywheel side
     private static final DCMotor SPIN_MOTOR = DCMotor.getKrakenX44Foc(1); // Kraken X44 for spin adjustment
 
     // Flywheel physical properties

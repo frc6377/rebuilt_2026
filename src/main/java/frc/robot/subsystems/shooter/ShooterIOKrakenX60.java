@@ -20,9 +20,11 @@ import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
@@ -35,6 +37,8 @@ public class ShooterIOKrakenX60 implements ShooterIO {
     // Hardware - Dual Kraken X60 for independent flywheel control
     private final TunableTalonFX leftFlywheelMotor;
     private final TunableTalonFX rightFlywheelMotor;
+    private final TunableTalonFX leftFlywheelFollower;
+    private final TunableTalonFX rightFlywheelFollower;
 
     // Hardware - Dual Kraken X44 for spin adjustment on each hood
     private final TunableTalonFX leftSpinMotor;
@@ -93,6 +97,26 @@ public class ShooterIOKrakenX60 implements ShooterIO {
                         .withKD(ShooterConstants.defaultFlywheelKD)
                         .withKV(ShooterConstants.defaultFlywheelKV)
                         .withKS(ShooterConstants.defaultFlywheelKS));
+        leftFlywheelFollower = new TunableTalonFX(
+                Constants.CANIDs.kShooterFlywheelLeftFollowerCANID,
+                ShooterConstants.canBusName,
+                "Shooter/Flywheel/LeftFollower",
+                new Slot0Configs()
+                        .withKP(ShooterConstants.defaultFlywheelKP)
+                        .withKI(ShooterConstants.defaultFlywheelKI)
+                        .withKD(ShooterConstants.defaultFlywheelKD)
+                        .withKV(ShooterConstants.defaultFlywheelKV)
+                        .withKS(ShooterConstants.defaultFlywheelKS));
+        rightFlywheelFollower = new TunableTalonFX(
+                Constants.CANIDs.kShooterFlywheelRightFollowerCANID,
+                ShooterConstants.canBusName,
+                "Shooter/Flywheel/RightFollower",
+                new Slot0Configs()
+                        .withKP(ShooterConstants.defaultFlywheelKP)
+                        .withKI(ShooterConstants.defaultFlywheelKI)
+                        .withKD(ShooterConstants.defaultFlywheelKD)
+                        .withKV(ShooterConstants.defaultFlywheelKV)
+                        .withKS(ShooterConstants.defaultFlywheelKS));
 
         // Initialize spin motors (Kraken X44 on each hood)
         leftSpinMotor = new TunableTalonFX(
@@ -123,7 +147,8 @@ public class ShooterIOKrakenX60 implements ShooterIO {
         leftFlywheelConfig.Slot0 = leftFlywheelMotor.getTunableSlot0Configs();
         leftFlywheelConfig.CurrentLimits.StatorCurrentLimit = ShooterConstants.flywheelCurrentLimit.in(Amps);
         leftFlywheelConfig.CurrentLimits.StatorCurrentLimitEnable = true;
-        tryUntilOk(5, () -> leftFlywheelMotor.getConfigurator().apply(leftFlywheelConfig, 0.25));
+        tryUntilOk(5, () -> leftFlywheelMotor.applyConfiguration(leftFlywheelConfig, 0.25));
+        tryUntilOk(5, () -> leftFlywheelFollower.applyConfiguration(leftFlywheelConfig, 0.25));
 
         // Configure right flywheel motor (independent control, no follower)
         var rightFlywheelConfig = new TalonFXConfiguration();
@@ -132,7 +157,8 @@ public class ShooterIOKrakenX60 implements ShooterIO {
         rightFlywheelConfig.Slot0 = rightFlywheelMotor.getTunableSlot0Configs();
         rightFlywheelConfig.CurrentLimits.StatorCurrentLimit = ShooterConstants.flywheelCurrentLimit.in(Amps);
         rightFlywheelConfig.CurrentLimits.StatorCurrentLimitEnable = true;
-        tryUntilOk(5, () -> rightFlywheelMotor.getConfigurator().apply(rightFlywheelConfig, 0.25));
+        tryUntilOk(5, () -> rightFlywheelMotor.applyConfiguration(rightFlywheelConfig, 0.25));
+        tryUntilOk(5, () -> rightFlywheelFollower.applyConfiguration(rightFlywheelConfig, 0.25));
 
         // Configure left spin motor (Kraken X44)
         var leftSpinConfig = new TalonFXConfiguration();
@@ -141,7 +167,7 @@ public class ShooterIOKrakenX60 implements ShooterIO {
         leftSpinConfig.Slot0 = leftSpinMotor.getTunableSlot0Configs();
         leftSpinConfig.CurrentLimits.StatorCurrentLimit = ShooterConstants.spinMotorCurrentLimit.in(Amps);
         leftSpinConfig.CurrentLimits.StatorCurrentLimitEnable = true;
-        tryUntilOk(5, () -> leftSpinMotor.getConfigurator().apply(leftSpinConfig, 0.25));
+        tryUntilOk(5, () -> leftSpinMotor.applyConfiguration(leftSpinConfig, 0.25));
 
         // Configure right spin motor (Kraken X44)
         var rightSpinConfig = new TalonFXConfiguration();
@@ -150,7 +176,11 @@ public class ShooterIOKrakenX60 implements ShooterIO {
         rightSpinConfig.Slot0 = rightSpinMotor.getTunableSlot0Configs();
         rightSpinConfig.CurrentLimits.StatorCurrentLimit = ShooterConstants.spinMotorCurrentLimit.in(Amps);
         rightSpinConfig.CurrentLimits.StatorCurrentLimitEnable = true;
-        tryUntilOk(5, () -> rightSpinMotor.getConfigurator().apply(rightSpinConfig, 0.25));
+        tryUntilOk(5, () -> rightSpinMotor.applyConfiguration(rightSpinConfig, 0.25));
+
+        // Configure followers
+        leftFlywheelFollower.setControl(new Follower(leftFlywheelMotor.getDeviceID(), MotorAlignmentValue.Aligned));
+        rightFlywheelFollower.setControl(new Follower(rightFlywheelMotor.getDeviceID(), MotorAlignmentValue.Aligned));
 
         // Create status signals for left flywheel
         leftFlywheelVelocity = leftFlywheelMotor.getVelocity();
@@ -197,7 +227,13 @@ public class ShooterIOKrakenX60 implements ShooterIO {
                 rightSpinTemp);
 
         // Optimize CAN bus utilization
-        ParentDevice.optimizeBusUtilizationForAll(leftFlywheelMotor, rightFlywheelMotor, leftSpinMotor, rightSpinMotor);
+        ParentDevice.optimizeBusUtilizationForAll(
+                leftFlywheelMotor,
+                rightFlywheelMotor,
+                leftFlywheelFollower,
+                rightFlywheelFollower,
+                leftSpinMotor,
+                rightSpinMotor);
     }
 
     public void setShooter(Shooter shooter) {
@@ -290,6 +326,8 @@ public class ShooterIOKrakenX60 implements ShooterIO {
     public void stop() {
         leftFlywheelMotor.stopMotor();
         rightFlywheelMotor.stopMotor();
+        leftFlywheelFollower.stopMotor();
+        rightFlywheelFollower.stopMotor();
         leftSpinMotor.stopMotor();
         rightSpinMotor.stopMotor();
     }

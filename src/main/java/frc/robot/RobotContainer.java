@@ -80,7 +80,7 @@ public class RobotContainer {
                         new VisionIOLimelight(VisionConstants.camera1Name, drive::getRotation));
                 shooter = new Shooter(new ShooterIOKrakenX60());
 
-                hood = new Hood(new HoodIOKrakenX60());
+                hood = ShooterConstants.hoodEnabled ? new Hood(new HoodIOKrakenX60()) : null;
 
                 break;
             case SIM:
@@ -108,14 +108,14 @@ public class RobotContainer {
                         new VisionIOPhotonVisionSim(
                                 camera1Name, robotToCamera1, driveSimulation::getSimulatedDriveTrainPose));
                 shooter = new Shooter(new ShooterIOSim());
-                hood = new Hood(new HoodIOSim());
+                hood = ShooterConstants.hoodEnabled ? new Hood(new HoodIOSim()) : null;
 
                 gamePieceTrajectorySimulation = new GamePieceTrajectorySimulation(
                         driveSimulation,
                         () -> (shooter.getLeftFlywheelVelocity().in(RPM)
                                         + shooter.getRightFlywheelVelocity().in(RPM))
                                 / 2.0,
-                        () -> hood.getAngle().in(Degrees));
+                        () -> hood != null ? hood.getAngle().in(Degrees) : ShooterConstants.fixedHoodAngle.in(Degrees));
 
                 break;
 
@@ -130,7 +130,7 @@ public class RobotContainer {
                         (pose) -> {});
                 vision = new Vision(drive, new VisionIO() {}, new VisionIO() {});
                 shooter = new Shooter(new ShooterIO() {});
-                hood = new frc.robot.subsystems.hood.Hood(new frc.robot.subsystems.hood.HoodIO() {});
+                hood = null;
 
                 break;
         }
@@ -149,7 +149,7 @@ public class RobotContainer {
         autoChooser.addOption("Drive SysId (Dynamic Reverse)", drive.sysIdDynamic(SysIdRoutine.Direction.kReverse));
 
         // Add shooter calibration mode (simulation only)
-        if (Constants.currentMode == Constants.Mode.SIM && gamePieceTrajectorySimulation != null) {
+        if (Constants.currentMode == Constants.Mode.SIM && gamePieceTrajectorySimulation != null && hood != null) {
             autoChooser.addOption(
                     "Shooter Calibration",
                     new ShooterCalibrationCommand(

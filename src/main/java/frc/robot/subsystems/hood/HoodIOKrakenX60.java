@@ -57,7 +57,7 @@ public class HoodIOKrakenX60 implements HoodIO {
         config.CurrentLimits.StatorCurrentLimit = HoodConstants.currentLimit.in(Amps);
         config.CurrentLimits.StatorCurrentLimitEnable = true;
         config.Feedback.SensorToMechanismRatio = HoodConstants.gearRatio;
-        tryUntilOk(5, motor.apply(config, 0.25));
+        tryUntilOk(5, () -> motor.applyConfiguration(config, 0.25));
 
         // Create status signals
         position = motor.getPosition();
@@ -77,7 +77,7 @@ public class HoodIOKrakenX60 implements HoodIO {
     public void updateInputs(HoodIOInputs inputs) {
         // Update tunable PID gains if hood reference is set
         if (hood != null) {
-            updatePIDGains();
+            motor.updateTunableGains();
         }
 
         // Refresh all signals
@@ -88,12 +88,6 @@ public class HoodIOKrakenX60 implements HoodIO {
         inputs.appliedVoltage = appliedVolts.getValue();
         inputs.current = current.getValue();
         inputs.temp = temp.getValue();
-    }
-
-    private void updatePIDGains() {
-        Slot0Configs gains =
-                new Slot0Configs().withKP(hood.getKP()).withKI(hood.getKI()).withKD(hood.getKD());
-        motor.getConfigurator().apply(gains);
     }
 
     @Override

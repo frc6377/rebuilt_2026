@@ -228,28 +228,28 @@ public class ShootingCommands {
      * @return Command that auto-aims the shooter
      */
     public static Command autoAimShooter(Supplier<Pose2d> poseSupplier, Hood hood, Shooter shooter) {
-        return Commands.run(
-                        () -> {
-                            Pose2d robotPose = poseSupplier.get();
-                            Distance distance = getDistanceToHub(robotPose);
-                            ShootingParameters params = calculateShootingParameters(distance);
-                            Angle hoodAngle = params.hoodAngle();
-                            AngularVelocity flywheelVelocity = params.flywheelVelocity();
+        Runnable update = () -> {
+            Pose2d robotPose = poseSupplier.get();
+            Distance distance = getDistanceToHub(robotPose);
+            ShootingParameters params = calculateShootingParameters(distance);
+            Angle hoodAngle = params.hoodAngle();
+            AngularVelocity flywheelVelocity = params.flywheelVelocity();
 
-                            // Log values
-                            Logger.recordOutput("Shooting/DistanceToHub", distance.in(Meters));
-                            Logger.recordOutput("Shooting/CalculatedHoodAngle", hoodAngle.in(Degrees));
-                            Logger.recordOutput("Shooting/CalculatedRPM", flywheelVelocity.in(RPM));
+            // Log values
+            Logger.recordOutput("Shooting/DistanceToHub", distance.in(Meters));
+            Logger.recordOutput("Shooting/CalculatedHoodAngle", hoodAngle.in(Degrees));
+            Logger.recordOutput("Shooting/CalculatedRPM", flywheelVelocity.in(RPM));
 
-                            // Set subsystem targets (only set hood if enabled)
-                            if (ShooterConstants.hoodEnabled) {
-                                hood.setAngle(hoodAngle);
-                            }
-                            shooter.setFlywheelVelocity(flywheelVelocity);
-                        },
-                        hood,
-                        shooter)
-                .withName("AutoAimShooter");
+            if (hood != null && ShooterConstants.hoodEnabled) {
+                hood.setAngle(hoodAngle);
+            }
+            shooter.setFlywheelVelocity(flywheelVelocity);
+        };
+
+        if (hood != null) {
+            return Commands.run(update, hood, shooter).withName("AutoAimShooter");
+        }
+        return Commands.run(update, shooter).withName("AutoAimShooter");
     }
 
     /**
