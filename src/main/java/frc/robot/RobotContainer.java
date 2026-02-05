@@ -186,6 +186,9 @@ public class RobotContainer {
                             Meters.of(1.35),
                             MetersPerSecond.of(1.5),
                             Degrees.of(-60)))));
+            // Climb controls
+            controller.rightBumper().whileTrue(climb.climbUp());
+            controller.leftBumper().whileTrue(climb.climbDown());
         }
     }
 

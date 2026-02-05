@@ -32,7 +32,7 @@ public class ClimbConstants {
 
     // Sim Constants
     public static final DCMotor kClimbGearBox = DCMotor.getKrakenX60(2);
-    public static final double kClimbGearRatio = 3;
+    public static final double kClimbGearRatio = 36;
     public static final Mass kCarriageMass = Pounds.of(4.75);
     public static final Distance kElevatorDrumRadius = Inches.of(0.375);
     public static final Distance kElevatorDrumCircumference =

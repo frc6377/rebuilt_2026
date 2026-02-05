@@ -56,4 +56,15 @@ public class ClimberIOSim implements ClimberIO {
         Logger.recordOutput("Elevator/Elv/Setpoint (Inches)", 0.0);
         Logger.recordOutput("Elevator/Elv/Setpoint (Rotations)", 0.0);
     }
+
+    @Override
+    public void set(double percent) {
+        climbSim.setInput(percent * 12);
+    }
+
+    @Override
+    public void updateInputs(ClimberIOInputs inputs) {
+        double positionMeters = climbSim.getPositionMeters();
+        inputs.height = Meters.of(positionMeters);
+    }
 }

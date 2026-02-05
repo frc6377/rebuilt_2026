@@ -10,14 +10,11 @@ import frc.robot.Constants.CANIDs;
 
 public class ClimberIOReal implements ClimberIO {
     final TalonFX climbMotor1;
-    private final TalonFX climbMotor2;
 
     public ClimberIOReal() {
         climbMotor1 = new TalonFX(CANIDs.kClimbMotor1ID);
-        climbMotor2 = new TalonFX(CANIDs.kClimbMotor2ID);
 
         tryUntilOk(5, () -> climbMotor1.getConfigurator().apply(ClimbConstants.kClimbMotorConfig, 0.25));
-        tryUntilOk(5, () -> climbMotor2.getConfigurator().apply(ClimbConstants.kClimbMotorConfig, 0.25));
     }
 
     @Override
@@ -30,12 +27,18 @@ public class ClimberIOReal implements ClimberIO {
     @Override
     public void stop() {
         climbMotor1.stopMotor();
-        climbMotor2.stopMotor();
     }
 
     @Override
     public void set(double percent) {
         climbMotor1.set(percent);
-        climbMotor2.set(percent);
+    }
+
+    @Override
+    public void updateInputs(ClimberIOInputs inputs) {
+        double positionRotations = climbMotor1.getPosition().getValue().in(Rotations);
+        inputs.height = ClimbConstants.kElevatorDrumCircumference
+                .times(positionRotations)
+                .div(ClimbConstants.kClimbGearRatio);
     }
 }

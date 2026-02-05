@@ -7,16 +7,18 @@ package frc.robot.subsystems.climb;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import org.littletonrobotics.junction.Logger;
 
 public class Climb extends SubsystemBase {
     private ClimberIO climberIO;
+    private final ClimberIOInputsAutoLogged inputs = new ClimberIOInputsAutoLogged();
     /** Creates a new Climb. */
     public Climb(ClimberIO climberIO) {
         this.climberIO = climberIO;
     }
 
     public Command climbUp() {
-        return Commands.startEnd(
+        return startEnd(
                 () -> {
                     climberIO.set(ClimbConstants.kClimbSpeed);
                 },
@@ -26,7 +28,7 @@ public class Climb extends SubsystemBase {
     }
 
     public Command climbDown() {
-        return Commands.startEnd(
+        return startEnd(
                 () -> {
                     climberIO.set(-ClimbConstants.kClimbSpeed);
                 },
@@ -46,5 +48,7 @@ public class Climb extends SubsystemBase {
     @Override
     public void periodic() {
         // This method will be called once per scheduler run
+        climberIO.updateInputs(inputs);
+        Logger.processInputs("Climber", inputs);
     }
 }
