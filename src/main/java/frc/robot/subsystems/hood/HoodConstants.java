@@ -18,8 +18,6 @@ import static edu.wpi.first.units.Units.*;
 import edu.wpi.first.units.measure.*;
 
 public class HoodConstants {
-    // CAN ID
-    public static final int motorID = 22; // Kraken x44
 
     // CAN bus name
     public static final String canBusName = "rio";
@@ -31,9 +29,9 @@ public class HoodConstants {
     public static final double gearRatio = 100.0; // Adjust based on actual mechanism
 
     // Default PID constants for position control
-    public static final double defaultKP = 10.0;
+    public static final double defaultKP = 0.1;
     public static final double defaultKI = 0.0;
-    public static final double defaultKD = 0.5;
+    public static final double defaultKD = 0;
 
     // Current limit
     public static final Current currentLimit = Amps.of(40.0);

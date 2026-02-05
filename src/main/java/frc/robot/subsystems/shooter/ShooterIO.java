@@ -22,28 +22,28 @@ public interface ShooterIO {
     @AutoLog
     public static class ShooterIOInputs {
         // Left flywheel (independent control)
-        public double leftFlywheelVelocityRPM = 0.0;
-        public double leftFlywheelAppliedVolts = 0.0;
-        public double leftFlywheelCurrentAmps = 0.0;
-        public double leftFlywheelTempCelsius = 0.0;
+        public AngularVelocity leftFlywheelVelocity = RPM.of(0.0);
+        public Voltage leftFlywheelAppliedVoltage = Volts.of(0.0);
+        public Current leftFlywheelCurrent = Amps.of(0.0);
+        public Temperature leftFlywheelTemp = Celsius.of(0.0);
 
         // Right flywheel (independent control)
-        public double rightFlywheelVelocityRPM = 0.0;
-        public double rightFlywheelAppliedVolts = 0.0;
-        public double rightFlywheelCurrentAmps = 0.0;
-        public double rightFlywheelTempCelsius = 0.0;
+        public AngularVelocity rightFlywheelVelocity = RPM.of(0.0);
+        public Voltage rightFlywheelAppliedVoltage = Volts.of(0.0);
+        public Current rightFlywheelCurrent = Amps.of(0.0);
+        public Temperature rightFlywheelTemp = Celsius.of(0.0);
 
         // Left spin motor (Kraken X44 on top of left hood)
-        public double leftSpinVelocityRPM = 0.0;
-        public double leftSpinAppliedVolts = 0.0;
-        public double leftSpinCurrentAmps = 0.0;
-        public double leftSpinTempCelsius = 0.0;
+        public AngularVelocity leftSpinVelocity = RPM.of(0.0);
+        public Voltage leftSpinAppliedVoltage = Volts.of(0.0);
+        public Current leftSpinCurrent = Amps.of(0.0);
+        public Temperature leftSpinTemp = Celsius.of(0.0);
 
         // Right spin motor (Kraken X44 on top of right hood)
-        public double rightSpinVelocityRPM = 0.0;
-        public double rightSpinAppliedVolts = 0.0;
-        public double rightSpinCurrentAmps = 0.0;
-        public double rightSpinTempCelsius = 0.0;
+        public AngularVelocity rightSpinVelocity = RPM.of(0.0);
+        public Voltage rightSpinAppliedVoltage = Volts.of(0.0);
+        public Current rightSpinCurrent = Amps.of(0.0);
+        public Temperature rightSpinTemp = Celsius.of(0.0);
     }
 
     /** Updates the set of loggable inputs. */

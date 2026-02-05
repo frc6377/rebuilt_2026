@@ -30,6 +30,7 @@ import frc.robot.subsystems.hood.Hood;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.ShooterConstants;
 import java.util.function.DoubleSupplier;
+import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
@@ -226,10 +227,10 @@ public class ShootingCommands {
      * @param shooter Shooter subsystem
      * @return Command that auto-aims the shooter
      */
-    public static Command autoAimShooter(Drive drive, Hood hood, Shooter shooter) {
+    public static Command autoAimShooter(Supplier<Pose2d> poseSupplier, Hood hood, Shooter shooter) {
         return Commands.run(
                         () -> {
-                            Pose2d robotPose = drive.getPose();
+                            Pose2d robotPose = poseSupplier.get();
                             Distance distance = getDistanceToHub(robotPose);
                             ShootingParameters params = calculateShootingParameters(distance);
                             Angle hoodAngle = params.hoodAngle();
@@ -242,9 +243,9 @@ public class ShootingCommands {
 
                             // Set subsystem targets (only set hood if enabled)
                             if (ShooterConstants.hoodEnabled) {
-                                hood.setAngle(hoodAngle.in(Degrees));
+                                hood.setAngle(hoodAngle);
                             }
-                            shooter.setFlywheelVelocity(flywheelVelocity.in(RPM));
+                            shooter.setFlywheelVelocity(flywheelVelocity);
                         },
                         hood,
                         shooter)
@@ -277,7 +278,7 @@ public class ShootingCommands {
     public static Command fullAutoAim(
             Drive drive, Hood hood, Shooter shooter, DoubleSupplier xSupplier, DoubleSupplier ySupplier) {
         return aimAtHubWhileDriving(drive, xSupplier, ySupplier)
-                .alongWith(autoAimShooter(drive, hood, shooter))
+                .alongWith(autoAimShooter(() -> drive.getPose(), hood, shooter))
                 .withName("FullAutoAim");
     }
 }

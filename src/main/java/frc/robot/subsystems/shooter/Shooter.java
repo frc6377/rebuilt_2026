@@ -16,10 +16,12 @@ package frc.robot.subsystems.shooter;
 import static edu.wpi.first.units.Units.*;
 
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
+import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import java.util.function.DoubleSupplier;
+import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
@@ -70,14 +72,20 @@ public class Shooter extends SubsystemBase {
     private final InterpolatingDoubleTreeMap distanceToVelocityMap = new InterpolatingDoubleTreeMap();
 
     // Setpoints
-    private double leftFlywheelSetpoint = 0.0;
-    private double rightFlywheelSetpoint = 0.0;
-    private double leftSpinSetpoint = 0.0;
-    private double rightSpinSetpoint = 0.0;
+    private AngularVelocity leftFlywheelSetpoint = RPM.of(0.0);
+    private AngularVelocity rightFlywheelSetpoint = RPM.of(0.0);
+    private AngularVelocity leftSpinSetpoint = RPM.of(0.0);
+    private AngularVelocity rightSpinSetpoint = RPM.of(0.0);
 
     // Limp mode state
     private boolean leftFlywheelFailed = false;
     private boolean rightFlywheelFailed = false;
+    private int failureDetectionCounter = 0;
+    private static final int FAILURE_DETECTION_CYCLES = 25; // ~0.5s at 50Hz
+    private int accelMismatchCounter = 0;
+    private double lastLeftVelocityRPM = 0.0;
+    private double lastRightVelocityRPM = 0.0;
+    private boolean lastSetpointsActive = false;
 
     public Shooter(ShooterIO io) {
         this.io = io;
@@ -127,30 +135,30 @@ public class Shooter extends SubsystemBase {
      * Set velocity for both flywheels independently. This allows for limp-mode operation if one side fails. Respects
      * ShooterConstants enable flags for each motor. Also sets spin motors based on the tunable spin ratio.
      *
-     * @param leftRPM Target velocity for left flywheel in RPM
-     * @param rightRPM Target velocity for right flywheel in RPM
+     * @param leftVelocity Target velocity for left flywheel
+     * @param rightVelocity Target velocity for right flywheel
      */
-    public void setFlywheelVelocities(double leftRPM, double rightRPM) {
-        leftFlywheelSetpoint = leftRPM;
-        rightFlywheelSetpoint = rightRPM;
+    public void setFlywheelVelocities(AngularVelocity leftVelocity, AngularVelocity rightVelocity) {
+        leftFlywheelSetpoint = leftVelocity;
+        rightFlywheelSetpoint = rightVelocity;
 
         // Calculate spin motor velocities based on spin ratio
         double currentSpinRatio = spinRatio.get();
-        leftSpinSetpoint = leftRPM * currentSpinRatio;
-        rightSpinSetpoint = rightRPM * currentSpinRatio;
+        leftSpinSetpoint = RPM.of(leftVelocity.in(RPM) * currentSpinRatio);
+        rightSpinSetpoint = RPM.of(rightVelocity.in(RPM) * currentSpinRatio);
 
         // Only send commands to enabled and non-failed motors
         if (ShooterConstants.leftFlywheelEnabled && !leftFlywheelFailed) {
-            io.setLeftFlywheelVelocity(RPM.of(leftRPM));
-            io.setLeftSpinVelocity(RPM.of(leftSpinSetpoint));
+            io.setLeftFlywheelVelocity(leftVelocity);
+            io.setLeftSpinVelocity(leftSpinSetpoint);
         } else {
             io.setLeftFlywheelVelocity(RPM.of(0.0)); // Stop disabled/failed motor
             io.setLeftSpinVelocity(RPM.of(0.0));
         }
 
         if (ShooterConstants.rightFlywheelEnabled && !rightFlywheelFailed) {
-            io.setRightFlywheelVelocity(RPM.of(rightRPM));
-            io.setRightSpinVelocity(RPM.of(rightSpinSetpoint));
+            io.setRightFlywheelVelocity(rightVelocity);
+            io.setRightSpinVelocity(rightSpinSetpoint);
         } else {
             io.setRightFlywheelVelocity(RPM.of(0.0)); // Stop disabled/failed motor
             io.setRightSpinVelocity(RPM.of(0.0));
@@ -160,21 +168,21 @@ public class Shooter extends SubsystemBase {
     /**
      * Set spin motor velocities directly.
      *
-     * @param leftRPM Target velocity for left spin motor in RPM
-     * @param rightRPM Target velocity for right spin motor in RPM
+     * @param leftVelocity Target velocity for left spin motor
+     * @param rightVelocity Target velocity for right spin motor
      */
-    public void setSpinVelocities(double leftRPM, double rightRPM) {
-        leftSpinSetpoint = leftRPM;
-        rightSpinSetpoint = rightRPM;
+    public void setSpinVelocities(AngularVelocity leftVelocity, AngularVelocity rightVelocity) {
+        leftSpinSetpoint = leftVelocity;
+        rightSpinSetpoint = rightVelocity;
 
         if (ShooterConstants.leftFlywheelEnabled && !leftFlywheelFailed) {
-            io.setLeftSpinVelocity(RPM.of(leftRPM));
+            io.setLeftSpinVelocity(leftVelocity);
         } else {
             io.setLeftSpinVelocity(RPM.of(0.0));
         }
 
         if (ShooterConstants.rightFlywheelEnabled && !rightFlywheelFailed) {
-            io.setRightSpinVelocity(RPM.of(rightRPM));
+            io.setRightSpinVelocity(rightVelocity);
         } else {
             io.setRightSpinVelocity(RPM.of(0.0));
         }
@@ -183,52 +191,54 @@ public class Shooter extends SubsystemBase {
     /**
      * Set velocity for both flywheels to the same value. Uses independent control to prevent "fighting" between motors.
      *
-     * @param velocityRPM Target velocity in RPM
+     * @param velocity Target velocity
      */
-    public void setFlywheelVelocity(double velocityRPM) {
-        setFlywheelVelocities(velocityRPM, velocityRPM);
+    public void setFlywheelVelocity(AngularVelocity velocity) {
+        setFlywheelVelocities(velocity, velocity);
     }
 
     /**
      * Prepare shooter for a shot at a specific distance. Automatically calculates and sets the appropriate flywheel
      * velocity.
      *
-     * @param distanceMeters Distance to target in meters
-     * @return Target velocity in RPM for the given distance
+     * @param distance Distance to target
+     * @return Target velocity for the given distance
      */
-    public double prepareForDistance(double distanceMeters) {
-        double targetVelocity = distanceToVelocityMap.get(distanceMeters);
+    public AngularVelocity prepareForDistance(Distance distance) {
+        double distanceMeters = distance.in(Meters);
+        double targetVelocityRPM = distanceToVelocityMap.get(distanceMeters);
+        AngularVelocity targetVelocity = RPM.of(targetVelocityRPM);
         setFlywheelVelocity(targetVelocity);
 
         Logger.recordOutput("Shooter/AutoAim/Distance", distanceMeters);
-        Logger.recordOutput("Shooter/AutoAim/CalculatedVelocity", targetVelocity);
+        Logger.recordOutput("Shooter/AutoAim/CalculatedVelocity", targetVelocityRPM);
 
         return targetVelocity;
     }
 
     /** Stop all shooter motors. */
     public void stop() {
-        leftFlywheelSetpoint = 0.0;
-        rightFlywheelSetpoint = 0.0;
+        leftFlywheelSetpoint = RPM.of(0.0);
+        rightFlywheelSetpoint = RPM.of(0.0);
         io.stop();
     }
 
     /**
      * Get current left flywheel velocity.
      *
-     * @return Velocity in RPM
+     * @return Velocity
      */
-    public double getLeftFlywheelVelocity() {
-        return inputs.leftFlywheelVelocityRPM;
+    public AngularVelocity getLeftFlywheelVelocity() {
+        return inputs.leftFlywheelVelocity;
     }
 
     /**
      * Get current right flywheel velocity.
      *
-     * @return Velocity in RPM
+     * @return Velocity
      */
-    public double getRightFlywheelVelocity() {
-        return inputs.rightFlywheelVelocityRPM;
+    public AngularVelocity getRightFlywheelVelocity() {
+        return inputs.rightFlywheelVelocity;
     }
 
     /**
@@ -238,11 +248,11 @@ public class Shooter extends SubsystemBase {
      */
     @AutoLogOutput(key = "Shooter/AtTargetVelocity")
     public boolean atTargetVelocity() {
-        double toleranceRPM = ShooterConstants.flywheelVelocityTolerance.in(RotationsPerSecond) * 60.0;
-        boolean leftAtTarget =
-                leftFlywheelFailed || Math.abs(inputs.leftFlywheelVelocityRPM - leftFlywheelSetpoint) < toleranceRPM;
-        boolean rightAtTarget =
-                rightFlywheelFailed || Math.abs(inputs.rightFlywheelVelocityRPM - rightFlywheelSetpoint) < toleranceRPM;
+        AngularVelocity tolerance = ShooterConstants.flywheelVelocityTolerance;
+        boolean leftAtTarget = leftFlywheelFailed
+                || Math.abs(inputs.leftFlywheelVelocity.in(RPM) - leftFlywheelSetpoint.in(RPM)) < tolerance.in(RPM);
+        boolean rightAtTarget = rightFlywheelFailed
+                || Math.abs(inputs.rightFlywheelVelocity.in(RPM) - rightFlywheelSetpoint.in(RPM)) < tolerance.in(RPM);
 
         return leftAtTarget && rightAtTarget;
     }
@@ -261,24 +271,73 @@ public class Shooter extends SubsystemBase {
      * between the two flywheels that cannot be explained by different setpoints.
      */
     private void detectMotorFailures() {
+        if (!ShooterConstants.flywheelSafetyEnabled) {
+            failureDetectionCounter = 0;
+            accelMismatchCounter = 0;
+            lastSetpointsActive = false;
+            return;
+        }
+
         // Only check for failures when motors are supposed to be running
-        if (leftFlywheelSetpoint > 100 || rightFlywheelSetpoint > 100) {
+        boolean leftEnabled = ShooterConstants.leftFlywheelEnabled;
+        boolean rightEnabled = ShooterConstants.rightFlywheelEnabled;
+        boolean setpointsActive = leftFlywheelSetpoint.in(RPM) > 100 || rightFlywheelSetpoint.in(RPM) > 100;
+
+        if (setpointsActive && !lastSetpointsActive) {
+            // Reset ramp tracking when we start spinning up from zero
+            lastLeftVelocityRPM = inputs.leftFlywheelVelocity.in(RPM);
+            lastRightVelocityRPM = inputs.rightFlywheelVelocity.in(RPM);
+            accelMismatchCounter = 0;
+            failureDetectionCounter = 0;
+        }
+
+        if (leftEnabled && rightEnabled && setpointsActive) {
+            // Compare acceleration rate while ramping up
+            double currentLeftRPM = inputs.leftFlywheelVelocity.in(RPM);
+            double currentRightRPM = inputs.rightFlywheelVelocity.in(RPM);
+            double leftAccel = currentLeftRPM - lastLeftVelocityRPM;
+            double rightAccel = currentRightRPM - lastRightVelocityRPM;
+            double accelDifference = Math.abs(leftAccel - rightAccel);
+
+            if (leftAccel > 0.0 && rightAccel > 0.0 && accelDifference > ShooterConstants.accelMismatchToleranceRPM) {
+                accelMismatchCounter++;
+            } else {
+                accelMismatchCounter = 0;
+            }
+
+            if (accelMismatchCounter >= ShooterConstants.accelMismatchCycles) {
+                if (leftAccel < rightAccel) {
+                    leftFlywheelFailed = true;
+                    Logger.recordOutput("Shooter/Alert", "Left flywheel accel mismatch - entering limp mode");
+                } else {
+                    rightFlywheelFailed = true;
+                    Logger.recordOutput("Shooter/Alert", "Right flywheel accel mismatch - entering limp mode");
+                }
+            }
+
             // Calculate expected velocity difference based on setpoints
-            double expectedDifference = Math.abs(leftFlywheelSetpoint - rightFlywheelSetpoint);
+            double expectedDifference = Math.abs(leftFlywheelSetpoint.in(RPM) - rightFlywheelSetpoint.in(RPM));
 
             // Calculate actual velocity difference
-            double actualDifference = Math.abs(inputs.leftFlywheelVelocityRPM - inputs.rightFlywheelVelocityRPM);
+            double actualDifference =
+                    Math.abs(inputs.leftFlywheelVelocity.in(RPM) - inputs.rightFlywheelVelocity.in(RPM));
 
             // Calculate unexplained difference (potential failure)
             double unexplainedDifference = Math.abs(actualDifference - expectedDifference);
 
-            double maxDifferenceRPM = ShooterConstants.maxVelocityDifference.in(RotationsPerSecond) * 60.0;
+            double maxDifferenceRPM = ShooterConstants.maxVelocityDifference.in(RPM);
 
             // Only trigger failure if the difference can't be explained by different setpoints
             if (unexplainedDifference > maxDifferenceRPM) {
+                failureDetectionCounter++;
+            } else {
+                failureDetectionCounter = 0;
+            }
+
+            if (failureDetectionCounter >= FAILURE_DETECTION_CYCLES) {
                 // Determine which motor is likely failed (the slower one relative to its setpoint)
-                double leftError = Math.abs(inputs.leftFlywheelVelocityRPM - leftFlywheelSetpoint);
-                double rightError = Math.abs(inputs.rightFlywheelVelocityRPM - rightFlywheelSetpoint);
+                double leftError = Math.abs(inputs.leftFlywheelVelocity.in(RPM) - leftFlywheelSetpoint.in(RPM));
+                double rightError = Math.abs(inputs.rightFlywheelVelocity.in(RPM) - rightFlywheelSetpoint.in(RPM));
 
                 if (leftError > rightError) {
                     leftFlywheelFailed = true;
@@ -288,7 +347,14 @@ public class Shooter extends SubsystemBase {
                     Logger.recordOutput("Shooter/Alert", "Right flywheel failure detected - entering limp mode");
                 }
             }
+        } else {
+            failureDetectionCounter = 0;
+            accelMismatchCounter = 0;
         }
+
+        lastLeftVelocityRPM = inputs.leftFlywheelVelocity.in(RPM);
+        lastRightVelocityRPM = inputs.rightFlywheelVelocity.in(RPM);
+        lastSetpointsActive = setpointsActive;
     }
 
     /** Reset failure flags (for testing or after maintenance). */
@@ -329,21 +395,21 @@ public class Shooter extends SubsystemBase {
     /**
      * Command to spin up flywheels to a target velocity.
      *
-     * @param velocityRPM Target velocity in RPM
+     * @param velocity Target velocity
      * @return Command that runs the flywheels
      */
-    public Command spinUpFlywheels(double velocityRPM) {
-        return Commands.run(() -> setFlywheelVelocity(velocityRPM), this).withName("SpinUpFlywheels");
+    public Command spinUpFlywheels(AngularVelocity velocity) {
+        return Commands.run(() -> setFlywheelVelocity(velocity), this).withName("SpinUpFlywheels");
     }
 
     /**
      * Command to spin up flywheels with a dynamic velocity supplier.
      *
-     * @param velocitySupplier Supplier for target velocity in RPM
+     * @param velocitySupplier Supplier for target velocity
      * @return Command that runs the flywheels
      */
-    public Command spinUpFlywheels(DoubleSupplier velocitySupplier) {
-        return Commands.run(() -> setFlywheelVelocity(velocitySupplier.getAsDouble()), this)
+    public Command spinUpFlywheels(Supplier<AngularVelocity> velocitySupplier) {
+        return Commands.run(() -> setFlywheelVelocity(velocitySupplier.get()), this)
                 .withName("SpinUpFlywheels");
     }
 
@@ -360,21 +426,21 @@ public class Shooter extends SubsystemBase {
      * Command to prepare shooter for a shot at a specific distance. Automatically calculates and sets appropriate
      * velocity.
      *
-     * @param distanceMeters Distance to target in meters
+     * @param distance Distance to target
      * @return Command that prepares the shooter for the distance
      */
-    public Command prepareForDistanceCommand(double distanceMeters) {
-        return Commands.runOnce(() -> prepareForDistance(distanceMeters), this).withName("PrepareForDistance");
+    public Command prepareForDistanceCommand(Distance distance) {
+        return Commands.runOnce(() -> prepareForDistance(distance), this).withName("PrepareForDistance");
     }
 
     /**
      * Command to prepare shooter for a shot at a dynamic distance.
      *
-     * @param distanceSupplier Supplier for distance to target in meters
+     * @param distanceSupplier Supplier for distance to target
      * @return Command that prepares the shooter for the distance
      */
-    public Command prepareForDistanceCommand(DoubleSupplier distanceSupplier) {
-        return Commands.run(() -> prepareForDistance(distanceSupplier.getAsDouble()), this)
+    public Command prepareForDistanceCommand(Supplier<Distance> distanceSupplier) {
+        return Commands.run(() -> prepareForDistance(distanceSupplier.get()), this)
                 .withName("PrepareForDistance");
     }
 
@@ -390,22 +456,20 @@ public class Shooter extends SubsystemBase {
     /**
      * Command to prepare shooter and wait until ready.
      *
-     * @param velocityRPM Target flywheel velocity in RPM
+     * @param velocity Target flywheel velocity
      * @return Command that prepares and waits
      */
-    public Command spinUpAndWait(double velocityRPM) {
-        return spinUpFlywheels(velocityRPM).andThen(waitUntilReady()).withName("SpinUpAndWait");
+    public Command spinUpAndWait(AngularVelocity velocity) {
+        return spinUpFlywheels(velocity).andThen(waitUntilReady()).withName("SpinUpAndWait");
     }
 
     /**
      * Command to prepare shooter for a distance and wait until ready.
      *
-     * @param distanceMeters Distance to target in meters
+     * @param distance Distance to target
      * @return Command that prepares for distance and waits
      */
-    public Command prepareForDistanceAndWait(double distanceMeters) {
-        return prepareForDistanceCommand(distanceMeters)
-                .andThen(waitUntilReady())
-                .withName("PrepareForDistanceAndWait");
+    public Command prepareForDistanceAndWait(Distance distance) {
+        return prepareForDistanceCommand(distance).andThen(waitUntilReady()).withName("PrepareForDistanceAndWait");
     }
 }

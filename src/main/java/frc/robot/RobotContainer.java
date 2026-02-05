@@ -32,6 +32,7 @@ import frc.robot.commands.ShootingCommands;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.hood.Hood;
+import frc.robot.subsystems.hood.HoodIOKrakenX60;
 import frc.robot.subsystems.hood.HoodIOSim;
 import frc.robot.subsystems.shooter.*;
 import frc.robot.subsystems.vision.*;
@@ -77,13 +78,9 @@ public class RobotContainer {
                         drive,
                         new VisionIOLimelight(VisionConstants.camera0Name, drive::getRotation),
                         new VisionIOLimelight(VisionConstants.camera1Name, drive::getRotation));
-                var shooterIO = new ShooterIOKrakenX60();
-                this.shooter = new Shooter(shooterIO);
-                shooterIO.setShooter(shooter);
+                shooter = new Shooter(new ShooterIOKrakenX60());
 
-                var hoodIO = new frc.robot.subsystems.hood.HoodIOKrakenX60();
-                this.hood = new frc.robot.subsystems.hood.Hood(hoodIO);
-                hoodIO.setHood(hood);
+                hood = new Hood(new HoodIOKrakenX60());
 
                 break;
             case SIM:
@@ -115,8 +112,10 @@ public class RobotContainer {
 
                 gamePieceTrajectorySimulation = new GamePieceTrajectorySimulation(
                         driveSimulation,
-                        () -> (shooter.getLeftFlywheelVelocity() + shooter.getRightFlywheelVelocity()) / 2.0,
-                        () -> hood.getAngle());
+                        () -> (shooter.getLeftFlywheelVelocity().in(RPM)
+                                        + shooter.getRightFlywheelVelocity().in(RPM))
+                                / 2.0,
+                        () -> hood.getAngle().in(Degrees));
 
                 break;
 
@@ -193,14 +192,18 @@ public class RobotContainer {
             controller
                     .rightTrigger()
                     .onTrue(Commands.startEnd(
-                            () -> gamePieceTrajectorySimulation.setIndexerRunningSupplier(
+                            () -> gamePieceTrajectorySimulation.enableAutoFire(
                                     () -> gamePieceTrajectorySimulation.shouldIndexerRun()),
-                            () -> gamePieceTrajectorySimulation.setIndexerRunningSupplier(() -> false)));
+                            () -> {
+                                gamePieceTrajectorySimulation.setAutoFireEnabled(false);
+                                gamePieceTrajectorySimulation.setIndexerRunningSupplier(() -> false);
+                            }));
             controller.povUp().onTrue(Commands.runOnce(() -> SimulatedArena.getInstance()
                     .addGamePieceProjectile(gamePieceTrajectorySimulation.launchGamePiece())));
             controller.povDown().onTrue(Commands.runOnce(() -> gamePieceTrajectorySimulation.addBalls(10)));
             controller
                     .povLeft()
+                    .onTrue(Commands.runOnce(() -> gamePieceTrajectorySimulation.setAutoFireEnabled(true)))
                     .onFalse(Commands.runOnce(() -> gamePieceTrajectorySimulation.setAutoFireEnabled(false)));
             controller
                     .povRight()

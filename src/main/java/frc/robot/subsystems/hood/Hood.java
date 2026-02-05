@@ -15,11 +15,12 @@ package frc.robot.subsystems.hood;
 
 import static edu.wpi.first.units.Units.*;
 
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.shooter.ShooterConstants;
-import java.util.function.DoubleSupplier;
+import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
@@ -28,13 +29,13 @@ public class Hood extends SubsystemBase {
     private final HoodIO io;
     private final HoodIOInputsAutoLogged inputs = new HoodIOInputsAutoLogged();
 
-    // Tunable PID constants
-    private final LoggedNetworkNumber kP = new LoggedNetworkNumber("Hood/KP", HoodConstants.defaultKP);
-    private final LoggedNetworkNumber kI = new LoggedNetworkNumber("Hood/KI", HoodConstants.defaultKI);
-    private final LoggedNetworkNumber kD = new LoggedNetworkNumber("Hood/KD", HoodConstants.defaultKD);
+    // Tunable PID gains
+    private final LoggedNetworkNumber hoodKP = new LoggedNetworkNumber("Hood/kP", HoodConstants.defaultKP);
+    private final LoggedNetworkNumber hoodKI = new LoggedNetworkNumber("Hood/kI", HoodConstants.defaultKI);
+    private final LoggedNetworkNumber hoodKD = new LoggedNetworkNumber("Hood/kD", HoodConstants.defaultKD);
 
     // Setpoint
-    private double angleSetpoint = 0.0;
+    private Angle angleSetpoint = Degrees.of(0.0);
 
     public Hood(HoodIO io) {
         this.io = io;
@@ -58,31 +59,30 @@ public class Hood extends SubsystemBase {
     }
 
     /**
-     * Set hood angle in degrees.
+     * Set hood angle.
      *
-     * @param angleDegrees Target angle in degrees
+     * @param angle Target angle
      */
-    public void setAngle(double angleDegrees) {
+    public void setAngle(Angle angle) {
         if (!ShooterConstants.hoodEnabled) return;
-        angleSetpoint = angleDegrees;
-        io.setAngle(Degrees.of(angleDegrees));
+        angleSetpoint = angle;
+        io.setAngle(angle);
     }
 
     /** Stop hood motor. */
     public void stop() {
         if (!ShooterConstants.hoodEnabled) return;
-        angleSetpoint = 0.0;
         io.stop();
     }
 
     /**
      * Get current hood angle.
      *
-     * @return Angle in degrees (0.0 if hood disabled)
+     * @return Current angle (zero if hood disabled)
      */
-    public double getAngle() {
-        if (!ShooterConstants.hoodEnabled) return 0.0;
-        return inputs.angleDegrees;
+    public Angle getAngle() {
+        if (!ShooterConstants.hoodEnabled) return Degrees.of(0.0);
+        return inputs.angle;
     }
 
     /**
@@ -94,31 +94,19 @@ public class Hood extends SubsystemBase {
         return ShooterConstants.hoodEnabled;
     }
 
-    /**
-     * Get PID gain kP.
-     *
-     * @return kP value
-     */
+    /** Get current hood kP from NetworkTables. */
     public double getKP() {
-        return kP.get();
+        return hoodKP.get();
     }
 
-    /**
-     * Get PID gain kI.
-     *
-     * @return kI value
-     */
+    /** Get current hood kI from NetworkTables. */
     public double getKI() {
-        return kI.get();
+        return hoodKI.get();
     }
 
-    /**
-     * Get PID gain kD.
-     *
-     * @return kD value
-     */
+    /** Get current hood kD from NetworkTables. */
     public double getKD() {
-        return kD.get();
+        return hoodKD.get();
     }
 
     // ========== Command Factory Methods ==========
@@ -129,18 +117,18 @@ public class Hood extends SubsystemBase {
      * @param angleDegrees Target angle in degrees
      * @return Command that sets the hood angle
      */
-    public Command setAngleCommand(double angleDegrees) {
+    public Command setAngleCommand(Angle angleDegrees) {
         return Commands.runOnce(() -> setAngle(angleDegrees), this).withName("SetHoodAngle");
     }
 
     /**
      * Command to set hood angle with a dynamic angle supplier.
      *
-     * @param angleSupplier Supplier for target angle in degrees
+     * @param angleSupplier Supplier for target angle
      * @return Command that sets the hood angle
      */
-    public Command setAngleCommand(DoubleSupplier angleSupplier) {
-        return Commands.run(() -> setAngle(angleSupplier.getAsDouble()), this).withName("SetHoodAngle");
+    public Command setAngleCommand(Supplier<Angle> angleSupplier) {
+        return Commands.run(() -> setAngle(angleSupplier.get()), this).withName("SetHoodAngle");
     }
 
     /**

@@ -22,6 +22,7 @@ import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.simulation.FlywheelSim;
+import frc.robot.Robot;
 
 public class ShooterIOSim implements ShooterIO {
     // Motor models
@@ -156,33 +157,33 @@ public class ShooterIOSim implements ShooterIO {
         double leftSpinEquilibriumTemp = AMBIENT_TEMP + leftSpinPowerDissipated * THERMAL_RESISTANCE;
         double rightSpinEquilibriumTemp = AMBIENT_TEMP + rightSpinPowerDissipated * THERMAL_RESISTANCE;
 
-        double dt = 0.02;
+        double dt = Robot.defaultPeriodSecs;
         leftMotorTempCelsius += (leftEquilibriumTemp - leftMotorTempCelsius) * dt / THERMAL_TIME_CONSTANT;
         rightMotorTempCelsius += (rightEquilibriumTemp - rightMotorTempCelsius) * dt / THERMAL_TIME_CONSTANT;
         leftSpinTempCelsius += (leftSpinEquilibriumTemp - leftSpinTempCelsius) * dt / THERMAL_TIME_CONSTANT;
         rightSpinTempCelsius += (rightSpinEquilibriumTemp - rightSpinTempCelsius) * dt / THERMAL_TIME_CONSTANT;
 
         // Update flywheel inputs
-        inputs.leftFlywheelVelocityRPM = leftFlywheelSim.getAngularVelocityRPM();
-        inputs.leftFlywheelAppliedVolts = leftFlywheelAppliedVolts;
-        inputs.leftFlywheelCurrentAmps = leftFlywheelSim.getCurrentDrawAmps();
-        inputs.leftFlywheelTempCelsius = leftMotorTempCelsius;
+        inputs.leftFlywheelVelocity = RPM.of(leftFlywheelSim.getAngularVelocityRPM());
+        inputs.leftFlywheelAppliedVoltage = Volts.of(leftFlywheelAppliedVolts);
+        inputs.leftFlywheelCurrent = Amps.of(leftFlywheelSim.getCurrentDrawAmps());
+        inputs.leftFlywheelTemp = Celsius.of(leftMotorTempCelsius);
 
-        inputs.rightFlywheelVelocityRPM = rightFlywheelSim.getAngularVelocityRPM();
-        inputs.rightFlywheelAppliedVolts = rightFlywheelAppliedVolts;
-        inputs.rightFlywheelCurrentAmps = rightFlywheelSim.getCurrentDrawAmps();
-        inputs.rightFlywheelTempCelsius = rightMotorTempCelsius;
+        inputs.rightFlywheelVelocity = RPM.of(rightFlywheelSim.getAngularVelocityRPM());
+        inputs.rightFlywheelAppliedVoltage = Volts.of(rightFlywheelAppliedVolts);
+        inputs.rightFlywheelCurrent = Amps.of(rightFlywheelSim.getCurrentDrawAmps());
+        inputs.rightFlywheelTemp = Celsius.of(rightMotorTempCelsius);
 
         // Update spin motor inputs
-        inputs.leftSpinVelocityRPM = leftSpinSim.getAngularVelocityRPM();
-        inputs.leftSpinAppliedVolts = leftSpinAppliedVolts;
-        inputs.leftSpinCurrentAmps = leftSpinSim.getCurrentDrawAmps();
-        inputs.leftSpinTempCelsius = leftSpinTempCelsius;
+        inputs.leftSpinVelocity = RPM.of(leftSpinSim.getAngularVelocityRPM());
+        inputs.leftSpinAppliedVoltage = Volts.of(leftSpinAppliedVolts);
+        inputs.leftSpinCurrent = Amps.of(leftSpinSim.getCurrentDrawAmps());
+        inputs.leftSpinTemp = Celsius.of(leftSpinTempCelsius);
 
-        inputs.rightSpinVelocityRPM = rightSpinSim.getAngularVelocityRPM();
-        inputs.rightSpinAppliedVolts = rightSpinAppliedVolts;
-        inputs.rightSpinCurrentAmps = rightSpinSim.getCurrentDrawAmps();
-        inputs.rightSpinTempCelsius = rightSpinTempCelsius;
+        inputs.rightSpinVelocity = RPM.of(rightSpinSim.getAngularVelocityRPM());
+        inputs.rightSpinAppliedVoltage = Volts.of(rightSpinAppliedVolts);
+        inputs.rightSpinCurrent = Amps.of(rightSpinSim.getCurrentDrawAmps());
+        inputs.rightSpinTemp = Celsius.of(rightSpinTempCelsius);
     }
 
     @Override

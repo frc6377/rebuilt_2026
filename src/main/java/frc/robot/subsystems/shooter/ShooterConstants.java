@@ -28,14 +28,11 @@ public class ShooterConstants {
     /** Set to false to disable right flywheel motor */
     public static final boolean rightFlywheelEnabled = true;
 
+    /** Set to false to disable flywheel safety checks (failure + accel mismatch). */
+    public static final boolean flywheelSafetyEnabled = true;
+
     /** Fixed hood angle to use when hood is disabled (degrees) */
     public static final Angle fixedHoodAngle = Degrees.of(45.0);
-
-    // CAN IDs
-    public static final int leftFlywheelMotorID = 20; // Kraken X60
-    public static final int rightFlywheelMotorID = 21; // Kraken X60
-    public static final int leftSpinMotorID = 22; // Kraken X44 - spin adjustment on left hood
-    public static final int rightSpinMotorID = 23; // Kraken X44 - spin adjustment on right hood
 
     // CAN bus name
     public static final String canBusName = "rio";
@@ -68,6 +65,10 @@ public class ShooterConstants {
     public static final AngularVelocity flywheelVelocityTolerance = RotationsPerSecond.of(100.0 / 60.0); // 100 RPM
     public static final AngularVelocity maxVelocityDifference =
             RotationsPerSecond.of(500.0 / 60.0); // 500 RPM difference between flywheels
+
+    // Acceleration mismatch thresholds (from 0 ramp-up)
+    public static final double accelMismatchToleranceRPM = 150.0; // RPM per cycle difference
+    public static final int accelMismatchCycles = 10; // number of consecutive cycles before flag
 
     // Simulation constants
     public static final Distance shooterHeight = Meters.of(0.5); // Height of shooter from ground

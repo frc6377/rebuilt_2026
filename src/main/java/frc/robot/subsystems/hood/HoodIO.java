@@ -21,10 +21,10 @@ import org.littletonrobotics.junction.AutoLog;
 public interface HoodIO {
     @AutoLog
     public static class HoodIOInputs {
-        public double angleDegrees = 0.0;
-        public double appliedVolts = 0.0;
-        public double currentAmps = 0.0;
-        public double tempCelsius = 0.0;
+        public Angle angle = Degrees.of(0.0);
+        public Voltage appliedVoltage = Volts.of(0.0);
+        public Current current = Amps.of(0.0);
+        public Temperature temp = Celsius.of(0.0);
     }
 
     /** Updates the set of loggable inputs. */

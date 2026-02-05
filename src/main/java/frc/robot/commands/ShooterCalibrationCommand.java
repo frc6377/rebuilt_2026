@@ -241,8 +241,8 @@ public class ShooterCalibrationCommand extends Command {
                 Angle currentAngle = testAngles[currentAngleIndex];
                 AngularVelocity currentRPM = testRPMs[currentRPMIndex];
 
-                hood.setAngle(currentAngle.in(Degrees));
-                shooter.setFlywheelVelocity(currentRPM.in(RPM));
+                hood.setAngle(currentAngle);
+                shooter.setFlywheelVelocity(currentRPM);
 
                 Logger.recordOutput("Calibration/TestDistance", currentDistance.in(Meters));
                 Logger.recordOutput("Calibration/TestAngle", currentAngle.in(Degrees));
@@ -257,7 +257,9 @@ public class ShooterCalibrationCommand extends Command {
                 if (stateTimer.hasElapsed(SETTLE_TIME)) {
                     // Check if flywheel is up to speed (within 5%)
                     double targetRPM = testRPMs[currentRPMIndex].in(RPM);
-                    double actualRPM = (shooter.getLeftFlywheelVelocity() + shooter.getRightFlywheelVelocity()) / 2.0;
+                    double actualRPM = (shooter.getLeftFlywheelVelocity().in(RPM)
+                                    + shooter.getRightFlywheelVelocity().in(RPM))
+                            / 2.0;
                     if (Math.abs(actualRPM - targetRPM) / targetRPM < 0.05) {
                         state = CalibrationState.FIRE_SHOT;
                     } else if (stateTimer.hasElapsed(SETTLE_TIME * 3)) {

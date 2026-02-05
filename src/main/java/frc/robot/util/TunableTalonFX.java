@@ -18,6 +18,7 @@ import com.ctre.phoenix6.StatusCode;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.hardware.TalonFX;
+import java.util.function.Supplier;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 /**
@@ -239,5 +240,29 @@ public class TunableTalonFX extends TalonFX {
         lastKG = pidConfigs.kG;
 
         return super.getConfigurator().apply(configuration);
+    }
+
+    public Supplier<StatusCode> apply(TalonFXConfiguration configuration, double timeoutSeconds) {
+        Slot0Configs pidConfigs = configuration.Slot0;
+
+        // Update the tunable NetworkTables values
+        tunableKP.set(pidConfigs.kP);
+        tunableKI.set(pidConfigs.kI);
+        tunableKD.set(pidConfigs.kD);
+        tunableKV.set(pidConfigs.kV);
+        tunableKS.set(pidConfigs.kS);
+        tunableKA.set(pidConfigs.kA);
+        tunableKG.set(pidConfigs.kG);
+
+        // Update the cache
+        lastKP = pidConfigs.kP;
+        lastKI = pidConfigs.kI;
+        lastKD = pidConfigs.kD;
+        lastKV = pidConfigs.kV;
+        lastKS = pidConfigs.kS;
+        lastKA = pidConfigs.kA;
+        lastKG = pidConfigs.kG;
+
+        return () -> super.getConfigurator().apply(configuration, timeoutSeconds);
     }
 }

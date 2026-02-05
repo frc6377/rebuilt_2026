@@ -41,16 +41,16 @@ public final class Constants {
         public static final Distance HUB_OPENING_DIAMETER = Inches.of(41.7); // ~1.06m hexagonal
 
         // Hub is centered 158.6in (4.03m) from alliance wall, centered on field width
-        public static final Distance HUB_DISTANCE_FROM_WALL =
+        public static final Distance MIDDLE_HUB_DISTANCE_FROM_WALL =
                 Inches.of(158.6).plus(HUB_OPENING_DIAMETER.div(2)); // 4.03m
 
         // Blue alliance hub position (blue wall is at x = 0)
         public static final Translation2d BLUE_HUB_POSITION =
-                new Translation2d(HUB_DISTANCE_FROM_WALL.in(Meters), FIELD_WIDTH.in(Meters) / 2.0);
+                new Translation2d(MIDDLE_HUB_DISTANCE_FROM_WALL.in(Meters), FIELD_WIDTH.in(Meters) / 2.0);
 
         // Red alliance hub position (red wall is at x = field length)
         public static final Translation2d RED_HUB_POSITION = new Translation2d(
-                FIELD_LENGTH.in(Meters) - HUB_DISTANCE_FROM_WALL.in(Meters), FIELD_WIDTH.in(Meters) / 2.0);
+                FIELD_LENGTH.in(Meters) - MIDDLE_HUB_DISTANCE_FROM_WALL.in(Meters), FIELD_WIDTH.in(Meters) / 2.0);
 
         /** Get the hub position for the current alliance */
         public static Translation2d getHubPosition() {
@@ -66,5 +66,13 @@ public final class Constants {
 
         /** Running a physics simulator. */
         SIM,
+    }
+
+    public static final class CANIDs {
+        public static final int kShooterFlywheelLeftMotorCANID = 21;
+        public static final int kShooterFlywheelRightMotorCANID = 22;
+        public static final int kShooterHoodMotorCANID = 23;
+        public static final int kShooterSpinMotorLeftCANID = 24;
+        public static final int kShooterSpinMotorRightCANID = 25;
     }
 }
