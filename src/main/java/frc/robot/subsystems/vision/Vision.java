@@ -13,13 +13,21 @@
 
 package frc.robot.subsystems.vision;
 
-import static frc.robot.subsystems.vision.VisionConstants.*;
+import static frc.robot.subsystems.vision.VisionConstants.angularStdDevBaseline;
+import static frc.robot.subsystems.vision.VisionConstants.angularStdDevMegatag2Factor;
+import static frc.robot.subsystems.vision.VisionConstants.aprilTagLayout;
+import static frc.robot.subsystems.vision.VisionConstants.cameraStdDevFactors;
+import static frc.robot.subsystems.vision.VisionConstants.linearStdDevBaseline;
+import static frc.robot.subsystems.vision.VisionConstants.linearStdDevMegatag2Factor;
+import static frc.robot.subsystems.vision.VisionConstants.maxAmbiguity;
+import static frc.robot.subsystems.vision.VisionConstants.maxZError;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.Alert;
@@ -65,7 +73,7 @@ public class Vision extends SubsystemBase {
 
         // Initialize QuestNav
         questNav = new QuestNav();
-        questPose = new Pose3d();
+        questPose = new Pose3d(0, 0, 0, new Rotation3d(0, 0, 0));
         questNav.setPose(questPose);
 
         // var observations = inputs[cameraIndex].poseObservations;
@@ -127,6 +135,7 @@ public class Vision extends SubsystemBase {
                     Logger.recordOutput("CameraPose", cameraPose);
                     if (getTagCount(0) >= 1 && cameraPose != null) {
                         questNav.setPose(cameraPose);
+                        // Logger.recordOutput("Vision/QuestNav/Pose", questPose);
                         Logger.recordOutput("Is Called In Disabled", true);
                     }
                 })

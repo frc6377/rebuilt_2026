@@ -11,7 +11,14 @@
         "position": [-0.007426, 0.092737, 0.496115],
         "resolution": [1280, 960],
         "fov": 80
-      }
+      }, 
+      {
+        "name" : "lowcam",
+        "rotations": [{"axis": "y", "degrees": -180}, {"axis": "z", "degrees": 180.528}],
+        "position": [-0.00635, 0.33845, 0.280988],
+        "resolution": [1280, 720],
+        "fov": 90
+}
     ],
     "components": [
         {
