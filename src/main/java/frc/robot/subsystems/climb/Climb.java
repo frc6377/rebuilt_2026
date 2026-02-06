@@ -7,14 +7,17 @@ package frc.robot.subsystems.climb;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import org.littletonrobotics.junction.Logger;
+import frc.robot.subsystems.climb.ClimberIO.ClimberIOInputs;
+
+// Limit Switch, Through Bore Encoder
 
 public class Climb extends SubsystemBase {
     private ClimberIO climberIO;
-    private final ClimberIOInputsAutoLogged inputs = new ClimberIOInputsAutoLogged();
+    private ClimberIOInputs inputs;
     /** Creates a new Climb. */
     public Climb(ClimberIO climberIO) {
         this.climberIO = climberIO;
+        this.inputs = new ClimberIO.ClimberIOInputs();
     }
 
     public Command climbUp() {
@@ -49,6 +52,6 @@ public class Climb extends SubsystemBase {
     public void periodic() {
         // This method will be called once per scheduler run
         climberIO.updateInputs(inputs);
-        Logger.processInputs("Climber", inputs);
+        climberIO.periodic();
     }
 }

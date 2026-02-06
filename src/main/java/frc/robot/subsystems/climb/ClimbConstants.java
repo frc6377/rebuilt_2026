@@ -34,7 +34,7 @@ public class ClimbConstants {
     public static final DCMotor kClimbGearBox = DCMotor.getKrakenX60(2);
     public static final double kClimbGearRatio = 36;
     public static final Mass kCarriageMass = Pounds.of(4.75);
-    public static final Distance kElevatorDrumRadius = Inches.of(0.375);
+    public static final Distance kElevatorDrumRadius = Inches.of(1.708);
     public static final Distance kElevatorDrumCircumference =
             kElevatorDrumRadius.times(2).times(Math.PI);
     public static final Distance kClimbMinHeight = Inches.zero(); // inches
@@ -42,4 +42,10 @@ public class ClimbConstants {
     public static final boolean kSimulateGravity = true;
     public static final Distance kStartHeight = Inches.zero();
     public static final double kClimbSpeed = 0.5;
+
+    public class PIDF{
+        public static final double kP = 1;
+        public static final double kI = 0;
+        public static final double kD = 0;
+    }
 }
