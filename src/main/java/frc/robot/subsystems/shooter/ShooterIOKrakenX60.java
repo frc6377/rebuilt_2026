@@ -44,9 +44,6 @@ public class ShooterIOKrakenX60 implements ShooterIO {
     private final TunableTalonFX leftSpinMotor;
     private final TunableTalonFX rightSpinMotor;
 
-    // Reference to shooter for tunable PID
-    private Shooter shooter;
-
     // Control requests
     private final VelocityVoltage velocityRequest = new VelocityVoltage(0.0);
     private final VelocityVoltage spinVelocityRequest = new VelocityVoltage(0.0);
@@ -236,19 +233,13 @@ public class ShooterIOKrakenX60 implements ShooterIO {
                 rightSpinMotor);
     }
 
-    public void setShooter(Shooter shooter) {
-        this.shooter = shooter;
-    }
-
     @Override
     public void updateInputs(ShooterIOInputs inputs) {
-        // Update tunable PID gains if shooter reference is set
-        if (shooter != null) {
-            leftFlywheelMotor.updateTunableGains();
-            rightFlywheelMotor.updateTunableGains();
-            leftSpinMotor.updateTunableGains();
-            rightSpinMotor.updateTunableGains();
-        }
+        // Update tunable PID gains
+        leftFlywheelMotor.updateTunableGains();
+        rightFlywheelMotor.updateTunableGains();
+        leftSpinMotor.updateTunableGains();
+        rightSpinMotor.updateTunableGains();
 
         // Refresh all signals
         BaseStatusSignal.refreshAll(

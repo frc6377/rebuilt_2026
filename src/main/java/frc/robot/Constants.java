@@ -76,5 +76,6 @@ public final class Constants {
         public static final int kShooterHoodMotorCANID = 23;
         public static final int kShooterSpinMotorLeftCANID = 24;
         public static final int kShooterSpinMotorRightCANID = 25;
+        public static final int kUpgoerMotorCANID = 28;
     }
 }

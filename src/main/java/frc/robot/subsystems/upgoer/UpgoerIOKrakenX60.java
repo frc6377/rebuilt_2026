@@ -11,7 +11,7 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 
-package frc.robot.subsystems.hood;
+package frc.robot.subsystems.upgoer;
 
 import static edu.wpi.first.units.Units.*;
 import static frc.robot.util.PhoenixUtil.tryUntilOk;
@@ -20,77 +20,70 @@ import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.PositionVoltage;
+import com.ctre.phoenix6.controls.VelocityVoltage;
+import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Temperature;
 import edu.wpi.first.units.measure.Voltage;
 import frc.robot.Constants;
 import frc.robot.util.TunableTalonFX;
 
-public class HoodIOKrakenX60 implements HoodIO {
+public class UpgoerIOKrakenX60 implements UpgoerIO {
     private final TunableTalonFX motor;
-    private final PositionVoltage positionRequest = new PositionVoltage(0.0);
+    private final VelocityVoltage velocityRequest = new VelocityVoltage(0.0);
 
-    // Status signals
-    private final StatusSignal<edu.wpi.first.units.measure.Angle> position;
+    private final StatusSignal<AngularVelocity> velocity;
     private final StatusSignal<Voltage> appliedVolts;
     private final StatusSignal<Current> current;
     private final StatusSignal<Temperature> temp;
 
-    // Reference to hood subsystem for tunable PID
-    private Hood hood;
+    public UpgoerIOKrakenX60() {
+        motor = new TunableTalonFX(
+                Constants.CANIDs.kUpgoerMotorCANID,
+                UpgoerConstants.canBusName,
+                "Upgoer/Motor",
+                new Slot0Configs()
+                        .withKP(UpgoerConstants.defaultKP)
+                        .withKI(UpgoerConstants.defaultKI)
+                        .withKD(UpgoerConstants.defaultKD)
+                        .withKV(UpgoerConstants.defaultKV)
+                        .withKS(UpgoerConstants.defaultKS));
 
-    public HoodIOKrakenX60() {
-        motor = new TunableTalonFX(Constants.CANIDs.kShooterHoodMotorCANID, "rio", "Hood/Hood Motor");
-
-        // Configure motor
         var config = new TalonFXConfiguration();
-        config.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+        config.MotorOutput.NeutralMode = NeutralModeValue.Coast;
         config.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
-        config.Slot0 = new Slot0Configs()
-                .withKP(HoodConstants.defaultKP)
-                .withKI(HoodConstants.defaultKI)
-                .withKD(HoodConstants.defaultKD);
-        config.CurrentLimits.StatorCurrentLimit = HoodConstants.currentLimit.in(Amps);
+        config.Slot0 = motor.getTunableSlot0Configs();
+        config.CurrentLimits.StatorCurrentLimit = UpgoerConstants.currentLimit.in(Amps);
         config.CurrentLimits.StatorCurrentLimitEnable = true;
-        config.Feedback.SensorToMechanismRatio = HoodConstants.gearRatio;
         tryUntilOk(5, () -> motor.applyConfiguration(config, 0.25));
 
-        // Create status signals
-        position = motor.getPosition();
+        velocity = motor.getVelocity();
         appliedVolts = motor.getMotorVoltage();
         current = motor.getStatorCurrent();
         temp = motor.getDeviceTemp();
 
-        // Configure update frequencies
-        BaseStatusSignal.setUpdateFrequencyForAll(50.0, position, appliedVolts, current, temp);
+        BaseStatusSignal.setUpdateFrequencyForAll(50.0, velocity, appliedVolts, current, temp);
+        ParentDevice.optimizeBusUtilizationForAll(motor);
     }
 
     @Override
-    public void updateInputs(HoodIOInputs inputs) {
-        // Update tunable PID gains if hood reference is set
-        if (hood != null) {
-            motor.updateTunableGains();
-        }
+    public void updateInputs(UpgoerIOInputs inputs) {
+        motor.updateTunableGains();
+        BaseStatusSignal.refreshAll(velocity, appliedVolts, current, temp);
 
-        // Refresh all signals
-        BaseStatusSignal.refreshAll(position, appliedVolts, current, temp);
-
-        // Update inputs (SensorToMechanismRatio already accounts for gearing)
-        inputs.angle = position.getValue();
+        inputs.velocity = velocity.getValue();
         inputs.appliedVoltage = appliedVolts.getValue();
         inputs.current = current.getValue();
         inputs.temp = temp.getValue();
     }
 
     @Override
-    public void setAngle(Angle angle) {
-        // Convert to rotations (SensorToMechanismRatio already accounts for gearing)
-        double positionRotations = angle.in(Rotations);
-        motor.setControl(positionRequest.withPosition(positionRotations));
+    public void setVelocity(AngularVelocity velocity) {
+        double rotationsPerSecond = velocity.in(RotationsPerSecond);
+        motor.setControl(velocityRequest.withVelocity(rotationsPerSecond));
     }
 
     @Override
