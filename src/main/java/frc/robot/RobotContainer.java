@@ -32,10 +32,16 @@ import frc.robot.commands.DriveCommands;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.indexer.Indexer;
+import frc.robot.subsystems.indexer.IndexerIO;
+import frc.robot.subsystems.indexer.IndexerIOSim;
+import frc.robot.subsystems.indexer.IndexerIOTalonFX;
 import frc.robot.subsystems.intake.IntakeIOReal;
 import frc.robot.subsystems.intake.IntakeIOSim;
 import frc.robot.subsystems.intake.IntakeRollerSubsystem;
 import frc.robot.subsystems.shooter.Shooter;
+import frc.robot.subsystems.shooter.ShooterIO;
+import frc.robot.subsystems.shooter.ShooterIOSim;
+import frc.robot.subsystems.shooter.ShooterIOTalonFX;
 import frc.robot.subsystems.vision.*;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
@@ -53,14 +59,13 @@ public class RobotContainer {
     private final Drive drive;
     private final Vision vision;
     private final IntakeRollerSubsystem intake;
-    private final Indexer indexer = new Indexer();
-    private final Shooter shooter = new Shooter();
-
+    private final Indexer indexer;
+    private final Shooter shooter;
     private SwerveDriveSimulation driveSimulation = null;
 
     // Controller
-    private final CommandXboxController controller = new CommandXboxController(0);
-
+    private final CommandXboxController driverController = new CommandXboxController(0);
+    private final CommandXboxController operatorController = new CommandXboxController(1);
     // Dashboard inputs
     private final LoggedDashboardChooser<Command> autoChooser;
 
@@ -77,11 +82,12 @@ public class RobotContainer {
                         new ModuleIOTalonFXReal(TunerConstants.BackLeft),
                         new ModuleIOTalonFXReal(TunerConstants.BackRight),
                         (pose) -> {});
-                this.vision = new Vision(
+                vision = new Vision(
                         drive,
                         new VisionIOLimelight(VisionConstants.camera0Name, drive::getRotation),
                         new VisionIOLimelight(VisionConstants.camera1Name, drive::getRotation));
-
+                shooter = new Shooter(new ShooterIOTalonFX());
+                indexer = new Indexer(new IndexerIOTalonFX());
                 break;
 
             case SIM:
@@ -106,7 +112,8 @@ public class RobotContainer {
                                 camera0Name, robotToCamera0, driveSimulation::getSimulatedDriveTrainPose),
                         new VisionIOPhotonVisionSim(
                                 camera1Name, robotToCamera1, driveSimulation::getSimulatedDriveTrainPose));
-
+                shooter = new Shooter(new ShooterIOSim());
+                indexer = new Indexer(new IndexerIOSim());
                 break;
 
             default:
@@ -120,7 +127,8 @@ public class RobotContainer {
                         (pose) -> {});
                 vision = new Vision(drive, new VisionIO() {}, new VisionIO() {});
                 intake = new IntakeRollerSubsystem(new IntakeIOReal());
-
+                shooter = new Shooter(new ShooterIO() {});
+                indexer = new Indexer(new IndexerIO() {});
                 break;
         }
 
@@ -149,29 +157,33 @@ public class RobotContainer {
     private void configureButtonBindings() {
         // Default command, normal field-relative drive
         drive.setDefaultCommand(DriveCommands.joystickDrive(
-                drive, () -> controller.getLeftY(), () -> controller.getLeftX(), () -> -controller.getRightX()));
+                drive,
+                () -> driverController.getLeftY(),
+                () -> driverController.getLeftX(),
+                () -> -driverController.getRightX()));
 
         // Lock to 0° when A button is held
-        controller
+        driverController
                 .a()
                 .whileTrue(DriveCommands.joystickDriveAtAngle(
-                        drive, () -> -controller.getLeftY(), () -> controller.getLeftX(), () -> new Rotation2d()));
+                        drive,
+                        () -> -driverController.getLeftY(),
+                        () -> driverController.getLeftX(),
+                        () -> new Rotation2d()));
 
         // Switch to X pattern when X button is pressed
-        controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
+        driverController.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
         // Intake control
-        controller.rightBumper().whileTrue(intake.intakeCommand());
-        controller.leftBumper().whileTrue(intake.outtakeCommand());
+        driverController.rightTrigger().whileTrue(intake.intakeCommand());
+        driverController.leftTrigger().whileTrue(intake.outtakeCommand());
 
         // Indexer control
-        controller.rightTrigger().whileTrue(Commands.run(() -> indexer.setIndexerSpeed(() -> 1), indexer));
-        controller.leftTrigger().whileTrue(Commands.run(() -> indexer.setIndexerSpeed(() -> -1), indexer));
-
+        operatorController.rightBumper().whileTrue(indexer.feedCommand());
+        operatorController.leftBumper().whileTrue(indexer.reverseCommand());
         // Shooter control
-        controller.povUp().whileTrue(Commands.run(() -> shooter.setShooterSpeed(1), shooter));
-        controller.povDown().whileTrue(Commands.run(() -> shooter.setShooterSpeed(-1), shooter));
-        controller.povLeft().whileTrue(Commands.run(() -> shooter.stopShooter(), shooter));
+        operatorController.rightTrigger().whileTrue(shooter.shootAtDistanceCommand(Meters.of(2.0)));
+        operatorController.leftTrigger().whileTrue(shooter.stopCommand());
 
         // Reset gyro / odometry1
         final Runnable resetGyro = Constants.currentMode == Constants.Mode.SIM
@@ -179,32 +191,7 @@ public class RobotContainer {
                         driveSimulation.getSimulatedDriveTrainPose()) // reset odometry to actual robot pose during
                 // simulation
                 : () -> drive.setPose(new Pose2d(drive.getPose().getTranslation(), new Rotation2d())); // zero gyro
-        controller.start().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
-
-        // Example Coral Placement Code
-        // TODO: delete these code for your own project
-        if (Constants.currentMode == Constants.Mode.SIM) {
-            // L4 placement
-            controller.y().onTrue(Commands.runOnce(() -> SimulatedArena.getInstance()
-                    .addGamePieceProjectile(new ReefscapeCoralOnFly(
-                            driveSimulation.getSimulatedDriveTrainPose().getTranslation(),
-                            new Translation2d(0.4, 0),
-                            driveSimulation.getDriveTrainSimulatedChassisSpeedsFieldRelative(),
-                            driveSimulation.getSimulatedDriveTrainPose().getRotation(),
-                            Meters.of(2),
-                            MetersPerSecond.of(1.5),
-                            Degrees.of(-80)))));
-            // L3 placement
-            controller.b().onTrue(Commands.runOnce(() -> SimulatedArena.getInstance()
-                    .addGamePieceProjectile(new ReefscapeCoralOnFly(
-                            driveSimulation.getSimulatedDriveTrainPose().getTranslation(),
-                            new Translation2d(0.4, 0),
-                            driveSimulation.getDriveTrainSimulatedChassisSpeedsFieldRelative(),
-                            driveSimulation.getSimulatedDriveTrainPose().getRotation(),
-                            Meters.of(1.35),
-                            MetersPerSecond.of(1.5),
-                            Degrees.of(-60)))));
-        }
+        driverController.start().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
     }
 
     /**
