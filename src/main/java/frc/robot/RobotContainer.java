@@ -113,7 +113,13 @@ public class RobotContainer {
                         new ModuleIO() {},
                         (pose) -> {});
                 vision = new Vision(drive, new VisionIO() {}, new VisionIO() {});
-                indexer = new Indexer(new IndexerIO() {});
+                indexer = new Indexer(new IndexerIO() {
+                    @Override
+                    public void updateInputs(IndexerIOInputs indexerInputs) {
+                        // TODO Auto-generated method stub
+                        throw new UnsupportedOperationException("Unimplemented method 'updateInputs'");
+                    }
+                });
 
                 break;
         }

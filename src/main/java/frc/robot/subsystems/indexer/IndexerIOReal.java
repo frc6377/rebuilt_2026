@@ -1,20 +1,18 @@
 package frc.robot.subsystems.indexer;
 
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import frc.robot.subsystems.indexer.IndexerConstants;
 
 public class IndexerIOReal implements IndexerIO {
     private final TalonFX indexerMotor = new TalonFX(1);
     private final TalonFXConfiguration extenderMotorConfig;
 
-
     public IndexerIOReal() {
         // Real hardware-specific constructor implementation
         extenderMotorConfig = new TalonFXConfiguration();
-        
+
         extenderMotorConfig.ClosedLoopRamps.VoltageClosedLoopRampPeriod = 0.02;
         extenderMotorConfig.TorqueCurrent.PeakForwardTorqueCurrent = 40;
         extenderMotorConfig.TorqueCurrent.PeakReverseTorqueCurrent = 40;
@@ -39,7 +37,13 @@ public class IndexerIOReal implements IndexerIO {
         indexerMotor.set(0);
     }
 
+    @Override
     public void setCustomSpeed(double speed) {
         indexerMotor.set(speed);
+    }
+
+    @Override
+    public void updateInputs(IndexerIOInputs indexerInputs) {
+        indexerInputs.updateInputs(indexerInputs);
     }
 }

@@ -42,4 +42,9 @@ public class IndexerIOSim implements IndexerIO {
     public void setCustomSpeed(double speed) {
         indexerMotor.set(speed);
     }
+
+    @Override
+    public void updateInputs(IndexerIOInputs indexerInputs) {
+        indexerInputs.updateInputs(indexerInputs);
+    }
 }
