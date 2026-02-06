@@ -18,4 +18,6 @@ public interface ClimberIO {
     default void set(double percent) {}
 
     default void updateInputs(ClimberIOInputs inputs) {}
+
+    default void periodic() {}
 }

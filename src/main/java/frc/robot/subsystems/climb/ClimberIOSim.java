@@ -1,8 +1,10 @@
 package frc.robot.subsystems.climb;
 
 import static edu.wpi.first.units.Units.Kilograms;
+import static edu.wpi.first.units.Units.Meter;
 import static edu.wpi.first.units.Units.Meters;
 
+import edu.wpi.first.epilogue.Logged;
 import edu.wpi.first.wpilibj.simulation.ElevatorSim;
 import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d;
 import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d;
@@ -11,13 +13,17 @@ import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.util.Color8Bit;
 import frc.robot.Robot;
 import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.mechanism.LoggedMechanism2d;
+import org.littletonrobotics.junction.mechanism.LoggedMechanismLigament2d;
+import org.littletonrobotics.junction.mechanism.LoggedMechanismRoot2d;
 
 public class ClimberIOSim implements ClimberIO {
     // Sim
-    private static Mechanism2d mech = new Mechanism2d(2, 2);
+    private static LoggedMechanism2d climbMech;
     private ElevatorSim climbSim;
 
-    private MechanismLigament2d climbMech;
+    private LoggedMechanismLigament2d climbLig;
+    private LoggedMechanismRoot2d mechRoot;
 
     // gearbox The type of and number of motors in the elevator gearbox.
 
@@ -39,7 +45,6 @@ public class ClimberIOSim implements ClimberIO {
     // must have 1 element for position.
 
     public ClimberIOSim() {
-        if (Robot.isSimulation()) {
             climbSim = new ElevatorSim(
                     ClimbConstants.kClimbGearBox,
                     ClimbConstants.kClimbGearRatio,
@@ -49,12 +54,10 @@ public class ClimberIOSim implements ClimberIO {
                     ClimbConstants.kClimbMaxHeight.in(Meters),
                     ClimbConstants.kSimulateGravity,
                     ClimbConstants.kStartHeight.in(Meters));
-            climbMech = mech.getRoot("root", 1, 0)
-                    .append(new MechanismLigament2d("Climber Mech [0]", 1, 90, 10, new Color8Bit(Color.kBlue)));
-            SmartDashboard.putData("Mech2Ds/Climber Mech", mech);
-        }
-        Logger.recordOutput("Elevator/Elv/Setpoint (Inches)", 0.0);
-        Logger.recordOutput("Elevator/Elv/Setpoint (Rotations)", 0.0);
+            climbMech = new LoggedMechanism2d(Meters.of(2), Meters.of(2));
+            mechRoot = climbMech.getRoot("root", 1, 0);
+            climbLig  = new LoggedMechanismLigament2d("Climber Mech [0]", 1, 90, 10, new Color8Bit(Color.kBlue));
+            mechRoot.append(climbLig);
     }
 
     @Override
@@ -66,5 +69,13 @@ public class ClimberIOSim implements ClimberIO {
     public void updateInputs(ClimberIOInputs inputs) {
         double positionMeters = climbSim.getPositionMeters();
         inputs.height = Meters.of(positionMeters);
+    }
+
+    @Override
+    public void periodic() {
+        climbSim.update(0.02);
+        Logger.recordOutput("Elevator/Elv/Setpoint (Inches)", 0.0);
+        Logger.recordOutput("Elevator/Elv/Setpoint (Rotations)", 0.0);
+        Logger.recordOutput("Elevator/Simulation/2dsim", climbMech);
     }
 }
