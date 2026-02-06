@@ -32,6 +32,7 @@ import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -53,6 +54,8 @@ public class Vision extends SubsystemBase {
     private final QuestNav questNav;
     private Pose3d questPose = new Pose3d();
     private static final Matrix<N3, N1> QUESTNAV_STD_DEVS = VecBuilder.fill(0.02, 0.02, 0.035);
+
+    private double lastTime = Timer.getFPGATimestamp() * 1000;
 
     public Vision(VisionConsumer consumer, VisionIO... io) {
         this.consumer = consumer;
@@ -132,11 +135,9 @@ public class Vision extends SubsystemBase {
     public Command getRobotStartPose(int cameraIndex) {
         return Commands.run(() -> {
                     Pose3d cameraPose = getStartingPoseFromCamera(cameraIndex);
-                    Logger.recordOutput("CameraPose", cameraPose);
+                    // Logger.recordOutput("CameraPose", cameraPose);
                     if (getTagCount(0) >= 1 && cameraPose != null) {
                         questNav.setPose(cameraPose);
-                        // Logger.recordOutput("Vision/QuestNav/Pose", questPose);
-                        Logger.recordOutput("Is Called In Disabled", true);
                     }
                 })
                 .ignoringDisable(true);
@@ -145,6 +146,8 @@ public class Vision extends SubsystemBase {
 
     @Override
     public void periodic() {
+        double lastTime = Timer.getFPGATimestamp() * 1000;
+
         for (int i = 0; i < io.length; i++) {
             io[i].updateInputs(inputs[i]);
             Logger.processInputs("Vision/Camera" + Integer.toString(i), inputs[i]);
@@ -265,6 +268,9 @@ public class Vision extends SubsystemBase {
 
         Logger.recordOutput("Vision/QuestNav/Connected", questNav.isConnected());
         Logger.recordOutput("Vision/QuestNav/Pose", questPose);
+
+        double newTime = Timer.getFPGATimestamp() * 1000;
+        Logger.recordOutput("Vision Loop Time (ms)", newTime - lastTime);
     }
 
     /**
