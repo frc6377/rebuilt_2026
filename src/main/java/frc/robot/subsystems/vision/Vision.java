@@ -130,7 +130,7 @@ public class Vision extends SubsystemBase {
     }
 
     public Command getRobotStartPose(int cameraIndex) {
-        return Commands.run(() -> {
+        return Commands.runOnce(() -> {
                     Pose3d cameraPose = getStartingPoseFromCamera(cameraIndex);
                     Logger.recordOutput("CameraPose", cameraPose);
                     if (getTagCount(0) >= 1 && cameraPose != null) {
