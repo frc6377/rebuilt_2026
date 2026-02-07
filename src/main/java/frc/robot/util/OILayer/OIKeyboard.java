@@ -74,4 +74,19 @@ public class OIKeyboard implements OI {
     public Trigger zeroDrivebase() {
         return Z;
     }
+
+    @Override
+    public Trigger spinUpShooter() {
+        return X;
+    }
+
+    @Override
+    public Trigger climbExtend() {
+        return C;
+    }
+
+    @Override
+    public Trigger declimb() {
+        return V;
+    }
 }
