@@ -88,20 +88,23 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
                     1),
             getModuleTranslations());
 
-    public static final DriveTrainSimulationConfig mapleSimConfig = DriveTrainSimulationConfig.Default()
-            .withRobotMass(Kilograms.of(ROBOT_MASS_KG))
-            .withCustomModuleTranslations(getModuleTranslations())
-            .withGyro(COTS.ofPigeon2())
-            .withSwerveModule(new SwerveModuleSimulationConfig(
-                    DCMotor.getKrakenX60(1),
-                    DCMotor.getFalcon500(1),
-                    TunerConstants.FrontLeft.DriveMotorGearRatio,
-                    TunerConstants.FrontLeft.SteerMotorGearRatio,
-                    Volts.of(TunerConstants.FrontLeft.DriveFrictionVoltage),
-                    Volts.of(TunerConstants.FrontLeft.SteerFrictionVoltage),
-                    Meters.of(TunerConstants.FrontLeft.WheelRadius),
-                    KilogramSquareMeters.of(TunerConstants.FrontLeft.SteerInertia),
-                    WHEEL_COF));
+    public static DriveTrainSimulationConfig createMapleSimConfig() {
+        return DriveTrainSimulationConfig.Default()
+                .withRobotMass(Kilograms.of(ROBOT_MASS_KG))
+                .withBumperSize(Inches.of(30), Inches.of(30))
+                .withCustomModuleTranslations(getModuleTranslations())
+                .withGyro(COTS.ofPigeon2())
+                .withSwerveModule(new SwerveModuleSimulationConfig(
+                        DCMotor.getKrakenX60(1),
+                        DCMotor.getKrakenX44(1),
+                        TunerConstants.FrontLeft.DriveMotorGearRatio,
+                        TunerConstants.FrontLeft.SteerMotorGearRatio,
+                        Volts.of(TunerConstants.FrontLeft.DriveFrictionVoltage),
+                        Volts.of(TunerConstants.FrontLeft.SteerFrictionVoltage),
+                        Meters.of(TunerConstants.FrontLeft.WheelRadius),
+                        KilogramSquareMeters.of(TunerConstants.FrontLeft.SteerInertia),
+                        WHEEL_COF));
+    }
 
     static final Lock odometryLock = new ReentrantLock();
     private final GyroIO gyroIO;

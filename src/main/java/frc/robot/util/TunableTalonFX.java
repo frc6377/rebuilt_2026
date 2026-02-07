@@ -217,7 +217,7 @@ public class TunableTalonFX extends TalonFX {
      * @param configuration The TalonFXConfiguration to apply
      * @return The StatusCode from applying the configuration
      */
-    public StatusCode apply(TalonFXConfiguration configuration) {
+    public StatusCode applyConfiguration(TalonFXConfiguration configuration) {
         Slot0Configs pidConfigs = configuration.Slot0;
 
         // Update the tunable NetworkTables values
@@ -239,5 +239,29 @@ public class TunableTalonFX extends TalonFX {
         lastKG = pidConfigs.kG;
 
         return super.getConfigurator().apply(configuration);
+    }
+
+    public StatusCode applyConfiguration(TalonFXConfiguration configuration, double timeoutSeconds) {
+        Slot0Configs pidConfigs = configuration.Slot0;
+
+        // Update the tunable NetworkTables values
+        tunableKP.set(pidConfigs.kP);
+        tunableKI.set(pidConfigs.kI);
+        tunableKD.set(pidConfigs.kD);
+        tunableKV.set(pidConfigs.kV);
+        tunableKS.set(pidConfigs.kS);
+        tunableKA.set(pidConfigs.kA);
+        tunableKG.set(pidConfigs.kG);
+
+        // Update the cache
+        lastKP = pidConfigs.kP;
+        lastKI = pidConfigs.kI;
+        lastKD = pidConfigs.kD;
+        lastKV = pidConfigs.kV;
+        lastKS = pidConfigs.kS;
+        lastKA = pidConfigs.kA;
+        lastKG = pidConfigs.kG;
+
+        return super.getConfigurator().apply(configuration, timeoutSeconds);
     }
 }
