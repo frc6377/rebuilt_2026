@@ -4,6 +4,9 @@
 
 package frc.robot.subsystems.climb;
 
+import static edu.wpi.first.units.Units.Inches;
+
+import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -14,10 +17,34 @@ import frc.robot.subsystems.climb.ClimberIO.ClimberIOInputs;
 public class Climb extends SubsystemBase {
     private ClimberIO climberIO;
     private ClimberIOInputs inputs;
+    private Distance currentSetpoint = ClimbConstants.kStartHeight;
     /** Creates a new Climb. */
     public Climb(ClimberIO climberIO) {
         this.climberIO = climberIO;
         this.inputs = new ClimberIO.ClimberIOInputs();
+    }
+
+    public Command setHeight(Distance height) {
+        return runOnce(() -> {
+            climberIO.goToHeight(height);
+            currentSetpoint = height;
+        });
+    }
+
+    public Command goToStowed() {
+        return setHeight(ClimbConstants.kClimbMinHeight);
+    }
+
+    public Command goToExtended() {
+        return setHeight(ClimbConstants.kClimbMaxHeight);
+    }
+
+    public Command goToMidHeight() {
+        return setHeight(Inches.of(15)); // Adjust this value as needed
+    }
+
+    public boolean atSetpoint() {
+        return inputs.height.isNear(currentSetpoint, Inches.of(0.5));
     }
 
     public Command climbUp() {

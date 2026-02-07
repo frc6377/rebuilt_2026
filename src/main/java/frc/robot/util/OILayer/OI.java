@@ -97,4 +97,8 @@ public interface OI {
     default Trigger climbExtend() {
         return noButton;
     }
+
+    default Trigger climbToL1() {
+        return noButton;
+    }
 }

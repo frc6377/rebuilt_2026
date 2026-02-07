@@ -77,7 +77,7 @@ public class OIKeyboard implements OI {
 
     @Override
     public Trigger spinUpShooter() {
-        return X;
+        return M;
     }
 
     @Override
@@ -88,5 +88,10 @@ public class OIKeyboard implements OI {
     @Override
     public Trigger declimb() {
         return V;
+    }
+
+    @Override
+    public Trigger climbToL1() {
+        return X;
     }
 }

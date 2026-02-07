@@ -14,9 +14,7 @@
 package frc.robot;
 
 import static edu.wpi.first.units.Units.*;
-import static edu.wpi.first.units.Units.Degrees;
 import static frc.robot.subsystems.vision.VisionConstants.*;
-import static frc.robot.subsystems.vision.VisionConstants.robotToCamera1;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -194,8 +192,16 @@ public class RobotContainer {
                             MetersPerSecond.of(1.5),
                             Degrees.of(-60)))));
             // Climb controls
+            oiXbox.climbExtend().whileTrue(climb.climbUp());
+            oiXbox.declimb().whileTrue(climb.climbDown());
+            oiXbox.climbToL1().onTrue(climb.setHeight(Inches.of(27)));
+
             oiKeyboard.climbExtend().whileTrue(climb.climbUp());
-            oiKeyboard.declimb().whileTrue(climb.climbDown());
+            oiKeyboard.declimb().whileTrue(climb.climbDown()).onTrue(Commands.print("V pressed - climbing down"));
+            oiKeyboard
+                    .climbToL1()
+                    .onTrue(Commands.print("M pressed - going to 27 inches"))
+                    .onTrue(climb.setHeight(Inches.of(27)));
         }
     }
 

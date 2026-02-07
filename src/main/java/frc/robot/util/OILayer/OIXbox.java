@@ -78,4 +78,9 @@ public class OIXbox implements OI {
     public Trigger declimb() {
         return rightBumper;
     }
+
+    @Override
+    public Trigger climbToL1() {
+        return y;
+    }
 }
