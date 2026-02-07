@@ -36,6 +36,8 @@ import frc.robot.subsystems.climb.ClimberIOReal;
 import frc.robot.subsystems.climb.ClimberIOSim;
 import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.vision.*;
+import frc.robot.util.OILayer.OIKeyboard;
+import frc.robot.util.OILayer.OIXbox;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
 import org.ironmaple.simulation.seasonspecific.reefscape2025.ReefscapeCoralOnFly;
@@ -52,6 +54,9 @@ public class RobotContainer {
     private final Drive drive;
     private final Vision vision;
     private final Climb climb;
+
+    private final OIXbox oiXbox;
+    private final OIKeyboard oiKeyboard;
 
     private SwerveDriveSimulation driveSimulation = null;
 
@@ -118,6 +123,8 @@ public class RobotContainer {
                 climb = new Climb(new ClimberIO() {});
                 break;
         }
+        oiKeyboard = new OIKeyboard();
+        oiXbox = new OIXbox();
 
         // Set up auto routines
         autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
@@ -187,8 +194,8 @@ public class RobotContainer {
                             MetersPerSecond.of(1.5),
                             Degrees.of(-60)))));
             // Climb controls
-            controller.rightBumper().whileTrue(climb.climbUp());
-            controller.leftBumper().whileTrue(climb.climbDown());
+            oiKeyboard.climbExtend().whileTrue(climb.climbUp());
+            oiKeyboard.declimb().whileTrue(climb.climbDown());
         }
     }
 

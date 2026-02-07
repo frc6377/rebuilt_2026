@@ -5,7 +5,6 @@ import static frc.robot.util.PhoenixUtil.tryUntilOk;
 
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.controls.PositionVoltage;
-import com.ctre.phoenix6.hardware.TalonFX;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.DutyCycleEncoder;
 import frc.robot.Constants.CANIDs;
@@ -26,7 +25,6 @@ public class ClimberIOReal implements ClimberIO {
         climberPID.kP = ClimbConstants.PIDF.kP;
         climberPID.kI = ClimbConstants.PIDF.kI;
         climberPID.kD = ClimbConstants.PIDF.kD;
-    
     }
 
     @Override

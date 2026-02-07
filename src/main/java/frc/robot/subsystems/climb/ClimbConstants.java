@@ -43,7 +43,7 @@ public class ClimbConstants {
     public static final Distance kStartHeight = Inches.zero();
     public static final double kClimbSpeed = 0.5;
 
-    public class PIDF{
+    public class PIDF {
         public static final double kP = 1;
         public static final double kI = 0;
         public static final double kD = 0;
