@@ -27,7 +27,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Constants.FieldConstants;
 import frc.robot.subsystems.hood.Hood;
 import frc.robot.subsystems.shooter.GamePieceTrajectorySimulation;
-import frc.robot.subsystems.shooter.Shooter;
+import frc.robot.subsystems.shooter.left.LeftShooter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -64,7 +64,7 @@ public class ShooterCalibrationCommand extends Command {
 
     // Subsystems
     private final Hood hood;
-    private final Shooter shooter;
+    private final LeftShooter shooter;
     private final GamePieceTrajectorySimulation trajectorySim;
     private final SwerveDriveSimulation driveSim;
     private final Consumer<Pose2d> poseResetter;
@@ -127,7 +127,7 @@ public class ShooterCalibrationCommand extends Command {
      */
     public ShooterCalibrationCommand(
             Hood hood,
-            Shooter shooter,
+            LeftShooter shooter,
             GamePieceTrajectorySimulation trajectorySim,
             SwerveDriveSimulation driveSim,
             Consumer<Pose2d> poseResetter) {
@@ -181,7 +181,7 @@ public class ShooterCalibrationCommand extends Command {
      */
     public ShooterCalibrationCommand(
             Hood hood,
-            Shooter shooter,
+            LeftShooter shooter,
             GamePieceTrajectorySimulation trajectorySim,
             SwerveDriveSimulation driveSim,
             Consumer<Pose2d> poseResetter,
@@ -257,9 +257,10 @@ public class ShooterCalibrationCommand extends Command {
                 if (stateTimer.hasElapsed(SETTLE_TIME)) {
                     // Check if flywheel is up to speed (within 5%)
                     double targetRPM = testRPMs[currentRPMIndex].in(RPM);
-                    double actualRPM = (shooter.getLeftFlywheelVelocity().in(RPM)
-                                    + shooter.getRightFlywheelVelocity().in(RPM))
-                            / 2.0;
+                    // double actualRPM = (shooter.getLeftFlywheelVelocity().in(RPM)
+                    //                 + shooter.getRightFlywheelVelocity().in(RPM))
+                    //         / 2.0;
+                    double actualRPM = shooter.getFlywheelVelocity().in(RPM);
                     if (Math.abs(actualRPM - targetRPM) / targetRPM < 0.05) {
                         state = CalibrationState.FIRE_SHOT;
                     } else if (stateTimer.hasElapsed(SETTLE_TIME * 3)) {

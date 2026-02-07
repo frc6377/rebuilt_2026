@@ -37,11 +37,15 @@ import frc.robot.subsystems.hood.HoodIO;
 import frc.robot.subsystems.hood.HoodIOKrakenX60;
 import frc.robot.subsystems.hood.HoodIOSim;
 import frc.robot.subsystems.shooter.GamePieceTrajectorySimulation;
-import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.ShooterConstants;
-import frc.robot.subsystems.shooter.ShooterIO;
-import frc.robot.subsystems.shooter.ShooterIOKrakenX60;
-import frc.robot.subsystems.shooter.ShooterIOSim;
+import frc.robot.subsystems.shooter.left.LeftShooter;
+import frc.robot.subsystems.shooter.left.LeftShooterIO;
+import frc.robot.subsystems.shooter.left.LeftShooterIOKrakenX60;
+import frc.robot.subsystems.shooter.left.LeftShooterIOSim;
+import frc.robot.subsystems.shooter.right.RightShooter;
+import frc.robot.subsystems.shooter.right.RightShooterIO;
+import frc.robot.subsystems.shooter.right.RightShooterIOKrakenX60;
+import frc.robot.subsystems.shooter.right.RightShooterIOSim;
 import frc.robot.subsystems.state.RobotState;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -66,7 +70,8 @@ public class Superstructure extends SubsystemBase {
     private static final LoggedNetworkNumber rpmMultiplier =
             new LoggedNetworkNumber("Shooting/RPMMultiplier", ShooterConstants.defaultRpmMultiplier);
 
-    private final Shooter shooter;
+    private final LeftShooter leftShooter;
+    private final RightShooter rightShooter;
     private final Hood hood;
     private final RobotState robotState;
     private GamePieceTrajectorySimulation gamePieceTrajectorySimulation;
@@ -79,25 +84,30 @@ public class Superstructure extends SubsystemBase {
         }
         this.robotState = createdState;
 
-        ShooterIO shooterIO;
+        LeftShooterIO leftShooterIO;
+        RightShooterIO rightShooterIO;
         HoodIO hoodIO;
 
         switch (Constants.currentMode) {
             case REAL:
-                shooterIO = new ShooterIOKrakenX60();
+                leftShooterIO = new LeftShooterIOKrakenX60();
+                rightShooterIO = new RightShooterIOKrakenX60();
                 hoodIO = ShooterConstants.hoodEnabled ? new HoodIOKrakenX60() : null;
                 break;
             case SIM:
-                shooterIO = new ShooterIOSim();
+                leftShooterIO = new LeftShooterIOSim();
+                rightShooterIO = new RightShooterIOSim();
                 hoodIO = ShooterConstants.hoodEnabled ? new HoodIOSim() : null;
                 break;
             default:
-                shooterIO = new ShooterIO() {};
+                leftShooterIO = new LeftShooterIO() {};
+                rightShooterIO = new RightShooterIO() {};
                 hoodIO = null;
                 break;
         }
 
-        this.shooter = new Shooter(shooterIO);
+        this.leftShooter = new LeftShooter(leftShooterIO);
+        this.rightShooter = new RightShooter(rightShooterIO);
         this.hood = hoodIO != null ? new Hood(hoodIO) : null;
     }
 
@@ -187,11 +197,15 @@ public class Superstructure extends SubsystemBase {
         }
 
         return new ShooterCalibrationCommand(
-                hood, shooter, gamePieceTrajectorySimulation, driveSimulation, poseResetter);
+                hood, leftShooter, gamePieceTrajectorySimulation, driveSimulation, poseResetter);
     }
 
-    public Shooter getShooter() {
-        return shooter;
+    public LeftShooter getLeftShooter() {
+        return leftShooter;
+    }
+
+    public RightShooter getRightShooter() {
+        return rightShooter;
     }
 
     public Hood getHood() {
@@ -213,15 +227,16 @@ public class Superstructure extends SubsystemBase {
     }
 
     public void setFlywheelVelocity(AngularVelocity velocity) {
-        shooter.setFlywheelVelocity(velocity);
+        leftShooter.setFlywheelVelocity(velocity);
+        rightShooter.setFlywheelVelocity(velocity);
     }
 
     public AngularVelocity getLeftFlywheelVelocity() {
-        return shooter.getLeftFlywheelVelocity();
+        return leftShooter.getFlywheelVelocity();
     }
 
     public AngularVelocity getRightFlywheelVelocity() {
-        return shooter.getRightFlywheelVelocity();
+        return rightShooter.getFlywheelVelocity();
     }
 
     public AngularVelocity getAverageFlywheelVelocity() {
@@ -231,11 +246,12 @@ public class Superstructure extends SubsystemBase {
     }
 
     public void stopShooter() {
-        shooter.stop();
+        leftShooter.stop();
+        rightShooter.stop();
     }
 
     public Command stopShooterCommand() {
-        return shooter.stopCommand();
+        return leftShooter.stopCommand().alongWith(rightShooter.stopCommand());
     }
 
     /** Record to hold calculated shooting parameters with type-safe units. */
@@ -351,6 +367,10 @@ public class Superstructure extends SubsystemBase {
 
     /** Command that continuously updates hood angle and flywheel speed based on distance to hub. */
     public Command autoSpeedShooter(Supplier<Pose2d> poseSupplier) {
+        var requirements = hood != null
+                ? new SubsystemBase[] {hood, leftShooter, rightShooter}
+                : new SubsystemBase[] {leftShooter, rightShooter};
+
         return Commands.run(
                         () -> {
                             Pose2d robotPose = poseSupplier.get();
@@ -366,8 +386,7 @@ public class Superstructure extends SubsystemBase {
                             setHoodAngle(hoodAngle);
                             setFlywheelVelocity(flywheelVelocity);
                         },
-                        hood != null ? hood : null,
-                        shooter)
+                        requirements)
                 .withName("AutoAimShooter");
     }
 
@@ -405,6 +424,6 @@ public class Superstructure extends SubsystemBase {
     }
 
     public boolean atTargetVelocity() {
-        return shooter.atTargetVelocity();
+        return leftShooter.atTargetVelocity() && rightShooter.atTargetVelocity();
     }
 }

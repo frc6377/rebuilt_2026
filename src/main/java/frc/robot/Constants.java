@@ -69,12 +69,12 @@ public final class Constants {
     }
 
     public static final class CANIDs {
-        public static final int kShooterFlywheelLeftMotorCANID = 21;
-        public static final int kShooterFlywheelLeftFollowerCANID = 26;
+        public static final int kShooterFlywheelLeftMotorCANID = 11;
+        public static final int kShooterFlywheelLeftFollowerCANID = 12;
         public static final int kShooterFlywheelRightMotorCANID = 22;
         public static final int kShooterFlywheelRightFollowerCANID = 27;
         public static final int kShooterHoodMotorCANID = 23;
-        public static final int kShooterSpinMotorLeftCANID = 24;
+        public static final int kShooterSpinMotorLeftCANID = 10;
         public static final int kShooterSpinMotorRightCANID = 25;
         public static final int kUpgoerMotorCANID = 28;
     }
