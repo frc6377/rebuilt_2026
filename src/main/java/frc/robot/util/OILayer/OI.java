@@ -26,7 +26,7 @@ public interface OI {
         return noButton;
     }
 
-    /* Puts the shooter into a mode where it is able to shoot (e.g. spins up a flywheel that was currently idle) 
+    /* Puts the shooter into a mode where it is able to shoot (e.g. spins up a flywheel that was currently idle)
      * Rumbles joystick or turns on lights on the robot when it gets up to speed to be able to shoot
      * When button is release, return to an idle speed
      * Subsystem: Shooter - set flywheel motor(s) to "shooting speed" based on distance, set to idle speed when released
@@ -35,19 +35,18 @@ public interface OI {
         return noButton;
     }
 
-
-    /* Hold this button to fire shooter. Make sure the shooter is spun up before allowing this 
-     * 
+    /* Hold this button to fire shooter. Make sure the shooter is spun up before allowing this
+     *
      * Subsystem: Shooter - turn on the feeding motor(s) to enable shooting to occur
      */
     default Trigger fireShooter() {
         return noButton;
     }
 
-    /* Run the rollers on the intake while held 
-     * 
+    /* Run the rollers on the intake while held
+     *
      * Subsystem: Intake - spin the rollers forward when held, stop spinning when released
-    */
+     */
     default DoubleSupplier intake() {
         return noAxis;
     }
@@ -59,7 +58,7 @@ public interface OI {
     }
 
     /* When pressed, the intake will extend, and when pressed again, it will retract
-    /* Be careful when retracting in case the hopper is full of balls, that it should 
+    /* Be careful when retracting in case the hopper is full of balls, that it should
     /* be able to avoid damaging the robot if things are in the way.
     /* Subsystem: Intake
     */
@@ -67,10 +66,9 @@ public interface OI {
         return noButton;
     }
 
-
-    /* While this button is held, the robot aims for the hub and prevents the driver from updating the rotation 
+    /* While this button is held, the robot aims for the hub and prevents the driver from updating the rotation
      * Subsystem: Drive - whenever this is held down, set rotation based on position
-    */
+     */
     default Trigger lockOnTarget() {
         return noButton;
     }
