@@ -177,26 +177,33 @@ public class RobotContainer {
                 .whileTrue(DriveCommands.joystickDriveAtAngle(
                         drive, () -> -controller.getLeftY(), () -> -controller.getLeftX(), () -> new Rotation2d()));
 
-        // Spin up shooter using OI mapping
-        oi.spinUpShooter()
-                .whileTrue(superstructure.spinUpShooterCommand(
-                        drive, () -> -oi.driveTranslationY().getAsDouble(), () -> -oi.driveTranslationX()
-                                .getAsDouble()))
-                .onFalse(superstructure.stopShooterCommand());
+        // Spin up shooter using OI mapping (also previews trajectory in sim)
+        Command spinUpCommand = superstructure.spinUpShooterCommand(
+                drive, () -> -oi.driveTranslationY().getAsDouble(), () -> -oi.driveTranslationX()
+                        .getAsDouble());
+        if (Constants.currentMode == Constants.Mode.SIM && superstructure.hasGamePieceTrajectorySimulation()) {
+            spinUpCommand = spinUpCommand.alongWith(Commands.run(() ->
+                            superstructure.getGamePieceTrajectorySimulation().previewTrajectory())
+                    .withName("PreviewTrajectory"));
+        }
+        oi.spinUpShooter().whileTrue(spinUpCommand).onFalse(superstructure.stopShooterCommand());
 
-        // Fire shooter using OI mapping (only feeds when at speed)
-        oi.fireShooter()
-                .whileTrue(Commands.run(
-                                () -> {
-                                    if (superstructure.atTargetVelocity()) {
-                                        upgoer.setVelocity(UpgoerConstants.defaultFeedVelocity);
-                                    } else {
-                                        upgoer.stop();
-                                    }
-                                },
-                                upgoer)
-                        .withName("FireShooter"))
-                .onFalse(upgoer.stopCommand());
+        // Fire shooter using OI mapping (only feeds when at speed, launches projectiles in sim)
+        Command fireCommand = Commands.run(
+                        () -> {
+                            if (superstructure.atTargetVelocity()) {
+                                upgoer.setVelocity(UpgoerConstants.defaultFeedVelocity);
+                            } else {
+                                upgoer.stop();
+                            }
+                        },
+                        upgoer)
+                .withName("FireShooter");
+        if (Constants.currentMode == Constants.Mode.SIM && superstructure.hasGamePieceTrajectorySimulation()) {
+            fireCommand = fireCommand.alongWith(
+                    superstructure.simAutoFireHoldCommand(() -> superstructure.atTargetVelocity()));
+        }
+        oi.fireShooter().whileTrue(fireCommand).onFalse(upgoer.stopCommand());
 
         // Switch to X pattern when X button is pressed
         controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
