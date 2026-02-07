@@ -339,17 +339,39 @@ public class Superstructure extends SubsystemBase {
         return new ShootingParameters(hoodAngle, flywheelVelocity);
     }
 
+    public boolean isInShootingZone(Pose2d robotPose) {
+        double fieldLengthMeters = FieldConstants.FIELD_LENGTH.in(Meters);
+        double xMeters = robotPose.getTranslation().getX();
+        boolean isRed = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
+        double distanceFromOwnWall = isRed ? fieldLengthMeters - xMeters : xMeters;
+        // Can shoot from own half of the field
+        return distanceFromOwnWall <= fieldLengthMeters / 2.0;
+    }
+
     private ShootingParameters calculateParametersForFixedAngle(Distance distance, Angle fixedAngle) {
         double distanceMeters = distance.in(Meters);
         double angleRadians = fixedAngle.in(Radians);
         double gravityMps2 = ShooterConstants.gravity.in(MetersPerSecondPerSecond);
 
-        double sin2Theta = Math.sin(2.0 * angleRadians);
-        if (Math.abs(sin2Theta) < 0.001) {
+        // Height difference: hub opening height minus shooter height
+        double targetHeightMeters = FieldConstants.HUB_OPENING_HEIGHT.in(Meters);
+        double shooterHeightMeters = ShooterConstants.shooterHeight.in(Meters);
+        double deltaH = targetHeightMeters - shooterHeightMeters;
+
+        double cosTheta = Math.cos(angleRadians);
+        double tanTheta = Math.tan(angleRadians);
+
+        // The denominator of the velocity formula: x·tan(θ) - Δh
+        // This must be positive for a valid trajectory (ball must arc above the target)
+        double denominator = distanceMeters * tanTheta - deltaH;
+
+        if (denominator <= 0.01 || Math.abs(cosTheta) < 0.001) {
+            // Trajectory cannot reach the target at this angle from this distance
             return new ShootingParameters(fixedAngle, ShooterConstants.maxShootingFlywheelVelocity);
         }
 
-        double launchSpeedMps = Math.sqrt(distanceMeters * gravityMps2 / sin2Theta);
+        // v = (x / cos(θ)) · √(g / (2 · (x·tan(θ) - Δh)))
+        double launchSpeedMps = (distanceMeters / cosTheta) * Math.sqrt(gravityMps2 / (2.0 * denominator));
         launchSpeedMps *= rpmMultiplier.get();
 
         double flywheelRadiusMeters = ShooterConstants.flywheelRadius.in(Meters);
@@ -375,16 +397,27 @@ public class Superstructure extends SubsystemBase {
                         () -> {
                             Pose2d robotPose = poseSupplier.get();
                             Distance distance = getDistanceToHub(robotPose);
-                            ShootingParameters params = calculateShootingParameters(distance);
-                            Angle hoodAngle = params.hoodAngle();
-                            AngularVelocity flywheelVelocity = params.flywheelVelocity();
+                            boolean inZone = isInShootingZone(robotPose);
 
                             Logger.recordOutput("Shooting/DistanceToHub", distance.in(Meters));
-                            Logger.recordOutput("Shooting/CalculatedHoodAngle", hoodAngle.in(Degrees));
-                            Logger.recordOutput("Shooting/CalculatedRPM", flywheelVelocity.in(RPM));
+                            Logger.recordOutput("Shooting/InShootingZone", inZone);
 
-                            setHoodAngle(hoodAngle);
-                            setFlywheelVelocity(flywheelVelocity);
+                            if (inZone) {
+                                ShootingParameters params = calculateShootingParameters(distance);
+                                Angle hoodAngle = params.hoodAngle();
+                                AngularVelocity flywheelVelocity = params.flywheelVelocity();
+
+                                Logger.recordOutput("Shooting/CalculatedHoodAngle", hoodAngle.in(Degrees));
+                                Logger.recordOutput("Shooting/CalculatedRPM", flywheelVelocity.in(RPM));
+
+                                setHoodAngle(hoodAngle);
+                                setFlywheelVelocity(flywheelVelocity);
+                            } else {
+                                // Outside shooting zone — idle the shooter
+                                Logger.recordOutput("Shooting/CalculatedHoodAngle", 0.0);
+                                Logger.recordOutput("Shooting/CalculatedRPM", 0.0);
+                                stopShooter();
+                            }
                         },
                         requirements)
                 .withName("AutoAimShooter");
@@ -405,17 +438,14 @@ public class Superstructure extends SubsystemBase {
                 .finallyDo(() -> robotState.setMode(RobotState.Mode.IDLE));
     }
 
-    /** Spins up the shooter and aims based on RobotState. */
     public Command spinUpShooterCommand(Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier) {
         Supplier<Rotation2d> angleSupplier = () -> {
             Pose2d pose = drive.getPose();
-            if (robotState.getMode() == RobotState.Mode.SHOOTING) {
+            if (isInShootingZone(pose)) {
                 return getAngleToHub(pose);
             }
-            if (robotState.isShuttling()) {
-                return getAngleToAllianceWall(pose);
-            }
-            return drive.getRotation();
+            // On opponent's side —> shuttle back towards own wall
+            return getAngleToAllianceWall(pose);
         };
 
         return DriveCommands.joystickDriveAtAngle(drive, xSupplier, ySupplier, angleSupplier)

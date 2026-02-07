@@ -42,7 +42,7 @@ public class ShooterConstants {
     public static final AngularVelocity minShootingFlywheelVelocity = RPM.of(1500.0);
     public static final AngularVelocity maxShootingFlywheelVelocity = RPM.of(6000.0);
 
-    public static final LinearAcceleration gravity = MetersPerSecondPerSecond.of(11);
+    public static final LinearAcceleration gravity = MetersPerSecondPerSecond.of(9.81);
 
     // Shot map defaults (tunable via NetworkTables)
     public static final double defaultMaxHeightFeet = 8.0;

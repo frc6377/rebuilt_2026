@@ -188,10 +188,10 @@ public class RobotContainer {
         }
         oi.spinUpShooter().whileTrue(spinUpCommand).onFalse(superstructure.stopShooterCommand());
 
-        // Fire shooter using OI mapping (only feeds when at speed, launches projectiles in sim)
+        // Fire shooter using OI mapping (only feeds when at speed and in valid zone, launches projectiles in sim)
         Command fireCommand = Commands.run(
                         () -> {
-                            if (superstructure.atTargetVelocity()) {
+                            if (superstructure.atTargetVelocity() && superstructure.isInShootingZone(drive.getPose())) {
                                 upgoer.setVelocity(UpgoerConstants.defaultFeedVelocity);
                             } else {
                                 upgoer.stop();
@@ -200,8 +200,8 @@ public class RobotContainer {
                         upgoer)
                 .withName("FireShooter");
         if (Constants.currentMode == Constants.Mode.SIM && superstructure.hasGamePieceTrajectorySimulation()) {
-            fireCommand = fireCommand.alongWith(
-                    superstructure.simAutoFireHoldCommand(() -> superstructure.atTargetVelocity()));
+            fireCommand = fireCommand.alongWith(superstructure.simAutoFireHoldCommand(
+                    () -> superstructure.atTargetVelocity() && superstructure.isInShootingZone(drive.getPose())));
         }
         oi.fireShooter().whileTrue(fireCommand).onFalse(upgoer.stopCommand());
 
