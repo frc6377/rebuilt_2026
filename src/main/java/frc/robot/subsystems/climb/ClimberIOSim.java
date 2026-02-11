@@ -93,32 +93,25 @@ public class ClimberIOSim implements ClimberIO {
             double currentPosition = climbSim.getPositionMeters();
             double error = targetHeight.in(Meters) - currentPosition;
 
-            // Proportional
             double kP = ClimbConstants.PIDF.kP;
             double proportional = kP * error;
 
-            // Integral (with anti-windup)
             double kI = ClimbConstants.PIDF.kI;
             integralAccumulator += error * DT;
-            // Anti-windup: clamp integral to prevent excessive buildup
-            double maxIntegral = 2.0; // Max voltage contribution from integral
+            
+            double maxIntegral = 2.0; 
             integralAccumulator = Math.max(-maxIntegral / kI, Math.min(maxIntegral / kI, integralAccumulator));
             double integral = kI * integralAccumulator;
 
-            // Derivative
             double kD = ClimbConstants.PIDF.kD;
             double derivative = kD * (error - previousError) / DT;
 
-            // Calculate total output
             appliedVolts = proportional + integral + derivative;
 
-            // Clamp to battery voltage
             appliedVolts = Math.max(-12.0, Math.min(12.0, appliedVolts));
 
-            // Store previous error for next iteration
             previousError = error;
 
-            // Log PID components for debugging
             Logger.recordOutput("Climb/Simulation/PID/kP", kP);
             Logger.recordOutput("Climb/Simulation/PID/kI", kI);
             Logger.recordOutput("Climb/Simulation/PID/kD", kD);
