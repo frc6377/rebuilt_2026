@@ -77,21 +77,26 @@ public class OIKeyboard implements OI {
 
     @Override
     public Trigger spinUpShooter() {
-        return M;
+        return X;
     }
 
     @Override
     public Trigger climbExtend() {
-        return C;
+        return M;
     }
 
     @Override
     public Trigger declimb() {
-        return V;
+        return Comma;
     }
 
     @Override
     public Trigger climbToL1() {
-        return X;
+        return Period;
+    }
+
+    @Override
+    public Trigger climbToFloor() {
+        return Slash;
     }
 }

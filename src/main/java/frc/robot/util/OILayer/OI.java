@@ -101,4 +101,8 @@ public interface OI {
     default Trigger climbToL1() {
         return noButton;
     }
+
+    default Trigger climbToFloor() {
+        return noButton;
+    }
 }

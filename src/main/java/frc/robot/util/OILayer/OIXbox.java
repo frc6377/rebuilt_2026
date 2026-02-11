@@ -83,4 +83,9 @@ public class OIXbox implements OI {
     public Trigger climbToL1() {
         return y;
     }
+
+    @Override
+    public Trigger climbToFloor() {
+        return a;
+    }
 }

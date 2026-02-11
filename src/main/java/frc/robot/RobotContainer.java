@@ -195,6 +195,7 @@ public class RobotContainer {
             oiXbox.climbExtend().whileTrue(climb.climbUp());
             oiXbox.declimb().whileTrue(climb.climbDown());
             oiXbox.climbToL1().onTrue(climb.setHeight(Inches.of(27)));
+            oiXbox.climbToFloor().onTrue(climb.setHeight(Inches.of(0)));
 
             oiKeyboard.climbExtend().whileTrue(climb.climbUp());
             oiKeyboard.declimb().whileTrue(climb.climbDown()).onTrue(Commands.print("V pressed - climbing down"));
@@ -202,6 +203,10 @@ public class RobotContainer {
                     .climbToL1()
                     .onTrue(Commands.print("M pressed - going to 27 inches"))
                     .onTrue(climb.setHeight(Inches.of(27)));
+            oiKeyboard
+                    .climbToFloor()
+                    .onTrue(Commands.print("Slash pressed - going to 0 inches"))
+                    .onTrue(climb.setHeight(Inches.of(0)));
         }
     }
 

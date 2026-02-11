@@ -6,16 +6,15 @@ import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Volts;
 
-import org.littletonrobotics.junction.Logger;
-import org.littletonrobotics.junction.mechanism.LoggedMechanism2d;
-import org.littletonrobotics.junction.mechanism.LoggedMechanismLigament2d;
-import org.littletonrobotics.junction.mechanism.LoggedMechanismRoot2d;
-
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.simulation.ElevatorSim;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.util.Color8Bit;
+import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.mechanism.LoggedMechanism2d;
+import org.littletonrobotics.junction.mechanism.LoggedMechanismLigament2d;
+import org.littletonrobotics.junction.mechanism.LoggedMechanismRoot2d;
 
 public class ClimberIOSim implements ClimberIO {
     // Sim
@@ -93,11 +92,11 @@ public class ClimberIOSim implements ClimberIO {
         if (closedLoopControl) {
             double currentPosition = climbSim.getPositionMeters();
             double error = targetHeight.in(Meters) - currentPosition;
-            
+
             // Proportional
             double kP = ClimbConstants.PIDF.kP;
             double proportional = kP * error;
-            
+
             // Integral (with anti-windup)
             double kI = ClimbConstants.PIDF.kI;
             integralAccumulator += error * DT;
@@ -105,26 +104,25 @@ public class ClimberIOSim implements ClimberIO {
             double maxIntegral = 2.0; // Max voltage contribution from integral
             integralAccumulator = Math.max(-maxIntegral / kI, Math.min(maxIntegral / kI, integralAccumulator));
             double integral = kI * integralAccumulator;
-            
+
             // Derivative
             double kD = ClimbConstants.PIDF.kD;
             double derivative = kD * (error - previousError) / DT;
-            
+
             // Calculate total output
             appliedVolts = proportional + integral + derivative;
-            
+
             // Clamp to battery voltage
             appliedVolts = Math.max(-12.0, Math.min(12.0, appliedVolts));
-            
+
             // Store previous error for next iteration
             previousError = error;
-            
+
             // Log PID components for debugging
             Logger.recordOutput("Climb/Simulation/PID/kP", kP);
             Logger.recordOutput("Climb/Simulation/PID/kI", kI);
             Logger.recordOutput("Climb/Simulation/PID/kD", kD);
             Logger.recordOutput("Climb/Simulation/PID/Error", error);
-
         }
 
         climbSim.setInputVoltage(appliedVolts);

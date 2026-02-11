@@ -44,7 +44,7 @@ public class ClimbConstants {
     public static final double kClimbSpeed = 0.5;
 
     public class PIDF {
-        public static final double kP = 10;
+        public static final double kP = 20;
         public static final double kI = 0;
         public static final double kD = 0;
     }
