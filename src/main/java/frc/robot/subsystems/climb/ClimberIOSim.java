@@ -123,7 +123,7 @@ public class ClimberIOSim implements ClimberIO {
             Logger.recordOutput("Climb/Simulation/PID/kP", kP);
             Logger.recordOutput("Climb/Simulation/PID/kI", kI);
             Logger.recordOutput("Climb/Simulation/PID/kD", kD);
-            Logger.recordOutput("Climb/Simulation/PID/Error", error);       
+            Logger.recordOutput("Climb/Simulation/PID/Error", error);
 
         }
 
