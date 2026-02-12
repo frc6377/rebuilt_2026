@@ -22,27 +22,27 @@ import static frc.robot.subsystems.vision.VisionConstants.linearStdDevMegatag2Fa
 import static frc.robot.subsystems.vision.VisionConstants.maxAmbiguity;
 import static frc.robot.subsystems.vision.VisionConstants.maxZError;
 
+import java.util.LinkedList;
+import java.util.List;
+import java.util.function.Supplier;
+
+import org.littletonrobotics.junction.Logger;
+
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.vision.VisionIO.PoseObservationType;
 import gg.questnav.questnav.PoseFrame;
 import gg.questnav.questnav.QuestNav;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.function.Supplier;
-import org.littletonrobotics.junction.Logger;
 
 public class Vision extends SubsystemBase {
     private final VisionConsumer consumer;
@@ -126,7 +126,12 @@ public class Vision extends SubsystemBase {
     }
 
     public int getTagCount(int cameraIndex) {
-        return 2;
+        var observations = inputs[cameraIndex].poseObservations;
+        if (observations.length == 0) {
+            return 0;
+        }
+        var latestObservation = observations[observations.length - 1];
+        return latestObservation.tagCount();
     }
 
     public Command getRobotStartPose(int cameraIndex) {
