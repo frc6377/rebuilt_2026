@@ -53,9 +53,6 @@ public class Vision extends SubsystemBase {
     // QuestNav fields
     private final QuestNav questNav;
     private Pose3d questPose = new Pose3d();
-    private static final Matrix<N3, N1> QUESTNAV_STD_DEVS = VecBuilder.fill(0.02, 0.02, 0.035);
-
-    private double lastTime = Timer.getFPGATimestamp() * 1000;
 
     public Vision(VisionConsumer consumer, VisionIO... io) {
         this.consumer = consumer;
@@ -76,7 +73,7 @@ public class Vision extends SubsystemBase {
 
         // Initialize QuestNav
         questNav = new QuestNav();
-        questPose = new Pose3d(0, 0, 0, new Rotation3d(0, 0, 0));
+        questPose = new Pose3d();
         questNav.setPose(questPose);
 
         // var observations = inputs[cameraIndex].poseObservations;
@@ -146,7 +143,6 @@ public class Vision extends SubsystemBase {
 
     @Override
     public void periodic() {
-        double lastTime = Timer.getFPGATimestamp() * 1000;
 
         for (int i = 0; i < io.length; i++) {
             io[i].updateInputs(inputs[i]);
@@ -262,15 +258,12 @@ public class Vision extends SubsystemBase {
                 questPose = questFrame.questPose3d();
                 double timestamp = questFrame.dataTimestamp();
                 Pose3d robotPose = questPose.transformBy(VisionConstants.ROBOT_TO_QUEST.inverse());
-                consumer.accept(robotPose.toPose2d(), timestamp, QUESTNAV_STD_DEVS);
+                consumer.accept(robotPose.toPose2d(), timestamp, VisionConstants.QUESTNAV_STD_DEVS);
             }
         }
 
         Logger.recordOutput("Vision/QuestNav/Connected", questNav.isConnected());
         Logger.recordOutput("Vision/QuestNav/Pose", questPose);
-
-        double newTime = Timer.getFPGATimestamp() * 1000;
-        Logger.recordOutput("Vision Loop Time (ms)", newTime - lastTime);
     }
 
     /**

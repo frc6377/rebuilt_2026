@@ -18,8 +18,12 @@ import static edu.wpi.first.units.Units.Inches;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
+import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.numbers.N3;
 
 public class VisionConstants {
     // AprilTag layout
@@ -49,6 +53,8 @@ public class VisionConstants {
     // (Adjusted automatically based on distance and # of tags)
     public static double linearStdDevBaseline = 0.02; // Meters
     public static double angularStdDevBaseline = 0.06; // Radians
+
+    public static final Matrix<N3, N1> QUESTNAV_STD_DEVS = VecBuilder.fill(0.02, 0.02, 0.035);
 
     // Standard deviation multipliers for each camera
     // (Adjust to trust some cameras more than others)
