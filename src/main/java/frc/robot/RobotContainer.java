@@ -148,8 +148,9 @@ public class RobotContainer {
     private void configureButtonBindings() {
 
         SmartDashboard.putData(Commands.runOnce(() -> {
-            SignalLogger.stop();
-        }));
+                    SignalLogger.stop();
+                })
+                .withName("Stop Signal Logger"));
 
         // Default command, normal field-relative drive
         drive.setDefaultCommand(DriveCommands.joystickDrive(
