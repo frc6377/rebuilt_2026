@@ -48,29 +48,24 @@ public class ClimberIOReal implements ClimberIO {
 
     @Override
     public void updateInputs(ClimberIOInputs inputs) {
-        // Position
         double positionRotations = climbMotor1.getPosition().getValue().in(Rotations);
         inputs.motorPosition = Rotations.of(positionRotations);
         inputs.height = ClimbConstants.kElevatorDrumCircumference
                 .times(positionRotations)
                 .div(ClimbConstants.kClimbGearRatio);
 
-        // Motor telemetry
         inputs.appliedVoltage = Volts.of(climbMotor1.getMotorVoltage().getValueAsDouble());
         inputs.statorCurrent = Amps.of(climbMotor1.getStatorCurrent().getValueAsDouble());
         inputs.supplyCurrent = Amps.of(climbMotor1.getSupplyCurrent().getValueAsDouble());
         inputs.temperatureCelsius = climbMotor1.getDeviceTemp().getValueAsDouble();
 
-        // Encoder
         inputs.absoluteEncoderPosition = climbEncoder.get();
 
-        // Status
         inputs.motorConnected = climbMotor1.isAlive();
     }
 
     @Override
     public void periodic() {
-        // Update the encoder position to match the absolute encoder
         climbMotor1.updateTunableGains();
     }
 

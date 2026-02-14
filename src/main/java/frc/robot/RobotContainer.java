@@ -36,6 +36,7 @@ import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.vision.*;
 import frc.robot.util.OILayer.OIKeyboard;
 import frc.robot.util.OILayer.OIXbox;
+import frc.robot.util.OILayer.OI;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
 import org.ironmaple.simulation.seasonspecific.reefscape2025.ReefscapeCoralOnFly;
@@ -53,8 +54,7 @@ public class RobotContainer {
     private final Vision vision;
     private final Climb climb;
 
-    private final OIXbox oiXbox;
-    private final OIKeyboard oiKeyboard;
+    private final OI oi;
 
     private SwerveDriveSimulation driveSimulation = null;
 
@@ -121,8 +121,7 @@ public class RobotContainer {
                 climb = new Climb(new ClimberIO() {});
                 break;
         }
-        oiKeyboard = new OIKeyboard();
-        oiXbox = new OIXbox();
+        oi = new OIXbox();
 
         // Set up auto routines
         autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
@@ -192,21 +191,21 @@ public class RobotContainer {
                             MetersPerSecond.of(1.5),
                             Degrees.of(-60)))));
             // Climb controls
-            oiXbox.climbExtend().whileTrue(climb.climbUp());
-            oiXbox.declimb().whileTrue(climb.climbDown());
-            oiXbox.climbToL1().onTrue(climb.setHeight(Inches.of(27)));
-            oiXbox.climbToFloor().onTrue(climb.setHeight(Inches.of(0)));
+            oi.climbExtend().whileTrue(climb.climbUp());
+            oi.declimb().whileTrue(climb.climbDown());
+            oi.climbToL1().onTrue(climb.setHeight(Inches.of(27)));
+            oi.climbToFloor().onTrue(climb.setHeight(Inches.of(0)));
 
-            oiKeyboard.climbExtend().whileTrue(climb.climbUp());
-            oiKeyboard.declimb().whileTrue(climb.climbDown()).onTrue(Commands.print("V pressed - climbing down"));
-            oiKeyboard
-                    .climbToL1()
-                    .onTrue(Commands.print("M pressed - going to 27 inches"))
-                    .onTrue(climb.setHeight(Inches.of(27)));
-            oiKeyboard
-                    .climbToFloor()
-                    .onTrue(Commands.print("Slash pressed - going to 0 inches"))
-                    .onTrue(climb.setHeight(Inches.of(0)));
+        //     oiKeyboard.climbExtend().whileTrue(climb.climbUp());
+        //     oiKeyboard.declimb().whileTrue(climb.climbDown()).onTrue(Commands.print("V pressed - climbing down"));
+        //     oiKeyboard
+        //             .climbToL1()
+        //             .onTrue(Commands.print("M pressed - going to 27 inches"))
+        //             .onTrue(climb.setHeight(Inches.of(27)));
+        //     oiKeyboard
+        //             .climbToFloor()
+        //             .onTrue(Commands.print("Slash pressed - going to 0 inches"))
+        //             .onTrue(climb.setHeight(Inches.of(0)));
         }
     }
 

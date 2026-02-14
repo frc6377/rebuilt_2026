@@ -40,11 +40,11 @@ public class Climb extends SubsystemBase {
     }
 
     public Command goToMidHeight() {
-        return setHeight(Inches.of(15)); // Adjust this value as needed
+        return setHeight(ClimbConstants.kClimbMaxHeight.divide(2.0));
     }
 
     public boolean atSetpoint() {
-        return inputs.height.isNear(currentSetpoint, Inches.of(0.5));
+        return inputs.height.isNear(currentSetpoint, ClimbConstants.kSetpointTolerance);
     }
 
     public Command climbUp() {
@@ -53,7 +53,7 @@ public class Climb extends SubsystemBase {
                     climberIO.set(ClimbConstants.kClimbSpeed);
                 },
                 () -> {
-                    climberIO.set(0);
+                    climberIO.set(ClimbConstants.kClimbSpeed * 0);
                 });
     }
 
@@ -63,7 +63,7 @@ public class Climb extends SubsystemBase {
                     climberIO.set(-ClimbConstants.kClimbSpeed);
                 },
                 () -> {
-                    climberIO.set(0);
+                    climberIO.set(ClimbConstants.kClimbSpeed * 0);
                 });
     }
 

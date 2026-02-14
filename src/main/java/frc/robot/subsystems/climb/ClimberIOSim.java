@@ -7,6 +7,8 @@ import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Volts;
 
 import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.wpilibj.RobotController;
+import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.simulation.ElevatorSim;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.util.Color;
@@ -24,13 +26,13 @@ public class ClimberIOSim implements ClimberIO {
     private LoggedMechanismLigament2d climbLig;
     private LoggedMechanismRoot2d mechRoot;
 
-    private double appliedVolts = 0.0;
+    private double appliedVolts = ClimbConstants.kAppliedVolts;
     private Distance targetHeight = ClimbConstants.kStartHeight;
-    private boolean closedLoopControl = false;
+    private boolean closedLoopControl = ClimbConstants.kClosedLoopControl;
 
-    private double integralAccumulator = 0.0;
-    private double previousError = 0.0;
-    private static final double DT = 0.02;
+    private double integralAccumulator = ClimbConstants.kIntegralAccumulator;
+    private double previousError = ClimbConstants.kPreviousError;
+    private static final double DT = ClimbConstants.kDT;
 
     public ClimberIOSim() {
         climbSim = new ElevatorSim(
@@ -108,7 +110,7 @@ public class ClimberIOSim implements ClimberIO {
 
             appliedVolts = proportional + integral + derivative;
 
-            appliedVolts = Math.max(-12.0, Math.min(12.0, appliedVolts));
+            appliedVolts = Math.max(-12.0, Math.min(RobotController.getBatteryVoltage(), appliedVolts));
 
             previousError = error;
 
@@ -119,7 +121,7 @@ public class ClimberIOSim implements ClimberIO {
         }
 
         climbSim.setInputVoltage(appliedVolts);
-        climbSim.update(0.02);
+        climbSim.update(TimedRobot.kDefaultPeriod);
 
         climbLig.setLength(Meters.of(climbSim.getPositionMeters()));
 

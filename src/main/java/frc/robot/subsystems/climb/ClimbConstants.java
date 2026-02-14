@@ -15,20 +15,27 @@ import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.Mass;
 
 public class ClimbConstants {
+    public class PIDF {
+        public static final double kP = 20;
+        public static final double kI = 0;
+        public static final double kD = 0;
+    }
+
     public static final TalonFXConfiguration kClimbMotorConfig = new TalonFXConfiguration()
             .withMotorOutput(new MotorOutputConfigs()
                     .withInverted(InvertedValue.Clockwise_Positive)
                     .withNeutralMode(NeutralModeValue.Coast))
             .withSlot0(new Slot0Configs()
-                    .withKP(1)
-                    .withKI(0)
-                    .withKD(0)
+                    .withKP(PIDF.kP)
+                    .withKI(PIDF.kI)
+                    .withKD(PIDF.kD)
                     .withKS(0)
                     .withKV(0)
                     .withKA(0))
             .withCurrentLimits(new CurrentLimitsConfigs()
                     .withStatorCurrentLimitEnable(true)
                     .withStatorCurrentLimit(Amps.of(70)));
+        public static final Distance kSetpointTolerance = Inches.of(0.5);
 
     // Sim Constants
     public static final DCMotor kClimbGearBox = DCMotor.getKrakenX60(2);
@@ -37,15 +44,15 @@ public class ClimbConstants {
     public static final Distance kElevatorDrumRadius = Inches.of(1.708);
     public static final Distance kElevatorDrumCircumference =
             kElevatorDrumRadius.times(2).times(Math.PI);
-    public static final Distance kClimbMinHeight = Inches.zero(); // inches
-    public static final Distance kClimbMaxHeight = Inches.of(30); // inches
+    public static final Distance kClimbMinHeight = Inches.zero();
+    public static final Distance kClimbMaxHeight = Inches.of(30);
     public static final boolean kSimulateGravity = true;
     public static final Distance kStartHeight = Inches.zero();
     public static final double kClimbSpeed = 0.5;
 
-    public class PIDF {
-        public static final double kP = 20;
-        public static final double kI = 0;
-        public static final double kD = 0;
-    }
+    public static final double kAppliedVolts = 0.0;
+    public static final boolean kClosedLoopControl = false;
+    public static final double kIntegralAccumulator = 0.0;
+    public static final double kPreviousError = 0.0;
+    public static final double kDT = 0.02;
 }
