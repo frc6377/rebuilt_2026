@@ -112,7 +112,7 @@ public class RobotContainer {
 
                 break;
         }
-        
+
         // Set up auto routines
         autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
 
