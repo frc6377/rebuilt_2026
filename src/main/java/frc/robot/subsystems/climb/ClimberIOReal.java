@@ -17,19 +17,24 @@ public class ClimberIOReal implements ClimberIO {
     final TunableTalonFX climbMotor1;
     final DutyCycleEncoder climbEncoder;
     final Slot0Configs climberPID;
-    final DigitalInput climberLimitSwitch;
+    final DigitalInput limitSwitch;
 
     public ClimberIOReal() {
         climbMotor1 = new TunableTalonFX(CANIDs.kClimbMotor1ID, "rio", "ClimbMotor1");
         climbEncoder = new DutyCycleEncoder(CANIDs.kClimbEncoderID);
-        climberLimitSwitch = new DigitalInput(CANIDs.kClimbLimitSwitchID);
+        limitSwitch = new DigitalInput(ClimbConstants.kLimitSwitchPort);
+        
         tryUntilOk(5, () -> climbMotor1.getConfigurator().apply(ClimbConstants.kClimbMotorConfig, 0.25));
+        tryUntilOk(5, () -> climbMotor1.getConfigurator().apply(ClimbConstants.kLimitSwitchConfig, 0.25));
+        
         climbMotor1.setPosition(climbEncoder.get());
 
         climberPID = new Slot0Configs();
         climberPID.kP = ClimbConstants.PIDF.kP;
         climberPID.kI = ClimbConstants.PIDF.kI;
         climberPID.kD = ClimbConstants.PIDF.kD;
+
+        tryUntilOk(5, () -> climbMotor1.getConfigurator().apply(climberPID, 0.25));
     }
 
     @Override
@@ -56,24 +61,31 @@ public class ClimberIOReal implements ClimberIO {
         inputs.height = ClimbConstants.kElevatorDrumCircumference
                 .times(positionRotations)
                 .div(ClimbConstants.kClimbGearRatio);
-
+        
         inputs.appliedVoltage = Volts.of(climbMotor1.getMotorVoltage().getValueAsDouble());
         inputs.statorCurrent = Amps.of(climbMotor1.getStatorCurrent().getValueAsDouble());
         inputs.supplyCurrent = Amps.of(climbMotor1.getSupplyCurrent().getValueAsDouble());
         inputs.temperatureCelsius = climbMotor1.getDeviceTemp().getValueAsDouble();
-
+        
         inputs.absoluteEncoderPosition = climbEncoder.get();
-
+        
         inputs.motorConnected = climbMotor1.isAlive();
+        
+        inputs.limitSwitchPressed = !limitSwitch.get();
     }
 
     @Override
     public void periodic() {
         climbMotor1.updateTunableGains();
     }
-
+    
     @Override
     public void resetToAbsolute() {
         climbMotor1.setPosition(climbEncoder.get());
+    }
+    
+    @Override
+    public void zeroEncoder() {
+        climbMotor1.setPosition(0);
     }
 }

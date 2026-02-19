@@ -26,6 +26,8 @@ public interface ClimberIO {
         public double absoluteEncoderPosition = 0.0;
 
         public boolean motorConnected = true;
+
+        public boolean limitSwitchPressed = false;
     }
 
     default void goToHeight(Distance height) {}
@@ -36,7 +38,15 @@ public interface ClimberIO {
 
     default void updateInputs(ClimberIOInputs inputs) {}
 
+    default void disableSoftLimits() {}
+
+    default void enableSoftLimits() {}
+
+    default void limitHit() {}
+
     default void periodic() {}
 
     default void resetToAbsolute() {}
+
+    default void zeroEncoder() {}
 }

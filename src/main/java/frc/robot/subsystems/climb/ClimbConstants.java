@@ -17,13 +17,13 @@ import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.Mass;
 
 public class ClimbConstants {
-    public class PIDF {
-        public static final double kP = 20;
-        public static final double kI = 0;
-        public static final double kD = 0;
-    }
+        public class PIDF {
+                public static final double kP = 20;
+                public static final double kI = 0;
+                public static final double kD = 0;
+        }
 
-    public static final TalonFXConfiguration kClimbMotorConfig = new TalonFXConfiguration()
+        public static final TalonFXConfiguration kClimbMotorConfig = new TalonFXConfiguration()
             .withMotorOutput(new MotorOutputConfigs()
                     .withInverted(InvertedValue.Clockwise_Positive)
                     .withNeutralMode(NeutralModeValue.Coast))
@@ -39,12 +39,12 @@ public class ClimbConstants {
                     .withStatorCurrentLimit(Amps.of(70)));
 
         public static final SoftwareLimitSwitchConfigs kLimitSwitchConfig =
-        new SoftwareLimitSwitchConfigs()
-                .withForwardSoftLimitEnable(true)
-                .withForwardSoftLimitThreshold(ClimbConstants.kClimbMaxHeight.times(ClimbConstants.kClimbGearRatio).div(ClimbConstants.kElevatorDrumCircumference).times(Rotations.one()))
-                .withReverseSoftLimitEnable(true)
-                .withReverseSoftLimitThreshold(
-                ClimbConstants.kClimbMinHeight.times(ClimbConstants.kClimbGearRatio).div(ClimbConstants.kElevatorDrumCircumference).times(Rotations.of(1)));
+                new SoftwareLimitSwitchConfigs()
+                        .withForwardSoftLimitEnable(true)
+                        .withForwardSoftLimitThreshold(ClimbConstants.kClimbMaxHeight.times(ClimbConstants.kClimbGearRatio).div(ClimbConstants.kElevatorDrumCircumference).times(Rotations.one()))
+                        .withReverseSoftLimitEnable(true)
+                        .withReverseSoftLimitThreshold(
+                        ClimbConstants.kClimbMinHeight.times(ClimbConstants.kClimbGearRatio).div(ClimbConstants.kElevatorDrumCircumference).times(Rotations.of(1)));
         
         public static final Distance kSetpointTolerance = Inches.of(0.5);
 
@@ -60,6 +60,7 @@ public class ClimbConstants {
     public static final boolean kSimulateGravity = true;
     public static final Distance kStartHeight = Inches.of(0);
     public static final double kClimbSpeed = 0.5;
+    public static final int kLimitSwitchPort = 0;
 
     public static final double kAppliedVolts = 0.0;
     public static final boolean kClosedLoopControl = false;
