@@ -3,10 +3,12 @@ package frc.robot.subsystems.climb;
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.Pounds;
+import static edu.wpi.first.units.Units.Rotations;
 
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
+import com.ctre.phoenix6.configs.SoftwareLimitSwitchConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
@@ -35,6 +37,15 @@ public class ClimbConstants {
             .withCurrentLimits(new CurrentLimitsConfigs()
                     .withStatorCurrentLimitEnable(true)
                     .withStatorCurrentLimit(Amps.of(70)));
+
+        public static final SoftwareLimitSwitchConfigs kLimitSwitchConfig =
+        new SoftwareLimitSwitchConfigs()
+                .withForwardSoftLimitEnable(true)
+                .withForwardSoftLimitThreshold(ClimbConstants.kClimbMaxHeight.times(ClimbConstants.kClimbGearRatio).div(ClimbConstants.kElevatorDrumCircumference).times(Rotations.one()))
+                .withReverseSoftLimitEnable(true)
+                .withReverseSoftLimitThreshold(
+                ClimbConstants.kClimbMinHeight.times(ClimbConstants.kClimbGearRatio).div(ClimbConstants.kElevatorDrumCircumference).times(Rotations.of(1)));
+        
         public static final Distance kSetpointTolerance = Inches.of(0.5);
 
     // Sim Constants
@@ -44,10 +55,10 @@ public class ClimbConstants {
     public static final Distance kElevatorDrumRadius = Inches.of(1.708);
     public static final Distance kElevatorDrumCircumference =
             kElevatorDrumRadius.times(2).times(Math.PI);
-    public static final Distance kClimbMinHeight = Inches.zero();
+    public static final Distance kClimbMinHeight = Inches.of(0);
     public static final Distance kClimbMaxHeight = Inches.of(30);
     public static final boolean kSimulateGravity = true;
-    public static final Distance kStartHeight = Inches.zero();
+    public static final Distance kStartHeight = Inches.of(0);
     public static final double kClimbSpeed = 0.5;
 
     public static final double kAppliedVolts = 0.0;

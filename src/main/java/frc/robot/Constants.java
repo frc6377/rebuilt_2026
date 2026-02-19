@@ -34,5 +34,6 @@ public final class Constants {
     public static final class CANIDs {
         public static final int kClimbMotor1ID = 16;
         public static final int kClimbEncoderID = 17;
+        public static final int kClimbLimitSwitchID = 18;
     }
 }

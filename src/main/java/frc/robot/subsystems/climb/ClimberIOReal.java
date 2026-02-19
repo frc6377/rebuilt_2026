@@ -8,6 +8,7 @@ import static frc.robot.util.PhoenixUtil.tryUntilOk;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.DutyCycleEncoder;
 import frc.robot.Constants.CANIDs;
 import frc.robot.util.TunableTalonFX;
@@ -16,10 +17,12 @@ public class ClimberIOReal implements ClimberIO {
     final TunableTalonFX climbMotor1;
     final DutyCycleEncoder climbEncoder;
     final Slot0Configs climberPID;
+    final DigitalInput climberLimitSwitch;
 
     public ClimberIOReal() {
         climbMotor1 = new TunableTalonFX(CANIDs.kClimbMotor1ID, "rio", "ClimbMotor1");
         climbEncoder = new DutyCycleEncoder(CANIDs.kClimbEncoderID);
+        climberLimitSwitch = new DigitalInput(CANIDs.kClimbLimitSwitchID);
         tryUntilOk(5, () -> climbMotor1.getConfigurator().apply(ClimbConstants.kClimbMotorConfig, 0.25));
         climbMotor1.setPosition(climbEncoder.get());
 
