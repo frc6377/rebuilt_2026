@@ -26,8 +26,10 @@ import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.vision.VisionIO.PoseObservationType;
+import frc.robot.subsystems.vision.questnav.QuestNavIO;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
 
 public class Vision extends SubsystemBase {
@@ -36,9 +38,12 @@ public class Vision extends SubsystemBase {
     private final VisionIOInputsAutoLogged[] inputs;
     private final Alert[] disconnectedAlerts;
 
-    public Vision(VisionConsumer consumer, VisionIO... io) {
+    private final QuestNavIO questNavIO;
+
+    public Vision(VisionConsumer consumer, QuestNavIO questNavIO, VisionIO... io) {
         this.consumer = consumer;
         this.io = io;
+        this.questNavIO = questNavIO;
 
         // Initialize inputs
         this.inputs = new VisionIOInputsAutoLogged[io.length];
@@ -61,6 +66,22 @@ public class Vision extends SubsystemBase {
      */
     public Rotation2d getTargetX(int cameraIndex) {
         return inputs[cameraIndex].latestTargetObservation.tx();
+    }
+
+    public void resetQuestNavPose(Pose3d robotPose) {
+        questNavIO.resetQuestNavPose(robotPose);
+    }
+
+    public void zeroQuestNav() {
+        questNavIO.zeroQuestNav();
+    }
+
+    public void setQuestNavStartPose(Pose3d pose) {
+        questNavIO.setQuestNavStartPose(pose);
+    }
+
+    public Supplier<Pose2d> getQuestNavPoseSupplier() {
+        return questNavIO.getQuestNavPoseSupplier();
     }
 
     @Override

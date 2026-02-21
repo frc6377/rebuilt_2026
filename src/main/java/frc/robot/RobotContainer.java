@@ -39,6 +39,8 @@ import frc.robot.subsystems.intake.roller.RollerIOSim;
 import frc.robot.subsystems.superstructure.RobotState;
 import frc.robot.subsystems.superstructure.Superstructure;
 import frc.robot.subsystems.vision.*;
+import frc.robot.subsystems.vision.questnav.QuestNavIO;
+import frc.robot.subsystems.vision.questnav.QuestNavIOReal;
 import frc.robot.util.OILayer.OI;
 import frc.robot.util.OILayer.OIKeyboard;
 import frc.robot.util.OILayer.OIXbox;
@@ -106,7 +108,7 @@ public class RobotContainer {
                             new ModuleIO() {},
                             (pose) -> {});
                 }
-                vision = new Vision(drive);
+                vision = Constants.EnabledSubsystems.kQuestNav ? new Vision(drive, new QuestNavIOReal()) : new Vision(drive, new QuestNavIO() {});
                 driveSimulation = null;
                 break;
 
@@ -129,7 +131,7 @@ public class RobotContainer {
                         new ModuleIOTalonFXSim(
                                 TunerConstants.BackRight, driveSimulation.getModules()[3]),
                         (pose) -> driveSimulation.setSimulationWorldPose(pose));
-                vision = new Vision(drive, new VisionIOLimelight(camera0Name, drive::getRotation));
+                vision = new Vision(drive, new QuestNavIO() {}, new VisionIOLimelight(camera0Name, drive::getRotation));
                 break;
             default:
                 drive = new Drive(
@@ -140,7 +142,7 @@ public class RobotContainer {
                         new ModuleIO() {},
                         (pose) -> {});
                 driveSimulation = null;
-                vision = new Vision(drive, new VisionIO() {}, new VisionIO() {});
+                vision = new Vision(drive, new QuestNavIO() {}, new VisionIO() {}, new VisionIO() {});
                 intake = new Intake(new RollerIO() {}, new ExtenderIO() {});
                 break;
         }
