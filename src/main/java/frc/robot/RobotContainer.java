@@ -27,7 +27,6 @@ import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.commands.DriveCommands;
 import frc.robot.generated.TunerConstants;
@@ -60,18 +59,22 @@ public class RobotContainer {
     // Subsystems
     private final Drive drive;
     private final Vision vision;
+    private final OI OIController;
 
     private SwerveDriveSimulation driveSimulation = null;
 
     // Controller
-    private final CommandXboxController controller = new CommandXboxController(0);
-    private final OI oi;
+    // private final CommandXboxController controller = new CommandXboxController(0);
+    private final boolean usingController;
 
     // Dashboard inputs
     private final LoggedDashboardChooser<Command> autoChooser;
 
     /** The container for the robot. Contains subsystems, OI devices, and commands. */
     public RobotContainer() {
+
+        usingController = true;
+
         switch (Constants.currentMode) {
             case REAL:
                 // Real robot, instantiate hardware IO implementations
@@ -126,11 +129,7 @@ public class RobotContainer {
 
                 break;
         }
-        if (Constants.usingKeyboard) {
-            oi = new OIKeyboard();
-        } else {
-            oi = new OIXbox();
-        }
+        OIController = usingController ? new OIXbox() : new OIKeyboard();
 
         // Set up auto routines
         autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
@@ -187,14 +186,11 @@ public class RobotContainer {
                 .withName("Start Signal Logger"));
 
         // Default command, normal field-relative drive
-        drive.setDefaultCommand(
-                DriveCommands.joystickDrive(drive, oi.driveTranslationY(), oi.driveTranslationX(), oi.driveRotation()));
-
-        // // Lock to 0° when A button is held
-        // controller
-        //         .a()
-        //         .whileTrue(DriveCommands.joystickDriveAtAngle(
-        //                 drive, () -> -controller.getLeftY(), () -> -controller.getLeftX(), () -> new Rotation2d()));
+        drive.setDefaultCommand(DriveCommands.joystickDrive(
+                drive,
+                OIController.driveTranslationY(),
+                OIController.driveTranslationX(),
+                OIController.driveRotation()));
 
         // // Switch to X pattern when X button is pressed
         // controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
@@ -205,7 +201,7 @@ public class RobotContainer {
                         driveSimulation.getSimulatedDriveTrainPose()) // reset odometry to actual robot pose during
                 // simulation
                 : () -> drive.setPose(new Pose2d(drive.getPose().getTranslation(), new Rotation2d())); // zero gyro
-        controller.start().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
+        OIController.zeroDrivebase().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
     }
 
     /**
