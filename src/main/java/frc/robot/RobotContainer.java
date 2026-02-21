@@ -192,7 +192,7 @@ public class RobotContainer {
             // Climb controls
             oi.climbExtend().whileTrue(climb.climbUp());
             oi.declimb().whileTrue(climb.climbDown());
-            oi.climbToL1().onTrue(climb.setHeight(Inches.of(27)));
+            oi.climbToL1().onTrue(climb.setHeight(Inches.of(10))); // Should be 27
             oi.climbToFloor().onTrue(climb.setHeight(Inches.of(0)));
 
             //     oiKeyboard.climbExtend().whileTrue(climb.climbUp());

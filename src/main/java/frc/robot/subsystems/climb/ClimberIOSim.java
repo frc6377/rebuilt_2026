@@ -5,14 +5,17 @@ import static edu.wpi.first.units.Units.Kilograms;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Volts;
+import static frc.robot.util.PhoenixUtil.tryUntilOk;
 
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.units.measure.Distance;
-import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.simulation.ElevatorSim;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.util.Color8Bit;
+import frc.robot.Constants.CANIDs;
+import frc.robot.util.TunableTalonFX;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.mechanism.LoggedMechanism2d;
 import org.littletonrobotics.junction.mechanism.LoggedMechanismLigament2d;
@@ -20,21 +23,29 @@ import org.littletonrobotics.junction.mechanism.LoggedMechanismRoot2d;
 
 public class ClimberIOSim implements ClimberIO {
     // Sim
+    private final TunableTalonFX climbMotor1;
+
     private static LoggedMechanism2d climbMech;
     private ElevatorSim climbSim;
 
     private LoggedMechanismLigament2d climbLig;
     private LoggedMechanismRoot2d mechRoot;
+    private final PIDController pidController;
 
-    private double appliedVolts = ClimbConstants.kAppliedVolts;
+    private double appliedVolts = 0;
     private Distance targetHeight = ClimbConstants.kStartHeight;
     private boolean closedLoopControl = ClimbConstants.kClosedLoopControl;
 
-    private double integralAccumulator = ClimbConstants.kIntegralAccumulator;
-    private double previousError = ClimbConstants.kPreviousError;
-    private static final double DT = ClimbConstants.kDT;
+    // private double integralAccumulator = ClimbConstants.kIntegralAccumulator;
+    // private double previousError = ClimbConstants.kPreviousError;
+    // private static final double DT = ClimbConstants.kDT;
 
     public ClimberIOSim() {
+        climbMotor1 = new TunableTalonFX(CANIDs.kClimbMotor1ID, "sim", "ClimbMotor1");
+        tryUntilOk(5, () -> climbMotor1.getConfigurator().apply(ClimbConstants.kClimbMotorConfigSim, 0.25));
+
+        pidController =
+                new PIDController(ClimbConstants.SimPIDF.kP, ClimbConstants.SimPIDF.kI, ClimbConstants.SimPIDF.kD);
         climbSim = new ElevatorSim(
                 ClimbConstants.kClimbGearBox,
                 ClimbConstants.kClimbGearRatio,
@@ -54,6 +65,7 @@ public class ClimberIOSim implements ClimberIO {
 
     @Override
     public void goToHeight(Distance height) {
+        pidController.setSetpoint(height.in(Meters));
         targetHeight = height;
         closedLoopControl = true;
     }
@@ -66,7 +78,7 @@ public class ClimberIOSim implements ClimberIO {
 
     @Override
     public void set(double percent) {
-        appliedVolts = percent * 12.0;
+        climbMotor1.set(percent);
         closedLoopControl = false;
     }
 
@@ -90,45 +102,29 @@ public class ClimberIOSim implements ClimberIO {
     }
 
     @Override
+    public Distance getHeight() {
+        return Meters.of(climbSim.getPositionMeters());
+    }
+
+    @Override
     public void periodic() {
-        if (closedLoopControl) {
-            double currentPosition = climbSim.getPositionMeters();
-            double error = targetHeight.in(Meters) - currentPosition;
+        set(pidController.calculate(getHeight().in(Meters)));
 
-            double kP = ClimbConstants.PIDF.kP;
-            double proportional = kP * error;
+        Logger.recordOutput("Climb/Simulation/PID/kP", pidController.getP());
+        Logger.recordOutput("Climb/Simulation/PID/kI", pidController.getI());
+        Logger.recordOutput("Climb/Simulation/PID/kD", pidController.getD());
+        Logger.recordOutput("Climb/Simulation/PID/Error", pidController.getPositionError());
 
-            double kI = ClimbConstants.PIDF.kI;
-            integralAccumulator += error * DT;
-
-            double maxIntegral = 2.0;
-            integralAccumulator = Math.max(-maxIntegral / kI, Math.min(maxIntegral / kI, integralAccumulator));
-            double integral = kI * integralAccumulator;
-
-            double kD = ClimbConstants.PIDF.kD;
-            double derivative = kD * (error - previousError) / DT;
-
-            appliedVolts = proportional + integral + derivative;
-
-            appliedVolts = Math.max(-12.0, Math.min(RobotController.getBatteryVoltage(), appliedVolts));
-
-            previousError = error;
-
-            Logger.recordOutput("Climb/Simulation/PID/kP", kP);
-            Logger.recordOutput("Climb/Simulation/PID/kI", kI);
-            Logger.recordOutput("Climb/Simulation/PID/kD", kD);
-            Logger.recordOutput("Climb/Simulation/PID/Error", error);
-        }
-
-        climbSim.setInputVoltage(appliedVolts);
+        climbSim.setInputVoltage(climbMotor1.getMotorVoltage().getValueAsDouble());
         climbSim.update(TimedRobot.kDefaultPeriod);
 
         climbLig.setLength(Meters.of(climbSim.getPositionMeters()));
 
-        Logger.recordOutput("Climb/Simulation/Height (Meters)", climbSim.getPositionMeters());
+        Logger.recordOutput("Climb/Simulation/Height (Meters)", getHeight());
         Logger.recordOutput("Climb/Simulation/Velocity (M/s)", climbSim.getVelocityMetersPerSecond());
         Logger.recordOutput("Climb/Simulation/Current (Amps)", climbSim.getCurrentDrawAmps());
-        Logger.recordOutput("Climb/Simulation/Applied Volts", appliedVolts);
+        Logger.recordOutput(
+                "Climb/Simulation/Applied Volts", climbMotor1.getMotorVoltage().getValueAsDouble());
         Logger.recordOutput("Climb/Simulation/Target Height", targetHeight.in(Meters));
         Logger.recordOutput("Climb/Simulation/2D Mech", climbMech);
     }

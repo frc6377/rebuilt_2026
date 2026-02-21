@@ -38,6 +38,10 @@ public interface ClimberIO {
 
     default void updateInputs(ClimberIOInputs inputs) {}
 
+    default Distance getHeight() {
+        return Inches.zero();
+    }
+
     default void disableSoftLimits() {}
 
     default void enableSoftLimits() {}

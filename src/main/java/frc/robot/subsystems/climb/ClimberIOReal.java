@@ -24,7 +24,7 @@ public class ClimberIOReal implements ClimberIO {
         climbEncoder = new DutyCycleEncoder(CANIDs.kClimbEncoderID);
         limitSwitch = new DigitalInput(ClimbConstants.kLimitSwitchPort);
 
-        tryUntilOk(5, () -> climbMotor1.getConfigurator().apply(ClimbConstants.kClimbMotorConfig, 0.25));
+        tryUntilOk(5, () -> climbMotor1.getConfigurator().apply(ClimbConstants.kClimbMotorConfigReal, 0.25));
         tryUntilOk(5, () -> climbMotor1.getConfigurator().apply(ClimbConstants.kLimitSwitchConfig, 0.25));
 
         climbMotor1.setPosition(climbEncoder.get());
@@ -75,6 +75,13 @@ public class ClimberIOReal implements ClimberIO {
     }
 
     @Override
+    public Distance getHeight() {
+        return ClimbConstants.kElevatorDrumCircumference
+                .times(climbMotor1.getPosition().getValue().in(Rotations))
+                .div(ClimbConstants.kClimbGearRatio);
+    }
+
+    @Override
     public void periodic() {
         climbMotor1.updateTunableGains();
     }
@@ -88,4 +95,6 @@ public class ClimberIOReal implements ClimberIO {
     public void zeroEncoder() {
         climbMotor1.setPosition(0);
     }
+
+    
 }

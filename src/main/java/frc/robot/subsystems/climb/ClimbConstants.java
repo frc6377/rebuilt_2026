@@ -18,12 +18,21 @@ import edu.wpi.first.units.measure.Mass;
 
 public class ClimbConstants {
     public class PIDF {
-        public static final double kP = 20;
+        public static final double kP = 50;
         public static final double kI = 0;
         public static final double kD = 0;
     }
 
-    public static final TalonFXConfiguration kClimbMotorConfig = new TalonFXConfiguration()
+    // Sim PID
+    public class SimPIDF {
+        public static final double kP = 1000;
+        public static final double kI = 0;
+        public static final double kD = 0;
+    }
+
+    public static final boolean kDisabled = false;
+
+    public static final TalonFXConfiguration kClimbMotorConfigReal = new TalonFXConfiguration()
             .withMotorOutput(new MotorOutputConfigs()
                     .withInverted(InvertedValue.Clockwise_Positive)
                     .withNeutralMode(NeutralModeValue.Coast))
@@ -38,17 +47,20 @@ public class ClimbConstants {
                     .withStatorCurrentLimitEnable(true)
                     .withStatorCurrentLimit(Amps.of(70)));
 
-    public static final SoftwareLimitSwitchConfigs kLimitSwitchConfig = new SoftwareLimitSwitchConfigs()
-            .withForwardSoftLimitEnable(true)
-            .withForwardSoftLimitThreshold(ClimbConstants.kClimbMaxHeight
-                    .times(ClimbConstants.kClimbGearRatio)
-                    .div(ClimbConstants.kElevatorDrumCircumference)
-                    .times(Rotations.one()))
-            .withReverseSoftLimitEnable(true)
-            .withReverseSoftLimitThreshold(ClimbConstants.kClimbMinHeight
-                    .times(ClimbConstants.kClimbGearRatio)
-                    .div(ClimbConstants.kElevatorDrumCircumference)
-                    .times(Rotations.of(1)));
+    public static final TalonFXConfiguration kClimbMotorConfigSim = new TalonFXConfiguration()
+            .withMotorOutput(new MotorOutputConfigs()
+                    .withInverted(InvertedValue.Clockwise_Positive)
+                    .withNeutralMode(NeutralModeValue.Coast))
+            .withSlot0(new Slot0Configs()
+                    .withKP(SimPIDF.kP)
+                    .withKI(SimPIDF.kI)
+                    .withKD(SimPIDF.kD)
+                    .withKS(0)
+                    .withKV(0)
+                    .withKA(0))
+            .withCurrentLimits(new CurrentLimitsConfigs()
+                    .withStatorCurrentLimitEnable(true)
+                    .withStatorCurrentLimit(Amps.of(70)));
 
     public static final Distance kSetpointTolerance = Inches.of(0.5);
 
@@ -63,12 +75,24 @@ public class ClimbConstants {
     public static final Distance kClimbMaxHeight = Inches.of(30);
     public static final boolean kSimulateGravity = true;
     public static final Distance kStartHeight = Inches.of(0);
-    public static final double kClimbSpeed = 0.5;
+    public static final double kClimbSpeed = 1;
     public static final int kLimitSwitchPort = 0;
 
     public static final double kAppliedVolts = 0.0;
     public static final boolean kClosedLoopControl = false;
-    public static final double kIntegralAccumulator = 0.0;
-    public static final double kPreviousError = 0.0;
-    public static final double kDT = 0.02;
+    //     public static final double kIntegralAccumulator = 0.0;
+    //     public static final double kPreviousError = 0.0;
+    //     public static final double kDT = 0.02;
+
+    public static final SoftwareLimitSwitchConfigs kLimitSwitchConfig = new SoftwareLimitSwitchConfigs()
+            .withForwardSoftLimitEnable(true)
+            .withForwardSoftLimitThreshold(ClimbConstants.kClimbMaxHeight
+                    .times(ClimbConstants.kClimbGearRatio)
+                    .div(ClimbConstants.kElevatorDrumCircumference)
+                    .times(Rotations.one()))
+            .withReverseSoftLimitEnable(true)
+            .withReverseSoftLimitThreshold(ClimbConstants.kClimbMinHeight
+                    .times(ClimbConstants.kClimbGearRatio)
+                    .div(ClimbConstants.kElevatorDrumCircumference)
+                    .times(Rotations.of(1)));
 }

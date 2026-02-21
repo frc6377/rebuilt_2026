@@ -18,7 +18,7 @@ public class Climb extends SubsystemBase {
     private Distance currentSetpoint = ClimbConstants.kStartHeight;
     /** Creates a new Climb. */
     public Climb(ClimberIO climberIO) {
-        this.climberIO = climberIO;
+        this.climberIO = (ClimbConstants.kDisabled) ? new ClimberIO() {} : climberIO;
         this.inputs = new ClimberIO.ClimberIOInputs();
     }
 
