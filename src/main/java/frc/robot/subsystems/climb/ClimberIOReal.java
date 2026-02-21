@@ -23,10 +23,10 @@ public class ClimberIOReal implements ClimberIO {
         climbMotor1 = new TunableTalonFX(CANIDs.kClimbMotor1ID, "rio", "ClimbMotor1");
         climbEncoder = new DutyCycleEncoder(CANIDs.kClimbEncoderID);
         limitSwitch = new DigitalInput(ClimbConstants.kLimitSwitchPort);
-        
+
         tryUntilOk(5, () -> climbMotor1.getConfigurator().apply(ClimbConstants.kClimbMotorConfig, 0.25));
         tryUntilOk(5, () -> climbMotor1.getConfigurator().apply(ClimbConstants.kLimitSwitchConfig, 0.25));
-        
+
         climbMotor1.setPosition(climbEncoder.get());
 
         climberPID = new Slot0Configs();
@@ -61,16 +61,16 @@ public class ClimberIOReal implements ClimberIO {
         inputs.height = ClimbConstants.kElevatorDrumCircumference
                 .times(positionRotations)
                 .div(ClimbConstants.kClimbGearRatio);
-        
+
         inputs.appliedVoltage = Volts.of(climbMotor1.getMotorVoltage().getValueAsDouble());
         inputs.statorCurrent = Amps.of(climbMotor1.getStatorCurrent().getValueAsDouble());
         inputs.supplyCurrent = Amps.of(climbMotor1.getSupplyCurrent().getValueAsDouble());
         inputs.temperatureCelsius = climbMotor1.getDeviceTemp().getValueAsDouble();
-        
+
         inputs.absoluteEncoderPosition = climbEncoder.get();
-        
+
         inputs.motorConnected = climbMotor1.isAlive();
-        
+
         inputs.limitSwitchPressed = !limitSwitch.get();
     }
 
@@ -78,12 +78,12 @@ public class ClimberIOReal implements ClimberIO {
     public void periodic() {
         climbMotor1.updateTunableGains();
     }
-    
+
     @Override
     public void resetToAbsolute() {
         climbMotor1.setPosition(climbEncoder.get());
     }
-    
+
     @Override
     public void zeroEncoder() {
         climbMotor1.setPosition(0);

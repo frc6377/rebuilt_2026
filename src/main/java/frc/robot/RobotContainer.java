@@ -34,9 +34,8 @@ import frc.robot.subsystems.climb.ClimberIOReal;
 import frc.robot.subsystems.climb.ClimberIOSim;
 import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.vision.*;
-import frc.robot.util.OILayer.OIKeyboard;
-import frc.robot.util.OILayer.OIXbox;
 import frc.robot.util.OILayer.OI;
+import frc.robot.util.OILayer.OIXbox;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
 import org.ironmaple.simulation.seasonspecific.reefscape2025.ReefscapeCoralOnFly;
@@ -196,16 +195,17 @@ public class RobotContainer {
             oi.climbToL1().onTrue(climb.setHeight(Inches.of(27)));
             oi.climbToFloor().onTrue(climb.setHeight(Inches.of(0)));
 
-        //     oiKeyboard.climbExtend().whileTrue(climb.climbUp());
-        //     oiKeyboard.declimb().whileTrue(climb.climbDown()).onTrue(Commands.print("V pressed - climbing down"));
-        //     oiKeyboard
-        //             .climbToL1()
-        //             .onTrue(Commands.print("M pressed - going to 27 inches"))
-        //             .onTrue(climb.setHeight(Inches.of(27)));
-        //     oiKeyboard
-        //             .climbToFloor()
-        //             .onTrue(Commands.print("Slash pressed - going to 0 inches"))
-        //             .onTrue(climb.setHeight(Inches.of(0)));
+            //     oiKeyboard.climbExtend().whileTrue(climb.climbUp());
+            //     oiKeyboard.declimb().whileTrue(climb.climbDown()).onTrue(Commands.print("V pressed - climbing
+            // down"));
+            //     oiKeyboard
+            //             .climbToL1()
+            //             .onTrue(Commands.print("M pressed - going to 27 inches"))
+            //             .onTrue(climb.setHeight(Inches.of(27)));
+            //     oiKeyboard
+            //             .climbToFloor()
+            //             .onTrue(Commands.print("Slash pressed - going to 0 inches"))
+            //             .onTrue(climb.setHeight(Inches.of(0)));
         }
     }
 

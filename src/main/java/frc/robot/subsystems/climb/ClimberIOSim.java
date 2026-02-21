@@ -100,8 +100,8 @@ public class ClimberIOSim implements ClimberIO {
 
             double kI = ClimbConstants.PIDF.kI;
             integralAccumulator += error * DT;
-            
-            double maxIntegral = 2.0; 
+
+            double maxIntegral = 2.0;
             integralAccumulator = Math.max(-maxIntegral / kI, Math.min(maxIntegral / kI, integralAccumulator));
             double integral = kI * integralAccumulator;
 
