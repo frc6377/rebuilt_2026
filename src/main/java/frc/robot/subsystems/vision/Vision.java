@@ -13,7 +13,14 @@
 
 package frc.robot.subsystems.vision;
 
-import static frc.robot.subsystems.vision.VisionConstants.*;
+import static frc.robot.subsystems.vision.VisionConstants.angularStdDevBaseline;
+import static frc.robot.subsystems.vision.VisionConstants.angularStdDevMegatag2Factor;
+import static frc.robot.subsystems.vision.VisionConstants.aprilTagLayout;
+import static frc.robot.subsystems.vision.VisionConstants.cameraStdDevFactors;
+import static frc.robot.subsystems.vision.VisionConstants.linearStdDevBaseline;
+import static frc.robot.subsystems.vision.VisionConstants.linearStdDevMegatag2Factor;
+import static frc.robot.subsystems.vision.VisionConstants.maxAmbiguity;
+import static frc.robot.subsystems.vision.VisionConstants.maxZError;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
@@ -27,6 +34,8 @@ import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.vision.VisionIO.PoseObservationType;
 import frc.robot.subsystems.vision.questnav.QuestNavIO;
+import gg.questnav.questnav.PoseFrame;
+import gg.questnav.questnav.QuestNav;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -40,10 +49,14 @@ public class Vision extends SubsystemBase {
 
     private final QuestNavIO questNavIO;
 
+        // QuestNav fields
+    private final QuestNav questNav;
+    private Pose3d questPose = new Pose3d();
+
     public Vision(VisionConsumer consumer, QuestNavIO questNavIO, VisionIO... io) {
-        this.consumer = consumer;
-        this.io = io;
-        this.questNavIO = questNavIO;
+    this.consumer = consumer;
+    this.io = io;
+    this.questNavIO = questNavIO;
 
         // Initialize inputs
         this.inputs = new VisionIOInputsAutoLogged[io.length];
@@ -57,6 +70,17 @@ public class Vision extends SubsystemBase {
             disconnectedAlerts[i] =
                     new Alert("Vision camera " + Integer.toString(i) + " is disconnected.", AlertType.kWarning);
         }
+
+        // Initialize QuestNav
+        questNav = new QuestNav();
+        questPose = new Pose3d();
+        questNav.setPose(questPose);
+
+        // var observations = inputs[cameraIndex].poseObservations;
+        // var latestObservation = observations[observations.length - 1];
+        // return latestObservation.tagCount();
+
+        // this.setQuestNavStartPose(this.getStartingPoseFromLimelight());
     }
 
     /**
@@ -81,11 +105,52 @@ public class Vision extends SubsystemBase {
     }
 
     public Supplier<Pose2d> getQuestNavPoseSupplier() {
-        return questNavIO.getQuestNavPoseSupplier();
+        return questNavIO.getQuestNavPoseSupplier();}
+    /**
+     * Gets the starting pose from the Limelight (camera index 0).
+     *
+     * @return The robot pose as a Pose3d, or null if no valid pose is available.
+     */
+    public Pose3d getStartingPoseFromLimelight() {
+        return getStartingPoseFromCamera(0);
+    }
+
+    /**
+     * Gets the starting pose from the specified camera's vision data.
+     *
+     * @param cameraIndex The index of the camera to use.
+     * @return The robot pose as a Pose2d, or null if no valid pose is available.
+     */
+    public Pose3d getStartingPoseFromCamera(int cameraIndex) {
+        if (cameraIndex >= inputs.length || !inputs[cameraIndex].connected) {
+            return null;
+        }
+
+        var observations = inputs[cameraIndex].poseObservations;
+        if (observations.length == 0) {
+            return null;
+        }
+
+        // Return the most recent pose observation with at least one tag
+        var latestObservation = observations[observations.length - 1];
+        if (latestObservation.tagCount() > 0) {
+            return latestObservation.pose();
+        }
+        return null;
+    }
+
+    public int getTagCount(int cameraIndex) {
+        var observations = inputs[cameraIndex].poseObservations;
+        if (observations.length == 0) {
+            return 0;
+        }
+        var latestObservation = observations[observations.length - 1];
+        return latestObservation.tagCount();
     }
 
     @Override
     public void periodic() {
+
         for (int i = 0; i < io.length; i++) {
             io[i].updateInputs(inputs[i]);
             Logger.processInputs("Vision/Camera" + Integer.toString(i), inputs[i]);
@@ -191,6 +256,21 @@ public class Vision extends SubsystemBase {
         Logger.recordOutput(
                 "Vision/Summary/RobotPosesRejected",
                 allRobotPosesRejected.toArray(new Pose3d[allRobotPosesRejected.size()]));
+
+        // QuestNav periodic
+        questNav.commandPeriodic();
+        PoseFrame[] questFrames = questNav.getAllUnreadPoseFrames();
+        for (PoseFrame questFrame : questFrames) {
+            if (questFrame.isTracking()) {
+                questPose = questFrame.questPose3d();
+                double timestamp = questFrame.dataTimestamp();
+                Pose3d robotPose = questPose.transformBy(VisionConstants.ROBOT_TO_QUEST.inverse());
+                // consumer.accept(robotPose.toPose2d(), timestamp, VisionConstants.QUESTNAV_STD_DEVS);
+            }
+        }
+
+        Logger.recordOutput("Vision/QuestNav/Connected", questNav.isConnected());
+        Logger.recordOutput("Vision/QuestNav/Pose", questPose);
     }
 
     @FunctionalInterface
