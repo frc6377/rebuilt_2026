@@ -6,6 +6,7 @@ import static edu.wpi.first.units.Units.Volts;
 import static frc.robot.util.PhoenixUtil.tryUntilOk;
 
 import com.ctre.phoenix6.configs.Slot0Configs;
+import com.ctre.phoenix6.configs.SoftwareLimitSwitchConfigs;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.DigitalInput;
@@ -82,6 +83,24 @@ public class ClimberIOReal implements ClimberIO {
     }
 
     @Override
+    public void disableSoftLimits() {
+        SoftwareLimitSwitchConfigs config = new SoftwareLimitSwitchConfigs();
+        config.ForwardSoftLimitEnable = false;
+        config.ReverseSoftLimitEnable = false;
+        tryUntilOk(5, () -> climbMotor1.getConfigurator().apply(config, 0.25));
+    }
+
+    @Override
+    public void enableSoftLimits() {
+        tryUntilOk(5, () -> climbMotor1.getConfigurator().apply(ClimbConstants.kLimitSwitchConfig, 0.25));
+    }
+
+    @Override
+    public void limitHit() {
+        // return !limitSwitch.get();
+    }
+
+    @Override
     public void periodic() {
         climbMotor1.updateTunableGains();
     }
@@ -96,5 +115,5 @@ public class ClimberIOReal implements ClimberIO {
         climbMotor1.setPosition(0);
     }
 
-    
+
 }
