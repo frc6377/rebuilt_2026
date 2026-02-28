@@ -59,7 +59,6 @@ public class Vision extends SubsystemBase {
     private final String[] logKeyRobotPoses;
     private final String[] logKeyRobotPosesAccepted;
     private final String[] logKeyRobotPosesRejected;
-    
 
     public Vision(VisionConsumer consumer, QuestNavIO questNavIO, VisionIO... io) {
         this.consumer = consumer;

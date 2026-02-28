@@ -62,8 +62,7 @@ public class TunerConstants {
             .withKD(0)
             .withKS(0.02426125)
             .withKV(0.11555)
-            .withKA(0.001642125)
-            .withStaticFeedforwardSign(StaticFeedforwardSignValue.UseClosedLoopSign);
+            .withKA(0.001642125);
 
     // The closed-loop output type to use for the steer motors;
     private static final ClosedLoopOutputType kSteerClosedLoopOutput = ClosedLoopOutputType.Voltage;
