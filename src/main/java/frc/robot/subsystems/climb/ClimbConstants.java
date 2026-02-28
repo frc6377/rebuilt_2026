@@ -81,7 +81,7 @@ public class ClimbConstants {
     public static final Distance kClimbMaxHeight = Inches.of(30);
     public static final boolean kSimulateGravity = true;
     public static final Distance kStartHeight = Inches.of(0);
-    public static final double kClimbSpeed = 1;
+    public static final double kClimbSpeed = 0.1;
     public static final int kLimitSwitchPort = 0;
 
     public static final double kAppliedVolts = 0.0;
