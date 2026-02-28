@@ -40,7 +40,7 @@ public class VisionConstants {
             Inches.of(8.500177),
             Inches.of(-10.623276),
             Inches.of(9.536276),
-            new Rotation3d(Degrees.of(0), Degrees.of(20), Degrees.of(-90)));
+            new Rotation3d(Degrees.of(0), Degrees.of(30), Degrees.of(0)));
     public static Transform3d robotToCamera1 = new Transform3d(-0.2, 0.0, 0.2, new Rotation3d(0.0, -0.4, Math.PI));
     public static final Transform3d ROBOT_TO_QUEST =
             new Transform3d(0.0, 0.0, 0.0, new Rotation3d(Degrees.of(0), Degrees.of(0), Degrees.of(90)));
