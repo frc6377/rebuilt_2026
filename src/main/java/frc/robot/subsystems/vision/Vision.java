@@ -54,14 +54,14 @@ public class Vision extends SubsystemBase {
     private final QuestNav questNav;
     private Pose3d questPose = new Pose3d();
 
-    public Vision(VisionConsumer consumer, QuestNavIO questNavIO, VisionIO... io) {
     private final String[] logKeyInputs;
     private final String[] logKeyTagPoses;
     private final String[] logKeyRobotPoses;
     private final String[] logKeyRobotPosesAccepted;
     private final String[] logKeyRobotPosesRejected;
+    
 
-    public Vision(VisionConsumer consumer, VisionIO... io) {
+    public Vision(VisionConsumer consumer, QuestNavIO questNavIO, VisionIO... io) {
         this.consumer = consumer;
         this.io = io;
         this.questNavIO = questNavIO;
@@ -293,5 +293,4 @@ public class Vision extends SubsystemBase {
     public interface VisionConsumer {
         void accept(Pose2d visionRobotPoseMeters, double timestampSeconds, Matrix<N3, N1> visionMeasurementStdDevs);
     }
-}
 }

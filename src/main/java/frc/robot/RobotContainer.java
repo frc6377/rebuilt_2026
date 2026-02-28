@@ -148,6 +148,7 @@ public class RobotContainer {
                         (pose) -> driveSimulation.setSimulationWorldPose(pose));
                 vision = new Vision(
                         drive,
+                        new QuestNavIO() {},
                         new VisionIOPhotonVisionSim(
                                 camera0Name, robotToCamera0, driveSimulation::getSimulatedDriveTrainPose),
                         new VisionIOPhotonVisionSim(
