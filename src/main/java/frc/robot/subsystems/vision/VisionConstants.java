@@ -34,13 +34,22 @@ public class VisionConstants {
     public static String camera0Name = "ShooterCam";
     public static String camera1Name = "camera_1";
 
+    // Camera 0 position (inches) and rotation (degrees: roll, pitch, yaw)
+    // These are the single source of truth — config.json is auto-generated from them.
+    public static final double CAMERA0_X_INCHES = 0.887;
+    public static final double CAMERA0_Y_INCHES = 0.034;
+    public static final double CAMERA0_Z_INCHES = 17.878;
+    public static final double CAMERA0_ROLL_DEG = 0;
+    public static final double CAMERA0_PITCH_DEG = 30;
+    public static final double CAMERA0_YAW_DEG = 0;
+
     // Robot to camera transforms
     // (Not used by Limelight, configure in web UI instead)
     public static final Transform3d robotToCamera0 = new Transform3d(
-            Inches.of(0.887),
-            Inches.of(0.034),
-            Inches.of(17.878),
-            new Rotation3d(Degrees.of(0), Degrees.of(30), Degrees.of(0)));
+            Inches.of(CAMERA0_X_INCHES),
+            Inches.of(CAMERA0_Y_INCHES),
+            Inches.of(CAMERA0_Z_INCHES),
+            new Rotation3d(Degrees.of(CAMERA0_ROLL_DEG), Degrees.of(CAMERA0_PITCH_DEG), Degrees.of(CAMERA0_YAW_DEG)));
     public static Transform3d robotToCamera1 = new Transform3d(-0.2, 0.0, 0.2, new Rotation3d(0.0, -0.4, Math.PI));
     public static final Transform3d ROBOT_TO_QUEST =
             new Transform3d(0.0, 0.0, 0.0, new Rotation3d(Degrees.of(0), Degrees.of(0), Degrees.of(90)));
