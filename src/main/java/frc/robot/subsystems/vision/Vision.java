@@ -49,14 +49,14 @@ public class Vision extends SubsystemBase {
 
     private final QuestNavIO questNavIO;
 
-        // QuestNav fields
+    // QuestNav fields
     private final QuestNav questNav;
     private Pose3d questPose = new Pose3d();
 
     public Vision(VisionConsumer consumer, QuestNavIO questNavIO, VisionIO... io) {
-    this.consumer = consumer;
-    this.io = io;
-    this.questNavIO = questNavIO;
+        this.consumer = consumer;
+        this.io = io;
+        this.questNavIO = questNavIO;
 
         // Initialize inputs
         this.inputs = new VisionIOInputsAutoLogged[io.length];
@@ -105,7 +105,8 @@ public class Vision extends SubsystemBase {
     }
 
     public Supplier<Pose2d> getQuestNavPoseSupplier() {
-        return questNavIO.getQuestNavPoseSupplier();}
+        return questNavIO.getQuestNavPoseSupplier();
+    }
     /**
      * Gets the starting pose from the Limelight (camera index 0).
      *
