@@ -21,6 +21,9 @@ public class ClimbConstants {
         public static final double kP = 50;
         public static final double kI = 0;
         public static final double kD = 0;
+        public static final double kS = 0;
+        public static final double kV = 0;
+        public static final double kA = 0;
     }
 
     // Sim PID
@@ -28,6 +31,9 @@ public class ClimbConstants {
         public static final double kP = 1000;
         public static final double kI = 0;
         public static final double kD = 0;
+        public static final double kS = 0;
+        public static final double kV = 0;
+        public static final double kA = 0;
     }
 
     public static final boolean kDisabled = false;
@@ -40,9 +46,9 @@ public class ClimbConstants {
                     .withKP(PIDF.kP)
                     .withKI(PIDF.kI)
                     .withKD(PIDF.kD)
-                    .withKS(0)
-                    .withKV(0)
-                    .withKA(0))
+                    .withKS(PIDF.kS)
+                    .withKV(PIDF.kV)
+                    .withKA(PIDF.kA))
             .withCurrentLimits(new CurrentLimitsConfigs()
                     .withStatorCurrentLimitEnable(true)
                     .withStatorCurrentLimit(Amps.of(70)));

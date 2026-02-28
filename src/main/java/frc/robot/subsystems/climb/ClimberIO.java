@@ -46,7 +46,9 @@ public interface ClimberIO {
 
     default void enableSoftLimits() {}
 
-    default void limitHit() {}
+    default boolean limitHit() {
+        return false;
+    }
 
     default void periodic() {}
 

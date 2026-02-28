@@ -51,7 +51,7 @@ public class Climb extends SubsystemBase {
                     climberIO.set(ClimbConstants.kClimbSpeed);
                 },
                 () -> {
-                    climberIO.set(ClimbConstants.kClimbSpeed * 0);
+                    climberIO.set(0);
                 });
     }
 
@@ -61,7 +61,7 @@ public class Climb extends SubsystemBase {
                     climberIO.set(-ClimbConstants.kClimbSpeed);
                 },
                 () -> {
-                    climberIO.set(ClimbConstants.kClimbSpeed * 0);
+                    climberIO.set(0);
                 });
     }
 

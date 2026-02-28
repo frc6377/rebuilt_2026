@@ -96,8 +96,8 @@ public class ClimberIOReal implements ClimberIO {
     }
 
     @Override
-    public void limitHit() {
-        // return !limitSwitch.get();
+    public boolean limitHit() {
+        return !limitSwitch.get();
     }
 
     @Override
