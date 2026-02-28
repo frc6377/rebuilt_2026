@@ -94,7 +94,7 @@ public class OIKeyboard implements OI {
     public Trigger climbExtend() {
         return Num8;
     }
-    
+
     public Trigger driveLock0() {
         return Insert;
     }

@@ -11,7 +11,8 @@ import com.ctre.phoenix6.controls.PositionVoltage;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.DutyCycleEncoder;
-import frc.robot.Constants.CANIDs;
+import frc.robot.Constants.CANIDs.MotorIDs;
+import frc.robot.Constants.CANIDs.SensorIDs;
 import frc.robot.util.TunableTalonFX;
 
 public class ClimberIOReal implements ClimberIO {
@@ -21,8 +22,8 @@ public class ClimberIOReal implements ClimberIO {
     final DigitalInput limitSwitch;
 
     public ClimberIOReal() {
-        climbMotor1 = new TunableTalonFX(CANIDs.kClimbMotor1ID, "rio", "ClimbMotor1");
-        climbEncoder = new DutyCycleEncoder(CANIDs.kClimbEncoderID);
+        climbMotor1 = new TunableTalonFX(MotorIDs.kClimbMotor1ID, "rio", "ClimbMotor1");
+        climbEncoder = new DutyCycleEncoder(SensorIDs.kClimbEncoderID);
         limitSwitch = new DigitalInput(ClimbConstants.kLimitSwitchPort);
 
         tryUntilOk(5, () -> climbMotor1.getConfigurator().apply(ClimbConstants.kClimbMotorConfigReal, 0.25));
@@ -114,6 +115,4 @@ public class ClimberIOReal implements ClimberIO {
     public void zeroEncoder() {
         climbMotor1.setPosition(0);
     }
-
-
 }

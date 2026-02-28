@@ -295,30 +295,30 @@ public class RobotContainer {
         // TODO: delete these code for your own project
         if (Constants.currentMode == Constants.Mode.SIM) {
             // L4 placement
-        //     controller.y().onTrue(Commands.runOnce(() -> SimulatedArena.getInstance()
-        //             .addGamePieceProjectile(new ReefscapeCoralOnFly(
-        //                     driveSimulation.getSimulatedDriveTrainPose().getTranslation(),
-        //                     new Translation2d(0.4, 0),
-        //                     driveSimulation.getDriveTrainSimulatedChassisSpeedsFieldRelative(),
-        //                     driveSimulation.getSimulatedDriveTrainPose().getRotation(),
-        //                     Meters.of(2),
-        //                     MetersPerSecond.of(1.5),
-        //                     Degrees.of(-80)))));
-        //     // L3 placement
-        //     controller.b().onTrue(Commands.runOnce(() -> SimulatedArena.getInstance()
-        //             .addGamePieceProjectile(new ReefscapeCoralOnFly(
-        //                     driveSimulation.getSimulatedDriveTrainPose().getTranslation(),
-        //                     new Translation2d(0.4, 0),
-        //                     driveSimulation.getDriveTrainSimulatedChassisSpeedsFieldRelative(),
-        //                     driveSimulation.getSimulatedDriveTrainPose().getRotation(),
-        //                     Meters.of(1.35),
-        //                     MetersPerSecond.of(1.5),
-        //                     Degrees.of(-60)))));
+            //     controller.y().onTrue(Commands.runOnce(() -> SimulatedArena.getInstance()
+            //             .addGamePieceProjectile(new ReefscapeCoralOnFly(
+            //                     driveSimulation.getSimulatedDriveTrainPose().getTranslation(),
+            //                     new Translation2d(0.4, 0),
+            //                     driveSimulation.getDriveTrainSimulatedChassisSpeedsFieldRelative(),
+            //                     driveSimulation.getSimulatedDriveTrainPose().getRotation(),
+            //                     Meters.of(2),
+            //                     MetersPerSecond.of(1.5),
+            //                     Degrees.of(-80)))));
+            //     // L3 placement
+            //     controller.b().onTrue(Commands.runOnce(() -> SimulatedArena.getInstance()
+            //             .addGamePieceProjectile(new ReefscapeCoralOnFly(
+            //                     driveSimulation.getSimulatedDriveTrainPose().getTranslation(),
+            //                     new Translation2d(0.4, 0),
+            //                     driveSimulation.getDriveTrainSimulatedChassisSpeedsFieldRelative(),
+            //                     driveSimulation.getSimulatedDriveTrainPose().getRotation(),
+            //                     Meters.of(1.35),
+            //                     MetersPerSecond.of(1.5),
+            //                     Degrees.of(-60)))));
             // Climb controls
-        //     oi.climbExtend().whileTrue(climb.climbUp());
+            //     oi.climbExtend().whileTrue(climb.climbUp());
             oi.declimb().whileTrue(climb.climbUp());
             oi.climb_l1().onTrue(climb.setHeight(Inches.of(27))); // Should be 27
-        //     oi.climbToFloor().onTrue(climb.setHeight(Inches.of(0)));
+            //     oi.climbToFloor().onTrue(climb.setHeight(Inches.of(0)));
 
             //     oiKeyboard.climbExtend().whileTrue(climb.climbUp());
             //     oiKeyboard.declimb().whileTrue(climb.climbDown()).onTrue(Commands.print("V pressed - climbing

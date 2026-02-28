@@ -112,7 +112,7 @@ public class OIXbox implements OI {
     // public Trigger climbExtend() {
     //     return leftBumper;
     // }
-    
+
     @Override
     public Trigger driveLock0() {
         return a;

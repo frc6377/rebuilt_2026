@@ -14,7 +14,7 @@ import edu.wpi.first.wpilibj.simulation.ElevatorSim;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.util.Color8Bit;
-import frc.robot.Constants.CANIDs;
+import frc.robot.Constants.CANIDs.MotorIDs;
 import frc.robot.util.TunableTalonFX;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.mechanism.LoggedMechanism2d;
@@ -41,7 +41,7 @@ public class ClimberIOSim implements ClimberIO {
     // private static final double DT = ClimbConstants.kDT;
 
     public ClimberIOSim() {
-        climbMotor1 = new TunableTalonFX(CANIDs.kClimbMotor1ID, "sim", "ClimbMotor1");
+        climbMotor1 = new TunableTalonFX(MotorIDs.kClimbMotor1ID, "sim", "ClimbMotor1");
         tryUntilOk(5, () -> climbMotor1.getConfigurator().apply(ClimbConstants.kClimbMotorConfigSim, 0.25));
 
         pidController =

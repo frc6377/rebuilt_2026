@@ -125,7 +125,7 @@ public interface OI {
     default Trigger climbToFloor() {
         return noButton;
     }
-    
+
     default Trigger shootSpeedLow() {
         return noButton;
     }
