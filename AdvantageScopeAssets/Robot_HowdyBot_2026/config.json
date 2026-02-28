@@ -7,8 +7,8 @@
     "cameras": [
       {
         "name" : "Shooter-Cam",
-        "rotations": [{"axis": "y", "degrees": -30}, {"axis": "z", "degrees": -90}],
-        "position": [-0.007426, 0.092737, 0.496115],
+        "rotations": [{"axis": "y", "degrees": -30}, {"axis": "z", "degrees": 0}],
+        "position": [0.887, 0.034, 17.878],
         "resolution": [1280, 960],
         "fov": 80
       }, 
