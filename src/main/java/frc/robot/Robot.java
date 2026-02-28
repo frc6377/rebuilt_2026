@@ -13,6 +13,10 @@
 
 package frc.robot;
 
+import com.ctre.phoenix6.SignalLogger;
+import edu.wpi.first.net.WebServer;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.Threads;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
@@ -31,25 +35,8 @@ public class Robot extends LoggedRobot {
     private RobotContainer robotContainer;
 
     public Robot() {
-        // Record metadata
-        Logger.recordMetadata("ProjectName", BuildConstants.MAVEN_NAME);
-        Logger.recordMetadata("BuildDate", BuildConstants.BUILD_DATE);
-        Logger.recordMetadata("GitSHA", BuildConstants.GIT_SHA);
-        Logger.recordMetadata("GitDate", BuildConstants.GIT_DATE);
-        Logger.recordMetadata("GitBranch", BuildConstants.GIT_BRANCH);
-        switch (BuildConstants.DIRTY) {
-            case 0:
-                Logger.recordMetadata("GitDirty", "All changes committed");
-                break;
-            case 1:
-                Logger.recordMetadata("GitDirty", "Uncomitted changes");
-                break;
-            default:
-                Logger.recordMetadata("GitDirty", "Unknown");
-                break;
-        }
-
         // Set up data receivers & replay source
+
         switch (Constants.currentMode) {
             case REAL:
                 // Running on a real robot, log to a USB stick ("/U/logs")
@@ -62,6 +49,11 @@ public class Robot extends LoggedRobot {
                 Logger.addDataReceiver(new NT4Publisher());
                 break;
         }
+
+        SignalLogger.setPath("/media/sda1/logs/");
+        WebServer.start(5800, Filesystem.getDeployDirectory().getPath());
+
+        DriverStation.silenceJoystickConnectionWarning(true);
 
         // Start AdvantageKit logger
         Logger.start();
@@ -105,7 +97,7 @@ public class Robot extends LoggedRobot {
 
         // schedule the autonomous command (example)
         if (autonomousCommand != null) {
-            autonomousCommand.schedule();
+            CommandScheduler.getInstance().schedule(autonomousCommand);
         }
     }
 

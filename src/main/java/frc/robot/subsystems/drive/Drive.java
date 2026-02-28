@@ -16,6 +16,7 @@ package frc.robot.subsystems.drive;
 import static edu.wpi.first.units.Units.*;
 
 import com.ctre.phoenix6.CANBus;
+import com.ctre.phoenix6.SignalLogger;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.ModuleConfig;
 import com.pathplanner.lib.config.PIDConstants;
@@ -76,6 +77,8 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
     private static final double ROBOT_MASS_KG = 74.088;
     private static final double ROBOT_MOI = 6.883;
     private static final double WHEEL_COF = 1.2;
+    private static final double BUMPER_LENGTH = 30.0;
+    private static final double BUMPER_WIDTH = 30.0;
     private static final RobotConfig PP_CONFIG = new RobotConfig(
             ROBOT_MASS_KG,
             ROBOT_MOI,
@@ -90,11 +93,12 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
 
     public static final DriveTrainSimulationConfig mapleSimConfig = DriveTrainSimulationConfig.Default()
             .withRobotMass(Kilograms.of(ROBOT_MASS_KG))
+            .withBumperSize(Inches.of(BUMPER_LENGTH), Inches.of(BUMPER_WIDTH))
             .withCustomModuleTranslations(getModuleTranslations())
             .withGyro(COTS.ofPigeon2())
             .withSwerveModule(new SwerveModuleSimulationConfig(
                     DCMotor.getKrakenX60(1),
-                    DCMotor.getFalcon500(1),
+                    DCMotor.getKrakenX44(1),
                     TunerConstants.FrontLeft.DriveMotorGearRatio,
                     TunerConstants.FrontLeft.SteerMotorGearRatio,
                     Volts.of(TunerConstants.FrontLeft.DriveFrictionVoltage),
@@ -108,6 +112,7 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
     private final GyroIOInputsAutoLogged gyroInputs = new GyroIOInputsAutoLogged();
     private final Module[] modules = new Module[4]; // FL, FR, BL, BR
     private final SysIdRoutine sysId;
+    private final SysIdRoutine sysIdTurning;
     private final Alert gyroDisconnectedAlert =
             new Alert("Disconnected gyro, using kinematics as fallback.", AlertType.kError);
 
@@ -157,7 +162,7 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
                 this);
         Pathfinding.setPathfinder(new LocalADStarAK());
         PathPlannerLogging.setLogActivePathCallback((activePath) -> {
-            Logger.recordOutput("Odometry/Trajectory", activePath.toArray(new Pose2d[activePath.size()]));
+            Logger.recordOutput("Odometry/Trajectory", activePath.toArray(new Pose2d[0]));
         });
         PathPlannerLogging.setLogTargetPoseCallback((targetPose) -> {
             Logger.recordOutput("Odometry/TrajectorySetpoint", targetPose);
@@ -166,8 +171,15 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
         // Configure SysId
         sysId = new SysIdRoutine(
                 new SysIdRoutine.Config(
-                        null, null, null, (state) -> Logger.recordOutput("Drive/SysIdState", state.toString())),
+                        null, null, null, (state) -> SignalLogger.writeString("Drive/SysIdState", state.toString())),
                 new SysIdRoutine.Mechanism((voltage) -> runCharacterization(voltage.in(Volts)), null, this));
+
+        sysIdTurning = new SysIdRoutine(
+                new SysIdRoutine.Config(null, null, null, (state) -> {
+                    SignalLogger.writeString("SwerveTurn/state", state.toString());
+                    Logger.recordOutput("Odometry/SysID Mode/Turn SysID", state.toString());
+                }),
+                new SysIdRoutine.Mechanism((voltage) -> runCharacterizationTurning(voltage.in(Volts)), null, this));
     }
 
     @Override
@@ -257,6 +269,12 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
         }
     }
 
+    public void runCharacterizationTurning(double output) {
+        for (int i = 0; i < 4; i++) {
+            modules[i].runCharacterizationTurning(output);
+        }
+    }
+
     /** Stops the drive. */
     public void stop() {
         runVelocity(new ChassisSpeeds());
@@ -277,12 +295,20 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
 
     /** Returns a command to run a quasistatic test in the specified direction. */
     public Command sysIdQuasistatic(SysIdRoutine.Direction direction) {
-        return run(() -> runCharacterization(0.0)).withTimeout(1.0).andThen(sysId.quasistatic(direction));
+        return run(() -> runCharacterization(0.0)).withTimeout(5.0).andThen(sysId.quasistatic(direction));
     }
 
     /** Returns a command to run a dynamic test in the specified direction. */
     public Command sysIdDynamic(SysIdRoutine.Direction direction) {
-        return run(() -> runCharacterization(0.0)).withTimeout(1.0).andThen(sysId.dynamic(direction));
+        return run(() -> runCharacterization(0.0)).withTimeout(5.0).andThen(sysId.dynamic(direction));
+    }
+
+    public Command sysIdQuasistaticTurning(SysIdRoutine.Direction direction) {
+        return run(() -> runCharacterizationTurning(0.0)).withTimeout(1.0).andThen(sysIdTurning.quasistatic(direction));
+    }
+
+    public Command sysIdDynamicTurning(SysIdRoutine.Direction direction) {
+        return run(() -> runCharacterizationTurning(0.0)).withTimeout(1.0).andThen(sysIdTurning.dynamic(direction));
     }
 
     /** Returns the module states (turn angles and drive velocities) for all of the modules. */
@@ -306,7 +332,7 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
 
     /** Returns the measured chassis speeds of the robot. */
     @AutoLogOutput(key = "SwerveChassisSpeeds/Measured")
-    private ChassisSpeeds getChassisSpeeds() {
+    public ChassisSpeeds getChassisSpeeds() {
         return kinematics.toChassisSpeeds(getModuleStates());
     }
 

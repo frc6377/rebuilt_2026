@@ -7,8 +7,9 @@ public interface OI {
     public final Trigger noButton = new Trigger(() -> false);
     public final DoubleSupplier noAxis = () -> 0.0;
 
-    public final ControlCurve driveTranslationCurve = new ControlCurve(1, 3, 0.2, true);
-    public final ControlCurve driveRotationCurve = new ControlCurve(1, 3, 0.2, true);
+    public final ControlCurve driveTranslationCurve = new ControlCurve(1, 4, 0.05, true);
+    public final ControlCurve driveRotationCurve = new ControlCurve(0.75, 2, 0.05, true);
+    public final ControlCurve driveTranslationCurveIntakeRunning = new ControlCurve(0.8, 4, 0.05, true);
 
     default DoubleSupplier driveTranslationX() {
         return noAxis;
@@ -22,10 +23,21 @@ public interface OI {
         return noAxis;
     }
 
+    default DoubleSupplier driveTranslationXIntakeRunning() {
+        return noAxis;
+    }
+
+    default DoubleSupplier driveTranslationYIntakeRunning() {
+        return noAxis;
+    }
+
     default Trigger zeroDrivebase() {
         return noButton;
     }
 
+    default Trigger stopIntake() {
+        return noButton;
+    }
     /* Puts the shooter into a mode where it is able to shoot (e.g. spins up a flywheel that was currently idle)
      * Rumbles joystick or turns on lights on the robot when it gets up to speed to be able to shoot
      * When button is release, return to an idle speed
@@ -43,18 +55,22 @@ public interface OI {
         return noButton;
     }
 
+    default Trigger unjamShooter() {
+        return noButton;
+    }
+
     /* Run the rollers on the intake while held
      *
      * Subsystem: Intake - spin the rollers forward when held, stop spinning when released
      */
-    default DoubleSupplier intake() {
-        return noAxis;
+    default Trigger intake() {
+        return noButton;
     }
 
     /* Run the rollers in reverse while held */
     /* Subsystem: Intake - spin the rollers backwards when held, stop spinning when released */
-    default DoubleSupplier outtake() {
-        return noAxis;
+    default Trigger outtake() {
+        return noButton;
     }
 
     /* When pressed, the intake will extend, and when pressed again, it will retract
@@ -63,6 +79,14 @@ public interface OI {
     /* Subsystem: Intake
     */
     default Trigger toggleIntakeState() {
+        return noButton;
+    }
+
+    default Trigger zeroIntake() {
+        return noButton;
+    }
+
+    default Trigger downIntake() {
         return noButton;
     }
 
@@ -98,11 +122,37 @@ public interface OI {
         return noButton;
     }
 
-    default Trigger climbToL1() {
+    default Trigger climbToFloor() {
+        return noButton;
+    }
+    
+    default Trigger shootSpeedLow() {
         return noButton;
     }
 
-    default Trigger climbToFloor() {
+    default Trigger shootSpeedMidLow() {
+        return noButton;
+    }
+
+    default Trigger shootSpeedMidHigh() {
+        return noButton;
+    }
+
+    default Trigger shootSpeedHigh() {
+        return noButton;
+    }
+
+    /** Stop all superstructure mechanisms. */
+    default Trigger stopSuperstructure() {
+        return noButton;
+    }
+
+    /** While held, lock the drive rotation to 0 degrees. */
+    default Trigger driveLock0() {
+        return noButton;
+    }
+
+    default Trigger xPattern() {
         return noButton;
     }
 }
