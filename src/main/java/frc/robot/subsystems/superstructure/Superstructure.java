@@ -49,6 +49,7 @@ import frc.robot.subsystems.upgoer.UpgoerConstants;
 import frc.robot.subsystems.upgoer.UpgoerIO;
 import frc.robot.subsystems.upgoer.UpgoerIOKrakenX60;
 import frc.robot.subsystems.upgoer.UpgoerIOSim;
+import frc.robot.subsystems.vision.Vision;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.DoubleSupplier;
@@ -89,7 +90,7 @@ public class Superstructure extends SubsystemBase {
     private final Indexer indexer;
     private final RobotState robotState;
     private GamePieceTrajectorySimulation gamePieceTrajectorySimulation;
-
+    private AngularVelocity manualShootingVelocity = RPM.of(ShooterConstants.kManualShootingSpeedRPM);
     /** Creates the superstructure and selects IO implementations by mode. */
     public Superstructure(BooleanSupplier isIntaking) {
         RobotState createdState = RobotState.getInstance();
@@ -407,6 +408,7 @@ public class Superstructure extends SubsystemBase {
     public Command unjamCommand() {
         return Commands.run(
                         () -> {
+                            shooter.setFlywheelVelocity(ShooterConstants.kDefaultUnjamVelocity);
                             upgoer.setVelocity(UpgoerConstants.defaultUnjamVelocity);
                         },
                         upgoer)
@@ -455,11 +457,32 @@ public class Superstructure extends SubsystemBase {
         return setFlywheelVelocityCommand(velocity).until(this::atTargetVelocity);
     }
 
-    public Command autoChooseShootingCommand(Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier) {
+    public Command autoChooseShootingCommand(
+            Drive drive, Vision vision, DoubleSupplier xSupplier, DoubleSupplier ySupplier) {
         if (ShooterConstants.kManualShootingEnabled) {
-            return runOnce(() -> setFlywheelVelocity(RPM.of(manualShootingSpeedRPM.get())));
+            return Commands.runOnce(
+                            () -> setFlywheelVelocity(RPM.of(manualShootingSpeedRPM.get())),
+                            shooter.getLeft(),
+                            shooter.getRight())
+                    .withName("ManualShooting");
+        } else if (vision.getTagCount(0) + vision.getTagCount(1) == 1) {
+            return autoSpeedShooter(drive::getPose, drive::getChassisSpeeds);
         } else {
             return fullAutoAim(drive, xSupplier, ySupplier);
         }
+    }
+    /** Manual override command for testing and bench mode. Doesn't run the shooter */
+    public Command setFlywheelVelocityManual(AngularVelocity velocity) {
+        return Commands.runOnce(() -> manualShootingVelocity = velocity);
+    }
+
+    public Command runFlywheelVelocityManual() {
+        return Commands.run(
+                        () -> {
+                            setFlywheelVelocity(manualShootingVelocity);
+                        },
+                        shooter.getLeft(),
+                        shooter.getRight())
+                .withName("RunFlywheelVelocityManual");
     }
 }

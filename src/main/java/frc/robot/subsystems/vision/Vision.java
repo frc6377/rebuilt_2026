@@ -248,7 +248,7 @@ public class Vision extends SubsystemBase {
             }
 
             // Log camera data
-            Logger.recordOutput(logKeyTagPoses[cameraIndex], tagPoses.toArray(new Pose3d[tagPoses.size()]));
+            Logger.recordOutput(logKeyTagPoses[cameraIndex], tagPoses.toArray(new Pose3d[0]));
             Logger.recordOutput(logKeyRobotPoses[cameraIndex], robotPoses.toArray(new Pose3d[robotPoses.size()]));
             Logger.recordOutput(
                     logKeyRobotPosesAccepted[cameraIndex],

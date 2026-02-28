@@ -51,6 +51,7 @@ public class ExtenderIOSim implements ExtenderIO {
     private final LoggedNetworkNumber kExtenderTolerance;
     private final LoggedNetworkNumber kExtenderSiftAngleOne;
     private final LoggedNetworkNumber kExtenderSiftAngleTwo;
+    private final LoggedNetworkNumber kExtenderDownSpeed;
 
     public ExtenderIOSim() {
         setpoint = Degrees.of(0.0);
@@ -91,6 +92,7 @@ public class ExtenderIOSim implements ExtenderIO {
                 "Intake/Extender/SiftAngleOne", ExtenderConstants.kExtenderSiftAngleOne.in(Degrees));
         kExtenderSiftAngleTwo = new LoggedNetworkNumber(
                 "Intake/Extender/SiftAngleTwo", ExtenderConstants.kExtenderSiftAngleTwo.in(Degrees));
+        kExtenderDownSpeed = new LoggedNetworkNumber("Intake/Extender/DownSpeed", ExtenderConstants.kDownSpeed);
 
         extenderMotorSim = extenderMotor.getSimState();
 
@@ -169,12 +171,27 @@ public class ExtenderIOSim implements ExtenderIO {
     }
 
     @Override
+    public void goDown() {
+        extenderMotor.set(kExtenderDownSpeed.get());
+    }
+
+    @Override
     public void toggle() {
         if (isAtAngle(Degrees.of(kExtenderIntakeAngle.get()))) {
             retract();
         } else {
             extend();
         }
+    }
+
+    @Override
+    public void setEncoderPosition(Angle position) {
+        extenderMotor.setPosition(position);
+    }
+
+    @Override
+    public void stop() {
+        extenderMotor.stopMotor();
     }
 
     @Override

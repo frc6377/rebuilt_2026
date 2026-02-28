@@ -11,6 +11,12 @@
           }
         },
         {
+          "type": "named",
+          "data": {
+            "name": "Extend Intake"
+          }
+        },
+        {
           "type": "parallel",
           "data": {
             "commands": [

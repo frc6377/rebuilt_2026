@@ -5,6 +5,7 @@ import static edu.wpi.first.units.Units.*;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import java.util.function.BooleanSupplier;
 import org.littletonrobotics.junction.Logger;
 
 public class Indexer extends SubsystemBase {
@@ -20,7 +21,7 @@ public class Indexer extends SubsystemBase {
     public Command index() {
         return run(() -> {
             setpoint = IndexerConstants.kCollectorRPM;
-            indexerIO.setVelocity(IndexerConstants.kCollectorRPM);
+            indexerIO.setCustomSpeed(0.9);
         });
     }
 
@@ -36,6 +37,12 @@ public class Indexer extends SubsystemBase {
         return run(() -> {
             setpoint = IndexerConstants.kCollectorRPM.times(-1);
             indexerIO.setVelocity(IndexerConstants.kCollectorRPM.times(-1));
+        });
+    }
+
+    public Command index(BooleanSupplier supplier) {
+        return run(() -> {
+            indexerIO.setVelocity(supplier.getAsBoolean() ? IndexerConstants.kCollectorRPM : RotationsPerSecond.zero());
         });
     }
 

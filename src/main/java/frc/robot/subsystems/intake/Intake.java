@@ -94,7 +94,6 @@ public class Intake extends SubsystemBase {
                 })));
     }
 
-    // Utility Commands
     public Command zeroExtender() {
         return runOnce(extender::zero);
     }
@@ -105,6 +104,14 @@ public class Intake extends SubsystemBase {
 
     public BooleanSupplier isRollerRunningSupplier() {
         return this::isRollerRunning;
+    }
+
+    public Command zeroIntake() {
+        return runEnd(() -> extender.goDown(), () -> extender.stop()).andThen(() -> extender.zero());
+    }
+
+    public Command stop() {
+        return runOnce(() -> extender.stop());
     }
 
     @Override
@@ -119,7 +126,6 @@ public class Intake extends SubsystemBase {
 
         Logger.recordOutput("Intake/Extender/IsExtended", extenderInputs.isExtended);
         Logger.recordOutput("Intake/Extender/IsRetracted", extenderInputs.isRetracted);
-        Logger.recordOutput("Intake/Extender/PositionDegrees", extenderInputs.position);
         Logger.recordOutput("Intake/Extender/SetpointDegrees", extenderInputs.setpoint);
         Logger.recordOutput("Intake/Extender/VelocityRPS", extenderInputs.velocity);
         Logger.recordOutput("Intake/Extender/MotorVoltage", extenderInputs.motorVoltage);

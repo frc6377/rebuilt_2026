@@ -86,6 +86,10 @@ public interface OI {
         return noButton;
     }
 
+    default Trigger downIntake() {
+        return noButton;
+    }
+
     /* While this button is held, the robot aims for the hub and prevents the driver from updating the rotation
      * Subsystem: Drive - whenever this is held down, set rotation based on position
      */
@@ -111,6 +115,22 @@ public interface OI {
 
     /* Subsystem: Climber */
     default Trigger climb_l3() {
+        return noButton;
+    }
+
+    default Trigger shootSpeedLow() {
+        return noButton;
+    }
+
+    default Trigger shootSpeedMidLow() {
+        return noButton;
+    }
+
+    default Trigger shootSpeedMidHigh() {
+        return noButton;
+    }
+
+    default Trigger shootSpeedHigh() {
         return noButton;
     }
 

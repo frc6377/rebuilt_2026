@@ -55,5 +55,11 @@ public interface ExtenderIO {
 
     default void zero() {}
 
+    default void stop() {}
+
     default void periodic() {}
+
+    default void goDown() {}
+
+    default void setEncoderPosition(Angle position) {}
 }

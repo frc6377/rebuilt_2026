@@ -5,30 +5,6 @@
     "data": {
       "commands": [
         {
-          "type": "path",
-          "data": {
-            "pathName": "Drive in front of hub"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "Shoot"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "Middle hub to fuel"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "Extend Intake"
-          }
-        },
-        {
           "type": "parallel",
           "data": {
             "commands": [
@@ -41,10 +17,22 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": "Drive up through middle"
+                  "pathName": "Grab from bundle"
                 }
               }
             ]
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Bundle to shoot"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Spin Up Shooter and Wait"
           }
         }
       ]

@@ -26,7 +26,7 @@ public class ShooterConstants {
 
     public static final CalculationMode kDefaultCalculationMode = CalculationMode.DOU_INTERPOLATION;
     public static final boolean kManualShootingEnabled = true;
-    public static final int kManualShootingSpeedRPM = 5000;
+    public static final int kManualShootingSpeedRPM = 3600;
 
     /** Fixed hood angle to use when hood is disabled (degrees) */
     public static final Angle kFixedHoodAngle = Degrees.of(60);
@@ -60,7 +60,7 @@ public class ShooterConstants {
     public static final AngularVelocity maxShootingFlywheelVelocity = RPM.of(6000.0);
 
     public static final LinearAcceleration gravity = MetersPerSecondPerSecond.of(11);
-
+    public static final AngularVelocity kDefaultUnjamVelocity = RPM.of(-1500);
     // Shot map defaults (tunable via NetworkTables)
     public static final double defaultMaxHeightFeet = 8.0;
     public static final double defaultTargetHeightFeet = 6.0;
