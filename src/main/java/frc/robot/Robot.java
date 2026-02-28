@@ -95,7 +95,9 @@ public class Robot extends LoggedRobot {
     /** This function is called periodically when disabled. */
     @Override
     public void disabledPeriodic() {
-        robotContainer.getRobotStartPose(0).schedule();
+        if (Constants.EnabledSubsystems.kQuestNav) {
+            robotContainer.getRobotStartPose(0).schedule();
+        }
     }
 
     /** This autonomous runs the autonomous command selected by your {@link RobotContainer} class. */
