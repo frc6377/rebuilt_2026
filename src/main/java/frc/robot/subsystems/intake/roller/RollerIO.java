@@ -14,11 +14,13 @@
 package frc.robot.subsystems.intake.roller;
 
 import static edu.wpi.first.units.Units.Amps;
+import static edu.wpi.first.units.Units.Celsius;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Volts;
 
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
+import edu.wpi.first.units.measure.Temperature;
 import edu.wpi.first.units.measure.Voltage;
 import org.littletonrobotics.junction.AutoLog;
 
@@ -30,6 +32,7 @@ public interface RollerIO {
         public Voltage rollerAppliedVolts = Volts.of(0.0);
         public AngularVelocity rollerVelocity = RotationsPerSecond.of(0.0);
         public Current statorCurrent = Amps.zero();
+        public Temperature motorTemp = Celsius.of(0.0);
     }
 
     default void updateInputs(RollerIOInputs inputs) {}

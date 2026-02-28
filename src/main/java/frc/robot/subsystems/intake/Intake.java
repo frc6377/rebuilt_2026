@@ -7,6 +7,7 @@ import frc.robot.subsystems.intake.extender.ExtenderIO;
 import frc.robot.subsystems.intake.extender.ExtenderIOInputsAutoLogged;
 import frc.robot.subsystems.intake.roller.RollerIO;
 import frc.robot.subsystems.intake.roller.RollerIOInputsAutoLogged;
+import java.util.function.BooleanSupplier;
 import org.littletonrobotics.junction.Logger;
 
 public class Intake extends SubsystemBase {
@@ -17,13 +18,8 @@ public class Intake extends SubsystemBase {
     private final ExtenderIO.ExtenderIOInputs extenderInputs;
 
     public Intake(RollerIO rollerIO, ExtenderIO extenderIO) {
-        if (IntakeConstants.disabled) {
-            roller = new RollerIO() {};
-            extender = new ExtenderIO() {};
-        } else {
-            roller = rollerIO;
-            extender = extenderIO;
-        }
+        roller = rollerIO;
+        extender = extenderIO;
         rollerInputs = new RollerIOInputsAutoLogged();
         extenderInputs = new ExtenderIOInputsAutoLogged();
     }
@@ -85,15 +81,30 @@ public class Intake extends SubsystemBase {
     }
 
     public Command siftFuelCommand() {
-        return run(() -> Commands.repeatingSequence(
-                        runOnce(() -> extender.goToSiftAngleOne()).until(extender.atTarget()),
-                        runOnce(() -> extender.goToSiftAngleTwo()).until(extender.atTarget())))
-                .andThen(() -> extender.extend());
+        return Commands.repeatingSequence(
+                Commands.parallel(run(() -> extender.goToSiftAngleOne()), Commands.run(() -> {
+                    while (!extender.atTarget().getAsBoolean()) {
+                        continue;
+                    }
+                })),
+                Commands.parallel(run(() -> extender.goToSiftAngleTwo()), Commands.run(() -> {
+                    while (!extender.atTarget().getAsBoolean()) {
+                        continue;
+                    }
+                })));
     }
 
     // Utility Commands
     public Command zeroExtender() {
-        return runOnce(() -> extender.zero());
+        return runOnce(extender::zero);
+    }
+
+    public boolean isRollerRunning() {
+        return Math.abs(rollerInputs.rollerSpeedPercentile) > 0.1;
+    }
+
+    public BooleanSupplier isRollerRunningSupplier() {
+        return this::isRollerRunning;
     }
 
     @Override
@@ -102,21 +113,24 @@ public class Intake extends SubsystemBase {
         extender.updateInputs(extenderInputs);
         extender.periodic();
         roller.periodic();
-
-        Logger.recordOutput("Intake/Roller/Velocity", rollerInputs.rollerVelocity);
-        Logger.recordOutput("Intake/Roller/SpeedPercentile", rollerInputs.rollerSpeedPercentile);
-        Logger.recordOutput("Intake/Roller/Voltage", rollerInputs.rollerAppliedVolts);
-        Logger.recordOutput("Intake/Roller/Current", rollerInputs.statorCurrent);
-
-        Logger.recordOutput("Intake/Extender/Position", extenderInputs.position);
-        Logger.recordOutput("Intake/Extender/Setpoint", extenderInputs.setpoint);
-        Logger.recordOutput("Intake/Extender/MotorVoltage", extenderInputs.motorVoltage);
-        Logger.recordOutput("Intake/Extender/IsExtended", extenderInputs.isExtended);
-        Logger.recordOutput("Intake/Extender/IsRetracted", extenderInputs.isRetracted);
-        Logger.recordOutput("Intake/Extender/atTarget", extenderInputs.atTarget);
-
         Logger.recordOutput(
                 "Intake/CurrentCommand",
                 this.getCurrentCommand() != null ? this.getCurrentCommand().getName() : "None");
+
+        Logger.recordOutput("Intake/Extender/IsExtended", extenderInputs.isExtended);
+        Logger.recordOutput("Intake/Extender/IsRetracted", extenderInputs.isRetracted);
+        Logger.recordOutput("Intake/Extender/PositionDegrees", extenderInputs.position);
+        Logger.recordOutput("Intake/Extender/SetpointDegrees", extenderInputs.setpoint);
+        Logger.recordOutput("Intake/Extender/VelocityRPS", extenderInputs.velocity);
+        Logger.recordOutput("Intake/Extender/MotorVoltage", extenderInputs.motorVoltage);
+        Logger.recordOutput("Intake/Extender/MotorCurrent", extenderInputs.motorCurrent);
+        Logger.recordOutput("Intake/Extender/MotorTemperature", extenderInputs.motorTemp);
+        Logger.recordOutput("Intake/Extender/AtTarget", extenderInputs.atTarget);
+
+        Logger.recordOutput("Intake/Roller/SpeedPercentile", rollerInputs.rollerSpeedPercentile);
+        Logger.recordOutput("Intake/Roller/AppliedVolts", rollerInputs.rollerAppliedVolts);
+        Logger.recordOutput("Intake/Roller/VelocityRPS", rollerInputs.rollerVelocity);
+        Logger.recordOutput("Intake/Roller/StatorCurrent", rollerInputs.statorCurrent);
+        Logger.recordOutput("Intake/Roller/MotorTemperature", rollerInputs.motorTemp);
     }
 }

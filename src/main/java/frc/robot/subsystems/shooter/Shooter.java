@@ -97,4 +97,8 @@ public class Shooter {
     public Command stopCommand() {
         return left.stopCommand().alongWith(right.stopCommand());
     }
+
+    public boolean isRunning() {
+        return left.isRunning() || right.isRunning();
+    }
 }

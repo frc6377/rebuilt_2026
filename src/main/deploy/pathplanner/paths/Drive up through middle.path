@@ -3,25 +3,25 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 2.0,
-        "y": 7.0
+        "x": 8.5,
+        "y": 1.175
       },
       "prevControl": null,
       "nextControl": {
-        "x": 3.0,
-        "y": 7.0
+        "x": 8.498548922216319,
+        "y": 2.0949766133946746
       },
       "isLocked": false,
-      "linkedName": null
+      "linkedName": "Ready to refuel"
     },
     {
       "anchor": {
-        "x": 3.0,
-        "y": 7.0
+        "x": 8.5,
+        "y": 6.8
       },
       "prevControl": {
-        "x": 2.0,
-        "y": 7.0
+        "x": 8.482033891733394,
+        "y": 5.758829211306347
       },
       "nextControl": null,
       "isLocked": false,
@@ -42,13 +42,13 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": 0.0
+    "rotation": 135.0
   },
   "reversed": false,
-  "folder": "Straight Line",
+  "folder": null,
   "idealStartingState": {
     "velocity": 0,
-    "rotation": 0.0
+    "rotation": 135.0
   },
   "useDefaultConstraints": true
 }

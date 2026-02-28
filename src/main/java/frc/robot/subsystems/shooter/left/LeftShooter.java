@@ -117,7 +117,7 @@ public class LeftShooter extends SubsystemBase {
     /** Check if flywheel is at target velocity. */
     @AutoLogOutput(key = "LeftShooter/AtTargetVelocity")
     public boolean atTargetVelocity() {
-        AngularVelocity tolerance = ShooterConstants.flywheelVelocityTolerance;
+        AngularVelocity tolerance = ShooterConstants.kFlywheelVelocityTolerance;
         return flywheelFailed
                 || Math.abs(inputs.flywheelVelocity.in(RPM) - flywheelSetpoint.in(RPM)) < tolerance.in(RPM);
     }
@@ -128,6 +128,10 @@ public class LeftShooter extends SubsystemBase {
 
     public void resetFailureFlags() {
         flywheelFailed = false;
+    }
+
+    public boolean isRunning() {
+        return Math.abs(flywheelSetpoint.in(RPM)) > 1.0;
     }
 
     // ========== Command Factory Methods ==========

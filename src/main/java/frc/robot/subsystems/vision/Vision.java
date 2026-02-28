@@ -32,6 +32,7 @@ import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.subsystems.vision.Vision.VisionConsumer;
 import frc.robot.subsystems.vision.VisionIO.PoseObservationType;
 import frc.robot.subsystems.vision.questnav.QuestNavIO;
 import gg.questnav.questnav.PoseFrame;
@@ -54,19 +55,37 @@ public class Vision extends SubsystemBase {
     private Pose3d questPose = new Pose3d();
 
     public Vision(VisionConsumer consumer, QuestNavIO questNavIO, VisionIO... io) {
+    private final String[] logKeyInputs;
+    private final String[] logKeyTagPoses;
+    private final String[] logKeyRobotPoses;
+    private final String[] logKeyRobotPosesAccepted;
+    private final String[] logKeyRobotPosesRejected;
+
+    public Vision(VisionConsumer consumer, VisionIO... io) {
         this.consumer = consumer;
         this.io = io;
         this.questNavIO = questNavIO;
 
-        // Initialize inputs
+        // Initialize inputs and log keys
         this.inputs = new VisionIOInputsAutoLogged[io.length];
-        for (int i = 0; i < inputs.length; i++) {
+        this.logKeyInputs = new String[io.length];
+        this.logKeyTagPoses = new String[io.length];
+        this.logKeyRobotPoses = new String[io.length];
+        this.logKeyRobotPosesAccepted = new String[io.length];
+        this.logKeyRobotPosesRejected = new String[io.length];
+        for (int i = 0; i < io.length; i++) {
             inputs[i] = new VisionIOInputsAutoLogged();
+            String cameraPrefix = "Vision/Camera" + i;
+            logKeyInputs[i] = cameraPrefix;
+            logKeyTagPoses[i] = cameraPrefix + "/TagPoses";
+            logKeyRobotPoses[i] = cameraPrefix + "/RobotPoses";
+            logKeyRobotPosesAccepted[i] = cameraPrefix + "/RobotPosesAccepted";
+            logKeyRobotPosesRejected[i] = cameraPrefix + "/RobotPosesRejected";
         }
 
         // Initialize disconnected alerts
         this.disconnectedAlerts = new Alert[io.length];
-        for (int i = 0; i < inputs.length; i++) {
+        for (int i = 0; i < io.length; i++) {
             disconnectedAlerts[i] =
                     new Alert("Vision camera " + Integer.toString(i) + " is disconnected.", AlertType.kWarning);
         }
@@ -122,6 +141,15 @@ public class Vision extends SubsystemBase {
      * @param cameraIndex The index of the camera to use.
      * @return The robot pose as a Pose2d, or null if no valid pose is available.
      */
+    public int getTagCount(int cameraIndex) {
+        var observations = inputs[cameraIndex].poseObservations;
+        if (observations.length == 0) {
+            return 0;
+        }
+        var latestObservation = observations[observations.length - 1];
+        return latestObservation.tagCount();
+    }
+
     public Pose3d getStartingPoseFromCamera(int cameraIndex) {
         if (cameraIndex >= inputs.length || !inputs[cameraIndex].connected) {
             return null;
@@ -140,21 +168,12 @@ public class Vision extends SubsystemBase {
         return null;
     }
 
-    public int getTagCount(int cameraIndex) {
-        var observations = inputs[cameraIndex].poseObservations;
-        if (observations.length == 0) {
-            return 0;
-        }
-        var latestObservation = observations[observations.length - 1];
-        return latestObservation.tagCount();
-    }
-
     @Override
     public void periodic() {
 
         for (int i = 0; i < io.length; i++) {
             io[i].updateInputs(inputs[i]);
-            Logger.processInputs("Vision/Camera" + Integer.toString(i), inputs[i]);
+            Logger.processInputs(logKeyInputs[i], inputs[i]);
         }
 
         // Initialize logging values
@@ -229,18 +248,14 @@ public class Vision extends SubsystemBase {
                         VecBuilder.fill(linearStdDev, linearStdDev, angularStdDev));
             }
 
-            // Log camera datadata
+            // Log camera data
+            Logger.recordOutput(logKeyTagPoses[cameraIndex], tagPoses.toArray(new Pose3d[tagPoses.size()]));
+            Logger.recordOutput(logKeyRobotPoses[cameraIndex], robotPoses.toArray(new Pose3d[robotPoses.size()]));
             Logger.recordOutput(
-                    "Vision/Camera" + Integer.toString(cameraIndex) + "/TagPoses",
-                    tagPoses.toArray(new Pose3d[tagPoses.size()]));
-            Logger.recordOutput(
-                    "Vision/Camera" + Integer.toString(cameraIndex) + "/RobotPoses",
-                    robotPoses.toArray(new Pose3d[robotPoses.size()]));
-            Logger.recordOutput(
-                    "Vision/Camera" + Integer.toString(cameraIndex) + "/RobotPosesAccepted",
+                    logKeyRobotPosesAccepted[cameraIndex],
                     robotPosesAccepted.toArray(new Pose3d[robotPosesAccepted.size()]));
             Logger.recordOutput(
-                    "Vision/Camera" + Integer.toString(cameraIndex) + "/RobotPosesRejected",
+                    logKeyRobotPosesRejected[cameraIndex],
                     robotPosesRejected.toArray(new Pose3d[robotPosesRejected.size()]));
             allTagPoses.addAll(tagPoses);
             allRobotPoses.addAll(robotPoses);
@@ -278,4 +293,5 @@ public class Vision extends SubsystemBase {
     public interface VisionConsumer {
         void accept(Pose2d visionRobotPoseMeters, double timestampSeconds, Matrix<N3, N1> visionMeasurementStdDevs);
     }
+}
 }

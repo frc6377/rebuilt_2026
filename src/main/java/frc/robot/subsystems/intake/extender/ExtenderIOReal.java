@@ -1,7 +1,7 @@
 package frc.robot.subsystems.intake.extender;
 
 import static edu.wpi.first.units.Units.Amps;
-import static edu.wpi.first.units.Units.Rotations;
+import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Volts;
 
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
@@ -15,6 +15,7 @@ import frc.robot.Constants;
 import frc.robot.subsystems.intake.IntakeConstants.ExtenderConstants;
 import frc.robot.util.TunableTalonFX;
 import java.util.function.BooleanSupplier;
+import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 public class ExtenderIOReal implements ExtenderIO {
 
@@ -23,9 +24,17 @@ public class ExtenderIOReal implements ExtenderIO {
     private final TalonFXConfiguration extenderMotorConfig;
     private final Slot0Configs extenderPID;
     private Angle setpoint;
+    // Logged network numbers for tuning/monitoring extender angles (no "NN" suffix per request)
+    private final LoggedNetworkNumber kExtenderStowAngle;
+    private final LoggedNetworkNumber kExtenderIntakeAngle;
+    private final LoggedNetworkNumber kExtenderMaxAngle;
+    private final LoggedNetworkNumber kExtenderMinAngle;
+    private final LoggedNetworkNumber kExtenderTolerance;
+    private final LoggedNetworkNumber kExtenderSiftAngleOne;
+    private final LoggedNetworkNumber kExtenderSiftAngleTwo;
 
     public ExtenderIOReal() {
-        this.setpoint = Rotations.of(0.0);
+        this.setpoint = Degrees.of(0.0);
 
         extenderPID = new Slot0Configs();
         extenderPID.kP = ExtenderConstants.PIDF.kP;
@@ -37,34 +46,49 @@ public class ExtenderIOReal implements ExtenderIO {
 
         currentConfig = new CurrentLimitsConfigs();
         currentConfig.StatorCurrentLimitEnable = true;
-        currentConfig.StatorCurrentLimit = ExtenderConstants.MotorConfig.kStatorCurrentLimit.in(Amps);
+        currentConfig.StatorCurrentLimit = ExtenderConstants.MotorConfig.kStatorCurrentLimitExtender.in(Amps);
 
         extenderMotorConfig = new TalonFXConfiguration();
         extenderMotorConfig.ClosedLoopRamps.VoltageClosedLoopRampPeriod = ExtenderConstants.MotorConfig.kRampPeriod;
-        extenderMotorConfig.TorqueCurrent.PeakForwardTorqueCurrent = ExtenderConstants.MotorConfig.kPeakForwardTorque;
-        extenderMotorConfig.TorqueCurrent.PeakReverseTorqueCurrent = ExtenderConstants.MotorConfig.kPeakReverseTorque;
-        extenderMotorConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
+        extenderMotorConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
         extenderMotorConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
-        extenderMotorConfig.Feedback.SensorToMechanismRatio = ExtenderConstants.kGearing;
 
         extenderMotor.applyConfiguration(extenderMotorConfig);
         extenderMotor.getConfigurator().apply(currentConfig);
+
+        kExtenderStowAngle =
+                new LoggedNetworkNumber("Intake/Extender/StowAngle", ExtenderConstants.kExtenderStowAngle.in(Degrees));
+        kExtenderIntakeAngle = new LoggedNetworkNumber(
+                "Intake/Extender/IntakeAngle", ExtenderConstants.kExtenderIntakeAngle.in(Degrees));
+        kExtenderMaxAngle =
+                new LoggedNetworkNumber("Intake/Extender/MaxAngle", ExtenderConstants.kExtenderMaxAngle.in(Degrees));
+        kExtenderMinAngle =
+                new LoggedNetworkNumber("Intake/Extender/MinAngle", ExtenderConstants.kExtenderMinAngle.in(Degrees));
+        kExtenderTolerance =
+                new LoggedNetworkNumber("Intake/Extender/Tolerance", ExtenderConstants.kExtenderTolerance.in(Degrees));
+        kExtenderSiftAngleOne = new LoggedNetworkNumber(
+                "Intake/Extender/SiftAngleOne", ExtenderConstants.kExtenderSiftAngleOne.in(Degrees));
+        kExtenderSiftAngleTwo = new LoggedNetworkNumber(
+                "Intake/Extender/SiftAngleTwo", ExtenderConstants.kExtenderSiftAngleTwo.in(Degrees));
     }
 
     public void setPosition(Angle position) {
-        this.setpoint = Rotations.of(Math.max(
-                ExtenderConstants.kExtenderMinAngle.in(Rotations),
-                Math.min(ExtenderConstants.kExtenderMaxAngle.in(Rotations), position.in(Rotations))));
-        extenderMotor.setControl(new PositionVoltage(this.setpoint));
+        double clampedDeg = Math.max(kExtenderMinAngle.get(), Math.min(kExtenderMaxAngle.get(), position.in(Degrees)));
+        this.setpoint = Degrees.of(clampedDeg);
+        extenderMotor.setControl(new PositionVoltage(this.setpoint.times(ExtenderConstants.kgearing)));
     }
 
     public Angle getPosition() {
-        return extenderMotor.getPosition().getValue();
+        return Degrees.of(extenderMotor
+                .getPosition()
+                .getValue()
+                .div(ExtenderConstants.kGearing)
+                .in(Degrees));
     }
 
     public boolean isAtAngle(Angle angle) {
-        return Math.abs((getPosition().minus(angle)).in(Rotations))
-                < ExtenderConstants.kExtenderTolerance.in(Rotations);
+        return Math.abs((getPosition().minus(angle)).in(Degrees))
+                < kExtenderTolerance.get() * ExtenderConstants.kgearing;
     }
 
     @Override
@@ -74,22 +98,22 @@ public class ExtenderIOReal implements ExtenderIO {
 
     @Override
     public void extend() {
-        setPosition(ExtenderConstants.kExtenderIntakeAngle);
+        setPosition(Degrees.of(kExtenderIntakeAngle.get()));
     }
 
     @Override
     public void retract() {
-        setPosition(ExtenderConstants.kExtenderStowAngle);
+        setPosition(Degrees.of(kExtenderStowAngle.get()));
     }
 
     @Override
     public BooleanSupplier isExtended() {
-        return () -> isAtAngle(ExtenderConstants.kExtenderIntakeAngle);
+        return () -> isAtAngle(Degrees.of(kExtenderIntakeAngle.get()));
     }
 
     @Override
     public BooleanSupplier isRetracted() {
-        return () -> isAtAngle(ExtenderConstants.kExtenderStowAngle);
+        return () -> isAtAngle(Degrees.of(kExtenderStowAngle.get()));
     }
 
     @Override
@@ -99,19 +123,19 @@ public class ExtenderIOReal implements ExtenderIO {
 
     @Override
     public void goToSiftAngleOne() {
-        setPosition(ExtenderConstants.kExtenderSiftAngleOne);
+        setPosition(Degrees.of(kExtenderSiftAngleOne.get()));
     }
 
     @Override
     public void goToSiftAngleTwo() {
-        setPosition(ExtenderConstants.kExtenderSiftAngleTwo);
+        setPosition(Degrees.of(kExtenderSiftAngleTwo.get()));
     }
 
     @Override
     public void toggle() {
-        if (isAtAngle(ExtenderConstants.kExtenderStowAngle)) {
+        if (isRetracted().getAsBoolean()) {
             extend();
-        } else if (isAtAngle(ExtenderConstants.kExtenderIntakeAngle)) {
+        } else {
             retract();
         }
     }
@@ -121,8 +145,11 @@ public class ExtenderIOReal implements ExtenderIO {
         inputs.isExtended = isExtended().getAsBoolean();
         inputs.isRetracted = isRetracted().getAsBoolean();
         inputs.position = getPosition();
-        inputs.setpoint = setpoint;
+        inputs.setpoint = Degrees.of(setpoint.in(Degrees));
+        inputs.velocity = extenderMotor.getVelocity().getValue();
         inputs.motorVoltage = Volts.of(extenderMotor.getMotorVoltage().getValueAsDouble());
+        inputs.motorCurrent = extenderMotor.getStatorCurrent().getValue();
+        inputs.motorTemp = extenderMotor.getDeviceTemp().getValue();
         inputs.atTarget = atTarget().getAsBoolean();
     }
 

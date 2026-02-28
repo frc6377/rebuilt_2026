@@ -4,14 +4,12 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 import java.util.function.DoubleSupplier;
 
 public interface OI {
-
-    //
-
     public final Trigger noButton = new Trigger(() -> false);
     public final DoubleSupplier noAxis = () -> 0.0;
 
     public final ControlCurve driveTranslationCurve = new ControlCurve(1, 4, 0.05, true);
-    public final ControlCurve driveRotationCurve = new ControlCurve(1, 3, 0.05, true);
+    public final ControlCurve driveRotationCurve = new ControlCurve(0.75, 2, 0.05, true);
+    public final ControlCurve driveTranslationCurveIntakeRunning = new ControlCurve(0.8, 4, 0.05, true);
 
     default DoubleSupplier driveTranslationX() {
         return noAxis;
@@ -22,6 +20,14 @@ public interface OI {
     }
 
     default DoubleSupplier driveRotation() {
+        return noAxis;
+    }
+
+    default DoubleSupplier driveTranslationXIntakeRunning() {
+        return noAxis;
+    }
+
+    default DoubleSupplier driveTranslationYIntakeRunning() {
         return noAxis;
     }
 

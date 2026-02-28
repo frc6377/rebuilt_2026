@@ -7,13 +7,13 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Drive in front of hub"
+            "pathName": "New Path"
           }
         },
         {
           "type": "named",
           "data": {
-            "name": "Shoot"
+            "name": "Spin Up Shooter and Wait"
           }
         }
       ]

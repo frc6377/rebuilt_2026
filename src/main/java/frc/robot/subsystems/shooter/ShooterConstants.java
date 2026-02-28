@@ -14,41 +14,43 @@ import java.util.HashMap;
 public class ShooterConstants {
     // ==================== Feature Flags ====================
     /** Set to false to disable the hood motor entirely (for robots without a hood) */
-    public static final boolean hoodEnabled = Constants.EnabledSubsystems.kHood;
+    public static final boolean kHoodEnabled = Constants.EnabledSubsystems.kHood;
 
     /** Set to true to enable Shooting on the Fly compensation */
-    public static final boolean sotfEnabled = true;
+    public static final boolean kSotfEnabled = true;
 
     public enum CalculationMode {
         PHYSICS,
         DOU_INTERPOLATION
     }
 
-    public static final CalculationMode defaultCalculationMode = CalculationMode.DOU_INTERPOLATION;
-    public static final boolean manualShootingEnabled = true;
-    public static final int manualShootingSpeedRPM = 3000;
+    public static final CalculationMode kDefaultCalculationMode = CalculationMode.DOU_INTERPOLATION;
+    public static final boolean kManualShootingEnabled = true;
+    public static final int kManualShootingSpeedRPM = 5000;
 
     /** Fixed hood angle to use when hood is disabled (degrees) */
-    public static final Angle fixedHoodAngle = Degrees.of(60);
+    public static final Angle kFixedHoodAngle = Degrees.of(60);
 
     // ==================== Operational Limits ====================
-    public static final AngularVelocity maxFlywheelVelocity = RotationsPerSecond.of(100.0); // 6000 RPM
+    public static final AngularVelocity kMaxFlywheelVelocity = RotationsPerSecond.of(100.0); // 6000 RPM
 
     // Velocity tolerance
-    public static final AngularVelocity flywheelVelocityTolerance = RotationsPerSecond.of(2); // 120 RPM
-    public static final AngularVelocity maxVelocityDifference =
+    public static final AngularVelocity kFlywheelVelocityTolerance = RotationsPerSecond.of(2); // 120 RPM
+    public static final AngularVelocity kMaxVelocityDifference =
             RotationsPerSecond.of(500.0 / 60.0); // 500 RPM difference
 
     // Acceleration mismatch thresholds
-    public static final double accelMismatchToleranceRPM = 1000000;
-    public static final int accelMismatchCycles = 100000000;
+    public static final double kAccelMismatchToleranceRPM = 1000000;
+    public static final int kAccelMismatchCycles = 100000000;
 
     // ==================== Simulation Constants ====================
     public static final Distance shooterHeight = Meters.of(0.5);
-    public static final Distance shooterOffsetX = Meters.of(0.3);
-    public static final Distance shooterOffsetY = Meters.of(0.0);
+    public static final Distance shooterOffsetXLeft = Meters.of(0.3);
+    public static final Distance shooterOffsetYLeft = Meters.of(0.0);
+    public static final Distance shooterOffsetXRight = Meters.of(0.3);
+    public static final Distance shooterOffsetYRight = Meters.of(0.0);
     public static final Distance flywheelRadius = Inches.of(2);
-    public static final double launchEfficiency = 0.85;
+    public static final double launchEfficiency = 0.75; // Percentage of theoretical velocity achieved at the target
 
     // ==================== Shooting/Trajectory Constants ====================
     public static final Angle minHoodAngle = Degrees.of(25.0);

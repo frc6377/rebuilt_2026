@@ -49,7 +49,8 @@ public class LeftShooterIOKrakenX60 implements LeftShooterIO {
                         .withKI(LeftShooterConstants.flywheelKI)
                         .withKD(LeftShooterConstants.flywheelKD)
                         .withKV(LeftShooterConstants.flywheelKV)
-                        .withKS(LeftShooterConstants.flywheelKS));
+                        .withKS(LeftShooterConstants.flywheelKS)
+                        .withKA(LeftShooterConstants.flywheelKA));
 
         if (LeftShooterConstants.followerEnabled) {
             flywheelFollower = new TunableTalonFX(
@@ -61,7 +62,8 @@ public class LeftShooterIOKrakenX60 implements LeftShooterIO {
                             .withKI(LeftShooterConstants.flywheelKI)
                             .withKD(LeftShooterConstants.flywheelKD)
                             .withKV(LeftShooterConstants.flywheelKV)
-                            .withKS(LeftShooterConstants.flywheelKS));
+                            .withKS(LeftShooterConstants.flywheelKS)
+                            .withKA(LeftShooterConstants.flywheelKA));
         } else {
             flywheelFollower = null;
         }
@@ -197,8 +199,8 @@ public class LeftShooterIOKrakenX60 implements LeftShooterIO {
             inputs.spinTemp = Celsius.of(0.0);
         }
         Logger.recordOutput(
-                "LeftShooter/FlywheelVelocity (RPS)",
-                flywheelMotor.getVelocity().getValue().in(RotationsPerSecond));
+                "LeftShooter/FlywheelVelocity (RPM)",
+                flywheelMotor.getVelocity().getValue().in(RPM));
     }
 
     @Override

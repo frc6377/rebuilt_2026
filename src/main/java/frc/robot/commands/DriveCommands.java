@@ -28,6 +28,7 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.subsystems.drive.Drive;
+import frc.robot.util.OILayer.OI;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.LinkedList;
@@ -49,11 +50,8 @@ public class DriveCommands {
 
     private static Translation2d getLinearVelocityFromJoysticks(double x, double y) {
         // Apply deadband
-        double linearMagnitude = Math.hypot(x, y);
+        double linearMagnitude = OI.driveTranslationCurve.calculate(Math.hypot(x, y));
         Rotation2d linearDirection = new Rotation2d(Math.atan2(y, x));
-
-        // Square magnitude for more precise control
-        linearMagnitude = linearMagnitude * linearMagnitude;
 
         // Return new linear velocity
         return new Pose2d(new Translation2d(), linearDirection)

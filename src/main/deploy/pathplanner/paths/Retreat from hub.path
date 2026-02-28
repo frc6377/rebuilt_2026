@@ -3,25 +3,25 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 2.0,
-        "y": 7.0
+        "x": 2.5,
+        "y": 4.0
       },
       "prevControl": null,
       "nextControl": {
-        "x": 3.0,
-        "y": 7.0
+        "x": 2.3894536423841055,
+        "y": 2.8879304635761596
       },
       "isLocked": false,
-      "linkedName": null
+      "linkedName": "Front of hub"
     },
     {
       "anchor": {
-        "x": 3.0,
-        "y": 7.0
+        "x": 1.0,
+        "y": 2.0
       },
       "prevControl": {
-        "x": 2.0,
-        "y": 7.0
+        "x": 1.3730629139072845,
+        "y": 2.132897350993377
       },
       "nextControl": null,
       "isLocked": false,
@@ -45,7 +45,7 @@
     "rotation": 0.0
   },
   "reversed": false,
-  "folder": "Straight Line",
+  "folder": null,
   "idealStartingState": {
     "velocity": 0,
     "rotation": 0.0

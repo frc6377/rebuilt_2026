@@ -1,6 +1,7 @@
 package frc.robot.subsystems.intake.roller;
 
 import static edu.wpi.first.units.Units.Amps;
+import static edu.wpi.first.units.Units.Celsius;
 
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
@@ -16,6 +17,7 @@ import frc.robot.subsystems.intake.IntakeConstants.RollerConstants;
 import org.ironmaple.simulation.IntakeSimulation;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.AbstractDriveTrainSimulation;
+import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 public class RollerIOSim implements RollerIO {
 
@@ -24,6 +26,9 @@ public class RollerIOSim implements RollerIO {
     private final TalonFXSimState intakeMotorSim;
     private final IntakeSimulation intakeSim;
     private final CurrentLimitsConfigs currentConfig;
+    // dashboard-tunable roller speeds
+    private final LoggedNetworkNumber kRollerIntakePercent;
+    private final LoggedNetworkNumber kRollerOuttakePercent;
 
     public RollerIOSim(AbstractDriveTrainSimulation driveSim) {
         currentConfig = new CurrentLimitsConfigs();
@@ -32,8 +37,6 @@ public class RollerIOSim implements RollerIO {
 
         rollerMotorConfig = new TalonFXConfiguration();
         rollerMotorConfig.ClosedLoopRamps.VoltageClosedLoopRampPeriod = RollerConstants.MotorConfig.kRampPeriod;
-        rollerMotorConfig.TorqueCurrent.PeakForwardTorqueCurrent = RollerConstants.MotorConfig.kPeakForwardTorque;
-        rollerMotorConfig.TorqueCurrent.PeakReverseTorqueCurrent = RollerConstants.MotorConfig.kPeakReverseTorque;
         rollerMotorConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
         rollerMotorConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
 
@@ -49,6 +52,10 @@ public class RollerIOSim implements RollerIO {
                 IntakeConstants.kIntakeExtension,
                 IntakeConstants.kIntakeSide,
                 IntakeConstants.kIntakeCapacity);
+
+        kRollerIntakePercent = new LoggedNetworkNumber("Intake/Roller/IntakePercent", RollerConstants.kIntakePercent);
+        kRollerOuttakePercent =
+                new LoggedNetworkNumber("Intake/Roller/OuttakePercent", RollerConstants.kOuttakePercent);
     }
 
     public void setRollerSpeed(double speed) {
@@ -57,7 +64,7 @@ public class RollerIOSim implements RollerIO {
 
     @Override
     public void start() {
-        setRollerSpeed(RollerConstants.kIntakePercent);
+        setRollerSpeed(kRollerIntakePercent.get());
         intakeSim.startIntake();
     }
 
@@ -69,7 +76,7 @@ public class RollerIOSim implements RollerIO {
 
     @Override
     public void outtake() {
-        setRollerSpeed(RollerConstants.kOuttakePercent);
+        setRollerSpeed(kRollerOuttakePercent.get());
         intakeSim.removeObtainedGamePieces(SimulatedArena.getInstance());
     }
 
@@ -83,5 +90,6 @@ public class RollerIOSim implements RollerIO {
         inputs.rollerSpeedPercentile = intakeMotorSim.getMotorVoltage() / RobotController.getBatteryVoltage();
         inputs.rollerAppliedVolts = intakeMotorSim.getMotorVoltageMeasure();
         inputs.rollerVelocity = rollerMotor.getVelocity().getValue();
+        inputs.motorTemp = Celsius.of(25.0);
     }
 }

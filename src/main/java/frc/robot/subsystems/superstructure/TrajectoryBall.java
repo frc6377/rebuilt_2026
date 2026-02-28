@@ -20,7 +20,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.*;
-import frc.robot.Constants.FieldConstants;
+import frc.robot.FieldConstants;
 import frc.robot.subsystems.shooter.ShooterConstants;
 import frc.robot.subsystems.shooter.ShooterConstants.CalculationMode;
 
@@ -74,7 +74,7 @@ public class TrajectoryBall {
             if (hasHood) {
                 stationary = calculateStationary(staticDistance, maxHeight, targetHeight);
             } else {
-                stationary = calculateFixedAngle(staticDistance, targetHeight, ShooterConstants.fixedHoodAngle);
+                stationary = calculateFixedAngle(staticDistance, targetHeight, ShooterConstants.kFixedHoodAngle);
             }
         }
 
@@ -107,7 +107,7 @@ public class TrajectoryBall {
         // 3. Estimate launch speed using an efficiency factor (loss during transfer to ball)
         LinearVelocity launchSpeed =
                 MetersPerSecond.of(tangentialVelocity.in(MetersPerSecond) * ShooterConstants.launchEfficiency);
-        Angle angle = ShooterConstants.fixedHoodAngle;
+        Angle angle = ShooterConstants.kFixedHoodAngle;
 
         // 4. Calculate Time of Flight (TOF)
         // t = distance / horizontal_velocity
@@ -278,7 +278,6 @@ public class TrajectoryBall {
         rpm = Math.max(
                 ShooterConstants.minShootingFlywheelVelocity.in(RPM),
                 Math.min(ShooterConstants.maxShootingFlywheelVelocity.in(RPM), rpm));
-
         return new ShootingParameters(Degrees.of(hoodDegrees), RPM.of(rpm), heading);
     }
 }

@@ -27,6 +27,7 @@ public class Module {
     private final ModuleIOInputsAutoLogged inputs = new ModuleIOInputsAutoLogged();
     private final int index;
     private final SwerveModuleConstants constants;
+    private final String logKey;
 
     private final Alert driveDisconnectedAlert;
     private final Alert turnDisconnectedAlert;
@@ -37,6 +38,7 @@ public class Module {
         this.io = io;
         this.index = index;
         this.constants = constants;
+        this.logKey = "Drive/Module" + index;
         driveDisconnectedAlert =
                 new Alert("Disconnected drive motor on module " + Integer.toString(index) + ".", AlertType.kError);
         turnDisconnectedAlert =
@@ -47,7 +49,7 @@ public class Module {
 
     public void periodic() {
         io.updateInputs(inputs);
-        Logger.processInputs("Drive/Module" + Integer.toString(index), inputs);
+        Logger.processInputs(logKey, inputs);
 
         // Calculate positions for odometry
         int sampleCount = inputs.odometryTimestamps.length; // All signals are sampled together

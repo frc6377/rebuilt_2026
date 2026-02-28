@@ -19,6 +19,7 @@ import static frc.robot.subsystems.vision.VisionConstants.camera0Name;
 
 import com.ctre.phoenix6.SignalLogger;
 import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.auto.NamedCommands;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -50,7 +51,6 @@ import frc.robot.subsystems.superstructure.Superstructure;
 import frc.robot.subsystems.vision.*;
 import frc.robot.subsystems.vision.Vision;
 import frc.robot.subsystems.vision.VisionIO;
-import frc.robot.subsystems.vision.VisionIOLimelight;
 import frc.robot.subsystems.vision.questnav.QuestNavIO;
 import frc.robot.subsystems.vision.questnav.QuestNavIOReal;
 import frc.robot.util.OILayer.OI;
@@ -100,9 +100,6 @@ public class RobotContainer {
         switch (Constants.currentMode) {
             case REAL:
                 // Real robot, instantiate hardware IO implementations
-                intake = new Intake(
-                        Constants.EnabledSubsystems.kRoller ? new RollerIOReal() : new RollerIO() {},
-                        Constants.EnabledSubsystems.kExtender ? new ExtenderIOReal() : new ExtenderIO() {});
                 if (Constants.EnabledSubsystems.kDrive) {
                     drive = new Drive(
                             new GyroIOPigeon2(),
@@ -123,6 +120,10 @@ public class RobotContainer {
                 vision = Constants.EnabledSubsystems.kQuestNav
                         ? new Vision(drive, new QuestNavIOReal())
                         : new Vision(drive, new QuestNavIO() {});
+                intake = new Intake(
+                        Constants.EnabledSubsystems.kRoller ? new RollerIOReal() : new RollerIO() {},
+                        Constants.EnabledSubsystems.kExtender ? new ExtenderIOReal() : new ExtenderIO() {});
+
                 driveSimulation = null;
                 break;
 
@@ -145,7 +146,13 @@ public class RobotContainer {
                         new ModuleIOTalonFXSim(
                                 TunerConstants.BackRight, driveSimulation.getModules()[3]),
                         (pose) -> driveSimulation.setSimulationWorldPose(pose));
-                vision = new Vision(drive, new QuestNavIO() {}, new VisionIOLimelight(camera0Name, drive::getRotation));
+                vision = new Vision(
+                        drive,
+                        new VisionIOPhotonVisionSim(
+                                camera0Name, robotToCamera0, driveSimulation::getSimulatedDriveTrainPose),
+                        new VisionIOPhotonVisionSim(
+                                camera1Name, robotToCamera1, driveSimulation::getSimulatedDriveTrainPose));
+
                 break;
             default:
                 drive = new Drive(
@@ -161,12 +168,18 @@ public class RobotContainer {
                 break;
         }
 
-        superstructure = new Superstructure();
+        superstructure = new Superstructure(intake::isRollerRunning);
 
         if (Constants.currentMode == Constants.Mode.SIM) {
             superstructure.configureGamePieceSimulation(driveSimulation);
         }
-
+        NamedCommands.registerCommand("Spin Up Shooter", superstructure.setFlywheelVelocityCommand(RPM.of(3600)));
+        NamedCommands.registerCommand(
+                "Spin Up Shooter and Wait", superstructure.setFlywheelVelocityAndWaitCommand(RPM.of(3600)));
+        NamedCommands.registerCommand(
+                "Shoot", Commands.deadline(superstructure.fireCommand(), Commands.waitSeconds(5)));
+        NamedCommands.registerCommand(
+                "Intake", Commands.deadline(Commands.run(() -> intake.intakeCommand()), Commands.waitSeconds(6)));
         // Set up auto routines
         autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
         if (Constants.currentMode == Constants.Mode.SIM) {
@@ -223,9 +236,10 @@ public class RobotContainer {
         // Default command, normal field-relative drive
         drive.setDefaultCommand(DriveCommands.joystickDrive(
                 drive,
-                OIController.driveTranslationY(),
-                OIController.driveTranslationX(),
-                OIController.driveRotation()));
+                // The lambda () -> ensures this check happens every loop
+                () -> OIController.driveTranslationY().getAsDouble(),
+                () -> OIController.driveTranslationX().getAsDouble(),
+                () -> OIController.driveRotation().getAsDouble()));
 
         // // Lock to 0° when button is held
         // OIController.driveLock0()
@@ -235,9 +249,7 @@ public class RobotContainer {
         //                 () -> -OIController.driveTranslationX().getAsDouble(),
         //                 () -> new Rotation2d()));
 
-        OIController.spinUpShooter()
-                .whileTrue(
-                        Commands.runOnce(() -> superstructure.getLeftShooter().setFlywheelVelocity(RPM.of(3000))));
+        OIController.spinUpShooter().whileTrue(superstructure.setFlywheelVelocityCommand(RPM.of(3600)));
 
         // Manual fire (feeds piece when shooter is ready)
         OIController.fireShooter().whileTrue(superstructure.fireCommand()).onFalse(superstructure.stopUpgoerCommand());
@@ -260,7 +272,7 @@ public class RobotContainer {
         OIController.intake().whileTrue(intake.intakeCommand());
         OIController.outtake().whileTrue(intake.outtakeRollerCommand());
         OIController.zeroIntake().onTrue(intake.zeroExtender());
-        OIController.toggleIntakeState().onTrue(intake.toggleIntake()).onFalse(intake.toggleIntake());
+        OIController.toggleIntakeState().onTrue(intake.toggleIntake());
     }
 
     /**
@@ -289,7 +301,6 @@ public class RobotContainer {
     public Command getRobotStartPose(int cameraIndex) {
         return Commands.runOnce(() -> {
                     Pose3d cameraPose = vision.getStartingPoseFromCamera(cameraIndex);
-                    // Logger.recordOutput("CameraPose", cameraPose);
                     if (cameraPose != null) {
                         drive.setPose(cameraPose.toPose2d());
                     }

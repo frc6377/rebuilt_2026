@@ -69,17 +69,27 @@ public class OIXbox implements OI {
 
     @Override
     public DoubleSupplier driveTranslationX() {
-        return () -> driveTranslationCurve.calculate(leftX.getAsDouble());
+        return leftX;
     }
 
     @Override
     public DoubleSupplier driveTranslationY() {
-        return () -> driveTranslationCurve.calculate(leftY.getAsDouble());
+        return leftY;
     }
 
     @Override
     public DoubleSupplier driveRotation() {
         return () -> driveRotationCurve.calculate(rightX.getAsDouble());
+    }
+
+    @Override
+    public DoubleSupplier driveTranslationXIntakeRunning() {
+        return () -> driveTranslationCurveIntakeRunning.calculate(leftX.getAsDouble());
+    }
+
+    @Override
+    public DoubleSupplier driveTranslationYIntakeRunning() {
+        return () -> driveTranslationCurveIntakeRunning.calculate(leftY.getAsDouble());
     }
 
     @Override

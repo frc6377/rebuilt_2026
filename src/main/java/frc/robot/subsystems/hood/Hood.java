@@ -46,7 +46,7 @@ public class Hood extends SubsystemBase {
     @Override
     public void periodic() {
         // Skip if hood is disabled
-        if (!ShooterConstants.hoodEnabled) {
+        if (!ShooterConstants.kHoodEnabled) {
             Logger.recordOutput("Hood/Enabled", false);
             return;
         }
@@ -66,14 +66,14 @@ public class Hood extends SubsystemBase {
      * @param angle Target angle
      */
     public void setAngle(Angle angle) {
-        if (!ShooterConstants.hoodEnabled) return;
+        if (!ShooterConstants.kHoodEnabled) return;
         angleSetpoint = angle;
         io.setAngle(angle);
     }
 
     /** Stop hood motor. */
     public void stop() {
-        if (!ShooterConstants.hoodEnabled) return;
+        if (!ShooterConstants.kHoodEnabled) return;
         io.stop();
     }
 
@@ -83,7 +83,7 @@ public class Hood extends SubsystemBase {
      * @return Current angle (zero if hood disabled)
      */
     public Angle getAngle() {
-        if (!ShooterConstants.hoodEnabled) return Degrees.of(0.0);
+        if (!ShooterConstants.kHoodEnabled) return Degrees.of(0.0);
         return inputs.angle;
     }
 
@@ -93,7 +93,7 @@ public class Hood extends SubsystemBase {
      * @return true if hood functionality is enabled
      */
     public boolean isEnabled() {
-        return ShooterConstants.hoodEnabled;
+        return ShooterConstants.kHoodEnabled;
     }
 
     /** Get current hood kP from NetworkTables. */

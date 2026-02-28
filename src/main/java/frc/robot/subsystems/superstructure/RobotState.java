@@ -19,7 +19,7 @@ import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.Constants.FieldConstants;
+import frc.robot.FieldConstants;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
@@ -159,7 +159,7 @@ public class RobotState extends SubsystemBase {
         }
 
         Pose2d pose = poseSupplier.get();
-        double fieldLengthMeters = FieldConstants.FIELD_LENGTH.in(edu.wpi.first.units.Units.Meters);
+        double fieldLengthMeters = FieldConstants.fieldLength;
         double xMeters = pose.getTranslation().getX();
 
         boolean isRed = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
