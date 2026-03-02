@@ -42,6 +42,10 @@ import frc.robot.subsystems.intake.extender.ExtenderIOSim;
 import frc.robot.subsystems.intake.roller.RollerIO;
 import frc.robot.subsystems.intake.roller.RollerIOReal;
 import frc.robot.subsystems.intake.roller.RollerIOSim;
+import frc.robot.subsystems.signaling.Signaling;
+import frc.robot.subsystems.signaling.SignalingIO;
+import frc.robot.subsystems.signaling.SignalingIOCANdle;
+import frc.robot.subsystems.signaling.SignalingIOSim;
 import frc.robot.subsystems.superstructure.RobotState;
 import frc.robot.subsystems.superstructure.Superstructure;
 import frc.robot.subsystems.vision.*;
@@ -70,6 +74,7 @@ public class RobotContainer {
     private final Intake intake;
     private final OI OIController;
     private final Indexer indexer;
+    private final Signaling signaling;
     private final SwerveDriveSimulation
             driveSimulation; // Only used in simulation, but declared here for easy access by subsystems that need it
     private final RobotState robotState;
@@ -117,6 +122,8 @@ public class RobotContainer {
                         Constants.EnabledSubsystems.kRoller ? new RollerIOReal() : new RollerIO() {},
                         Constants.EnabledSubsystems.kExtender ? new ExtenderIOReal() : new ExtenderIO() {});
                 indexer = new Indexer(Constants.EnabledSubsystems.kIndexer ? new IndexerIOReal() : new IndexerIO() {});
+                signaling = new Signaling(
+                        Constants.EnabledSubsystems.kSignaling ? new SignalingIOCANdle() : new SignalingIO() {});
                 driveSimulation = null;
                 break;
 
@@ -146,6 +153,8 @@ public class RobotContainer {
                         new VisionIOPhotonVisionSim(
                                 camera1Name, robotToCamera1, driveSimulation::getSimulatedDriveTrainPose));
                 indexer = new Indexer(Constants.EnabledSubsystems.kIndexer ? new IndexerIOSim() : new IndexerIO() {});
+                signaling = new Signaling(
+                        Constants.EnabledSubsystems.kSignaling ? new SignalingIOSim() : new SignalingIO() {});
                 break;
             default:
                 drive = new Drive(
@@ -159,10 +168,19 @@ public class RobotContainer {
                 vision = new Vision(drive, new VisionIO() {}, new VisionIO() {});
                 intake = new Intake(new RollerIO() {}, new ExtenderIO() {});
                 indexer = new Indexer(new IndexerIO() {});
+                signaling = new Signaling(new SignalingIO() {});
                 break;
         }
 
         superstructure = new Superstructure(intake::isRollerRunning);
+
+        // Wire signaling state suppliers to real robot subsystems
+        // TODO: wire setHasFuel if intake sensor works on real hardware
+        signaling.setReadyToShoot(superstructure::atTargetVelocity);
+        signaling.setLimelightHasTag(() -> vision.getTagCount(0) > 0 || vision.getTagCount(1) > 0);
+        signaling.setAutoAligning(robotState::isShooting);
+        signaling.setScoring(() -> superstructure.getUpgoer().getCurrentCommand() != null
+                && superstructure.getUpgoer().getCurrentCommand().getName().contains("Fire"));
 
         if (Constants.currentMode == Constants.Mode.SIM) {
             superstructure.configureGamePieceSimulation(driveSimulation);

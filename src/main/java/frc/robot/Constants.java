@@ -66,6 +66,7 @@ public final class Constants {
         public static final boolean kExtender = true;
         public static final boolean kDrive = true;
         public static final boolean kIndexer = true;
+        public static final boolean kSignaling = true;
     }
 
     public enum Mode {
@@ -96,6 +97,7 @@ public final class Constants {
             // TODO: Fix incorrect Constants
             public static final int kPivotEncoderID = 1;
             public static final int kExtenderEncoderID = 2;
+            public static final int kCANdleID = 0; // TODO: Set correct CAN ID
         }
     }
 }
