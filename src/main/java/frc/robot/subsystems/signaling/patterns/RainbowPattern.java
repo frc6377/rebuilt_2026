@@ -19,7 +19,7 @@ public class RainbowPattern {
     static {
         int length = 0;
         for (PatternNode p : pattern) {
-            length += p.repeat;
+            length += p.repeat();
         }
         patternLength = length;
     }

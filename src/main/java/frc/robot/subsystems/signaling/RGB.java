@@ -2,8 +2,10 @@ package frc.robot.subsystems.signaling;
 
 import java.util.function.IntSupplier;
 
-/** Immutable RGB color representation for LED control. */
-public class RGB {
+/**
+ * Immutable RGB color representation for LED control.
+ */
+public record RGB(int red, int green, int blue, int white) {
     private static final int MAX_RGB_VALUE = 255;
 
     // ========== Predefined Colors ==========
@@ -25,46 +27,25 @@ public class RGB {
 
     public static final RGB FIRE_FLY_GREEN = new RGB(254, 254, 0);
 
-    public static final RGB[] RAINBOW = new RGB[] {RED, ORANGE, YELLOW, GREEN, HOWDY_BLUE, PURPLE};
-
-    public final int red;
-    public final int green;
-    public final int blue;
-    public final int white;
+    public static final RGB[] RAINBOW = new RGB[]{RED, ORANGE, YELLOW, GREEN, HOWDY_BLUE, PURPLE};
 
     public RGB(final int red, final int green, final int blue) {
         this(red, green, blue, 0);
     }
 
-    public RGB(final int red, final int green, final int blue, final int white) {
-        this.red = red;
-        this.green = green;
-        this.blue = blue;
-        this.white = white;
-    }
-
-    /** Generate a random RGB color. */
+    /**
+     * Generate a random RGB color.
+     */
     public static RGB randomColor() {
         final IntSupplier rndValue = () -> (int) Math.round(Math.random() * (MAX_RGB_VALUE + 1));
         return new RGB(rndValue.getAsInt(), rndValue.getAsInt(), rndValue.getAsInt());
     }
 
-    /** Convert to hex string (e.g., "ff00ff"). */
+    /**
+     * Convert to hex string (e.g., "ff00ff").
+     */
     public String toHex() {
         return String.format("%02x%02x%02x", red, green, blue);
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        final RGB that = (RGB) o;
-        return red == that.red && green == that.green && blue == that.blue && white == that.white;
-    }
-
-    @Override
-    public int hashCode() {
-        return 31 * (31 * (31 * red + green) + blue) + white;
     }
 
     @Override

@@ -216,11 +216,11 @@ public class Signaling extends SubsystemBase {
 
     private void setFullStrip(RGB rgb) {
         Logger.recordOutput("Signaling/LEDColor", rgb.toHex());
-        io.setSolidColor(SignalingConstants.ledStripStart, SignalingConstants.numLEDs, rgb.red, rgb.green, rgb.blue);
+        io.setSolidColor(SignalingConstants.ledStripStart, SignalingConstants.numLEDs, rgb.red(), rgb.green(), rgb.blue());
     }
 
     private void setSection(RGB rgb, int startIdx, int count) {
-        io.setSolidColor(startIdx, count, rgb.red, rgb.green, rgb.blue);
+        io.setSolidColor(startIdx, count, rgb.red(), rgb.green(), rgb.blue());
     }
 
     private void setSectionStrip(RGB rgb, int startIdx, int count) {
@@ -280,8 +280,8 @@ public class Signaling extends SubsystemBase {
         while (ledIndex < SignalingConstants.numLEDs) {
             patternIndex %= pattern.length;
             PatternNode node = pattern[patternIndex];
-            setSectionStrip(node.color, ledIndex + 9, node.repeat);
-            ledIndex += node.repeat;
+            setSectionStrip(node.color(), ledIndex + 9, node.repeat());
+            ledIndex += node.repeat();
             patternIndex++;
         }
     }

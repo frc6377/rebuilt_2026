@@ -6,7 +6,7 @@ import org.littletonrobotics.junction.AutoLog;
 public interface SignalingIO {
 
     @AutoLog
-    public static class SignalingIOInputs {
+    class SignalingIOInputs {
         public int currentR = 0;
         public int currentG = 0;
         public int currentB = 0;
