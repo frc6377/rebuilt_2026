@@ -249,7 +249,7 @@ public class RobotContainer {
         //                 () -> -OIController.driveTranslationX().getAsDouble(),
         //                 () -> new Rotation2d()));
 
-        OIController.spinUpShooter().whileTrue(superstructure.runFlywheelVelocityManual());
+        OIController.spinUpShooter().whileTrue(superstructure.getCurrentShootingCommandSupplier().get());
 
         // Manual fire (feeds piece when shooter is ready)
         OIController.fireShooter()
@@ -264,10 +264,10 @@ public class RobotContainer {
         OIController.stopSuperstructure()
                 .onTrue(superstructure.stopShooterCommand().alongWith(superstructure.stopUpgoerCommand()));
 
-        OIController.shootSpeedLow().onTrue(superstructure.setFlywheelVelocityManual(RPM.of(2100)));
-        OIController.shootSpeedMidLow().onTrue(superstructure.setFlywheelVelocityManual(RPM.of(2500)));
-        OIController.shootSpeedMidHigh().onTrue(superstructure.setFlywheelVelocityManual(RPM.of(2900)));
-        OIController.shootSpeedHigh().onTrue(superstructure.setFlywheelVelocityManual(RPM.of(3300)));
+        OIController.shootSpeedLow().onTrue(superstructure.changeManualShootingCommand(superstructure.runFlywheelVelocityManual()));
+        OIController.shootSpeedMidLow().onTrue(superstructure.changeFlywheelVelocityManual(RPM.of(-200)));
+        OIController.shootSpeedMidHigh().onTrue(superstructure.changeManualShootingCommand(superstructure.autoChooseShootingCommand(drive, vision, OIController.driveTranslationX(), OIController.driveTranslationY())));
+        OIController.shootSpeedHigh().onTrue(superstructure.changeFlywheelVelocityManual(RPM.of(200)));
 
         // Reset gyro / odometry
         final Runnable resetGyro = Constants.currentMode == Constants.Mode.SIM

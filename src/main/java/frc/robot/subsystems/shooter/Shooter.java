@@ -89,10 +89,12 @@ public class Shooter {
         right.setFlywheelVelocity(velocity);
     }
 
+    /** Set independent flywheel velocities for each side. */
     public void setFlywheelVelocities(AngularVelocity leftVelocity, AngularVelocity rightVelocity) {
         left.setFlywheelVelocity(leftVelocity);
         right.setFlywheelVelocity(rightVelocity);
     }
+
     /** Unified stop command for both shooters. */
     public Command stopCommand() {
         return left.stopCommand().alongWith(right.stopCommand());

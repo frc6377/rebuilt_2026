@@ -19,10 +19,8 @@ import edu.wpi.first.wpilibj.RobotBase;
 
 //
 /**
- * This class defines the runtime mode used by AdvantageKit. The mode is always
- * "real" when running on a roboRIO. Change
- * the value of "simMode" to switch between "sim" (physics sim) and "replay"
- * (log replay from a file).
+ * This class defines the runtime mode used by AdvantageKit. The mode is always "real" when running on a roboRIO. Change
+ * the value of "simMode" to switch between "sim" (physics sim) and "replay" (log replay from a file).
  */
 public final class Constants {
     public static final Mode simMode = Mode.SIM;
@@ -66,8 +64,9 @@ public final class Constants {
     public static final class EnabledSubsystems {
         public static final boolean kShooterLeft = true;
         public static final boolean kShooterRight = false;
+        public static final boolean kShooterUpgoerLeft = true;
+        public static final boolean kShooterUpgoerRight = false;
         public static final boolean kHood = false;
-        public static final boolean kUpgoer = true;
         public static final boolean kRoller = true;
         public static final boolean kExtender = true;
         public static final boolean kDrive = true;

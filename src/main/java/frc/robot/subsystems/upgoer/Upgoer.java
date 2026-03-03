@@ -19,36 +19,41 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
 /** Feeder subsystem that pushes game pieces into the shooter. */
 public class Upgoer extends SubsystemBase {
     private final UpgoerIO io;
     private final UpgoerIOInputsAutoLogged inputs = new UpgoerIOInputsAutoLogged();
+    private final String logName;
 
     private AngularVelocity setpoint = RPM.of(0.0);
 
-    public Upgoer(UpgoerIO io) {
+    /**
+     * @param io The IO implementation to use.
+     * @param logName Logging key prefix (e.g. "LeftShooterUpgoer").
+     */
+    public Upgoer(UpgoerIO io, String logName) {
         this.io = io;
+        this.logName = logName;
     }
 
     @Override
     public void periodic() {
         io.updateInputs(inputs);
-        Logger.processInputs("Upgoer", inputs);
-        Logger.recordOutput("Upgoer/Setpoint", setpoint);
-        Logger.recordOutput("Upgoer/Running", Math.abs(setpoint.in(RPM)) > 1.0);
+        Logger.processInputs(logName, inputs);
+        Logger.recordOutput(logName + "/Setpoint", setpoint);
+        Logger.recordOutput(logName + "/Running", Math.abs(setpoint.in(RPM)) > 1.0);
+        Logger.recordOutput(logName + "/AtTargetVelocity", atTargetVelocity());
+        Logger.recordOutput(
+                logName + "/CurrentCommand",
+                getCurrentCommand() != null ? getCurrentCommand().getName() : "None");
     }
 
     /** Set the feeder velocity. */
     public void setVelocity(AngularVelocity velocity) {
         setpoint = velocity;
-        if (UpgoerConstants.enabled) {
-            io.setVelocity(velocity);
-        } else {
-            io.setVelocity(RPM.of(0.0));
-        }
+        io.setVelocity(velocity);
     }
 
     /** Stop the feeder. */
@@ -73,7 +78,6 @@ public class Upgoer extends SubsystemBase {
         return inputs.velocity;
     }
 
-    @AutoLogOutput(key = "Upgoer/AtTargetVelocity")
     public boolean atTargetVelocity() {
         double toleranceRpm = 150.0;
         return Math.abs(inputs.velocity.in(RPM) - setpoint.in(RPM)) <= toleranceRpm;

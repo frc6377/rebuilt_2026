@@ -22,9 +22,6 @@ public class UpgoerConstants {
     // CAN bus name
     public static final String canBusName = "rio";
 
-    // Feature flags
-    public static final boolean enabled = Constants.EnabledSubsystems.kUpgoer;
-
     // Default PID constants for velocity control
     public static final double defaultKP = 1;
     public static final double defaultKI = 0.0;
