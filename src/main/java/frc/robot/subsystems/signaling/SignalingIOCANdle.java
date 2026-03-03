@@ -20,6 +20,10 @@ public class SignalingIOCANdle implements SignalingIO {
     private int lastR = 0;
     private int lastG = 0;
     private int lastB = 0;
+    // Track onboard 8 LED color
+    private int onboardR = 0;
+    private int onboardG = 0;
+    private int onboardB = 0;
 
     public SignalingIOCANdle() {
         candle = new CANdle(SignalingConstants.candleId);
@@ -39,6 +43,9 @@ public class SignalingIOCANdle implements SignalingIO {
         inputs.currentG = lastG;
         inputs.currentB = lastB;
         inputs.connected = candle.isConnected();
+        inputs.onboardR = onboardR;
+        inputs.onboardG = onboardG;
+        inputs.onboardB = onboardB;
     }
 
     @Override
@@ -49,6 +56,18 @@ public class SignalingIOCANdle implements SignalingIO {
         candle.setControl(solidColorControl
                 .withLEDStartIndex(startIdx)
                 .withLEDEndIndex(startIdx + count)
+                .withColor(new RGBWColor(r, g, b)));
+    }
+
+    @Override
+    public void setOnboardColor(int r, int g, int b) {
+        onboardR = r;
+        onboardG = g;
+        onboardB = b;
+        // Onboard LEDs are indices 0-7
+        candle.setControl(solidColorControl
+                .withLEDStartIndex(0)
+                .withLEDEndIndex(8)
                 .withColor(new RGBWColor(r, g, b)));
     }
 

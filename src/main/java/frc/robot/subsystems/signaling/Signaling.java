@@ -7,8 +7,12 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.FieldConstants;
 import frc.robot.subsystems.signaling.patterns.AlliancePattern;
+import frc.robot.subsystems.signaling.patterns.CometPattern;
 import frc.robot.subsystems.signaling.patterns.FireflyPattern;
+import frc.robot.subsystems.signaling.patterns.HowdyPattern;
+import frc.robot.subsystems.signaling.patterns.LavaPattern;
 import frc.robot.subsystems.signaling.patterns.PatternNode;
+import frc.robot.subsystems.signaling.patterns.PolicePattern;
 import frc.robot.subsystems.signaling.patterns.RainbowPattern;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLogOutput;
@@ -25,7 +29,6 @@ public class Signaling extends SubsystemBase {
     /** Light states representing robot status. */
     public enum LightState {
         IDLE,
-        HAS_FUEL,
         READY_TO_SHOOT,
         LL_HAS_TAG,
         AUTO_ALIGNING,
@@ -36,7 +39,11 @@ public class Signaling extends SubsystemBase {
     private enum DisablePattern {
         RAINBOW,
         ALLIANCE,
-        FIREFLY;
+        FIREFLY,
+        HOWDY,
+        COMET,
+        POLICE,
+        LAVA;
 
         public static DisablePattern getRandom() {
             DisablePattern[] allPatterns = DisablePattern.values();
@@ -55,7 +62,6 @@ public class Signaling extends SubsystemBase {
 
     // ========== State Suppliers ==========
 
-    private Supplier<Boolean> hasFuel = () -> false;
     private Supplier<Boolean> readyToShoot = () -> false;
     private Supplier<Boolean> limelightHasTag = () -> false;
     private Supplier<Boolean> autoAligning = () -> false;
@@ -67,10 +73,6 @@ public class Signaling extends SubsystemBase {
 
     // ========== Supplier Setters ==========
 
-    /** Set supplier for whether the robot has a fuel game piece. */
-    public void setHasFuel(Supplier<Boolean> hasFuel) {
-        this.hasFuel = hasFuel;
-    }
 
     /** Set supplier for whether the shooter is ready to fire. */
     public void setReadyToShoot(Supplier<Boolean> readyToShoot) {
@@ -105,14 +107,17 @@ public class Signaling extends SubsystemBase {
             updateStateMachine();
         }
 
+        // Always update onboard 8 LEDs based on hub activity
+        updateOnboardLEDs();
+
         // Log state
         Logger.recordOutput("Signaling/HubActive", FieldConstants.isHubActive());
-        Logger.recordOutput("Signaling/HasFuel", hasFuel.get());
         Logger.recordOutput("Signaling/ReadyToShoot", readyToShoot.get());
         Logger.recordOutput("Signaling/LimelightHasTag", limelightHasTag.get());
         Logger.recordOutput("Signaling/AutoAligning", autoAligning.get());
         Logger.recordOutput("Signaling/Scoring", scoring.get());
         Logger.recordOutput("Signaling/DisablePattern", disablePattern.toString());
+        Logger.recordOutput("Signaling/OnboardLEDColor", inputs.onboardR + "," + inputs.onboardG + "," + inputs.onboardB);
         Logger.recordOutput(
                 "Signaling/CurrentCommand",
                 getCurrentCommand() != null ? getCurrentCommand().getName() : "None");
@@ -129,21 +134,11 @@ public class Signaling extends SubsystemBase {
                     setState(LightState.READY_TO_SHOOT);
                 }
                 break;
-            case HAS_FUEL:
-                if (!hasFuel.get()) {
-                    setState(LightState.IDLE);
-                } else if (readyToShoot.get()) {
-                    setState(LightState.READY_TO_SHOOT);
-                }
-                break;
             case READY_TO_SHOOT:
                 if (!readyToShoot.get()) {
                     setState(LightState.IDLE);
                 } else if (limelightHasTag.get()) {
                     setState(LightState.LL_HAS_TAG);
-                }
-                if (!hasFuel.get()) {
-                    setState(LightState.IDLE);
                 }
                 break;
             case LL_HAS_TAG:
@@ -153,9 +148,6 @@ public class Signaling extends SubsystemBase {
                     setState(LightState.AUTO_ALIGNING);
                 }
                 if (!readyToShoot.get()) {
-                    setState(LightState.HAS_FUEL);
-                }
-                if (!hasFuel.get()) {
                     setState(LightState.IDLE);
                 }
                 break;
@@ -191,9 +183,6 @@ public class Signaling extends SubsystemBase {
         switch (newState) {
             case IDLE:
                 setFullStrip(getIdleColor());
-                break;
-            case HAS_FUEL:
-                setFullStrip(RGB.ORANGE);
                 break;
             case READY_TO_SHOOT:
                 setFullStrip(RGB.WHITE);
@@ -238,6 +227,23 @@ public class Signaling extends SubsystemBase {
         return RGB.BLUE;
     }
 
+    /**
+     * Updates the 8 onboard CANdle LEDs.
+     * Shows alliance color if the hub is active, otherwise dim amber to indicate hub is offline.
+     */
+    private void updateOnboardLEDs() {
+        RGB onboardColor;
+        if (FieldConstants.isHubActive()) {
+            Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
+            onboardColor = getColorFromAlliance(alliance);
+        } else {
+            // Hub not active — dim amber indicator
+            onboardColor = new RGB(80, 30, 0);
+        }
+        io.setOnboardColor(onboardColor.red(), onboardColor.green(), onboardColor.blue());
+        Logger.recordOutput("Signaling/OnboardLEDHex", onboardColor.toHex());
+    }
+
     // ========== Disabled-Mode Pattern Animation ==========
 
     private void updatePattern() {
@@ -264,6 +270,22 @@ public class Signaling extends SubsystemBase {
             case FIREFLY:
                 pattern = FireflyPattern.getPattern();
                 patternLength = FireflyPattern.getPatternLength();
+                break;
+            case HOWDY:
+                pattern = HowdyPattern.getPattern();
+                patternLength = HowdyPattern.getPatternLength();
+                break;
+            case COMET:
+                pattern = CometPattern.getPattern();
+                patternLength = CometPattern.getPatternLength();
+                break;
+            case POLICE:
+                pattern = PolicePattern.getPattern();
+                patternLength = PolicePattern.getPatternLength();
+                break;
+            case LAVA:
+                pattern = LavaPattern.getPattern();
+                patternLength = LavaPattern.getPatternLength();
                 break;
             default:
                 pattern = AlliancePattern.getPattern();

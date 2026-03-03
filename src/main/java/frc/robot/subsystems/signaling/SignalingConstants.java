@@ -14,6 +14,7 @@ public final class SignalingConstants {
     // LED configuration
     public static final int ledStripStart = 8; // First LED index after onboard CANdle LEDs
     public static final int numLEDs = 60; // Number of LEDs on the strip (excluding onboard)
+    public static final int totalLEDs = ledStripStart + numLEDs; // Total LED count including onboard 8
     public static final double ledBrightness = 1.0; // 0.0 to 1.0
 
     // Pattern timing
