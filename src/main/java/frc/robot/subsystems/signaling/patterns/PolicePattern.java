@@ -2,9 +2,7 @@ package frc.robot.subsystems.signaling.patterns;
 
 import frc.robot.subsystems.signaling.RGB;
 
-/**
- * Police-style alternating red/blue flash pattern with gaps.
- */
+/** Police-style alternating red/blue flash pattern with gaps. */
 public class PolicePattern {
 
     private static final PatternNode[] pattern = {
@@ -36,4 +34,3 @@ public class PolicePattern {
         return patternLength;
     }
 }
-

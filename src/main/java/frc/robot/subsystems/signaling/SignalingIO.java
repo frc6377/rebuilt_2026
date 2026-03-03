@@ -26,9 +26,7 @@ public interface SignalingIO {
     /** Set a solid color on a section of the LED strip. */
     default void setSolidColor(int startIdx, int count, int r, int g, int b) {}
 
-    /**
-     * Set a solid color on the 8 onboard CANdle LEDs (indices 0-7).
-     */
+    /** Set a solid color on the 8 onboard CANdle LEDs (indices 0-7). */
     default void setOnboardColor(int r, int g, int b) {}
 
     /** Set LED brightness (0.0 to 1.0). */

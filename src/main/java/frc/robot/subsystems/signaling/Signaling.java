@@ -73,7 +73,6 @@ public class Signaling extends SubsystemBase {
 
     // ========== Supplier Setters ==========
 
-
     /** Set supplier for whether the shooter is ready to fire. */
     public void setReadyToShoot(Supplier<Boolean> readyToShoot) {
         this.readyToShoot = readyToShoot;
@@ -117,7 +116,8 @@ public class Signaling extends SubsystemBase {
         Logger.recordOutput("Signaling/AutoAligning", autoAligning.get());
         Logger.recordOutput("Signaling/Scoring", scoring.get());
         Logger.recordOutput("Signaling/DisablePattern", disablePattern.toString());
-        Logger.recordOutput("Signaling/OnboardLEDColor", inputs.onboardR + "," + inputs.onboardG + "," + inputs.onboardB);
+        Logger.recordOutput(
+                "Signaling/OnboardLEDColor", inputs.onboardR + "," + inputs.onboardG + "," + inputs.onboardB);
         Logger.recordOutput(
                 "Signaling/CurrentCommand",
                 getCurrentCommand() != null ? getCurrentCommand().getName() : "None");
@@ -205,7 +205,8 @@ public class Signaling extends SubsystemBase {
 
     private void setFullStrip(RGB rgb) {
         Logger.recordOutput("Signaling/LEDColor", rgb.toHex());
-        io.setSolidColor(SignalingConstants.ledStripStart, SignalingConstants.numLEDs, rgb.red(), rgb.green(), rgb.blue());
+        io.setSolidColor(
+                SignalingConstants.ledStripStart, SignalingConstants.numLEDs, rgb.red(), rgb.green(), rgb.blue());
     }
 
     private void setSection(RGB rgb, int startIdx, int count) {
@@ -228,8 +229,8 @@ public class Signaling extends SubsystemBase {
     }
 
     /**
-     * Updates the 8 onboard CANdle LEDs.
-     * Shows alliance color if the hub is active, otherwise dim amber to indicate hub is offline.
+     * Updates the 8 onboard CANdle LEDs. Shows alliance color if the hub is active, otherwise dim amber to indicate hub
+     * is offline.
      */
     private void updateOnboardLEDs() {
         RGB onboardColor;

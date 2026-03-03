@@ -2,9 +2,7 @@ package frc.robot.subsystems.signaling.patterns;
 
 import frc.robot.subsystems.signaling.RGB;
 
-/**
- * Comet pattern — a bright white "head" trailing into a fading tail, scrolling across the strip.
- */
+/** Comet pattern — a bright white "head" trailing into a fading tail, scrolling across the strip. */
 public class CometPattern {
 
     private static final PatternNode[] pattern = {
@@ -40,4 +38,3 @@ public class CometPattern {
         return patternLength;
     }
 }
-

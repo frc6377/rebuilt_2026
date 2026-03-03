@@ -2,9 +2,7 @@ package frc.robot.subsystems.signaling.patterns;
 
 import frc.robot.subsystems.signaling.RGB;
 
-/**
- * Lava/fire pattern — hot whites and oranges fading into deep reds on a black background.
- */
+/** Lava/fire pattern — hot whites and oranges fading into deep reds on a black background. */
 public class LavaPattern {
 
     private static final PatternNode[] pattern = {
@@ -47,4 +45,3 @@ public class LavaPattern {
         return patternLength;
     }
 }
-

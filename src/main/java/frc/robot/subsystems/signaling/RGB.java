@@ -2,9 +2,7 @@ package frc.robot.subsystems.signaling;
 
 import java.util.function.IntSupplier;
 
-/**
- * Immutable RGB color representation for LED control.
- */
+/** Immutable RGB color representation for LED control. */
 public record RGB(int red, int green, int blue, int white) {
     private static final int MAX_RGB_VALUE = 255;
 
@@ -27,23 +25,19 @@ public record RGB(int red, int green, int blue, int white) {
 
     public static final RGB FIRE_FLY_GREEN = new RGB(254, 254, 0);
 
-    public static final RGB[] RAINBOW = new RGB[]{RED, ORANGE, YELLOW, GREEN, HOWDY_BLUE, PURPLE};
+    public static final RGB[] RAINBOW = new RGB[] {RED, ORANGE, YELLOW, GREEN, HOWDY_BLUE, PURPLE};
 
     public RGB(final int red, final int green, final int blue) {
         this(red, green, blue, 0);
     }
 
-    /**
-     * Generate a random RGB color.
-     */
+    /** Generate a random RGB color. */
     public static RGB randomColor() {
         final IntSupplier rndValue = () -> (int) Math.round(Math.random() * (MAX_RGB_VALUE + 1));
         return new RGB(rndValue.getAsInt(), rndValue.getAsInt(), rndValue.getAsInt());
     }
 
-    /**
-     * Convert to hex string (e.g., "ff00ff").
-     */
+    /** Convert to hex string (e.g., "ff00ff"). */
     public String toHex() {
         return String.format("%02x%02x%02x", red, green, blue);
     }

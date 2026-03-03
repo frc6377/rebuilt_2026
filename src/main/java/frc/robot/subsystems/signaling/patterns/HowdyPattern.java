@@ -36,4 +36,3 @@ public class HowdyPattern {
         return patternLength;
     }
 }
-

@@ -65,10 +65,8 @@ public class SignalingIOCANdle implements SignalingIO {
         onboardG = g;
         onboardB = b;
         // Onboard LEDs are indices 0-7
-        candle.setControl(solidColorControl
-                .withLEDStartIndex(0)
-                .withLEDEndIndex(8)
-                .withColor(new RGBWColor(r, g, b)));
+        candle.setControl(
+                solidColorControl.withLEDStartIndex(0).withLEDEndIndex(8).withColor(new RGBWColor(r, g, b)));
     }
 
     @Override
