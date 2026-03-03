@@ -80,6 +80,9 @@ public class Vision extends SubsystemBase {
     }
 
     public int getTagCount(int cameraIndex) {
+        if (cameraIndex < 0 || cameraIndex >= inputs.length) {
+            return 0;
+        }
         var observations = inputs[cameraIndex].poseObservations;
         if (observations.length == 0) {
             return 0;

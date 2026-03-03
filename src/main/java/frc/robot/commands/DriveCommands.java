@@ -122,7 +122,7 @@ public class DriveCommands {
                                             ? drive.getRotation().plus(new Rotation2d(Math.PI))
                                             : drive.getRotation()));
                         },
-                        drive)
+                        drive).withName("JoystickDriveAtAngle")
 
                 // Reset PID controller when command starts
                 .beforeStarting(() -> angleController.reset(drive.getRotation().getRadians()));

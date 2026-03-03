@@ -14,6 +14,7 @@
 package frc.robot;
 
 import static edu.wpi.first.units.Units.RPM;
+import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static frc.robot.subsystems.vision.VisionConstants.*;
 
 import com.ctre.phoenix6.SignalLogger;
@@ -56,6 +57,8 @@ import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
+
+import java.util.function.Supplier;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a "declarative" paradigm, very
@@ -146,12 +149,7 @@ public class RobotContainer {
                         new ModuleIOTalonFXSim(
                                 TunerConstants.BackRight, driveSimulation.getModules()[3]),
                         driveSimulation::setSimulationWorldPose);
-                vision = new Vision(
-                        drive,
-                        new VisionIOPhotonVisionSim(
-                                camera0Name, robotToCamera0, driveSimulation::getSimulatedDriveTrainPose),
-                        new VisionIOPhotonVisionSim(
-                                camera1Name, robotToCamera1, driveSimulation::getSimulatedDriveTrainPose));
+                vision = new Vision(drive, new VisionIO() {});
                 indexer = new Indexer(Constants.EnabledSubsystems.kIndexer ? new IndexerIOSim() : new IndexerIO() {});
                 signaling = new Signaling(
                         Constants.EnabledSubsystems.kSignaling ? new SignalingIOSim() : new SignalingIO() {});
@@ -178,9 +176,8 @@ public class RobotContainer {
         // TODO: wire setHasFuel if intake sensor works on real hardware
         signaling.setReadyToShoot(superstructure::atTargetVelocity);
         signaling.setLimelightHasTag(() -> vision.getTagCount(0) > 0 || vision.getTagCount(1) > 0);
-        signaling.setAutoAligning(robotState::isShooting);
-        signaling.setScoring(() -> superstructure.getUpgoer().getCurrentCommand() != null
-                && superstructure.getUpgoer().getCurrentCommand().getName().contains("Fire"));
+        signaling.setAutoAligning(() -> drive.getCurrentCommand().getName().contains("JoystickDriveAtAngle"));
+        signaling.setScoring(() -> superstructure.getUpgoer().getVelocity().gte(RotationsPerSecond.of(1)));
 
         if (Constants.currentMode == Constants.Mode.SIM) {
             superstructure.configureGamePieceSimulation(driveSimulation);

@@ -5,6 +5,7 @@ import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants;
 import frc.robot.FieldConstants;
 import frc.robot.subsystems.signaling.patterns.AlliancePattern;
 import frc.robot.subsystems.signaling.patterns.CometPattern;
@@ -59,6 +60,7 @@ public class Signaling extends SubsystemBase {
     // Pattern animation state
     private int tick = 0;
     private int patternTick = 0;
+    private boolean wasEnabled = false; // tracks enabled→disabled transition
 
     // ========== State Suppliers ==========
 
@@ -101,8 +103,16 @@ public class Signaling extends SubsystemBase {
         Logger.processInputs("Signaling", inputs);
 
         if (DriverStation.isDisabled()) {
+            // Randomize pattern once on the enabled → disabled transition
+            if (wasEnabled) {
+                randomizePattern();
+                patternTick = 0;
+                tick = 0;
+            }
+            wasEnabled = false;
             updatePattern();
         } else if (SignalingConstants.enabled) {
+            wasEnabled = true;
             updateStateMachine();
         }
 
@@ -121,6 +131,17 @@ public class Signaling extends SubsystemBase {
         Logger.recordOutput(
                 "Signaling/CurrentCommand",
                 getCurrentCommand() != null ? getCurrentCommand().getName() : "None");
+
+        // Sim-only: log first 30 LEDs individually as hex strings for testing
+        if (Constants.currentMode == Constants.Mode.SIM) {
+            for (int i = 0; i < 30; i++) {
+                int packed = inputs.ledColors.length > i ? inputs.ledColors[i] : 0;
+                int r = (packed >> 16) & 0xFF;
+                int g = (packed >> 8) & 0xFF;
+                int b = packed & 0xFF;
+                Logger.recordOutput("Signaling/LED/" + i, String.format("%02x%02x%02x", r, g, b));
+            }
+        }
     }
 
     // ========== State Machine Logic ==========
