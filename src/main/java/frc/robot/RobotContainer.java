@@ -277,7 +277,7 @@ public class RobotContainer {
         // OIController.start().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
 
         OIController.intake().whileTrue(intake.intakeCommand().alongWith(indexer.index()));
-        OIController.outtake().whileTrue(intake.outtakeRollerCommand());
+        OIController.outtake().whileTrue(intake.outtakeRollerCommand().alongWith(indexer.indexReverse()));
         OIController.zeroIntake().onTrue(intake.zeroExtender());
         OIController.toggleIntakeState().onTrue(intake.retractIntakeCommand());
         OIController.intakeMiddle().onTrue(intake.goToSiftAngleOneCommand());
