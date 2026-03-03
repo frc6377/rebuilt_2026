@@ -119,6 +119,7 @@ public class ExtenderIOSim implements ExtenderIO {
     public void setPosition(Angle position) {
         this.setpoint =
                 Degrees.of(Math.max(kExtenderMinAngle.get(), Math.min(kExtenderMaxAngle.get(), position.in(Degrees))));
+        Logger.recordOutput("Intake/Extender/SetpointDegrees", this.setpoint);
         extenderMotor.setControl(new PositionVoltage(this.setpoint));
     }
 
@@ -177,10 +178,10 @@ public class ExtenderIOSim implements ExtenderIO {
 
     @Override
     public void toggle() {
-        if (isAtAngle(Degrees.of(kExtenderIntakeAngle.get()))) {
-            retract();
-        } else {
+        if (isRetracted().getAsBoolean()) {
             extend();
+        } else {
+            retract();
         }
     }
 
@@ -199,7 +200,7 @@ public class ExtenderIOSim implements ExtenderIO {
         inputs.isExtended = isExtended().getAsBoolean();
         inputs.isRetracted = isRetracted().getAsBoolean();
         inputs.position = getPosition();
-        inputs.setpoint = setpoint;
+        inputs.setpoint = Degrees.of(setpoint.in(Degrees));
         inputs.velocity = RadiansPerSecond.of(armSim.getVelocityRadPerSec());
         inputs.motorVoltage = Volts.of(extenderMotorSim.getMotorVoltage());
         inputs.motorCurrent = Amps.of(armSim.getCurrentDrawAmps());

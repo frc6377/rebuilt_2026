@@ -14,8 +14,8 @@ public class Intake extends SubsystemBase {
 
     private final RollerIO roller;
     private final ExtenderIO extender;
-    private final RollerIO.RollerIOInputs rollerInputs;
-    private final ExtenderIO.ExtenderIOInputs extenderInputs;
+    private final RollerIOInputsAutoLogged rollerInputs;
+    private final ExtenderIOInputsAutoLogged extenderInputs;
 
     public Intake(RollerIO rollerIO, ExtenderIO extenderIO) {
         roller = rollerIO;
@@ -118,25 +118,15 @@ public class Intake extends SubsystemBase {
         extender.updateInputs(extenderInputs);
         extender.periodic();
         roller.periodic();
+
+        // Use processInputs to log IO structs efficiently (avoids per-cycle
+        // allocation/retention from recordOutput of
+        // Unit types)
+        Logger.processInputs("Intake/Extender", extenderInputs);
+        Logger.processInputs("Intake/Roller", rollerInputs);
+
         Logger.recordOutput(
                 "Intake/CurrentCommand",
-                this.getCurrentCommand() != null ? this.getCurrentCommand().getName() : "None");
-
-        Logger.recordOutput("Intake/Extender/IsExtended", extenderInputs.isExtended);
-        Logger.recordOutput("Intake/Extender/IsRetracted", extenderInputs.isRetracted);
-        Logger.recordOutput("Intake/Extender/SetpointDegrees", extenderInputs.setpoint);
-        Logger.recordOutput("Intake/Extender/PositionDegrees", extenderInputs.position);
-
-        Logger.recordOutput("Intake/Extender/VelocityRPS", extenderInputs.velocity);
-        Logger.recordOutput("Intake/Extender/MotorVoltage", extenderInputs.motorVoltage);
-        Logger.recordOutput("Intake/Extender/MotorCurrent", extenderInputs.motorCurrent);
-        Logger.recordOutput("Intake/Extender/MotorTemperature", extenderInputs.motorTemp);
-        Logger.recordOutput("Intake/Extender/AtTarget", extenderInputs.atTarget);
-
-        Logger.recordOutput("Intake/Roller/SpeedPercentile", rollerInputs.rollerSpeedPercentile);
-        Logger.recordOutput("Intake/Roller/AppliedVolts", rollerInputs.rollerAppliedVolts);
-        Logger.recordOutput("Intake/Roller/VelocityRPS", rollerInputs.rollerVelocity);
-        Logger.recordOutput("Intake/Roller/StatorCurrent", rollerInputs.statorCurrent);
-        Logger.recordOutput("Intake/Roller/MotorTemperature", rollerInputs.motorTemp);
+                getCurrentCommand() != null ? getCurrentCommand().getName() : "None");
     }
 }

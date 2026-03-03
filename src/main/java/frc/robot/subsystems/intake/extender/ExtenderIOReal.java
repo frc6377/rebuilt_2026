@@ -24,7 +24,7 @@ public class ExtenderIOReal implements ExtenderIO {
     private final CurrentLimitsConfigs currentConfig;
     private final TalonFXConfiguration extenderMotorConfig;
     private final Slot0Configs extenderPID;
-    private final Angle setpoint;
+    private Angle setpoint;
     // Logged network numbers for tuning/monitoring extender angles (no "NN" suffix per request)
     private final LoggedNetworkNumber kExtenderStowAngle;
     private final LoggedNetworkNumber kExtenderIntakeAngle;
@@ -52,7 +52,7 @@ public class ExtenderIOReal implements ExtenderIO {
 
         extenderMotorConfig = new TalonFXConfiguration();
         extenderMotorConfig.ClosedLoopRamps.VoltageClosedLoopRampPeriod = ExtenderConstants.MotorConfig.kRampPeriod;
-        extenderMotorConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
+        extenderMotorConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
         extenderMotorConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
 
         extenderMotor.applyConfiguration(extenderMotorConfig);
@@ -76,7 +76,8 @@ public class ExtenderIOReal implements ExtenderIO {
     }
 
     public void setPosition(Angle position) {
-        Logger.recordOutput("Intake/Extender/SetpointDgrees", position);
+        this.setpoint = position;
+        Logger.recordOutput("Intake/Extender/SetpointDegrees", position);
         extenderMotor.setControl(new PositionVoltage(position.times(ExtenderConstants.kGearing)));
     }
 
@@ -89,8 +90,7 @@ public class ExtenderIOReal implements ExtenderIO {
     }
 
     public boolean isAtAngle(Angle angle) {
-        return Math.abs((getPosition().minus(angle)).in(Degrees))
-                < kExtenderTolerance.get() * ExtenderConstants.kGearing;
+        return Math.abs((getPosition().minus(angle)).in(Degrees)) < kExtenderTolerance.get();
     }
 
     @Override
@@ -109,12 +109,12 @@ public class ExtenderIOReal implements ExtenderIO {
     }
 
     @Override
-    public BooleanSupplier isRetracted() {
+    public BooleanSupplier isExtended() {
         return () -> isAtAngle(Degrees.of(kExtenderIntakeAngle.get()));
     }
 
     @Override
-    public BooleanSupplier isExtended() {
+    public BooleanSupplier isRetracted() {
         return () -> isAtAngle(Degrees.of(kExtenderStowAngle.get()));
     }
 
