@@ -50,6 +50,7 @@ import frc.robot.subsystems.upgoer.UpgoerIO;
 import frc.robot.subsystems.upgoer.UpgoerIOKrakenX60;
 import frc.robot.subsystems.upgoer.UpgoerIOSim;
 import frc.robot.subsystems.vision.Vision;
+import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.DoubleSupplier;
@@ -151,7 +152,10 @@ public class Superstructure extends SubsystemBase {
         // Log hub active state from game data
         boolean isHubActive = FieldConstants.isHubActive();
         Logger.recordOutput("Shooting/HubActive", isHubActive);
+        Logger.recordOutput("Shooting/HubFlashing", FieldConstants.isHubFlashing());
+        Logger.recordOutput("Shooting/HubIndicatorOn", FieldConstants.isHubIndicatorOn());
         Logger.recordOutput("Shooting/TimeUntilHubStateChange", FieldConstants.getTimeUntilHubStateChange());
+
 
         if (gamePieceTrajectorySimulation == null) {
             return;

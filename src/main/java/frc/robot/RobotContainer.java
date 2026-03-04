@@ -15,6 +15,7 @@ package frc.robot;
 
 import static edu.wpi.first.units.Units.RPM;
 import static frc.robot.subsystems.vision.VisionConstants.*;
+import static frc.robot.subsystems.vision.VisionConstants.camera0Name;
 
 import com.ctre.phoenix6.SignalLogger;
 import com.pathplanner.lib.auto.AutoBuilder;
@@ -22,6 +23,7 @@ import com.pathplanner.lib.auto.NamedCommands;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -31,6 +33,13 @@ import frc.robot.commands.DriveCommands;
 import frc.robot.commands.ShooterCalibrationCommand;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.*;
+import frc.robot.subsystems.drive.Drive;
+import frc.robot.subsystems.drive.GyroIO;
+import frc.robot.subsystems.drive.GyroIOPigeon2;
+import frc.robot.subsystems.drive.GyroIOSim;
+import frc.robot.subsystems.drive.ModuleIO;
+import frc.robot.subsystems.drive.ModuleIOTalonFXReal;
+import frc.robot.subsystems.drive.ModuleIOTalonFXSim;
 import frc.robot.subsystems.indexer.Indexer;
 import frc.robot.subsystems.indexer.IndexerIO;
 import frc.robot.subsystems.indexer.IndexerIOReal;
@@ -44,7 +53,11 @@ import frc.robot.subsystems.intake.roller.RollerIOReal;
 import frc.robot.subsystems.intake.roller.RollerIOSim;
 import frc.robot.subsystems.superstructure.RobotState;
 import frc.robot.subsystems.superstructure.Superstructure;
-import frc.robot.subsystems.vision.*;
+import frc.robot.subsystems.vision.Vision;
+import frc.robot.subsystems.vision.VisionIO;
+import frc.robot.subsystems.vision.VisionIOPhotonVisionSim;
+import frc.robot.subsystems.vision.questnav.QuestNavIO;
+import frc.robot.subsystems.vision.questnav.QuestNavIOReal;
 import frc.robot.util.OILayer.OI;
 import frc.robot.util.OILayer.OIKeyboard;
 import frc.robot.util.OILayer.OIXbox;
@@ -52,6 +65,8 @@ import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
+
+import java.util.Objects;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a "declarative" paradigm, very
@@ -109,10 +124,9 @@ public class RobotContainer {
                             new ModuleIO() {},
                             (pose) -> {});
                 }
-                this.vision = new Vision(
-                        drive,
-                        new VisionIOLimelight(VisionConstants.camera0Name, drive::getRotation),
-                        new VisionIOLimelight(VisionConstants.camera1Name, drive::getRotation));
+                vision = Constants.EnabledSubsystems.kQuestNav
+                        ? new Vision(drive, new QuestNavIOReal())
+                        : new Vision(drive, new QuestNavIO() {});
                 intake = new Intake(
                         Constants.EnabledSubsystems.kRoller ? new RollerIOReal() : new RollerIO() {},
                         Constants.EnabledSubsystems.kExtender ? new ExtenderIOReal() : new ExtenderIO() {});
@@ -138,9 +152,10 @@ public class RobotContainer {
                                 TunerConstants.BackLeft, driveSimulation.getModules()[2]),
                         new ModuleIOTalonFXSim(
                                 TunerConstants.BackRight, driveSimulation.getModules()[3]),
-                        driveSimulation::setSimulationWorldPose);
+                        (pose) -> driveSimulation.setSimulationWorldPose(pose));
                 vision = new Vision(
                         drive,
+                        new QuestNavIO() {},
                         new VisionIOPhotonVisionSim(
                                 camera0Name, robotToCamera0, driveSimulation::getSimulatedDriveTrainPose),
                         new VisionIOPhotonVisionSim(
@@ -156,7 +171,7 @@ public class RobotContainer {
                         new ModuleIO() {},
                         (pose) -> {});
                 driveSimulation = null;
-                vision = new Vision(drive, new VisionIO() {}, new VisionIO() {});
+                vision = new Vision(drive, new QuestNavIO() {}, new VisionIO() {}, new VisionIO() {});
                 intake = new Intake(new RollerIO() {}, new ExtenderIO() {});
                 indexer = new Indexer(new IndexerIO() {});
                 break;
@@ -326,6 +341,9 @@ public class RobotContainer {
         SimulatedArena.getInstance().simulationPeriodic();
         Logger.recordOutput("FieldSimulation/RobotPosition", driveSimulation.getSimulatedDriveTrainPose());
         Logger.recordOutput("FieldSimulation/Fuel", SimulatedArena.getInstance().getGamePiecesArrayByType("Fuel"));
+        Logger.recordOutput(
+                "Shooting/WhoWonAuton",
+                Objects.equals(DriverStation.getGameSpecificMessage(), "B") ? "363AF4" : "F44336");
     }
 
     public Command getRobotStartPose(int cameraIndex) {
