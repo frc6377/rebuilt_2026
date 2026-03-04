@@ -318,6 +318,10 @@ public class RobotContainer {
             //     oi.climbExtend().whileTrue(climb.climbUp());
             oi.declimb().whileTrue(climb.climbUp());
             oi.climb_l1().onTrue(climb.setHeight(Inches.of(27))); // Should be 27
+            oi.climb_l2().whileTrue(climb.climbDown()); // Just assigned it to climb down for testing, change it back to
+            // climb 36
+            // inches when you have the chance
+
             //     oi.climbToFloor().onTrue(climb.setHeight(Inches.of(0)));
 
             //     oiKeyboard.climbExtend().whileTrue(climb.climbUp());
