@@ -32,7 +32,6 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.commands.DriveCommands;
 import frc.robot.commands.ShooterCalibrationCommand;
 import frc.robot.generated.TunerConstants;
-import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.GyroIO;
 import frc.robot.subsystems.drive.GyroIOPigeon2;
@@ -55,18 +54,17 @@ import frc.robot.subsystems.superstructure.RobotState;
 import frc.robot.subsystems.superstructure.Superstructure;
 import frc.robot.subsystems.vision.Vision;
 import frc.robot.subsystems.vision.VisionIO;
+import frc.robot.subsystems.vision.VisionIOLimelight;
 import frc.robot.subsystems.vision.VisionIOPhotonVisionSim;
 import frc.robot.subsystems.vision.questnav.QuestNavIO;
-import frc.robot.subsystems.vision.questnav.QuestNavIOReal;
 import frc.robot.util.OILayer.OI;
 import frc.robot.util.OILayer.OIKeyboard;
 import frc.robot.util.OILayer.OIXbox;
+import java.util.Objects;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
-
-import java.util.Objects;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a "declarative" paradigm, very
@@ -124,9 +122,8 @@ public class RobotContainer {
                             new ModuleIO() {},
                             (pose) -> {});
                 }
-                vision = Constants.EnabledSubsystems.kQuestNav
-                        ? new Vision(drive, new QuestNavIOReal())
-                        : new Vision(drive, new QuestNavIO() {});
+                vision = new Vision(
+                        drive, new QuestNavIO() {}, new VisionIOLimelight("limelight-shooter", drive::getRotation));
                 intake = new Intake(
                         Constants.EnabledSubsystems.kRoller ? new RollerIOReal() : new RollerIO() {},
                         Constants.EnabledSubsystems.kExtender ? new ExtenderIOReal() : new ExtenderIO() {});
@@ -275,19 +272,23 @@ public class RobotContainer {
         //                 () -> -OIController.driveTranslationX().getAsDouble(),
         //                 () -> new Rotation2d()));
 
-        OIController.spinUpShooter()
-                .whileTrue(superstructure.getCurrentShootingCommandSupplier().get());
+        OIController.spinUpShooter().whileTrue(superstructure.runFlywheelVelocityManual());
 
         // Manual fire (feeds piece when shooter is ready)
         OIController.fireShooter()
-                .whileTrue(superstructure.fireCommand()
+                .whileTrue(superstructure
+                        .autoSpeedShooter(drive::getPose, drive::getChassisSpeeds)
+                        .alongWith(superstructure.aimAtHubWhileDriving(
+                                drive, OIController.driveTranslationX(), OIController.driveTranslationY()))
                         .alongWith(indexer.index())
+                        .until(superstructure::atTargetVelocity)
+                        .andThen(superstructure.fireCommand())
                         .alongWith(Commands.runOnce(drive::stopWithX)))
                 .onFalse(superstructure.stopUpgoerCommand().alongWith(indexer.stop()));
 
         OIController.unjamShooter()
-                .whileTrue(superstructure.unjamCommand())
-                .onFalse(superstructure.stopUpgoerCommand());
+                .whileTrue(superstructure.unjamCommand().alongWith(indexer.indexReverse()))
+                .onFalse(superstructure.stopUpgoerCommand().alongWith(superstructure.stopShooterCommand()));
 
         // Stop all components
         OIController.stopSuperstructure()
@@ -295,11 +296,11 @@ public class RobotContainer {
 
         OIController.shootSpeedLow()
                 .onTrue(superstructure.changeManualShootingCommand(superstructure.runFlywheelVelocityManual()));
-        OIController.shootSpeedMidLow().onTrue(superstructure.changeFlywheelVelocityManual(RPM.of(-200)));
-        OIController.shootSpeedMidHigh()
+        OIController.decreaseShootSpeed().onTrue(superstructure.changeFlywheelVelocityManual(RPM.of(-200)));
+        OIController.autoShootCommand()
                 .onTrue(superstructure.changeManualShootingCommand(superstructure.autoChooseShootingCommand(
                         drive, OIController.driveTranslationX(), OIController.driveTranslationY())));
-        OIController.shootSpeedHigh().onTrue(superstructure.changeFlywheelVelocityManual(RPM.of(200)));
+        OIController.increaseShootSpeed().onTrue(superstructure.changeFlywheelVelocityManual(RPM.of(200)));
 
         // Reset gyro / odometry
         final Runnable resetGyro = Constants.currentMode == Constants.Mode.SIM

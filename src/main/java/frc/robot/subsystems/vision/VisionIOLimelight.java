@@ -33,8 +33,8 @@ import java.util.function.Supplier;
 public class VisionIOLimelight implements VisionIO {
     // rawfiducials entry stride: [id, txnc, tync, ta, distToCamera, distToRobot, ambiguity]
     private static final int RAW_FIDUCIALS_STRIDE = 7;
-    private static final int IDX_ID    = 0;
-    private static final int IDX_TXNC  = 1; // horizontal angle to tag center (deg, no crosshair offset)
+    private static final int IDX_ID = 0;
+    private static final int IDX_TXNC = 1; // horizontal angle to tag center (deg, no crosshair offset)
 
     private final Supplier<Rotation2d> rotationSupplier;
     private final DoubleArrayPublisher orientationPublisher;
@@ -49,7 +49,7 @@ public class VisionIOLimelight implements VisionIO {
     /**
      * Creates a new VisionIOLimelight.
      *
-     * @param name             The configured name of the Limelight.
+     * @param name The configured name of the Limelight.
      * @param rotationSupplier Supplier for the current estimated rotation, used for MegaTag 2.
      */
     public VisionIOLimelight(String name, Supplier<Rotation2d> rotationSupplier) {
@@ -62,8 +62,7 @@ public class VisionIOLimelight implements VisionIO {
         tySubscriber = table.getDoubleTopic("ty").subscribe(0.0);
         megatag1Subscriber = table.getDoubleArrayTopic("botpose_wpiblue").subscribe(new double[] {});
         megatag2Subscriber = table.getDoubleArrayTopic("botpose_orb_wpiblue").subscribe(new double[] {});
-        rawFiducialsSubscriber =
-                table.getDoubleArrayTopic("rawfiducials").subscribe(new double[] {});
+        rawFiducialsSubscriber = table.getDoubleArrayTopic("rawfiducials").subscribe(new double[] {});
     }
 
     @Override
@@ -134,13 +133,16 @@ public class VisionIOLimelight implements VisionIO {
         inputs.poseObservations = poseObservations.toArray(new PoseObservation[0]);
         inputs.tagIds = tagIds.stream().mapToInt(Integer::intValue).toArray();
 
-        // ── Hub-tag per-tag horizontal angles from rawfiducials ──────────────
+        // ── Hub-tag per-tag data from rawfiducials ──────────────────────────
+        // Stride-7 format: [id, txnc, tync, ta, distToCamera, distToRobot, ambiguity]
         double[] raw = rawFiducialsSubscriber.get();
         List<HubTagObservation> hubObs = new ArrayList<>();
         for (int i = 0; i + RAW_FIDUCIALS_STRIDE <= raw.length; i += RAW_FIDUCIALS_STRIDE) {
             int tagId = (int) raw[i + IDX_ID];
             Rotation2d tx = Rotation2d.fromDegrees(raw[i + IDX_TXNC]);
-            hubObs.add(new HubTagObservation(tagId, tx));
+            double distToCamera = raw[i + 4];
+            double distToRobot = raw[i + 5];
+            hubObs.add(new HubTagObservation(tagId, tx, distToCamera, distToRobot));
         }
         inputs.hubTagObservations = hubObs.toArray(new HubTagObservation[0]);
     }

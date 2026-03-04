@@ -30,8 +30,8 @@ public interface VisionIO {
     /** Represents the angle to a simple target, not used for pose estimation. */
     record TargetObservation(Rotation2d tx, Rotation2d ty) {}
 
-    /** Per-tag horizontal angle reading used for hub distance fallback. */
-    record HubTagObservation(int tagId, Rotation2d tx) {}
+    /** Per-tag observation from rawfiducials — horizontal angle, camera distance, and robot distance. */
+    record HubTagObservation(int tagId, Rotation2d tx, double distToCamera, double distToRobot) {}
 
     /** Represents a robot pose sample used for pose estimation. */
     record PoseObservation(

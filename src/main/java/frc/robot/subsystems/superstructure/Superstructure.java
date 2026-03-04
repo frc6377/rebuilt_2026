@@ -156,8 +156,6 @@ public class Superstructure extends SubsystemBase {
         Logger.recordOutput("Shooting/HubFlashing", FieldConstants.isHubFlashing());
         Logger.recordOutput("Shooting/HubIndicatorOn", FieldConstants.isHubIndicatorOn());
         Logger.recordOutput("Shooting/TimeUntilHubStateChange", FieldConstants.getTimeUntilHubStateChange());
-
-
         if (gamePieceTrajectorySimulation == null) {
             return;
         }
@@ -321,15 +319,12 @@ public class Superstructure extends SubsystemBase {
 
     /** Calculate the distance from the robot to the hub. */
     public Distance getDistanceToHub(Pose2d robotPose) {
-        Translation2d hubPosition = FieldConstants.getHubPosition();
-        return Meters.of(robotPose.getTranslation().getDistance(hubPosition));
+        return vision.getHubDistanceMeasure();
     }
 
     /** Calculate the angle from the robot to the hub. */
     public Rotation2d getAngleToHub(Pose2d robotPose) {
-        Translation2d hubPosition = FieldConstants.getHubPosition();
-        Translation2d toHub = hubPosition.minus(robotPose.getTranslation());
-        return new Rotation2d(toHub.getX(), toHub.getY());
+        return vision.getHubFacingAngle(robotPose).orElse(robotPose.getRotation());
     }
 
     /** Calculate the angle from the robot to the alliance wall center. */
@@ -360,7 +355,8 @@ public class Superstructure extends SubsystemBase {
 
                             if (benchModeEnabled.get() > 0.5) {
                                 // Bench mode: use a virtual pose at the configured distance
-                                double distMeters = Feet.of(benchModeDistanceFeet.get()).in(Meters);
+                                double distMeters =
+                                        Feet.of(benchModeDistanceFeet.get()).in(Meters);
                                 Translation2d hubPos = FieldConstants.getHubPosition();
                                 robotPose = new Pose2d(hubPos.getX() - distMeters, hubPos.getY(), new Rotation2d());
                                 speeds = new ChassisSpeeds();
@@ -376,12 +372,12 @@ public class Superstructure extends SubsystemBase {
                             if (hubDistOpt.isPresent()) {
                                 double visionDistM = hubDistOpt.getAsDouble();
                                 Translation2d hubPos = FieldConstants.getHubPosition();
-                                Translation2d toRobot = robotPose.getTranslation().minus(hubPos);
+                                Translation2d toRobot =
+                                        robotPose.getTranslation().minus(hubPos);
                                 double odomDistM = toRobot.getNorm();
                                 if (odomDistM > 0.01) {
                                     // Scale the bearing vector to the vision-measured distance
-                                    Translation2d corrected = hubPos.plus(
-                                            toRobot.times(visionDistM / odomDistM));
+                                    Translation2d corrected = hubPos.plus(toRobot.times(visionDistM / odomDistM));
                                     robotPose = new Pose2d(corrected, robotPose.getRotation());
                                 }
                                 Logger.recordOutput("Shooting/DistanceSource", "Vision");
@@ -509,8 +505,7 @@ public class Superstructure extends SubsystemBase {
         return setFlywheelVelocityCommand(velocity).until(this::atTargetVelocity);
     }
 
-    public Command autoChooseShootingCommand(
-            Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier) {
+    public Command autoChooseShootingCommand(Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier) {
         if (ShooterConstants.kManualShootingEnabled) {
             return runFlywheelVelocityManual();
         } else if (vision.getTagCount(0) + vision.getTagCount(1) == 1) {

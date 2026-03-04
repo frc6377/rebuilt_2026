@@ -129,21 +129,21 @@ public class DriveCommands {
     }
 
     /**
-     * Rotates the robot to center a visible AprilTag in the camera frame while still allowing full
-     * joystick translation.
+     * Rotates the robot to center a visible AprilTag in the camera frame while still allowing full joystick
+     * translation.
      *
-     * <p>The {@code txSupplier} should return the horizontal angle error to the target tag in
-     * radians (positive = target is to the left of center). When no tag is visible, supply
-     * {@code Rotation2d.fromDegrees(0)} and the robot will hold its current heading.
+     * <p>The {@code txSupplier} should return the horizontal angle error to the target tag in radians (positive =
+     * target is to the left of center). When no tag is visible, supply {@code Rotation2d.fromDegrees(0)} and the robot
+     * will hold its current heading.
      *
      * <p>The command never finishes on its own — bind it with {@code whileTrue}.
      *
-     * @param drive        The drive subsystem.
-     * @param xSupplier    Joystick translation X (forward).
-     * @param ySupplier    Joystick translation Y (strafe).
-     * @param txSupplier   Supplier of the camera's horizontal angle to the tag (Rotation2d).
-     *                     Return {@code null} or {@code Rotation2d.fromDegrees(0)} when no tag seen.
-     * @param tagVisible   Supplier that returns {@code true} when a target tag is being tracked.
+     * @param drive The drive subsystem.
+     * @param xSupplier Joystick translation X (forward).
+     * @param ySupplier Joystick translation Y (strafe).
+     * @param txSupplier Supplier of the camera's horizontal angle to the tag (Rotation2d). Return {@code null} or
+     *     {@code Rotation2d.fromDegrees(0)} when no tag seen.
+     * @param tagVisible Supplier that returns {@code true} when a target tag is being tracked.
      */
     public static Command aimAtTagCommand(
             Drive drive,
