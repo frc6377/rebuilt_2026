@@ -513,6 +513,33 @@ public class FieldConstants {
         }
     }
 
+    /**
+     * Returns true if the hub indicator is currently in its flashing window — i.e. a state transition is within 3
+     * seconds. Flashes at 4 Hz (125 ms on / 125 ms off).
+     */
+    public static boolean isHubFlashing() {
+        return getTimeUntilHubStateChange() > 0.0 && getTimeUntilHubStateChange() <= 3.0;
+    }
+
+    /**
+     * Returns the current on/off state of the hub indicator light.
+     *
+     * <ul>
+     *   <li>Solid on when hub is active and not near a transition.
+     *   <li>Solid off when hub is inactive and not near a transition.
+     *   <li>Flashing at 4 Hz during the 3 seconds before any state change.
+     * </ul>
+     */
+    public static boolean isHubIndicatorOn() {
+        boolean active = isHubActive();
+        if (isHubFlashing()) {
+            // Blink at 4 Hz: 250 ms period, 125 ms on
+            double t = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
+            return (t % 0.25) < 0.125;
+        }
+        return active;
+    }
+
     /** Get the hub position for the current alliance */
     public static Translation2d getHubPosition() {
         // Logic to determine alliance and return appropriate hub center
