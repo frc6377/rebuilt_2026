@@ -22,6 +22,7 @@ import com.pathplanner.lib.auto.NamedCommands;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -52,6 +53,8 @@ import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
+
+import java.util.Objects;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a "declarative" paradigm, very
@@ -249,7 +252,8 @@ public class RobotContainer {
         //                 () -> -OIController.driveTranslationX().getAsDouble(),
         //                 () -> new Rotation2d()));
 
-        OIController.spinUpShooter().whileTrue(superstructure.getCurrentShootingCommandSupplier().get());
+        OIController.spinUpShooter()
+                .whileTrue(superstructure.getCurrentShootingCommandSupplier().get());
 
         // Manual fire (feeds piece when shooter is ready)
         OIController.fireShooter()
@@ -264,9 +268,12 @@ public class RobotContainer {
         OIController.stopSuperstructure()
                 .onTrue(superstructure.stopShooterCommand().alongWith(superstructure.stopUpgoerCommand()));
 
-        OIController.shootSpeedLow().onTrue(superstructure.changeManualShootingCommand(superstructure.runFlywheelVelocityManual()));
+        OIController.shootSpeedLow()
+                .onTrue(superstructure.changeManualShootingCommand(superstructure.runFlywheelVelocityManual()));
         OIController.shootSpeedMidLow().onTrue(superstructure.changeFlywheelVelocityManual(RPM.of(-200)));
-        OIController.shootSpeedMidHigh().onTrue(superstructure.changeManualShootingCommand(superstructure.autoChooseShootingCommand(drive, vision, OIController.driveTranslationX(), OIController.driveTranslationY())));
+        OIController.shootSpeedMidHigh()
+                .onTrue(superstructure.changeManualShootingCommand(superstructure.autoChooseShootingCommand(
+                        drive, vision, OIController.driveTranslationX(), OIController.driveTranslationY())));
         OIController.shootSpeedHigh().onTrue(superstructure.changeFlywheelVelocityManual(RPM.of(200)));
 
         // Reset gyro / odometry
@@ -311,6 +318,9 @@ public class RobotContainer {
         SimulatedArena.getInstance().simulationPeriodic();
         Logger.recordOutput("FieldSimulation/RobotPosition", driveSimulation.getSimulatedDriveTrainPose());
         Logger.recordOutput("FieldSimulation/Fuel", SimulatedArena.getInstance().getGamePiecesArrayByType("Fuel"));
+        Logger.recordOutput(
+                "Shooting/WhoWonAuton",
+                Objects.equals(DriverStation.getGameSpecificMessage(), "B") ? "363AF4" : "F44336");
     }
 
     public Command getRobotStartPose(int cameraIndex) {
