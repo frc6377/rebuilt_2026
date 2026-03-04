@@ -50,7 +50,6 @@ import frc.robot.subsystems.upgoer.UpgoerIO;
 import frc.robot.subsystems.upgoer.UpgoerIOKrakenX60;
 import frc.robot.subsystems.upgoer.UpgoerIOSim;
 import frc.robot.subsystems.vision.Vision;
-import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.DoubleSupplier;
@@ -90,17 +89,19 @@ public class Superstructure extends SubsystemBase {
     private final Upgoer leftUpgoer;
     private final Upgoer rightUpgoer;
     private final Indexer indexer;
+    private final Vision vision;
     private final RobotState robotState;
     private GamePieceTrajectorySimulation gamePieceTrajectorySimulation;
     private AngularVelocity manualShootingVelocity = RPM.of(ShooterConstants.kManualShootingSpeedRPM);
     private Command currentShootingCommand = Commands.none();
     /** Creates the superstructure and selects IO implementations by mode. */
-    public Superstructure(BooleanSupplier isIntaking) {
+    public Superstructure(BooleanSupplier isIntaking, Vision vision) {
         RobotState createdState = RobotState.getInstance();
         if (createdState == null) {
             createdState = RobotState.create();
         }
         this.robotState = createdState;
+        this.vision = vision;
 
         this.shooter = new Shooter();
 
@@ -358,11 +359,8 @@ public class Superstructure extends SubsystemBase {
                             ChassisSpeeds speeds;
 
                             if (benchModeEnabled.get() > 0.5) {
-                                // Bench mode: Calculate a virtual pose at the specified distance
-                                double distMeters =
-                                        Feet.of(benchModeDistanceFeet.get()).in(Meters);
-                                // Hub is usually at (FieldLength - distance, FieldWidth/2) or similar.
-                                // We'll just mock a static pose at that distance from the hub.
+                                // Bench mode: use a virtual pose at the configured distance
+                                double distMeters = Feet.of(benchModeDistanceFeet.get()).in(Meters);
                                 Translation2d hubPos = FieldConstants.getHubPosition();
                                 robotPose = new Pose2d(hubPos.getX() - distMeters, hubPos.getY(), new Rotation2d());
                                 speeds = new ChassisSpeeds();
@@ -371,8 +369,29 @@ public class Superstructure extends SubsystemBase {
                                 speeds = velocitySupplier.get();
                             }
 
-                            boolean inZone = isInShootingZone(robotPose);
+                            // ── Vision hub-angle distance fallback ────────────────────────────
+                            // If two hub tags are visible, override the odometry distance while
+                            // keeping the same bearing so SotF heading stays correct.
+                            var hubDistOpt = vision.getHubDistance();
+                            if (hubDistOpt.isPresent()) {
+                                double visionDistM = hubDistOpt.getAsDouble();
+                                Translation2d hubPos = FieldConstants.getHubPosition();
+                                Translation2d toRobot = robotPose.getTranslation().minus(hubPos);
+                                double odomDistM = toRobot.getNorm();
+                                if (odomDistM > 0.01) {
+                                    // Scale the bearing vector to the vision-measured distance
+                                    Translation2d corrected = hubPos.plus(
+                                            toRobot.times(visionDistM / odomDistM));
+                                    robotPose = new Pose2d(corrected, robotPose.getRotation());
+                                }
+                                Logger.recordOutput("Shooting/DistanceSource", "Vision");
+                                Logger.recordOutput("Shooting/VisionHubDistanceM", visionDistM);
+                            } else {
+                                Logger.recordOutput("Shooting/DistanceSource", "Odometry");
+                            }
+                            // ─────────────────────────────────────────────────────────────────
 
+                            boolean inZone = isInShootingZone(robotPose);
                             Logger.recordOutput("Shooting/InShootingZone", inZone);
 
                             if (inZone) {
@@ -400,7 +419,6 @@ public class Superstructure extends SubsystemBase {
                                 setHoodAngle(hoodAngle);
                                 setFlywheelVelocity(flywheelVelocity);
                             } else {
-                                // Outside shooting zone — idle the shooter
                                 Logger.recordOutput("Shooting/CalculatedHoodAngle", 0.0);
                                 Logger.recordOutput("Shooting/CalculatedRPM", 0.0);
                                 stopShooter();
@@ -492,7 +510,7 @@ public class Superstructure extends SubsystemBase {
     }
 
     public Command autoChooseShootingCommand(
-            Drive drive, Vision vision, DoubleSupplier xSupplier, DoubleSupplier ySupplier) {
+            Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier) {
         if (ShooterConstants.kManualShootingEnabled) {
             return runFlywheelVelocityManual();
         } else if (vision.getTagCount(0) + vision.getTagCount(1) == 1) {

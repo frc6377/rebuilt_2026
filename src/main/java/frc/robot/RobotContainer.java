@@ -165,7 +165,7 @@ public class RobotContainer {
                 break;
         }
 
-        superstructure = new Superstructure(intake::isRollerRunning);
+        superstructure = new Superstructure(intake::isRollerRunning, vision);
 
         if (Constants.currentMode == Constants.Mode.SIM) {
             superstructure.configureGamePieceSimulation(driveSimulation);
@@ -257,7 +257,9 @@ public class RobotContainer {
 
         // Manual fire (feeds piece when shooter is ready)
         OIController.fireShooter()
-                .whileTrue(superstructure.fireCommand().alongWith(indexer.index()))
+                .whileTrue(superstructure.fireCommand()
+                        .alongWith(indexer.index())
+                        .alongWith(Commands.runOnce(drive::stopWithX)))
                 .onFalse(superstructure.stopUpgoerCommand().alongWith(indexer.stop()));
 
         OIController.unjamShooter()
@@ -273,7 +275,7 @@ public class RobotContainer {
         OIController.shootSpeedMidLow().onTrue(superstructure.changeFlywheelVelocityManual(RPM.of(-200)));
         OIController.shootSpeedMidHigh()
                 .onTrue(superstructure.changeManualShootingCommand(superstructure.autoChooseShootingCommand(
-                        drive, vision, OIController.driveTranslationX(), OIController.driveTranslationY())));
+                        drive, OIController.driveTranslationX(), OIController.driveTranslationY())));
         OIController.shootSpeedHigh().onTrue(superstructure.changeFlywheelVelocityManual(RPM.of(200)));
 
         // Reset gyro / odometry
@@ -285,7 +287,7 @@ public class RobotContainer {
 
         OIController.intake().whileTrue(intake.intakeCommand().alongWith(indexer.index()));
         OIController.outtake().whileTrue(intake.outtakeRollerCommand().alongWith(indexer.indexReverse()));
-        OIController.zeroIntake().onTrue(intake.zeroExtender());
+        OIController.zeroIntake().onTrue(intake.zeroExtender().ignoringDisable(true));
         OIController.toggleIntakeState().onTrue(intake.retractIntakeCommand());
         OIController.intakeMiddle().onTrue(intake.goToSiftAngleOneCommand());
     }

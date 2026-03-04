@@ -13,6 +13,7 @@
 
 package frc.robot.subsystems.vision;
 
+import static edu.wpi.first.units.Units.Meters;
 import static frc.robot.subsystems.vision.VisionConstants.*;
 
 import edu.wpi.first.math.Matrix;
@@ -22,12 +23,20 @@ import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.subsystems.vision.VisionIO.HubTagObservation;
 import frc.robot.subsystems.vision.VisionIO.PoseObservationType;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.OptionalDouble;
+import java.util.Set;
 import org.littletonrobotics.junction.Logger;
 
 public class Vision extends SubsystemBase {
@@ -69,6 +78,120 @@ public class Vision extends SubsystemBase {
             disconnectedAlerts[i] = new Alert("Vision camera " + i + " is disconnected.", AlertType.kWarning);
         }
     }
+
+    // ========== Hub Distance Fallback ==========
+
+    // All AprilTag IDs on the blue hub (two tags per face × 4 faces: 18/27, 19/20, 21/24, 25/26)
+    private static final Set<Integer> BLUE_HUB_TAG_IDS = Set.of(18, 19, 20, 21, 24, 25, 26, 27);
+    // All AprilTag IDs on the red hub (mirrors of blue: 5/8, 9/10, 11/2, 3/4)
+    private static final Set<Integer> RED_HUB_TAG_IDS = Set.of(2, 3, 4, 5, 8, 9, 10, 11);
+
+    // Same-face tag pairs — tags on the same physical face of the hub.
+    // These give the most geometrically stable distance reading because their
+    // known separation is small and well-defined.
+    //   Blue:  face pairs (18,27), (19,20), (21,24), (25,26)
+    //   Red:   face pairs ( 5, 8), ( 9,10), ( 2,11), ( 3, 4)
+    private static final int[][] BLUE_HUB_FACE_PAIRS = {{18, 27}, {19, 20}, {21, 24}, {25, 26}};
+    private static final int[][] RED_HUB_FACE_PAIRS  = {{ 5,  8}, { 9, 10}, { 2, 11}, { 3,  4}};
+
+    /**
+     * Returns the distance from the camera to the alliance hub, estimated purely from the angular
+     * separation θ between any two simultaneously-visible hub AprilTags.
+     *
+     * <p>Formula: {@code D = S / (2 * tan(θ / 2))} where S is the known 3D distance between the
+     * two tag poses in the field layout.
+     *
+     * <p>Same-face tag pairs (e.g. 25 &amp; 26, which share a hub face) are tried first because
+     * their fixed separation is small and well-defined, giving the most accurate reading. Any other
+     * visible hub-tag pair is used as a secondary fallback.
+     *
+     * <p>Returns {@link OptionalDouble#empty()} when fewer than two hub tags are visible.
+     */
+    public OptionalDouble getHubDistance() {
+        boolean isRed = DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue)
+                == DriverStation.Alliance.Red;
+        Set<Integer> hubTagIds = isRed ? RED_HUB_TAG_IDS : BLUE_HUB_TAG_IDS;
+        int[][] facePairs = isRed ? RED_HUB_FACE_PAIRS : BLUE_HUB_FACE_PAIRS;
+
+        // Collect all visible hub-tag observations across every camera, keyed by tag ID
+        Map<Integer, Rotation2d> visibleTags = new HashMap<>();
+        for (VisionIOInputsAutoLogged inp : inputs) {
+            for (HubTagObservation obs : inp.hubTagObservations) {
+                if (hubTagIds.contains(obs.tagId())) {
+                    visibleTags.put(obs.tagId(), obs.tx());
+                }
+            }
+        }
+
+        if (visibleTags.size() < 2) {
+            return OptionalDouble.empty();
+        }
+
+        // Try same-face pairs first (most accurate), then all other pairs as fallback
+        List<int[]> candidates = new ArrayList<>();
+        for (int[] pair : facePairs) {
+            if (visibleTags.containsKey(pair[0]) && visibleTags.containsKey(pair[1])) {
+                candidates.add(0, pair); // prepend — try these first
+            }
+        }
+        // Append all remaining cross-face combinations
+        List<Integer> ids = new ArrayList<>(visibleTags.keySet());
+        for (int a = 0; a < ids.size(); a++) {
+            for (int b = a + 1; b < ids.size(); b++) {
+                int[] pair = {ids.get(a), ids.get(b)};
+                // Only add if not already a same-face pair already in candidates
+                boolean alreadyAdded = false;
+                for (int[] c : candidates) {
+                    if ((c[0] == pair[0] && c[1] == pair[1]) || (c[0] == pair[1] && c[1] == pair[0])) {
+                        alreadyAdded = true;
+                        break;
+                    }
+                }
+                if (!alreadyAdded) candidates.add(pair);
+            }
+        }
+
+        for (int[] pair : candidates) {
+            int idA = pair[0], idB = pair[1];
+            var poseA = aprilTagLayout.getTagPose(idA);
+            var poseB = aprilTagLayout.getTagPose(idB);
+            if (poseA.isEmpty() || poseB.isEmpty()) continue;
+
+            double separation = poseA.get().getTranslation().getDistance(poseB.get().getTranslation());
+            if (separation < 0.01) continue;
+
+            double thetaRad = Math.abs(
+                    visibleTags.get(idA).getRadians() - visibleTags.get(idB).getRadians());
+            if (thetaRad < 1e-6) continue;
+
+            double distance = separation / (2.0 * Math.tan(thetaRad / 2.0));
+            Logger.recordOutput("Vision/HubAngleFallback/TagA", idA);
+            Logger.recordOutput("Vision/HubAngleFallback/TagB", idB);
+            Logger.recordOutput("Vision/HubAngleFallback/ThetaDeg", Math.toDegrees(thetaRad));
+            Logger.recordOutput("Vision/HubAngleFallback/SeparationM", separation);
+            Logger.recordOutput("Vision/HubAngleFallback/DistanceM", distance);
+            return OptionalDouble.of(distance);
+        }
+        return OptionalDouble.empty();
+    }
+
+    /**
+     * Convenience wrapper — returns hub distance as a typed {@link Distance}, or
+     * {@code Meters.of(-1)} when unavailable.
+     */
+    public Distance getHubDistanceMeasure() {
+        return Meters.of(getHubDistance().orElse(-1.0));
+    }
+
+    /**
+     * Returns true when the hub angle fallback has at least two hub tags visible and can produce a
+     * distance estimate.
+     */
+    public boolean hasHubDistanceFallback() {
+        return getHubDistance().isPresent();
+    }
+
+    // ========== Standard Vision ==========
 
     /**
      * Returns the X angle to the best target, which can be used for simple servoing with vision.
