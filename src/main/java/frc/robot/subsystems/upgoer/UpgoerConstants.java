@@ -16,7 +16,6 @@ package frc.robot.subsystems.upgoer;
 import static edu.wpi.first.units.Units.*;
 
 import edu.wpi.first.units.measure.*;
-import frc.robot.Constants;
 
 public class UpgoerConstants {
     // CAN bus name

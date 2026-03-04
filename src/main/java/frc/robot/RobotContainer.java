@@ -222,9 +222,20 @@ public class RobotContainer {
                         .andThen(Commands.waitSeconds(1))
                         .andThen(superstructure.getLeftShooter().sysIdDynamic(SysIdRoutine.Direction.kReverse))
                         .andThen(SignalLogger::stop));
+        autoChooser.addOption(
+                "Right Shooter Flywheel Characterization All",
+                Commands.runOnce(SignalLogger::start)
+                        .andThen(superstructure.getRightShooter().sysIdQuasistatic(SysIdRoutine.Direction.kForward))
+                        .andThen(Commands.waitSeconds(5))
+                        .andThen(superstructure.getRightShooter().sysIdQuasistatic(SysIdRoutine.Direction.kReverse))
+                        .andThen(Commands.waitSeconds(5))
+                        .andThen(superstructure.getRightShooter().sysIdDynamic(SysIdRoutine.Direction.kForward))
+                        .andThen(Commands.waitSeconds(5))
+                        .andThen(superstructure.getRightShooter().sysIdDynamic(SysIdRoutine.Direction.kReverse))
+                        .andThen(SignalLogger::stop));
 
         // Configure the button bindings
-
+        SignalLogger.setPath("Media/sda1/logs/one/");
         configureButtonBindings();
     }
 
@@ -249,7 +260,8 @@ public class RobotContainer {
         //                 () -> -OIController.driveTranslationX().getAsDouble(),
         //                 () -> new Rotation2d()));
 
-        OIController.spinUpShooter().whileTrue(superstructure.getCurrentShootingCommandSupplier().get());
+        OIController.spinUpShooter()
+                .whileTrue(superstructure.getCurrentShootingCommandSupplier().get());
 
         // Manual fire (feeds piece when shooter is ready)
         OIController.fireShooter()
@@ -264,9 +276,12 @@ public class RobotContainer {
         OIController.stopSuperstructure()
                 .onTrue(superstructure.stopShooterCommand().alongWith(superstructure.stopUpgoerCommand()));
 
-        OIController.shootSpeedLow().onTrue(superstructure.changeManualShootingCommand(superstructure.runFlywheelVelocityManual()));
+        OIController.shootSpeedLow()
+                .onTrue(superstructure.changeManualShootingCommand(superstructure.runFlywheelVelocityManual()));
         OIController.shootSpeedMidLow().onTrue(superstructure.changeFlywheelVelocityManual(RPM.of(-200)));
-        OIController.shootSpeedMidHigh().onTrue(superstructure.changeManualShootingCommand(superstructure.autoChooseShootingCommand(drive, vision, OIController.driveTranslationX(), OIController.driveTranslationY())));
+        OIController.shootSpeedMidHigh()
+                .onTrue(superstructure.changeManualShootingCommand(superstructure.autoChooseShootingCommand(
+                        drive, vision, OIController.driveTranslationX(), OIController.driveTranslationY())));
         OIController.shootSpeedHigh().onTrue(superstructure.changeFlywheelVelocityManual(RPM.of(200)));
 
         // Reset gyro / odometry

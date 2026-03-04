@@ -505,9 +505,11 @@ public class Superstructure extends SubsystemBase {
     public Command changeFlywheelVelocityManual(AngularVelocity deltaRPM) {
         return Commands.runOnce(() -> manualShootingVelocity = manualShootingVelocity.plus(deltaRPM));
     }
+
     public Command changeManualShootingCommand(Command command) {
         return Commands.runOnce(() -> currentShootingCommand = command);
     }
+
     public Supplier<Command> getCurrentShootingCommandSupplier() {
         return () -> currentShootingCommand;
     }
