@@ -80,16 +80,8 @@ public class Intake extends SubsystemBase {
 
     public Command siftFuelCommand() {
         return Commands.repeatingSequence(
-                Commands.parallel(run(extender::goToSiftAngleOne), Commands.run(() -> {
-                    while (!extender.atTarget().getAsBoolean()) {
-                        continue;
-                    }
-                })),
-                Commands.parallel(run(extender::goToSiftAngleTwo), Commands.run(() -> {
-                    while (!extender.atTarget().getAsBoolean()) {
-                        continue;
-                    }
-                })));
+                run(extender::goToSiftAngleOne).until(extender.atTarget()),
+                run(extender::goToSiftAngleTwo).until(extender.atTarget()));
     }
 
     public Command zeroExtender() {
