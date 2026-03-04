@@ -8,17 +8,14 @@ import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Volts;
 
 import com.ctre.phoenix6.CANBus;
-import com.ctre.phoenix6.configs.CANcoderConfiguration;
-import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
-import com.ctre.phoenix6.configs.Pigeon2Configuration;
-import com.ctre.phoenix6.configs.Slot0Configs;
-import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.hardware.CANcoder;
-import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.configs.*;
+import com.ctre.phoenix6.hardware.*;
 import com.ctre.phoenix6.signals.StaticFeedforwardSignValue;
+import com.ctre.phoenix6.swerve.*;
 import com.ctre.phoenix6.swerve.SwerveDrivetrain;
 import com.ctre.phoenix6.swerve.SwerveDrivetrainConstants;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
+import com.ctre.phoenix6.swerve.SwerveModuleConstants.*;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants.ClosedLoopOutputType;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants.DriveMotorArrangement;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants.SteerFeedbackType;
@@ -61,10 +58,8 @@ public class TunerConstants {
             .withKA(0.001642125);
 
     // The closed-loop output type to use for the steer motors;
-    // This affects the PID/FF gains for the steer motors
     private static final ClosedLoopOutputType kSteerClosedLoopOutput = ClosedLoopOutputType.Voltage;
     // The closed-loop output type to use for the drive motors;
-    // This affects the PID/FF gains for the drive motors
     private static final ClosedLoopOutputType kDriveClosedLoopOutput = ClosedLoopOutputType.Voltage;
 
     // The type of motor used for the drive motor
@@ -89,9 +84,11 @@ public class TunerConstants {
                     // stator current limit to help avoid brownouts without impacting performance.
                     .withStatorCurrentLimit(Amps.of(60))
                     .withStatorCurrentLimitEnable(true));
+
     private static final CANcoderConfiguration encoderInitialConfigs = new CANcoderConfiguration();
+
     // Configs for the Pigeon 2; leave this null to skip applying Pigeon 2 configs
-    private static final Pigeon2Configuration pigeonConfigs = null;
+    private static final Pigeon2Configuration pigeonConfigs = new Pigeon2Configuration();
 
     // CAN bus that the devices are located on;
     // All swerve devices must share the same CAN bus
@@ -118,8 +115,8 @@ public class TunerConstants {
     private static final MomentOfInertia kSteerInertia = KilogramSquareMeters.of(0.01);
     private static final MomentOfInertia kDriveInertia = KilogramSquareMeters.of(0.01);
     // Simulated voltage necessary to overcome friction
-    private static final Voltage kSteerFrictionVoltage = Volts.of(0.2);
-    private static final Voltage kDriveFrictionVoltage = Volts.of(0.2);
+    private static final Voltage kSteerFrictionVoltage = Volts.of(0.131719);
+    private static final Voltage kDriveFrictionVoltage = Volts.of(0.2314325);
 
     public static final SwerveDrivetrainConstants DrivetrainConstants = new SwerveDrivetrainConstants()
             .withCANBusName(kCANBus.getName())

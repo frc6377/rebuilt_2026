@@ -180,6 +180,45 @@ task(eventDeploy) {
 }
 createVersionFile.dependsOn(eventDeploy)
 
+// Sync camera positions from VisionConstants.java to AdvantageScope config.json
+task syncAdvantageScopeConfig {
+    def visionConstantsFile = file('src/main/java/frc/robot/subsystems/vision/VisionConstants.java')
+    def configFile = file('AdvantageScopeAssets/Robot_HowdyBot_2026/config.json')
+
+    inputs.file visionConstantsFile
+    outputs.file configFile
+
+    doLast {
+        def src = visionConstantsFile.text
+
+        def extract = { String name ->
+            def m = (src =~ /(?m)$name\s*=\s*([^;]+);/)
+            if (m.find()) return m.group(1).trim() as double
+            throw new GradleException("Could not find $name in VisionConstants.java")
+        }
+
+        def x = extract('CAMERA0_X_INCHES')
+        def y = extract('CAMERA0_Y_INCHES')
+        def z = extract('CAMERA0_Z_INCHES')
+        def pitch = extract('CAMERA0_PITCH_DEG')
+        def yaw = extract('CAMERA0_YAW_DEG')
+
+        def config = new groovy.json.JsonSlurper().parse(configFile)
+        def cam = config.cameras.find { it.name == 'Shooter-Cam' }
+        if (cam == null) throw new GradleException("Camera 'Shooter-Cam' not found in config.json")
+
+        cam.position = [x, y, z]
+        cam.rotations = [
+            [axis: 'y', degrees: -pitch],
+            [axis: 'z', degrees: -yaw]
+        ]
+
+        configFile.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(config))
+        println "Synced camera0 position to AdvantageScope config.json"
+    }
+}
+project.compileJava.dependsOn(syncAdvantageScopeConfig)
+
 // Spotless formatting
 project.compileJava.dependsOn(spotlessApply)
 spotless {

@@ -14,7 +14,14 @@
 package frc.robot.subsystems.vision;
 
 import static edu.wpi.first.units.Units.Meters;
-import static frc.robot.subsystems.vision.VisionConstants.*;
+import static frc.robot.subsystems.vision.VisionConstants.angularStdDevBaseline;
+import static frc.robot.subsystems.vision.VisionConstants.angularStdDevMegatag2Factor;
+import static frc.robot.subsystems.vision.VisionConstants.aprilTagLayout;
+import static frc.robot.subsystems.vision.VisionConstants.cameraStdDevFactors;
+import static frc.robot.subsystems.vision.VisionConstants.linearStdDevBaseline;
+import static frc.robot.subsystems.vision.VisionConstants.linearStdDevMegatag2Factor;
+import static frc.robot.subsystems.vision.VisionConstants.maxAmbiguity;
+import static frc.robot.subsystems.vision.VisionConstants.maxZError;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
@@ -29,14 +36,20 @@ import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.vision.VisionIO.HubTagObservation;
+import frc.robot.Constants;
+import frc.robot.subsystems.vision.Vision.VisionConsumer;
 import frc.robot.subsystems.vision.VisionIO.PoseObservationType;
 import java.util.ArrayList;
 import java.util.HashMap;
+import frc.robot.subsystems.vision.questnav.QuestNavIO;
+import gg.questnav.questnav.PoseFrame;
+import gg.questnav.questnav.QuestNav;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalDouble;
 import java.util.Set;
+import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
 
 public class Vision extends SubsystemBase {
@@ -45,15 +58,22 @@ public class Vision extends SubsystemBase {
     private final VisionIOInputsAutoLogged[] inputs;
     private final Alert[] disconnectedAlerts;
 
+    private final QuestNavIO questNavIO;
+
+    // QuestNav fields
+    private final QuestNav questNav;
+    private Pose3d questPose = new Pose3d();
+
     private final String[] logKeyInputs;
     private final String[] logKeyTagPoses;
     private final String[] logKeyRobotPoses;
     private final String[] logKeyRobotPosesAccepted;
     private final String[] logKeyRobotPosesRejected;
 
-    public Vision(VisionConsumer consumer, VisionIO... io) {
+    public Vision(VisionConsumer consumer, QuestNavIO questNavIO, VisionIO... io) {
         this.consumer = consumer;
         this.io = io;
+        this.questNavIO = questNavIO;
 
         // Initialize inputs and log keys
         this.inputs = new VisionIOInputsAutoLogged[io.length];
@@ -77,6 +97,15 @@ public class Vision extends SubsystemBase {
         for (int i = 0; i < io.length; i++) {
             disconnectedAlerts[i] = new Alert("Vision camera " + i + " is disconnected.", AlertType.kWarning);
         }
+
+        if (Constants.EnabledSubsystems.kQuestNav) {
+
+            // Initialize QuestNav
+            questNav = new QuestNav();
+            questPose = new Pose3d();
+            questNav.setPose(questPose);
+        }
+
     }
 
     // ========== Hub Distance Fallback ==========
@@ -202,6 +231,36 @@ public class Vision extends SubsystemBase {
         return inputs[cameraIndex].latestTargetObservation.tx();
     }
 
+    public void resetQuestNavPose(Pose3d robotPose) {
+        questNavIO.resetQuestNavPose(robotPose);
+    }
+
+    public void zeroQuestNav() {
+        questNavIO.zeroQuestNav();
+    }
+
+    public void setQuestNavStartPose(Pose3d pose) {
+        questNavIO.setQuestNavStartPose(pose);
+    }
+
+    public Supplier<Pose2d> getQuestNavPoseSupplier() {
+        return questNavIO.getQuestNavPoseSupplier();
+    }
+    /**
+     * Gets the starting pose from the Limelight (camera index 0).
+     *
+     * @return The robot pose as a Pose3d, or null if no valid pose is available.
+     */
+    public Pose3d getStartingPoseFromLimelight() {
+        return getStartingPoseFromCamera(0);
+    }
+
+    /**
+     * Gets the tag count from the most recent observation of the specified camera.
+     *
+     * @param cameraIndex The index of the camera to use.
+     * @return The number of tags seen, or 0 if no observations are available.
+     */
     public int getTagCount(int cameraIndex) {
         var observations = inputs[cameraIndex].poseObservations;
         if (observations.length == 0) {
@@ -231,6 +290,7 @@ public class Vision extends SubsystemBase {
 
     @Override
     public void periodic() {
+
         for (int i = 0; i < io.length; i++) {
             io[i].updateInputs(inputs[i]);
             Logger.processInputs(logKeyInputs[i], inputs[i]);
@@ -332,6 +392,22 @@ public class Vision extends SubsystemBase {
         Logger.recordOutput(
                 "Vision/Summary/RobotPosesRejected",
                 allRobotPosesRejected.toArray(new Pose3d[allRobotPosesRejected.size()]));
+
+        if (Constants.EnabledSubsystems.kQuestNav) {
+            // QuestNav periodic
+            questNav.commandPeriodic();
+            PoseFrame[] questFrames = questNav.getAllUnreadPoseFrames();
+            for (PoseFrame questFrame : questFrames) {
+                if (questFrame.isTracking()) {
+                    questPose = questFrame.questPose3d();
+                    double timestamp = questFrame.dataTimestamp();
+                    Pose3d robotPose = questPose.transformBy(VisionConstants.ROBOT_TO_QUEST.inverse());
+                    consumer.accept(robotPose.toPose2d(), timestamp, VisionConstants.QUESTNAV_STD_DEVS);
+                }
+            }
+        }
+        Logger.recordOutput("Vision/QuestNav/Connected", questNav.isConnected());
+        Logger.recordOutput("Vision/QuestNav/Pose", questPose);
     }
 
     @FunctionalInterface

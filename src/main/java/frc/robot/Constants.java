@@ -63,13 +63,14 @@ public final class Constants {
 
     public static final class EnabledSubsystems {
         public static final boolean kShooterLeft = true;
-        public static final boolean kShooterRight = false;
+        public static final boolean kShooterRight = true;
         public static final boolean kShooterUpgoerLeft = true;
-        public static final boolean kShooterUpgoerRight = false;
+        public static final boolean kShooterUpgoerRight = true;
         public static final boolean kHood = false;
         public static final boolean kRoller = true;
         public static final boolean kExtender = true;
         public static final boolean kDrive = true;
+        public static final boolean kQuestNav = true;
         public static final boolean kIndexer = true;
     }
 
