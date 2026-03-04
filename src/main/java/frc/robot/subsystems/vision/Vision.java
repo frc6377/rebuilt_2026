@@ -32,6 +32,7 @@ import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants;
 import frc.robot.subsystems.vision.Vision.VisionConsumer;
 import frc.robot.subsystems.vision.VisionIO.PoseObservationType;
 import frc.robot.subsystems.vision.questnav.QuestNavIO;
@@ -89,16 +90,14 @@ public class Vision extends SubsystemBase {
                     new Alert("Vision camera " + Integer.toString(i) + " is disconnected.", AlertType.kWarning);
         }
 
-        // Initialize QuestNav
-        questNav = new QuestNav();
-        questPose = new Pose3d();
-        questNav.setPose(questPose);
+        if (Constants.EnabledSubsystems.kQuestNav) {
 
-        // var observations = inputs[cameraIndex].poseObservations;
-        // var latestObservation = observations[observations.length - 1];
-        // return latestObservation.tagCount();
+            // Initialize QuestNav
+            questNav = new QuestNav();
+            questPose = new Pose3d();
+            questNav.setPose(questPose);
+        }
 
-        // this.setQuestNavStartPose(this.getStartingPoseFromLimelight());
     }
 
     /**
@@ -135,10 +134,10 @@ public class Vision extends SubsystemBase {
     }
 
     /**
-     * Gets the starting pose from the specified camera's vision data.
+     * Gets the tag count from the most recent observation of the specified camera.
      *
      * @param cameraIndex The index of the camera to use.
-     * @return The robot pose as a Pose2d, or null if no valid pose is available.
+     * @return The number of tags seen, or 0 if no observations are available.
      */
     public int getTagCount(int cameraIndex) {
         var observations = inputs[cameraIndex].poseObservations;
@@ -272,18 +271,19 @@ public class Vision extends SubsystemBase {
                 "Vision/Summary/RobotPosesRejected",
                 allRobotPosesRejected.toArray(new Pose3d[allRobotPosesRejected.size()]));
 
-        // QuestNav periodic
-        questNav.commandPeriodic();
-        PoseFrame[] questFrames = questNav.getAllUnreadPoseFrames();
-        for (PoseFrame questFrame : questFrames) {
-            if (questFrame.isTracking()) {
-                questPose = questFrame.questPose3d();
-                double timestamp = questFrame.dataTimestamp();
-                Pose3d robotPose = questPose.transformBy(VisionConstants.ROBOT_TO_QUEST.inverse());
-                // consumer.accept(robotPose.toPose2d(), timestamp, VisionConstants.QUESTNAV_STD_DEVS);
+        if (Constants.EnabledSubsystems.kQuestNav) {
+            // QuestNav periodic
+            questNav.commandPeriodic();
+            PoseFrame[] questFrames = questNav.getAllUnreadPoseFrames();
+            for (PoseFrame questFrame : questFrames) {
+                if (questFrame.isTracking()) {
+                    questPose = questFrame.questPose3d();
+                    double timestamp = questFrame.dataTimestamp();
+                    Pose3d robotPose = questPose.transformBy(VisionConstants.ROBOT_TO_QUEST.inverse());
+                    consumer.accept(robotPose.toPose2d(), timestamp, VisionConstants.QUESTNAV_STD_DEVS);
+                }
             }
         }
-
         Logger.recordOutput("Vision/QuestNav/Connected", questNav.isConnected());
         Logger.recordOutput("Vision/QuestNav/Pose", questPose);
     }
