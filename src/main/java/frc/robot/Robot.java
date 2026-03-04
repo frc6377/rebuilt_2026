@@ -32,7 +32,7 @@ import org.littletonrobotics.junction.wpilog.WPILOGWriter;
  */
 public class Robot extends LoggedRobot {
     private Command autonomousCommand;
-    private RobotContainer robotContainer;
+    private final RobotContainer robotContainer;
 
     public Robot() {
         // Set up data receivers & replay source

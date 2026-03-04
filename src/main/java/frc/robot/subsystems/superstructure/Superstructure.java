@@ -86,11 +86,13 @@ public class Superstructure extends SubsystemBase {
 
     private final Shooter shooter;
     private final Hood hood;
-    private final Upgoer upgoer;
+    private final Upgoer leftUpgoer;
+    private final Upgoer rightUpgoer;
     private final Indexer indexer;
     private final RobotState robotState;
     private GamePieceTrajectorySimulation gamePieceTrajectorySimulation;
     private AngularVelocity manualShootingVelocity = RPM.of(ShooterConstants.kManualShootingSpeedRPM);
+    private Command currentShootingCommand = Commands.none();
     /** Creates the superstructure and selects IO implementations by mode. */
     public Superstructure(BooleanSupplier isIntaking) {
         RobotState createdState = RobotState.getInstance();
@@ -102,29 +104,42 @@ public class Superstructure extends SubsystemBase {
         this.shooter = new Shooter();
 
         HoodIO hoodIO;
-        UpgoerIO upgoerIO;
+        UpgoerIO leftUpgoerIO;
+        UpgoerIO rightUpgoerIO;
         IndexerIO indexerIO;
 
         switch (Constants.currentMode) {
             case REAL:
                 hoodIO = Constants.EnabledSubsystems.kHood ? new HoodIOKrakenX60() : new HoodIO() {};
-                upgoerIO = Constants.EnabledSubsystems.kUpgoer ? new UpgoerIOKrakenX60() : new UpgoerIO() {};
+                leftUpgoerIO = Constants.EnabledSubsystems.kShooterUpgoerLeft
+                        ? new UpgoerIOKrakenX60(Constants.CANIDs.MotorIDs.kLeftUpgoerMotorCANID, "LeftShooterUpgoer")
+                        : new UpgoerIO() {};
+                rightUpgoerIO = Constants.EnabledSubsystems.kShooterUpgoerRight
+                        ? new UpgoerIOKrakenX60(Constants.CANIDs.MotorIDs.kRightUpgoerMotorCANID, "RightShooterUpgoer")
+                        : new UpgoerIO() {};
                 indexerIO = Constants.EnabledSubsystems.kIndexer ? new IndexerIOReal() : new IndexerIO() {};
                 break;
             case SIM:
                 hoodIO = Constants.EnabledSubsystems.kHood ? new HoodIOSim() : new HoodIO() {};
-                upgoerIO = Constants.EnabledSubsystems.kUpgoer ? new UpgoerIOSim() : new UpgoerIO() {};
+                leftUpgoerIO = Constants.EnabledSubsystems.kShooterUpgoerLeft
+                        ? new UpgoerIOSim(Constants.CANIDs.MotorIDs.kLeftUpgoerMotorCANID, "LeftShooterUpgoer")
+                        : new UpgoerIO() {};
+                rightUpgoerIO = Constants.EnabledSubsystems.kShooterUpgoerRight
+                        ? new UpgoerIOSim(Constants.CANIDs.MotorIDs.kRightUpgoerMotorCANID, "RightShooterUpgoer")
+                        : new UpgoerIO() {};
                 indexerIO = Constants.EnabledSubsystems.kIndexer ? new IndexerIOSim() : new IndexerIO() {};
                 break;
             default:
                 hoodIO = new HoodIO() {};
-                upgoerIO = new UpgoerIO() {};
+                leftUpgoerIO = new UpgoerIO() {};
+                rightUpgoerIO = new UpgoerIO() {};
                 indexerIO = new IndexerIO() {};
                 break;
         }
 
         this.hood = new Hood(hoodIO);
-        this.upgoer = new Upgoer(upgoerIO);
+        this.leftUpgoer = new Upgoer(leftUpgoerIO, "LeftShooterUpgoer");
+        this.rightUpgoer = new Upgoer(rightUpgoerIO, "RightShooterUpgoer");
         this.indexer = new Indexer(indexerIO);
 
         indexer.setDefaultCommand(
@@ -133,6 +148,11 @@ public class Superstructure extends SubsystemBase {
 
     @Override
     public void periodic() {
+        // Log hub active state from game data
+        boolean isHubActive = FieldConstants.isHubActive();
+        Logger.recordOutput("Shooting/HubActive", isHubActive);
+        Logger.recordOutput("Shooting/TimeUntilHubStateChange", FieldConstants.getTimeUntilHubStateChange());
+
         if (gamePieceTrajectorySimulation == null) {
             return;
         }
@@ -232,8 +252,12 @@ public class Superstructure extends SubsystemBase {
         return hood;
     }
 
-    public Upgoer getUpgoer() {
-        return upgoer;
+    public Upgoer getLeftUpgoer() {
+        return leftUpgoer;
+    }
+
+    public Upgoer getRightUpgoer() {
+        return rightUpgoer;
     }
 
     public boolean hasHood() {
@@ -255,7 +279,8 @@ public class Superstructure extends SubsystemBase {
     }
 
     public void setUpgoerVelocity(AngularVelocity velocity) {
-        upgoer.setVelocity(velocity);
+        leftUpgoer.setVelocity(velocity);
+        rightUpgoer.setVelocity(velocity);
     }
 
     public AngularVelocity getLeftFlywheelVelocity() {
@@ -277,7 +302,8 @@ public class Superstructure extends SubsystemBase {
     }
 
     public void stopUpgoer() {
-        upgoer.stop();
+        leftUpgoer.stop();
+        rightUpgoer.stop();
     }
 
     public Command stopShooterCommand() {
@@ -285,7 +311,7 @@ public class Superstructure extends SubsystemBase {
     }
 
     public Command stopUpgoerCommand() {
-        return upgoer.stopCommand();
+        return leftUpgoer.stopCommand().alongWith(rightUpgoer.stopCommand());
     }
 
     /** Calculate the distance from the robot to the hub. */
@@ -395,13 +421,15 @@ public class Superstructure extends SubsystemBase {
                 .withName("AimAtHub");
     }
 
-    /** Command that fires the shooter (feeds upgoer only when flywheels are at speed). */
+    /** Command that fires the shooter (feeds both upgoers). */
     public Command fireCommand() {
         return Commands.run(
                         () -> {
-                            upgoer.setVelocity(UpgoerConstants.defaultFeedVelocity);
+                            leftUpgoer.setVelocity(UpgoerConstants.defaultFeedVelocity);
+                            rightUpgoer.setVelocity(UpgoerConstants.defaultFeedVelocity);
                         },
-                        upgoer)
+                        leftUpgoer,
+                        rightUpgoer)
                 .withName("SuperstructureFire");
     }
 
@@ -409,9 +437,11 @@ public class Superstructure extends SubsystemBase {
         return Commands.run(
                         () -> {
                             shooter.setFlywheelVelocity(ShooterConstants.kDefaultUnjamVelocity);
-                            upgoer.setVelocity(UpgoerConstants.defaultUnjamVelocity);
+                            leftUpgoer.setVelocity(UpgoerConstants.defaultUnjamVelocity);
+                            rightUpgoer.setVelocity(UpgoerConstants.defaultUnjamVelocity);
                         },
-                        upgoer)
+                        leftUpgoer,
+                        rightUpgoer)
                 .withName("SuperstructureUnjam");
     }
 
@@ -460,11 +490,7 @@ public class Superstructure extends SubsystemBase {
     public Command autoChooseShootingCommand(
             Drive drive, Vision vision, DoubleSupplier xSupplier, DoubleSupplier ySupplier) {
         if (ShooterConstants.kManualShootingEnabled) {
-            return Commands.runOnce(
-                            () -> setFlywheelVelocity(RPM.of(manualShootingSpeedRPM.get())),
-                            shooter.getLeft(),
-                            shooter.getRight())
-                    .withName("ManualShooting");
+            return runFlywheelVelocityManual();
         } else if (vision.getTagCount(0) + vision.getTagCount(1) == 1) {
             return autoSpeedShooter(drive::getPose, drive::getChassisSpeeds);
         } else {
@@ -474,6 +500,16 @@ public class Superstructure extends SubsystemBase {
     /** Manual override command for testing and bench mode. Doesn't run the shooter */
     public Command setFlywheelVelocityManual(AngularVelocity velocity) {
         return Commands.runOnce(() -> manualShootingVelocity = velocity);
+    }
+
+    public Command changeFlywheelVelocityManual(AngularVelocity deltaRPM) {
+        return Commands.runOnce(() -> manualShootingVelocity = manualShootingVelocity.plus(deltaRPM));
+    }
+    public Command changeManualShootingCommand(Command command) {
+        return Commands.runOnce(() -> currentShootingCommand = command);
+    }
+    public Supplier<Command> getCurrentShootingCommandSupplier() {
+        return () -> currentShootingCommand;
     }
 
     public Command runFlywheelVelocityManual() {

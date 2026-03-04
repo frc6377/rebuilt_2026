@@ -18,8 +18,8 @@ public class IntakeConstants {
 
     public static class RollerConstants {
         // TODO: Fix incorrect Constants
-        public static final double kIntakePercent = 0.67;
-        public static final double kOuttakePercent = -0.7;
+        public static final double kIntakePercent = 0.4;
+        public static final double kOuttakePercent = -0.6;
         public static final AngularVelocity kIntakeSpeed = RotationsPerSecond.of(50);
         public static final AngularVelocity kOuttakeSpeed = RotationsPerSecond.of(50);
 
@@ -47,16 +47,16 @@ public class IntakeConstants {
         public static final Distance kExtenderArmLength = Inches.of(12.0);
         public static final double kDownSpeed = 0.05;
 
-        public static final Angle kExtenderStowAngle = Degrees.of(0.0);
-        public static final Angle kExtenderIntakeAngle = Degrees.of(5.6);
-        public static final Angle kExtenderMaxAngle = Degrees.of(12.35);
+        public static final Angle kExtenderStowAngle = Degrees.of(90.0);
+        public static final Angle kExtenderIntakeAngle = Degrees.of(0);
+        public static final Angle kExtenderMaxAngle = Degrees.of(90.0);
         public static final Angle kExtenderMinAngle = Degrees.of(0.0);
-        public static final Angle kExtenderTolerance = Degrees.of(5);
-        public static final Angle kExtenderSiftAngleOne = Degrees.of(10);
+        public static final Angle kExtenderTolerance = Degrees.of(2);
+        public static final Angle kExtenderSiftAngleOne = Degrees.of(50);
         public static final Angle kExtenderSiftAngleTwo = Degrees.of(5);
 
         public static class PIDF {
-            public static final double kP = 15.0;
+            public static final double kP = 5.0;
             public static final double kI = 0.0;
             public static final double kD = 0.0;
             public static final double kS = 0.0;

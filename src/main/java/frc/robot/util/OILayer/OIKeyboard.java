@@ -106,6 +106,11 @@ public class OIKeyboard implements OI {
     }
 
     @Override
+    public Trigger intakeMiddle() {
+        return Home;
+    }
+
+    @Override
     public Trigger zeroIntake() {
         return Home;
     }

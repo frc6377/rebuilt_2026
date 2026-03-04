@@ -52,7 +52,7 @@ public class ExtenderIOReal implements ExtenderIO {
 
         extenderMotorConfig = new TalonFXConfiguration();
         extenderMotorConfig.ClosedLoopRamps.VoltageClosedLoopRampPeriod = ExtenderConstants.MotorConfig.kRampPeriod;
-        extenderMotorConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
+        extenderMotorConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
         extenderMotorConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
 
         extenderMotor.applyConfiguration(extenderMotorConfig);
@@ -76,7 +76,8 @@ public class ExtenderIOReal implements ExtenderIO {
     }
 
     public void setPosition(Angle position) {
-        Logger.recordOutput("Intake/Extender/PositionDegrees", position);
+        this.setpoint = position;
+        Logger.recordOutput("Intake/Extender/SetpointDegrees", position);
         extenderMotor.setControl(new PositionVoltage(position.times(ExtenderConstants.kGearing)));
     }
 
@@ -89,8 +90,7 @@ public class ExtenderIOReal implements ExtenderIO {
     }
 
     public boolean isAtAngle(Angle angle) {
-        return Math.abs((getPosition().minus(angle)).in(Degrees))
-                < kExtenderTolerance.get() * ExtenderConstants.kGearing;
+        return Math.abs((getPosition().minus(angle)).in(Degrees)) < kExtenderTolerance.get();
     }
 
     @Override

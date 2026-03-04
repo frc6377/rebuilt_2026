@@ -185,13 +185,10 @@ public class RobotContainer {
         NamedCommands.registerCommand(
                 "Shoot", Commands.deadline(Commands.waitSeconds(5), superstructure.fireCommand()));
         // NamedCommands.registerCommand("Intake", Commands.deadline(intake.intakeCommand(), Commands.waitSeconds(6)));
-        NamedCommands.registerCommand("Extend Intake", Commands.runOnce(intake::extendIntake));
+        NamedCommands.registerCommand("Extend Intake", intake.extendIntake());
         NamedCommands.registerCommand(
                 "Intake",
-                Commands.deadline(
-                                Commands.waitSeconds(6),
-                                Commands.parallel(
-                                        intake.intakeCommand(), Commands.runOnce(() -> indexer.setRunning(true))))
+                Commands.deadline(Commands.waitSeconds(6), Commands.parallel(intake.intakeCommand(), indexer.index()))
                         .andThen(indexer.stop()));
         NamedCommands.registerCommand(
                 "Index",
@@ -264,7 +261,7 @@ public class RobotContainer {
         //                 () -> -OIController.driveTranslationX().getAsDouble(),
         //                 () -> new Rotation2d()));
 
-        OIController.spinUpShooter().whileTrue(superstructure.runFlywheelVelocityManual());
+        OIController.spinUpShooter().whileTrue(superstructure.getCurrentShootingCommandSupplier().get());
 
         // Manual fire (feeds piece when shooter is ready)
         OIController.fireShooter()
@@ -279,10 +276,10 @@ public class RobotContainer {
         OIController.stopSuperstructure()
                 .onTrue(superstructure.stopShooterCommand().alongWith(superstructure.stopUpgoerCommand()));
 
-        OIController.shootSpeedLow().onTrue(superstructure.setFlywheelVelocityManual(RPM.of(2100)));
-        OIController.shootSpeedMidLow().onTrue(superstructure.setFlywheelVelocityManual(RPM.of(2500)));
-        OIController.shootSpeedMidHigh().onTrue(superstructure.setFlywheelVelocityManual(RPM.of(2900)));
-        OIController.shootSpeedHigh().onTrue(superstructure.setFlywheelVelocityManual(RPM.of(3300)));
+        OIController.shootSpeedLow().onTrue(superstructure.changeManualShootingCommand(superstructure.runFlywheelVelocityManual()));
+        OIController.shootSpeedMidLow().onTrue(superstructure.changeFlywheelVelocityManual(RPM.of(-200)));
+        OIController.shootSpeedMidHigh().onTrue(superstructure.changeManualShootingCommand(superstructure.autoChooseShootingCommand(drive, vision, OIController.driveTranslationX(), OIController.driveTranslationY())));
+        OIController.shootSpeedHigh().onTrue(superstructure.changeFlywheelVelocityManual(RPM.of(200)));
 
         // Reset gyro / odometry
         final Runnable resetGyro = Constants.currentMode == Constants.Mode.SIM
@@ -292,9 +289,10 @@ public class RobotContainer {
         // OIController.start().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
 
         OIController.intake().whileTrue(intake.intakeCommand().alongWith(indexer.index()));
-        OIController.outtake().whileTrue(intake.outtakeRollerCommand());
+        OIController.outtake().whileTrue(intake.outtakeRollerCommand().alongWith(indexer.indexReverse()));
         OIController.zeroIntake().onTrue(intake.zeroExtender());
-        OIController.toggleIntakeState().whileTrue(intake.stowIntake());
+        OIController.toggleIntakeState().onTrue(intake.retractIntakeCommand());
+        OIController.intakeMiddle().onTrue(intake.goToSiftAngleOneCommand());
     }
 
     /**

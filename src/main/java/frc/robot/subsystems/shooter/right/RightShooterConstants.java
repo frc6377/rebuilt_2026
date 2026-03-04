@@ -39,6 +39,7 @@ public class RightShooterConstants {
     public static final double flywheelKD = 0.0;
     public static final double flywheelKV = 0.0;
     public static final double flywheelKS = 0.0;
+    public static final double flywheelKA = 0.0;
 
     // Flywheel current limits
     public static final Current flywheelCurrentLimitStator = Amps.of(60.0);

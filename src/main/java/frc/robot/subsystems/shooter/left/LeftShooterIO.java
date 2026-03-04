@@ -7,7 +7,7 @@ import org.littletonrobotics.junction.AutoLog;
 
 public interface LeftShooterIO {
     @AutoLog
-    public static class LeftShooterIOInputs {
+    class LeftShooterIOInputs {
         public AngularVelocity flywheelVelocity = RPM.of(0.0);
         public Voltage flywheelAppliedVoltage = Volts.of(0.0);
         public Current flywheelCurrent = Amps.of(0.0);

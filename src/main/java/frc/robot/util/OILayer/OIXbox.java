@@ -113,8 +113,9 @@ public class OIXbox implements OI {
         return a;
     }
 
-    public Trigger xPattern() {
-        return x;
+    @Override
+    public Trigger intakeMiddle() {
+        return y;
     }
 
     @Override

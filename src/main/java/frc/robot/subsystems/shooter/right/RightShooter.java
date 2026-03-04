@@ -32,6 +32,7 @@ public class RightShooter extends SubsystemBase {
     private AngularVelocity spinSetpoint = RPM.of(0.0);
 
     // Failure state
+    @AutoLogOutput(key = "RightShooter/FlywheelFailed")
     private boolean flywheelFailed = false;
 
     public RightShooter(RightShooterIO io) {
@@ -53,10 +54,10 @@ public class RightShooter extends SubsystemBase {
         Logger.recordOutput("RightShooter/Enabled", RightShooterConstants.enabled);
         Logger.recordOutput("RightShooter/FollowerEnabled", RightShooterConstants.followerEnabled);
         Logger.recordOutput("RightShooter/SpinMotorEnabled", RightShooterConstants.spinMotorEnabled);
+        Logger.recordOutput("RightShooter/FlywheelFailed", flywheelFailed);
         Logger.recordOutput("RightShooter/FlywheelSetpoint", flywheelSetpoint);
         Logger.recordOutput("RightShooter/SpinSetpoint", spinSetpoint);
         Logger.recordOutput("RightShooter/SpinRatio", spinRatio.get());
-        Logger.recordOutput("RightShooter/FlywheelFailed", flywheelFailed);
         if (getCurrentCommand() != null) {
             Logger.recordOutput(
                     "RightShooter/CurrentCommand", getCurrentCommand().getName());

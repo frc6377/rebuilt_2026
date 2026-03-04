@@ -29,7 +29,6 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Temperature;
 import edu.wpi.first.units.measure.Voltage;
-import frc.robot.Constants;
 import frc.robot.util.TunableTalonFX;
 
 public class UpgoerIOKrakenX60 implements UpgoerIO {
@@ -45,11 +44,15 @@ public class UpgoerIOKrakenX60 implements UpgoerIO {
     private final StatusSignal<Temperature> temp;
     private final StatusSignal<Double> velocityError;
 
-    public UpgoerIOKrakenX60() {
+    /**
+     * @param motorId CAN ID of the Kraken X60 motor.
+     * @param logName Logging key prefix used for tunable gains (e.g. "LeftShooterUpgoer").
+     */
+    public UpgoerIOKrakenX60(int motorId, String logName) {
         motor = new TunableTalonFX(
-                Constants.CANIDs.MotorIDs.kUpgoerMotorCANID,
+                motorId,
                 UpgoerConstants.canBusName,
-                "Upgoer/Motor",
+                logName + "/Motor",
                 new Slot0Configs()
                         .withKP(UpgoerConstants.defaultKP)
                         .withKI(UpgoerConstants.defaultKI)
