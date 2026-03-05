@@ -132,6 +132,19 @@
               "period": 0.06,
               "data_type": "double"
             }
+          },
+          {
+            "title": "FlywheelSetpoint",
+            "x": 896.0,
+            "y": 512.0,
+            "width": 384.0,
+            "height": 128.0,
+            "type": "Large Text Display",
+            "properties": {
+              "topic": "/AdvantageKit/RealOutputs/LeftShooter/FlywheelSetpoint",
+              "period": 0.06,
+              "data_type": "double"
+            }
           }
         ]
       }

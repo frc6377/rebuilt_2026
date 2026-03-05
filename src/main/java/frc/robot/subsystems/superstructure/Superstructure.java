@@ -144,7 +144,7 @@ public class Superstructure extends SubsystemBase {
 
         this.hood = new Hood(hoodIO);
         this.leftUpgoer = new Upgoer(leftUpgoerIO, "LeftShooterUpgoer", 1);
-        this.rightUpgoer = new Upgoer(rightUpgoerIO, "RightShooterUpgoer", -1);
+        this.rightUpgoer = new Upgoer(rightUpgoerIO, "RightShooterUpgoer", 1);
         this.indexer = new Indexer(indexerIO);
         this.currentShootingCommand = this.runFlywheelVelocityManual();
         indexer.setDefaultCommand(
@@ -461,7 +461,6 @@ public class Superstructure extends SubsystemBase {
     public Command unjamCommand() {
         return Commands.run(
                         () -> {
-                            shooter.setFlywheelVelocity(ShooterConstants.kDefaultUnjamVelocity);
                             leftUpgoer.setVelocity(UpgoerConstants.defaultUnjamVelocity);
                             rightUpgoer.setVelocity(UpgoerConstants.defaultUnjamVelocity);
                         },

@@ -207,4 +207,9 @@ public class OIXbox implements OI {
     public Trigger increaseShootSpeed() {
         return operatorDPadRight;
     }
+
+    @Override
+    public Trigger driveLockX() {
+        return opA;
+    }
 }

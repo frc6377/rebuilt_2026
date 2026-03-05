@@ -119,4 +119,9 @@ public class OIKeyboard implements OI {
     public Trigger downIntake() {
         return End;
     }
+
+    @Override
+    public Trigger driveLockX() {
+        return Slash;
+    }
 }

@@ -147,4 +147,8 @@ public interface OI {
     default Trigger driveLock0() {
         return noButton;
     }
+
+    default Trigger driveLockX() {
+        return noButton;
+    }
 }
