@@ -50,7 +50,6 @@ import frc.robot.subsystems.upgoer.UpgoerIO;
 import frc.robot.subsystems.upgoer.UpgoerIOKrakenX60;
 import frc.robot.subsystems.upgoer.UpgoerIOSim;
 import frc.robot.subsystems.vision.Vision;
-import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.DoubleSupplier;
@@ -93,7 +92,7 @@ public class Superstructure extends SubsystemBase {
     private final RobotState robotState;
     private GamePieceTrajectorySimulation gamePieceTrajectorySimulation;
     private AngularVelocity manualShootingVelocity = RPM.of(ShooterConstants.kManualShootingSpeedRPM);
-    private Command currentShootingCommand = Commands.none();
+    private Command currentShootingCommand;
     /** Creates the superstructure and selects IO implementations by mode. */
     public Superstructure(BooleanSupplier isIntaking) {
         RobotState createdState = RobotState.getInstance();
@@ -139,10 +138,10 @@ public class Superstructure extends SubsystemBase {
         }
 
         this.hood = new Hood(hoodIO);
-        this.leftUpgoer = new Upgoer(leftUpgoerIO, "LeftShooterUpgoer");
-        this.rightUpgoer = new Upgoer(rightUpgoerIO, "RightShooterUpgoer");
+        this.leftUpgoer = new Upgoer(leftUpgoerIO, "LeftShooterUpgoer", 1);
+        this.rightUpgoer = new Upgoer(rightUpgoerIO, "RightShooterUpgoer", -1);
         this.indexer = new Indexer(indexerIO);
-
+        this.currentShootingCommand = this.runFlywheelVelocityManual();
         indexer.setDefaultCommand(
                 Commands.run(() -> indexer.setRunning(shooter.isRunning() || isIntaking.getAsBoolean()), indexer));
     }
@@ -155,7 +154,6 @@ public class Superstructure extends SubsystemBase {
         Logger.recordOutput("Shooting/HubFlashing", FieldConstants.isHubFlashing());
         Logger.recordOutput("Shooting/HubIndicatorOn", FieldConstants.isHubIndicatorOn());
         Logger.recordOutput("Shooting/TimeUntilHubStateChange", FieldConstants.getTimeUntilHubStateChange());
-
 
         if (gamePieceTrajectorySimulation == null) {
             return;

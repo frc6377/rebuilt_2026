@@ -97,7 +97,12 @@ public class Intake extends SubsystemBase {
     }
 
     public Command zeroIntake() {
-        return runEnd(() -> extender.goDown(), () -> extender.stop()).andThen(() -> extender.zero());
+        return runOnce(extender::zero);
+    }
+
+    public Command autoZeroIntakeCommand() {
+        return Commands.runEnd(extender::autoZero, extender::stop, this)
+                .until(extender.atTarget());
     }
 
     public Command stop() {

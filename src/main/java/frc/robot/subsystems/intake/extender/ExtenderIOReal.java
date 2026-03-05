@@ -28,12 +28,13 @@ public class ExtenderIOReal implements ExtenderIO {
     // Logged network numbers for tuning/monitoring extender angles (no "NN" suffix per request)
     private final LoggedNetworkNumber kExtenderStowAngle;
     private final LoggedNetworkNumber kExtenderIntakeAngle;
-    // private final LoggedNetworkNumber kExtenderMaxAngle;
+    private final LoggedNetworkNumber kExtenderMaxAngle;
     // private final LoggedNetworkNumber kExtenderMinAngle;
     private final LoggedNetworkNumber kExtenderTolerance;
     private final LoggedNetworkNumber kExtenderSiftAngleOne;
     private final LoggedNetworkNumber kExtenderSiftAngleTwo;
     private final LoggedNetworkNumber kExtenderDownSpeed;
+    private final LoggedNetworkNumber kExtenderZeroCurrentLimit;
 
     public ExtenderIOReal() {
         this.setpoint = Degrees.of(0.0);
@@ -62,8 +63,8 @@ public class ExtenderIOReal implements ExtenderIO {
                 new LoggedNetworkNumber("Intake/Extender/StowAngle", ExtenderConstants.kExtenderStowAngle.in(Degrees));
         kExtenderIntakeAngle = new LoggedNetworkNumber(
                 "Intake/Extender/IntakeAngle", ExtenderConstants.kExtenderIntakeAngle.in(Degrees));
-        // kExtenderMaxAngle =
-        //         new LoggedNetworkNumber("Intake/Extender/MaxAngle", ExtenderConstants.kExtenderMaxAngle.in(Degrees));
+        kExtenderMaxAngle =
+                new LoggedNetworkNumber("Intake/Extender/MaxAngle", ExtenderConstants.kExtenderMaxAngle.in(Degrees));
         // kExtenderMinAngle =
         //         new LoggedNetworkNumber("Intake/Extender/MinAngle", ExtenderConstants.kExtenderMinAngle.in(Degrees));
         kExtenderTolerance =
@@ -73,6 +74,7 @@ public class ExtenderIOReal implements ExtenderIO {
         kExtenderSiftAngleTwo = new LoggedNetworkNumber(
                 "Intake/Extender/SiftAngleTwo", ExtenderConstants.kExtenderSiftAngleTwo.in(Degrees));
         kExtenderDownSpeed = new LoggedNetworkNumber("Intake/Extender/DownSpeed", ExtenderConstants.kDownSpeed);
+        kExtenderZeroCurrentLimit = new LoggedNetworkNumber("Intake/Extender/DownSpeed", ExtenderConstants.zeroCurrentLimit.in(Amps));
     }
 
     public void setPosition(Angle position) {
@@ -140,8 +142,22 @@ public class ExtenderIOReal implements ExtenderIO {
     }
 
     @Override
-    public void goDown() {
+    public void autoZero() {
+        Slot0Configs zeroPID = new Slot0Configs();
+        zeroPID.kP = 0.0;
+        extenderMotor.getConfigurator().apply(zeroPID);
         extenderMotor.set(kExtenderDownSpeed.get());
+
+        double currentAmps = extenderMotor.getStatorCurrent().getValue().in(Amps);
+        double thresholdAmps = ExtenderConstants.zeroCurrentLimit.in(Amps);
+
+        if (Math.abs(currentAmps) >= thresholdAmps) {
+            extenderMotor.stopMotor();
+            setEncoderPosition(Degrees.of(kExtenderMaxAngle.get()));
+        }
+
+        extenderMotor.getConfigurator().apply(this.extenderMotorConfig);
+        goToSiftAngleOne();
     }
 
     @Override

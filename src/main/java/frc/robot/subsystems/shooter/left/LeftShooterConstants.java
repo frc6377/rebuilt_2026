@@ -24,7 +24,7 @@ public class LeftShooterConstants {
     public static final boolean spinMotorEnabled = false;
 
     // Motor inversion (left side is counter-clockwise positive)
-    public static final InvertedValue flywheelInverted = InvertedValue.CounterClockwise_Positive;
+    public static final InvertedValue flywheelInverted = InvertedValue.Clockwise_Positive;
     public static final InvertedValue spinInverted = InvertedValue.CounterClockwise_Positive;
 
     // Ramp rates

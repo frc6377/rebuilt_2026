@@ -96,7 +96,6 @@ public class Vision extends SubsystemBase {
             questPose = new Pose3d();
             questNav.setPose(questPose);
         }
-
     }
 
     /**
