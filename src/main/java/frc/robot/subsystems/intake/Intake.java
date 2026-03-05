@@ -99,6 +99,11 @@ public class Intake extends SubsystemBase {
     }
 
     public Command zeroIntake() {
+        return runOnce(extender::zero);
+    }
+
+    public Command autoZeroIntakeCommand() {
+        return Commands.runEnd(extender::autoZero, extender::stop, this).until(extender.atTarget());
         return runEnd(() -> extender.goDown(), () -> extender.stop())
                 .andThen(() -> extender.setEncoderPosition(Degrees.of(118.0)));
     }

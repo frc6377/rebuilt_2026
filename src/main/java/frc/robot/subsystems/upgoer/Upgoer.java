@@ -26,6 +26,7 @@ public class Upgoer extends SubsystemBase {
     private final UpgoerIO io;
     private final UpgoerIOInputsAutoLogged inputs = new UpgoerIOInputsAutoLogged();
     private final String logName;
+    private final double multiplier;
 
     private AngularVelocity setpoint = RPM.of(0.0);
 
@@ -33,9 +34,10 @@ public class Upgoer extends SubsystemBase {
      * @param io The IO implementation to use.
      * @param logName Logging key prefix (e.g. "LeftShooterUpgoer").
      */
-    public Upgoer(UpgoerIO io, String logName) {
+    public Upgoer(UpgoerIO io, String logName, double multiplier) {
         this.io = io;
         this.logName = logName;
+        this.multiplier = multiplier;
     }
 
     @Override
@@ -53,7 +55,7 @@ public class Upgoer extends SubsystemBase {
     /** Set the feeder velocity. */
     public void setVelocity(AngularVelocity velocity) {
         setpoint = velocity;
-        io.setVelocity(velocity);
+        io.setVelocity(velocity.times(multiplier));
     }
 
     /** Stop the feeder. */

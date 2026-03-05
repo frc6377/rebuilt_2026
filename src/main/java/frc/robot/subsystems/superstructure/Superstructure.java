@@ -94,7 +94,7 @@ public class Superstructure extends SubsystemBase {
     private final RobotState robotState;
     private GamePieceTrajectorySimulation gamePieceTrajectorySimulation;
     private AngularVelocity manualShootingVelocity = RPM.of(ShooterConstants.kManualShootingSpeedRPM);
-    private Command currentShootingCommand = Commands.none();
+    private Command currentShootingCommand;
     /** Creates the superstructure and selects IO implementations by mode. */
     public Superstructure(BooleanSupplier isIntaking, Vision vision) {
         RobotState createdState = RobotState.getInstance();
@@ -143,10 +143,10 @@ public class Superstructure extends SubsystemBase {
         }
 
         this.hood = new Hood(hoodIO);
-        this.leftUpgoer = new Upgoer(leftUpgoerIO, "LeftShooterUpgoer");
-        this.rightUpgoer = new Upgoer(rightUpgoerIO, "RightShooterUpgoer");
+        this.leftUpgoer = new Upgoer(leftUpgoerIO, "LeftShooterUpgoer", 1);
+        this.rightUpgoer = new Upgoer(rightUpgoerIO, "RightShooterUpgoer", -1);
         this.indexer = new Indexer(indexerIO);
-
+        this.currentShootingCommand = this.runFlywheelVelocityManual();
         indexer.setDefaultCommand(
                 Commands.run(() -> indexer.setRunning(shooter.isRunning() || isIntaking.getAsBoolean()), indexer));
     }
@@ -161,6 +161,8 @@ public class Superstructure extends SubsystemBase {
         Logger.recordOutput("Shooting/TimeUntilHubStateChange", FieldConstants.getTimeUntilHubStateChange());
         Logger.recordOutput(
                 "Shooting/DistanceToHub", round(vision.getHubDistanceMeasure().in(Meters) * 100.0) / 100.0);
+
+
         if (gamePieceTrajectorySimulation == null) {
             return;
         }

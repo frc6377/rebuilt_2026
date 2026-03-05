@@ -59,7 +59,7 @@ public interface ExtenderIO {
 
     default void periodic() {}
 
-    default void goDown() {}
+    default void autoZero() {}
 
     default void setEncoderPosition(Angle position) {}
 }

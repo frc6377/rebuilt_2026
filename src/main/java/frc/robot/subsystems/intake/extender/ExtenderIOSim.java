@@ -176,7 +176,7 @@ public class ExtenderIOSim implements ExtenderIO {
     }
 
     @Override
-    public void goDown() {
+    public void autoZero() {
         extenderMotor.set(kExtenderDownSpeed.get());
     }
 
