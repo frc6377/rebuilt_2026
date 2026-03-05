@@ -1,5 +1,7 @@
 package frc.robot.subsystems.intake;
 
+import static edu.wpi.first.units.Units.Degrees;
+
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -97,7 +99,8 @@ public class Intake extends SubsystemBase {
     }
 
     public Command zeroIntake() {
-        return runEnd(() -> extender.goDown(), () -> extender.stop()).andThen(() -> extender.zero());
+        return runEnd(() -> extender.goDown(), () -> extender.stop())
+                .andThen(() -> extender.setEncoderPosition(Degrees.of(118.0)));
     }
 
     public Command stop() {

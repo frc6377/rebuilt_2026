@@ -275,16 +275,19 @@ public class RobotContainer {
         OIController.spinUpShooter().whileTrue(superstructure.runFlywheelVelocityManual());
 
         // Manual fire (feeds piece when shooter is ready)
+        //        OIController.fireShooter()
+        //                .whileTrue(superstructure
+        //                        .autoSpeedShooter(drive::getPose, drive::getChassisSpeeds)
+        //                        .alongWith(superstructure.aimAtHubWhileDriving(
+        //                                drive, OIController.driveTranslationX(), OIController.driveTranslationY()))
+        //                        .until(superstructure::atTargetVelocity)
+        //                        .andThen(superstructure.fireCommand())
+        //                        .alongWith(indexer.index())
+        //                        .alongWith(Commands.runOnce(drive::stopWithX)))
+        //                .onFalse(superstructure.stopUpgoerCommand().alongWith(indexer.stop()));
         OIController.fireShooter()
-                .whileTrue(superstructure
-                        .autoSpeedShooter(drive::getPose, drive::getChassisSpeeds)
-                        .alongWith(superstructure.aimAtHubWhileDriving(
-                                drive, OIController.driveTranslationX(), OIController.driveTranslationY()))
-                        .alongWith(indexer.index())
-                        .until(superstructure::atTargetVelocity)
-                        .andThen(superstructure.fireCommand())
-                        .alongWith(Commands.runOnce(drive::stopWithX)))
-                .onFalse(superstructure.stopUpgoerCommand().alongWith(indexer.stop()));
+                .whileTrue(superstructure.fireCommand().alongWith(indexer.index()))
+                .onFalse(superstructure.stopUpgoerCommand());
 
         OIController.unjamShooter()
                 .whileTrue(superstructure.unjamCommand().alongWith(indexer.indexReverse()))

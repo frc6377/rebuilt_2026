@@ -14,6 +14,7 @@
 package frc.robot.subsystems.superstructure;
 
 import static edu.wpi.first.units.Units.*;
+import static java.lang.Math.round;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -114,10 +115,12 @@ public class Superstructure extends SubsystemBase {
             case REAL:
                 hoodIO = Constants.EnabledSubsystems.kHood ? new HoodIOKrakenX60() : new HoodIO() {};
                 leftUpgoerIO = Constants.EnabledSubsystems.kShooterUpgoerLeft
-                        ? new UpgoerIOKrakenX60(Constants.CANIDs.MotorIDs.kLeftUpgoerMotorCANID, "LeftShooterUpgoer")
+                        ? new UpgoerIOKrakenX60(
+                                Constants.CANIDs.MotorIDs.kLeftUpgoerMotorCANID, "LeftShooterUpgoer", -1)
                         : new UpgoerIO() {};
                 rightUpgoerIO = Constants.EnabledSubsystems.kShooterUpgoerRight
-                        ? new UpgoerIOKrakenX60(Constants.CANIDs.MotorIDs.kRightUpgoerMotorCANID, "RightShooterUpgoer")
+                        ? new UpgoerIOKrakenX60(
+                                Constants.CANIDs.MotorIDs.kRightUpgoerMotorCANID, "RightShooterUpgoer", 1)
                         : new UpgoerIO() {};
                 indexerIO = Constants.EnabledSubsystems.kIndexer ? new IndexerIOReal() : new IndexerIO() {};
                 break;
@@ -156,6 +159,8 @@ public class Superstructure extends SubsystemBase {
         Logger.recordOutput("Shooting/HubFlashing", FieldConstants.isHubFlashing());
         Logger.recordOutput("Shooting/HubIndicatorOn", FieldConstants.isHubIndicatorOn());
         Logger.recordOutput("Shooting/TimeUntilHubStateChange", FieldConstants.getTimeUntilHubStateChange());
+        Logger.recordOutput(
+                "Shooting/DistanceToHub", round(vision.getHubDistanceMeasure().in(Meters) * 100.0) / 100.0);
         if (gamePieceTrajectorySimulation == null) {
             return;
         }
@@ -391,28 +396,19 @@ public class Superstructure extends SubsystemBase {
                             Logger.recordOutput("Shooting/InShootingZone", inZone);
 
                             if (inZone) {
-                                TrajectoryBall.ShootingParameters params = TrajectoryBall.calculate(
-                                        ShooterConstants.CalculationMode.values()[(int) calculationMode.get()],
-                                        hasHood(),
-                                        robotPose,
-                                        speeds,
-                                        Feet.of(maxHeightFeet.get()),
-                                        Feet.of(targetHeightFeet.get()),
-                                        hoodAngleOffset.get(),
-                                        rpmMultiplier.get(),
-                                        ShooterConstants.kSotfEnabled);
-
-                                Angle hoodAngle = params.hoodAngle();
-                                AngularVelocity flywheelVelocity = params.flywheelVelocity();
+                                AngularVelocity flywheelVelocity = TrajectoryBall.getFlywheelVelocityForDistance(
+                                        Meters.of(hubDistOpt.orElse(2.5)));
 
                                 Logger.recordOutput(
                                         "Shooting/DistanceToHub",
                                         getDistanceToHub(robotPose).in(Meters));
-                                Logger.recordOutput("Shooting/CalculatedHoodAngle", hoodAngle.in(Degrees));
+                                //                                Logger.recordOutput("Shooting/CalculatedHoodAngle",
+                                // hoodAngle.in(Degrees));
                                 Logger.recordOutput("Shooting/CalculatedRPM", flywheelVelocity.in(RPM));
-                                Logger.recordOutput("Shooting/TargetHeading", params.targetHeading());
+                                //                                Logger.recordOutput("Shooting/TargetHeading",
+                                // params.targetHeading());
 
-                                setHoodAngle(hoodAngle);
+                                // setHoodAngle(0);
                                 setFlywheelVelocity(flywheelVelocity);
                             } else {
                                 Logger.recordOutput("Shooting/CalculatedHoodAngle", 0.0);
@@ -435,6 +431,16 @@ public class Superstructure extends SubsystemBase {
     }
     /** Command that aims the robot at the hub while driving. */
     public Command aimAtHubWhileDriving(Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier) {
+        if (robotState.getFieldZone() == RobotState.Zone.MIDDLE) {
+            return DriveCommands.joystickDriveAtAngle(drive, xSupplier, ySupplier, () -> {
+                        if (DriverStation.getAlliance().orElse(Alliance.Red) == Alliance.Red) {
+                            return Rotation2d.fromDegrees(180.0);
+                        } else {
+                            return Rotation2d.fromDegrees(0.0);
+                        }
+                    })
+                    .withName("AimAtHubMiddle");
+        }
         return DriveCommands.joystickDriveAtAngle(drive, xSupplier, ySupplier, () -> getAngleToHub(drive.getPose()))
                 .withName("AimAtHub");
     }

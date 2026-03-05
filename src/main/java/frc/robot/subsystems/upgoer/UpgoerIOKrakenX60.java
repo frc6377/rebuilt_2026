@@ -48,7 +48,7 @@ public class UpgoerIOKrakenX60 implements UpgoerIO {
      * @param motorId CAN ID of the Kraken X60 motor.
      * @param logName Logging key prefix used for tunable gains (e.g. "LeftShooterUpgoer").
      */
-    public UpgoerIOKrakenX60(int motorId, String logName) {
+    public UpgoerIOKrakenX60(int motorId, String logName, int RPMMultiplier) {
         motor = new TunableTalonFX(
                 motorId,
                 UpgoerConstants.canBusName,
@@ -62,7 +62,8 @@ public class UpgoerIOKrakenX60 implements UpgoerIO {
 
         var config = new TalonFXConfiguration();
         config.MotorOutput.NeutralMode = NeutralModeValue.Coast;
-        config.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
+        config.MotorOutput.Inverted =
+                (RPMMultiplier == 1) ? InvertedValue.CounterClockwise_Positive : InvertedValue.Clockwise_Positive;
         config.Slot0 = motor.getTunableSlot0Configs();
         config.CurrentLimits.StatorCurrentLimit = UpgoerConstants.currentLimit.in(Amps);
         config.CurrentLimits.StatorCurrentLimitEnable = true;

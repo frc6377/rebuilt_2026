@@ -28,6 +28,7 @@ import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.units.measure.Distance;
@@ -36,6 +37,7 @@ import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
+import frc.robot.FieldConstants;
 import frc.robot.subsystems.vision.VisionIO.HubTagObservation;
 import frc.robot.subsystems.vision.VisionIO.PoseObservationType;
 import frc.robot.subsystems.vision.questnav.QuestNavIO;
@@ -132,10 +134,10 @@ public class Vision extends SubsystemBase {
         boolean isRed = DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue) == DriverStation.Alliance.Red;
         Set<Integer> hubTagIds = isRed ? RED_HUB_TAG_IDS : BLUE_HUB_TAG_IDS;
         Set<Integer> middleTagIds = isRed ? RED_HUB_MIDDLE_TAG_IDS : BLUE_HUB_MIDDLE_TAG_IDS;
-
+        if (inputs.length == 0 || inputs[0].hubTagObservations.length == 0) return OptionalDouble.empty();
         // Find the closest visible middle tag, falling back to any hub tag
         HubTagObservation bestMiddle = null;
-        HubTagObservation bestAny = inputs[0].hubTagObservations[0];
+        HubTagObservation bestAny = null;
         for (HubTagObservation obs : inputs[0].hubTagObservations) {
             if (middleTagIds.contains(obs.tagId())) {
                 if (bestMiddle == null || obs.distToCamera() < bestMiddle.distToCamera()) {
@@ -184,7 +186,7 @@ public class Vision extends SubsystemBase {
         boolean isRed = DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue) == DriverStation.Alliance.Red;
         Set<Integer> hubTagIds = isRed ? RED_HUB_TAG_IDS : BLUE_HUB_TAG_IDS;
 
-        HubTagObservation best = inputs[0].hubTagObservations[0];
+        HubTagObservation best = null;
         for (VisionIOInputsAutoLogged inp : inputs) {
             for (HubTagObservation obs : inp.hubTagObservations) {
                 if (hubTagIds.contains(obs.tagId())) {
@@ -213,6 +215,7 @@ public class Vision extends SubsystemBase {
      * @return Required heading to face the hub, or empty if no hub tags are visible.
      */
     public Optional<Rotation2d> getHubFacingAngle(Pose2d robotPose) {
+        if (inputs.length == 0) return getHubFacingAngleGyroFallback(robotPose);
         boolean isRed = DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue) == DriverStation.Alliance.Red;
         Set<Integer> hubTagIds = isRed ? RED_HUB_TAG_IDS : BLUE_HUB_TAG_IDS;
         Set<Integer> middleTagIds = isRed ? RED_HUB_MIDDLE_TAG_IDS : BLUE_HUB_MIDDLE_TAG_IDS;
@@ -233,11 +236,11 @@ public class Vision extends SubsystemBase {
             }
         }
         HubTagObservation best = bestMiddle != null ? bestMiddle : bestAny;
-        if (best == null) return Optional.empty();
+        if (best == null) return getHubFacingAngleGyroFallback(robotPose);
 
         // Resolve the tag's field-layout position
         var tagPoseOpt = aprilTagLayout.getTagPose(best.tagId());
-        if (tagPoseOpt.isEmpty()) return Optional.empty();
+        if (tagPoseOpt.isEmpty()) return getHubFacingAngleGyroFallback(robotPose);
 
         // Bearing from robot to the tag's field position (gyro heading is in robotPose.getRotation())
         double dx = tagPoseOpt.get().getX() - robotPose.getX();
@@ -248,8 +251,33 @@ public class Vision extends SubsystemBase {
 
         Logger.recordOutput("Vision/HubFacing/TagId", best.tagId());
         Logger.recordOutput("Vision/HubFacing/IsMiddleTag", bestMiddle != null);
+        Logger.recordOutput("Vision/HubFacing/GyroFallback", false);
         Logger.recordOutput("Vision/HubFacing/TagFieldX", tagPoseOpt.get().getX());
         Logger.recordOutput("Vision/HubFacing/TagFieldY", tagPoseOpt.get().getY());
+        Logger.recordOutput("Vision/HubFacing/RequiredHeadingDeg", required.getDegrees());
+        Logger.recordOutput("Vision/HubFacing/HeadingErrorDeg", error.getDegrees());
+        return Optional.of(required);
+    }
+
+    /**
+     * Gyro-only fallback: bearing from the robot's odometry pose toward the alliance hub center. Used when no hub
+     * AprilTags are visible (neutral zone, camera obstructed, etc.).
+     */
+    private Optional<Rotation2d> getHubFacingAngleGyroFallback(Pose2d robotPose) {
+        boolean isRed = DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue) == DriverStation.Alliance.Red;
+
+        // Pick the center of our alliance hub
+        Translation2d hubCenter = isRed
+                ? new Translation2d(
+                        FieldConstants.Hub.oppTopCenterPoint.getX(), FieldConstants.Hub.oppTopCenterPoint.getY())
+                : new Translation2d(FieldConstants.Hub.topCenterPoint.getX(), FieldConstants.Hub.topCenterPoint.getY());
+
+        double dx = hubCenter.getX() - robotPose.getX();
+        double dy = hubCenter.getY() - robotPose.getY();
+        Rotation2d required = new Rotation2d(dx, dy);
+        Rotation2d error = required.minus(robotPose.getRotation());
+
+        Logger.recordOutput("Vision/HubFacing/GyroFallback", true);
         Logger.recordOutput("Vision/HubFacing/RequiredHeadingDeg", required.getDegrees());
         Logger.recordOutput("Vision/HubFacing/HeadingErrorDeg", error.getDegrees());
         return Optional.of(required);
@@ -297,6 +325,9 @@ public class Vision extends SubsystemBase {
      * @return The number of tags seen, or 0 if no observations are available.
      */
     public int getTagCount(int cameraIndex) {
+        if (cameraIndex >= inputs.length || !inputs[cameraIndex].connected) {
+            return 0;
+        }
         var observations = inputs[cameraIndex].poseObservations;
         if (observations.length == 0) {
             return 0;
@@ -386,14 +417,22 @@ public class Vision extends SubsystemBase {
                 // Calculate standard deviations
                 double stdDevFactor = Math.pow(observation.averageTagDistance(), 2.0) / observation.tagCount();
                 double linearStdDev = linearStdDevBaseline * stdDevFactor;
-                double angularStdDev = angularStdDevBaseline * stdDevFactor;
+                double angularStdDev;
                 if (observation.type() == PoseObservationType.MEGATAG_2) {
+                    // MegaTag2 rotation is seeded from the gyro — trust it normally
                     linearStdDev *= linearStdDevMegatag2Factor;
-                    angularStdDev *= angularStdDevMegatag2Factor;
+                    angularStdDev = angularStdDevBaseline * stdDevFactor * angularStdDevMegatag2Factor;
+                } else {
+                    // MegaTag1 rotation is computed from vision alone — never let it influence
+                    // the pose estimator's heading (field-oriented drive would snap on every tag)
+                    angularStdDev = Double.MAX_VALUE;
                 }
                 if (cameraIndex < cameraStdDevFactors.length) {
                     linearStdDev *= cameraStdDevFactors[cameraIndex];
-                    angularStdDev *= cameraStdDevFactors[cameraIndex];
+                    // Do not scale angular if it is already pinned to MAX_VALUE
+                    if (angularStdDev < Double.MAX_VALUE) {
+                        angularStdDev *= cameraStdDevFactors[cameraIndex];
+                    }
                 }
 
                 // Send vision observation

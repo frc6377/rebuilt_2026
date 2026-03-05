@@ -31,7 +31,7 @@ public class TrajectoryBall {
     public record ShootingParameters(Angle hoodAngle, AngularVelocity flywheelVelocity, Rotation2d targetHeading) {}
 
     /** Internal record for trajectory flight stats. */
-    private record TrajectoryResult(Angle launchAngle, LinearVelocity launchSpeed, double totalTime) {}
+    public record TrajectoryResult(Angle launchAngle, LinearVelocity launchSpeed, double totalTime) {}
 
     /**
      * Calculates shooting parameters for a stationary or moving robot.
@@ -92,9 +92,8 @@ public class TrajectoryBall {
         return finalizeParameters(
                 compensated.launchAngle, compensated.launchSpeed, targetHeading, hoodAngleOffset, rpmMultiplier);
     }
-
     /** Calculates trajectory based on a lookup table (map) of RPM vs Distance. Assumes a fixed hood angle. */
-    private static TrajectoryResult calculateStationaryMap(Distance distance) {
+    public static TrajectoryResult calculateStationaryMap(Distance distance) {
         // 1. Get base RPM from interpolation map
         double rpm = ShooterConstants.distanceToAngularVelocityDouMapRPM.get(distance.in(Meters));
         AngularVelocity flywheelVelocity = RPM.of(rpm);
@@ -117,6 +116,10 @@ public class TrajectoryBall {
         return new TrajectoryResult(angle, launchSpeed, totalTime);
     }
 
+    public static AngularVelocity getFlywheelVelocityForDistance(Distance distance) {
+        double rpm = ShooterConstants.distanceToAngularVelocityDouMapRPM.get(distance.in(Meters));
+        return RPM.of(rpm);
+    }
     /**
      * Calculates a stationary trajectory with a specific peak height (apex). Uses constant acceleration kinematics for
      * projectile motion.

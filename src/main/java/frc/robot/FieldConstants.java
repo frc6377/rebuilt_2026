@@ -398,7 +398,7 @@ public class FieldConstants {
         if (gameData.isEmpty()) {
             return true;
         }
-        boolean redInactiveFirst = false;
+        boolean redInactiveFirst;
         switch (gameData.charAt(0)) {
             case 'R' -> redInactiveFirst = true;
             case 'B' -> redInactiveFirst = false;
