@@ -189,22 +189,22 @@ public class OIXbox implements OI {
     }
 
     @Override
-    public Trigger shootSpeedLow() {
+    public Trigger autoSpeedMode() {
         return operatorDPadDown;
     }
 
     @Override
-    public Trigger decreaseShootSpeed() {
+    public Trigger hubShootSpeed() {
         return operatorDPadLeft;
     }
 
     @Override
-    public Trigger autoShootCommand() {
+    public Trigger towerShootSpeed() {
         return operatorDPadUp;
     }
 
     @Override
-    public Trigger increaseShootSpeed() {
+    public Trigger cornerShootSpeed() {
         return operatorDPadRight;
     }
 

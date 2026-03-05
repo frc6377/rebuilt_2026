@@ -512,7 +512,7 @@ public class Superstructure extends SubsystemBase {
     }
 
     public Command autoChooseShootingCommand(Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier) {
-        if (ShooterConstants.kManualShootingEnabled) {
+        if ((manualShootingEnabled.get() == 1.0) || vision.getTagCount() == 0) {
             return runFlywheelVelocityManual();
         } else if (vision.getTagCount(0) + vision.getTagCount(1) == 1) {
             return autoSpeedShooter(drive::getPose, drive::getChassisSpeeds);
@@ -520,6 +520,7 @@ public class Superstructure extends SubsystemBase {
             return fullAutoAim(drive, xSupplier, ySupplier);
         }
     }
+
     /** Manual override command for testing and bench mode. Doesn't run the shooter */
     public Command setFlywheelVelocityManual(AngularVelocity velocity) {
         return Commands.runOnce(() -> manualShootingVelocity = velocity);
@@ -536,7 +537,14 @@ public class Superstructure extends SubsystemBase {
     public Supplier<Command> getCurrentShootingCommandSupplier() {
         return () -> currentShootingCommand;
     }
-
+    public Command setManualShootingEnabledCommand(boolean enabled) {
+        return Commands.runOnce(() -> {
+            manualShootingEnabled.set(enabled ? 1.0 : 0.0);
+            if (!enabled) {
+                stopShooter();
+            }
+        }).withName("SetManualShootingEnabled:" + enabled);
+    }
     public Command runFlywheelVelocityManual() {
         return Commands.run(
                         () -> {

@@ -122,19 +122,20 @@ public interface OI {
         return noButton;
     }
 
-    default Trigger shootSpeedLow() {
+    default Trigger autoSpeedMode() {
         return noButton;
     }
 
-    default Trigger decreaseShootSpeed() {
+    default Trigger hubShootSpeed() {
         return noButton;
     }
 
-    default Trigger autoShootCommand() {
+    default Trigger towerShootSpeed() {
         return noButton;
     }
 
-    default Trigger increaseShootSpeed() {
+
+    default Trigger cornerShootSpeed() {
         return noButton;
     }
 

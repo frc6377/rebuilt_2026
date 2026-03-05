@@ -335,7 +335,13 @@ public class Vision extends SubsystemBase {
         var latestObservation = observations[observations.length - 1];
         return latestObservation.tagCount();
     }
-
+    public int getTagCount() {
+        int tagCount = 0;
+        for (var camera: inputs) {
+            tagCount += camera.tagIds.length;
+        }
+        return tagCount;
+    }
     public Pose3d getStartingPoseFromCamera(int cameraIndex) {
         if (cameraIndex >= inputs.length || !inputs[cameraIndex].connected) {
             return null;
