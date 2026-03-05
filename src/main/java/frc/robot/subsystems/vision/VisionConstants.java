@@ -31,7 +31,7 @@ public class VisionConstants {
             AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltAndymark);
 
     // Camera names, must match names configured on coprocessor
-    public static String camera0Name = "ShooterCam";
+    public static String camera0Name = "shooter";
     public static String camera1Name = "camera_1";
 
     // Camera 0 position (inches) and rotation (degrees: roll, pitch, yaw)

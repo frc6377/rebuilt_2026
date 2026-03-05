@@ -126,15 +126,15 @@ public interface OI {
         return noButton;
     }
 
-    default Trigger shootSpeedMidLow() {
+    default Trigger decreaseShootSpeed() {
         return noButton;
     }
 
-    default Trigger shootSpeedMidHigh() {
+    default Trigger autoShootCommand() {
         return noButton;
     }
 
-    default Trigger shootSpeedHigh() {
+    default Trigger increaseShootSpeed() {
         return noButton;
     }
 

@@ -13,6 +13,7 @@
 
 package frc.robot.subsystems.vision;
 
+import static edu.wpi.first.units.Units.Meters;
 import static frc.robot.subsystems.vision.VisionConstants.angularStdDevBaseline;
 import static frc.robot.subsystems.vision.VisionConstants.angularStdDevMegatag2Factor;
 import static frc.robot.subsystems.vision.VisionConstants.aprilTagLayout;
@@ -29,17 +30,22 @@ import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
-import frc.robot.subsystems.vision.Vision.VisionConsumer;
+import frc.robot.subsystems.vision.VisionIO.HubTagObservation;
 import frc.robot.subsystems.vision.VisionIO.PoseObservationType;
 import frc.robot.subsystems.vision.questnav.QuestNavIO;
 import gg.questnav.questnav.PoseFrame;
 import gg.questnav.questnav.QuestNav;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
+import java.util.OptionalDouble;
+import java.util.Set;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
 
@@ -95,8 +101,161 @@ public class Vision extends SubsystemBase {
             questNav = new QuestNav();
             questPose = new Pose3d();
             questNav.setPose(questPose);
+        } else {
+            questNav = new QuestNav();
         }
     }
+
+    // ========== Hub Distance / Facing ==========
+
+    // All AprilTag IDs on the blue hub (two tags per face × 4 faces: 18/27, 19/20, 21/24, 25/26)
+    private static final Set<Integer> BLUE_HUB_TAG_IDS = Set.of(18, 19, 20, 21, 24, 25, 26, 27);
+    // All AprilTag IDs on the red hub (mirrors of blue: 5/8, 9/10, 11/2, 3/4)
+    private static final Set<Integer> RED_HUB_TAG_IDS = Set.of(2, 3, 4, 5, 8, 9, 10, 11);
+
+    // Per-face middle (center) tag IDs — one representative tag per hub face.
+    //   Blue: near=26, far=19, right=27, left=21
+    //   Red:  near= 3, far=10, right= 5, left=11
+    private static final Set<Integer> BLUE_HUB_MIDDLE_TAG_IDS = Set.of(26, 19, 27, 21);
+    private static final Set<Integer> RED_HUB_MIDDLE_TAG_IDS = Set.of(3, 10, 5, 11);
+
+    /**
+     * Returns the distance from the camera to the closest visible alliance hub AprilTag.
+     *
+     * <p>Prefers a per-face middle tag ({@code BLUE/RED_HUB_MIDDLE_TAG_IDS}) for accuracy. Falls back to any visible
+     * hub tag when no middle tag is in view. The raw {@code distToCamera} value reported by the Limelight rawfiducials
+     * entry is returned directly.
+     *
+     * <p>Returns {@link OptionalDouble#empty()} when no hub tags are visible.
+     */
+    public OptionalDouble getHubDistance() {
+        boolean isRed = DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue) == DriverStation.Alliance.Red;
+        Set<Integer> hubTagIds = isRed ? RED_HUB_TAG_IDS : BLUE_HUB_TAG_IDS;
+        Set<Integer> middleTagIds = isRed ? RED_HUB_MIDDLE_TAG_IDS : BLUE_HUB_MIDDLE_TAG_IDS;
+
+        // Find the closest visible middle tag, falling back to any hub tag
+        HubTagObservation bestMiddle = null;
+        HubTagObservation bestAny = inputs[0].hubTagObservations[0];
+        for (HubTagObservation obs : inputs[0].hubTagObservations) {
+            if (middleTagIds.contains(obs.tagId())) {
+                if (bestMiddle == null || obs.distToCamera() < bestMiddle.distToCamera()) {
+                    bestMiddle = obs;
+                }
+            } else if (hubTagIds.contains(obs.tagId())) {
+                if (bestAny == null || obs.distToCamera() < bestAny.distToCamera()) {
+                    bestAny = obs;
+                }
+            }
+        }
+        Logger.recordOutput("Vision/HubDistance/BestMiddle", bestMiddle);
+        Logger.recordOutput("Vision/HubDistance/BestAny", bestAny);
+        HubTagObservation best = bestMiddle != null ? bestMiddle : bestAny;
+        if (best == null) return OptionalDouble.empty();
+
+        Logger.recordOutput("Vision/HubDistance/TagId", best.tagId());
+        Logger.recordOutput("Vision/HubDistance/IsMiddleTag", bestMiddle != null);
+        Logger.recordOutput("Vision/HubDistance/DistToCamera", best.distToCamera());
+        Logger.recordOutput("Vision/HubDistance/DistToRobot", best.distToRobot());
+        return OptionalDouble.of(best.distToCamera());
+    }
+
+    /**
+     * Convenience wrapper — returns hub distance as a typed {@link Distance}, or {@code Meters.of(-1)} when
+     * unavailable.
+     */
+    public Distance getHubDistanceMeasure() {
+        return Meters.of(getHubDistance().orElse(-1.0));
+    }
+
+    /**
+     * Returns true when the hub angle fallback has at least two hub tags visible and can produce a distance estimate.
+     */
+    public boolean hasHubDistanceFallback() {
+        return getHubDistance().isPresent();
+    }
+
+    /**
+     * Returns the direct Limelight-measured distance from the robot to the closest visible hub tag (meters), using the
+     * {@code distToRobot} value from rawfiducials (stride-7 index 5).
+     *
+     * <p>Returns empty when no hub tags are visible.
+     */
+    public OptionalDouble getClosestHubTagDistance() {
+        boolean isRed = DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue) == DriverStation.Alliance.Red;
+        Set<Integer> hubTagIds = isRed ? RED_HUB_TAG_IDS : BLUE_HUB_TAG_IDS;
+
+        HubTagObservation best = inputs[0].hubTagObservations[0];
+        for (VisionIOInputsAutoLogged inp : inputs) {
+            for (HubTagObservation obs : inp.hubTagObservations) {
+                if (hubTagIds.contains(obs.tagId())) {
+                    if (best == null || obs.distToCamera() < best.distToCamera()) {
+                        best = obs;
+                    }
+                }
+            }
+        }
+        if (best == null) return OptionalDouble.empty();
+
+        Logger.recordOutput("Vision/ClosestHubTag/TagId", best.tagId());
+        Logger.recordOutput("Vision/ClosestHubTag/DistToCamera", best.distToCamera());
+        Logger.recordOutput("Vision/ClosestHubTag/DistToRobot", best.distToRobot());
+        return OptionalDouble.of(best.distToRobot());
+    }
+
+    /**
+     * Returns the field-relative heading the robot must face to be perpendicular to the visible hub face.
+     *
+     * <p>Selects the closest visible middle hub tag (preferred) or any hub tag as a fallback. The required heading is
+     * computed as the bearing from {@code robotPose} to the tag's field-layout position, using the robot's gyro-derived
+     * rotation embedded in {@code robotPose}.
+     *
+     * @param robotPose Current robot pose (translation + gyro rotation) from the drive odometry.
+     * @return Required heading to face the hub, or empty if no hub tags are visible.
+     */
+    public Optional<Rotation2d> getHubFacingAngle(Pose2d robotPose) {
+        boolean isRed = DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue) == DriverStation.Alliance.Red;
+        Set<Integer> hubTagIds = isRed ? RED_HUB_TAG_IDS : BLUE_HUB_TAG_IDS;
+        Set<Integer> middleTagIds = isRed ? RED_HUB_MIDDLE_TAG_IDS : BLUE_HUB_MIDDLE_TAG_IDS;
+
+        // Find the closest visible middle tag; fall back to any hub tag
+        HubTagObservation bestMiddle = null;
+        HubTagObservation bestAny = null;
+
+        for (HubTagObservation obs : inputs[0].hubTagObservations) {
+            if (middleTagIds.contains(obs.tagId())) {
+                if (bestMiddle == null || obs.distToCamera() < bestMiddle.distToCamera()) {
+                    bestMiddle = obs;
+                }
+            } else if (hubTagIds.contains(obs.tagId())) {
+                if (bestAny == null || obs.distToCamera() < bestAny.distToCamera()) {
+                    bestAny = obs;
+                }
+            }
+        }
+        HubTagObservation best = bestMiddle != null ? bestMiddle : bestAny;
+        if (best == null) return Optional.empty();
+
+        // Resolve the tag's field-layout position
+        var tagPoseOpt = aprilTagLayout.getTagPose(best.tagId());
+        if (tagPoseOpt.isEmpty()) return Optional.empty();
+
+        // Bearing from robot to the tag's field position (gyro heading is in robotPose.getRotation())
+        double dx = tagPoseOpt.get().getX() - robotPose.getX();
+        double dy = tagPoseOpt.get().getY() - robotPose.getY();
+        // Point directly at the tag (front of robot faces the hub)
+        Rotation2d required = new Rotation2d(dx, dy).rotateBy(Rotation2d.fromDegrees(180.0));
+        Rotation2d error = required.minus(robotPose.getRotation());
+
+        Logger.recordOutput("Vision/HubFacing/TagId", best.tagId());
+        Logger.recordOutput("Vision/HubFacing/IsMiddleTag", bestMiddle != null);
+        Logger.recordOutput("Vision/HubFacing/TagFieldX", tagPoseOpt.get().getX());
+        Logger.recordOutput("Vision/HubFacing/TagFieldY", tagPoseOpt.get().getY());
+        Logger.recordOutput("Vision/HubFacing/RequiredHeadingDeg", required.getDegrees());
+        Logger.recordOutput("Vision/HubFacing/HeadingErrorDeg", error.getDegrees());
+        return Optional.of(required);
+    }
+
+    // ========== Standard Vision ==========
 
     /**
      * Returns the X angle to the best target, which can be used for simple servoing with vision.
@@ -281,9 +440,9 @@ public class Vision extends SubsystemBase {
                     consumer.accept(robotPose.toPose2d(), timestamp, VisionConstants.QUESTNAV_STD_DEVS);
                 }
             }
+            Logger.recordOutput("Vision/QuestNav/Connected", questNav.isConnected());
+            Logger.recordOutput("Vision/QuestNav/Pose", questPose);
         }
-        Logger.recordOutput("Vision/QuestNav/Connected", questNav.isConnected());
-        Logger.recordOutput("Vision/QuestNav/Pose", questPose);
     }
 
     @FunctionalInterface

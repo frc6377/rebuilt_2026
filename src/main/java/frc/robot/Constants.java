@@ -68,9 +68,9 @@ public final class Constants {
         public static final boolean kShooterUpgoerRight = true;
         public static final boolean kHood = false;
         public static final boolean kRoller = true;
-        public static final boolean kExtender = true;
+        public static final boolean kExtender = false;
         public static final boolean kDrive = true;
-        public static final boolean kQuestNav = true;
+        public static final boolean kQuestNav = false;
         public static final boolean kIndexer = true;
     }
 

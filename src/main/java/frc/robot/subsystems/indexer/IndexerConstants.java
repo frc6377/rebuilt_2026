@@ -9,8 +9,8 @@ import edu.wpi.first.wpilibj.RobotController;
 
 public class IndexerConstants {
 
-    public static final double kCollectorSpeed = -0.5; // Adjust speed as needed
-    public static final AngularVelocity kCollectorRPM = RPM.of(-300); // Adjust RPM as needed
+    public static final double kCollectorSpeed = 0.5; // Adjust speed as needed
+    public static final AngularVelocity kCollectorRPM = RPM.of(300); // Adjust RPM as needed
 
     public static final String canBus = "rio";
 
