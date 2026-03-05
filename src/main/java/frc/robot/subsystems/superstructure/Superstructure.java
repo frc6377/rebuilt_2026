@@ -162,7 +162,6 @@ public class Superstructure extends SubsystemBase {
         Logger.recordOutput(
                 "Shooting/DistanceToHub", round(vision.getHubDistanceMeasure().in(Meters) * 100.0) / 100.0);
 
-
         if (gamePieceTrajectorySimulation == null) {
             return;
         }
