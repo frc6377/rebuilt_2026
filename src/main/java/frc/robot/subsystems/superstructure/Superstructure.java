@@ -446,17 +446,12 @@ public class Superstructure extends SubsystemBase {
     }
     /** Command that aims the robot at the hub while driving. */
     public Command aimAtHubWhileDriving(Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier) {
-        if (robotState.getFieldZone() == RobotState.Zone.MIDDLE) {
-            return DriveCommands.joystickDriveAtAngle(drive, xSupplier, ySupplier, () -> {
-                        if (DriverStation.getAlliance().orElse(Alliance.Red) == Alliance.Red) {
-                            return Rotation2d.fromDegrees(180.0);
-                        } else {
-                            return Rotation2d.fromDegrees(0.0);
-                        }
-                    })
-                    .withName("AimAtHubMiddle");
-        }
-        return DriveCommands.joystickDriveAtAngle(drive, xSupplier, ySupplier, () -> getAngleToHub(drive.getPose()))
+        return DriveCommands.joystickDriveAtOptionalAngle(
+                        drive,
+                        xSupplier,
+                        ySupplier,
+                        oi.driveRotation(),
+                        () -> vision.getHubFacingAngle(drive.getPose()))
                 .withName("AimAtHub");
     }
 

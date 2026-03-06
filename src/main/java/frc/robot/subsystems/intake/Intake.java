@@ -107,16 +107,16 @@ public class Intake extends SubsystemBase {
     }
 
     public Command currentRunShoot() {
-        return run(() -> extender.currentRunShoot(-2))
+        return run(() -> extender.currentRunShoot(-1))
                 .withTimeout(1)
-                .andThen(() -> extender.currentRunShoot(-2))
-                .until(() -> extender.getCurrent().gte(Amps.of(20)))
+                .andThen(() -> extender.currentRunShoot(-1))
+                .until(() -> extender.getCurrent().gte(Amps.of(15)))
                 .andThen(stop());
     }
 
     public Command currentRunDescend() {
-        return run(() -> extender.currentRunShoot(1))
-                .until(() -> extender.getCurrent().gte(Amps.of(15)))
+        return run(() -> extender.currentRunShoot(1.5))
+                .until(() -> extender.getCurrent().gte(Amps.of(10)))
                 .andThen(stop());
     }
 

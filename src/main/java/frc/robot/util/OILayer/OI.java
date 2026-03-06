@@ -96,6 +96,10 @@ public interface OI {
         return noButton;
     }
 
+    default Trigger stopShooterDriver() {
+        return noButton;
+    }
+
     default Trigger zeroIntake() {
         return noButton;
     }

@@ -34,9 +34,7 @@ public class IntakeConstants {
 
         public static class MotorConfig {
             public static final double kRampPeriod = 0.02;
-            public static final Current kStatorCurrentLimit = Amps.of(70);
-            public static final double kPeakForwardTorque = 30;
-            public static final double kPeakReverseTorque = -30;
+            public static final Current kStatorCurrentLimit = Amps.of(80);
         }
     }
 
@@ -68,7 +66,7 @@ public class IntakeConstants {
 
         public static class MotorConfig {
             public static final double kRampPeriod = 0.02;
-            public static final Current kStatorCurrentLimitExtender = Amps.of(15);
+            public static final Current kStatorCurrentLimitExtender = Amps.of(10);
         }
     }
 

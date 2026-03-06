@@ -136,6 +136,11 @@ public class OIXbox implements OI {
     }
 
     @Override
+    public Trigger stopShooterDriver() {
+        return x;
+    }
+
+    @Override
     public Trigger spinUpShooter() {
         return operatorRightBumper;
     }
