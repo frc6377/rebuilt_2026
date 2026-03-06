@@ -5,6 +5,12 @@
     "data": {
       "commands": [
         {
+          "type": "named",
+          "data": {
+            "name": "SpinUpHub"
+          }
+        },
+        {
           "type": "path",
           "data": {
             "pathName": "back up"
@@ -13,7 +19,13 @@
         {
           "type": "named",
           "data": {
-            "name": "Spin Up Shooter and Wait"
+            "name": "Intake"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "AutoShoot"
           }
         }
       ]

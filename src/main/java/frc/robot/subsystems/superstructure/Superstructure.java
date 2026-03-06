@@ -51,6 +51,7 @@ import frc.robot.subsystems.upgoer.UpgoerIO;
 import frc.robot.subsystems.upgoer.UpgoerIOKrakenX60;
 import frc.robot.subsystems.upgoer.UpgoerIOSim;
 import frc.robot.subsystems.vision.Vision;
+import frc.robot.util.OILayer.OI;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.DoubleSupplier;
@@ -83,7 +84,7 @@ public class Superstructure extends SubsystemBase {
     private static final LoggedNetworkNumber benchModeEnabled =
             new LoggedNetworkNumber("Shooting/BenchMode/Enabled", ShooterConstants.defaultBenchModeEnabled);
     private static final LoggedNetworkNumber benchModeDistanceFeet = new LoggedNetworkNumber(
-            "Shooting/BenchMode/DistanceMeters>", ShooterConstants.defaultBenchModeDistanceMeters);
+            "Shooting/BenchMode/DistanceMeters", ShooterConstants.defaultBenchModeDistanceMeters);
 
     private final Shooter shooter;
     private final Hood hood;
@@ -91,12 +92,14 @@ public class Superstructure extends SubsystemBase {
     private final Upgoer rightUpgoer;
     private final Indexer indexer;
     private final Vision vision;
+    private final OI oi;
     private final RobotState robotState;
     private GamePieceTrajectorySimulation gamePieceTrajectorySimulation;
     private AngularVelocity manualShootingVelocity = RPM.of(ShooterConstants.kManualShootingSpeedRPM);
     private Command currentShootingCommand;
+    private double lastVisionHubDistanceM = 0.0;
     /** Creates the superstructure and selects IO implementations by mode. */
-    public Superstructure(BooleanSupplier isIntaking, Vision vision) {
+    public Superstructure(BooleanSupplier isIntaking, Vision vision, OI oi) {
         RobotState createdState = RobotState.getInstance();
         if (createdState == null) {
             createdState = RobotState.create();
@@ -105,7 +108,7 @@ public class Superstructure extends SubsystemBase {
         this.vision = vision;
 
         this.shooter = new Shooter();
-
+        this.oi = oi;
         HoodIO hoodIO;
         UpgoerIO leftUpgoerIO;
         UpgoerIO rightUpgoerIO;
@@ -161,6 +164,17 @@ public class Superstructure extends SubsystemBase {
         Logger.recordOutput("Shooting/TimeUntilHubStateChange", FieldConstants.getTimeUntilHubStateChange());
         Logger.recordOutput(
                 "Shooting/DistanceToHub", round(vision.getHubDistanceMeasure().in(Meters) * 100.0) / 100.0);
+        if (FieldConstants.getTimeUntilHubStateChange() > 0 && FieldConstants.getTimeUntilHubStateChange() < 1) {
+            oi.setRumble(1, 1);
+        } else if (FieldConstants.getTimeUntilHubStateChange() > 4.75
+                && FieldConstants.getTimeUntilHubStateChange() < 5) {
+            oi.setRumble(0.7, 0.7);
+        } else if (FieldConstants.getTimeUntilHubStateChange() > 4.25
+                && FieldConstants.getTimeUntilHubStateChange() < 4.5) {
+            oi.setRumble(0.75, 0.75);
+        } else {
+            oi.setRumble(0, 0);
+        }
 
         if (gamePieceTrajectorySimulation == null) {
             return;
@@ -377,6 +391,7 @@ public class Superstructure extends SubsystemBase {
                             var hubDistOpt = vision.getHubDistance();
                             if (hubDistOpt.isPresent()) {
                                 double visionDistM = hubDistOpt.getAsDouble();
+                                lastVisionHubDistanceM = visionDistM;
                                 Translation2d hubPos = FieldConstants.getHubPosition();
                                 Translation2d toRobot =
                                         robotPose.getTranslation().minus(hubPos);
@@ -389,6 +404,7 @@ public class Superstructure extends SubsystemBase {
                                 Logger.recordOutput("Shooting/DistanceSource", "Vision");
                                 Logger.recordOutput("Shooting/VisionHubDistanceM", visionDistM);
                             } else {
+                                double visionDistM = lastVisionHubDistanceM;
                                 Logger.recordOutput("Shooting/DistanceSource", "Odometry");
                             }
                             // ─────────────────────────────────────────────────────────────────
@@ -412,9 +428,7 @@ public class Superstructure extends SubsystemBase {
                                 // setHoodAngle(0);
                                 setFlywheelVelocity(flywheelVelocity);
                             } else {
-                                Logger.recordOutput("Shooting/CalculatedHoodAngle", 0.0);
-                                Logger.recordOutput("Shooting/CalculatedRPM", 0.0);
-                                stopShooter();
+                                setFlywheelVelocity(manualShootingVelocity);
                             }
                         },
                         hood,
@@ -512,7 +526,7 @@ public class Superstructure extends SubsystemBase {
     }
 
     public Command autoChooseShootingCommand(Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier) {
-        if (ShooterConstants.kManualShootingEnabled) {
+        if ((manualShootingEnabled.get() == 1.0) || vision.getTagCount() == 0) {
             return runFlywheelVelocityManual();
         } else if (vision.getTagCount(0) + vision.getTagCount(1) == 1) {
             return autoSpeedShooter(drive::getPose, drive::getChassisSpeeds);
@@ -520,6 +534,7 @@ public class Superstructure extends SubsystemBase {
             return fullAutoAim(drive, xSupplier, ySupplier);
         }
     }
+
     /** Manual override command for testing and bench mode. Doesn't run the shooter */
     public Command setFlywheelVelocityManual(AngularVelocity velocity) {
         return Commands.runOnce(() -> manualShootingVelocity = velocity);
@@ -535,6 +550,21 @@ public class Superstructure extends SubsystemBase {
 
     public Supplier<Command> getCurrentShootingCommandSupplier() {
         return () -> currentShootingCommand;
+    }
+
+    public Command setManualShootingEnabledCommand(boolean enabled) {
+        return Commands.runOnce(() -> {
+                    manualShootingEnabled.set(enabled ? 1.0 : 0.0);
+                })
+                .withName("SetManualShootingEnabled:" + enabled);
+    }
+
+    public Command runToggledSpeed(Supplier<Pose2d> robotPose, Supplier<ChassisSpeeds> chassisSpeeds) {
+        if (manualShootingEnabled.get() == 1.0) {
+            return runFlywheelVelocityManual();
+        } else {
+            return autoSpeedShooter(robotPose, chassisSpeeds);
+        }
     }
 
     public Command runFlywheelVelocityManual() {
