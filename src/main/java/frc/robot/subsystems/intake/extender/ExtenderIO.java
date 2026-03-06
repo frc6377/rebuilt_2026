@@ -61,5 +61,15 @@ public interface ExtenderIO {
 
     default void autoZero() {}
 
+    default void currentRunShoot(double volts) {}
+
+    default Current getCurrent() {
+        return Amps.of(0.0);
+    }
+
+    default AngularVelocity getVelocity() {
+        return RotationsPerSecond.of(0.0);
+    }
+
     default void setEncoderPosition(Angle position) {}
 }

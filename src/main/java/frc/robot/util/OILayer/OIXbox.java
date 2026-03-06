@@ -1,6 +1,10 @@
 package frc.robot.util.OILayer;
 
+import static edu.wpi.first.wpilibj2.command.Commands.runOnce;
+
+import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.POVButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
@@ -104,6 +108,14 @@ public class OIXbox implements OI {
     }
 
     @Override
+    public Command setRumble(double driverRumble, double operatorRumble) {
+        return runOnce(() -> {
+            driverController.setRumble(GenericHID.RumbleType.kBothRumble, driverRumble);
+            operatorController.setRumble(GenericHID.RumbleType.kBothRumble, operatorRumble);
+        });
+    }
+
+    @Override
     public Trigger zeroDrivebase() {
         return start;
     }
@@ -116,6 +128,11 @@ public class OIXbox implements OI {
     @Override
     public Trigger intakeMiddle() {
         return y;
+    }
+
+    @Override
+    public Trigger shootDriver() {
+        return b;
     }
 
     @Override

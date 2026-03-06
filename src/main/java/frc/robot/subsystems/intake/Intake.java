@@ -1,5 +1,7 @@
 package frc.robot.subsystems.intake;
 
+import static edu.wpi.first.units.Units.Amps;
+
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -33,6 +35,10 @@ public class Intake extends SubsystemBase {
         return runOnce(extender::extend);
     }
 
+    public Command extendIntakeAndWait() {
+        return runOnce(extender::extend).until(extender.isExtended());
+    }
+
     public Command stowIntake() {
         return runOnce(extender::retract);
     }
@@ -59,11 +65,11 @@ public class Intake extends SubsystemBase {
 
     // Combination Commands
     public Command intakeCommand() {
-        return runOnce(extender::extend).until(extender.isExtended()).andThen(runEnd(roller::start, roller::stop));
+        return currentRunDescend().until(extender.isExtended()).andThen(runEnd(roller::start, roller::stop));
     }
 
     public Command retractIntakeCommand() {
-        return runOnce(roller::stop).andThen(runOnce(extender::retract));
+        return runOnce(roller::stop).andThen(currentRunShoot());
     }
 
     public Command goToSiftAngleOneCommand() {
@@ -98,6 +104,20 @@ public class Intake extends SubsystemBase {
 
     public Command zeroIntake() {
         return runOnce(extender::zero);
+    }
+
+    public Command currentRunShoot() {
+        return run(() -> extender.currentRunShoot(-2))
+                .withTimeout(1)
+                .andThen(() -> extender.currentRunShoot(-2))
+                .until(() -> extender.getCurrent().gte(Amps.of(20)))
+                .andThen(stop());
+    }
+
+    public Command currentRunDescend() {
+        return run(() -> extender.currentRunShoot(1))
+                .until(() -> extender.getCurrent().gte(Amps.of(15)))
+                .andThen(stop());
     }
 
     public Command autoZeroIntakeCommand() {

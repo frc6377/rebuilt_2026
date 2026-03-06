@@ -28,6 +28,7 @@ import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.commands.DriveCommands;
 import frc.robot.commands.ShooterCalibrationCommand;
@@ -97,7 +98,7 @@ public class RobotContainer {
 
         usingController = true;
 
-        if (usingController && Constants.currentMode != Constants.Mode.SIM) {
+        if (usingController || Constants.currentMode != Constants.Mode.SIM) {
             OIController = new OIXbox();
         } else {
             OIController = new OIKeyboard();
@@ -174,18 +175,25 @@ public class RobotContainer {
                 break;
         }
 
-        superstructure = new Superstructure(intake::isRollerRunning, vision);
+        superstructure = new Superstructure(intake::isRollerRunning, vision, OIController);
 
         if (Constants.currentMode == Constants.Mode.SIM) {
             superstructure.configureGamePieceSimulation(driveSimulation);
         }
-        NamedCommands.registerCommand("Spin Up Shooter", superstructure.setFlywheelVelocityCommand(RPM.of(3000)));
+        NamedCommands.registerCommand("SpinUpHub", superstructure.setFlywheelVelocityCommand(RPM.of(2600)));
         NamedCommands.registerCommand(
                 "Spin Up Shooter and Wait", superstructure.setFlywheelVelocityAndWaitCommand(RPM.of(3000)));
         NamedCommands.registerCommand(
+                "AutoShootHub",
+                Commands.parallel(superstructure.setFlywheelVelocityCommand(RPM.of(2600)))
+                        .andThen(superstructure.runFlywheelVelocityManual())
+                        .until(superstructure::atTargetVelocity)
+                        .andThen(indexer.index())
+                        .alongWith(superstructure.fireCommand()));
+        NamedCommands.registerCommand(
                 "Shoot", Commands.deadline(Commands.waitSeconds(5), superstructure.fireCommand()));
         // NamedCommands.registerCommand("Intake", Commands.deadline(intake.intakeCommand(), Commands.waitSeconds(6)));
-        NamedCommands.registerCommand("Extend Intake", intake.extendIntake());
+        NamedCommands.registerCommand("Extend Intake", intake.currentRunDescend());
         NamedCommands.registerCommand(
                 "Intake",
                 Commands.deadline(Commands.waitSeconds(6), Commands.parallel(intake.intakeCommand(), indexer.index()))
@@ -193,12 +201,9 @@ public class RobotContainer {
         NamedCommands.registerCommand(
                 "Index",
                 Commands.runOnce(() -> indexer.setRunning(true)).withTimeout(3).andThen(indexer.stop()));
-        NamedCommands.registerCommand(
-                "Auto Aim",
-                superstructure.aimAtHubWhileDriving(
-                        drive, () -> 0, () -> 0));
+        NamedCommands.registerCommand("Auto Aim", superstructure.aimAtHubWhileDriving(drive, () -> 0, () -> 0));
 
-                // Set up auto routines
+        // Set up auto routines
         autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
         if (Constants.currentMode == Constants.Mode.SIM) {
             autoChooser.addOption("Shooter Tuning Sim", new ShooterCalibrationCommand(superstructure, driveSimulation));
@@ -277,7 +282,9 @@ public class RobotContainer {
         //                 () -> -OIController.driveTranslationX().getAsDouble(),
         //                 () -> new Rotation2d()));
 
-        OIController.spinUpShooter().whileTrue(superstructure.autoChooseShootingCommand(drive, OIController.driveTranslationX(), OIController.driveTranslationY()));
+        //        OIController.spinUpShooter()
+        //                .whileTrue(superstructure.autoChooseShootingCommand(
+        //                        drive, OIController.driveTranslationX(), OIController.driveTranslationY()));
 
         // Manual fire (feeds piece when shooter is ready)
         //        OIController.fireShooter()
@@ -290,9 +297,31 @@ public class RobotContainer {
         //                        .alongWith(indexer.index())
         //                        .alongWith(Commands.runOnce(drive::stopWithX)))
         //                .onFalse(superstructure.stopUpgoerCommand().alongWith(indexer.stop()));
-        OIController.fireShooter()
-                .whileTrue(superstructure.fireCommand().alongWith(indexer.index()))
-                .onFalse(superstructure.stopUpgoerCommand());
+        Trigger shootingTrigger = OIController.fireShooter().or(OIController.shootDriver());
+        OIController.spinUpShooter()
+                .whileTrue(Commands.parallel(superstructure.runFlywheelVelocityManual())
+                        .until(superstructure::atTargetVelocity)
+                        .andThen(indexer.index())
+                        .alongWith(superstructure.fireCommand()))
+                .onFalse(superstructure
+                        .setFlywheelVelocityManual(RPM.of(1500))
+                        .andThen(superstructure.runFlywheelVelocityManual()));
+        shootingTrigger
+                .whileTrue(Commands.parallel(superstructure
+                        .runToggledSpeed(drive::getPose, drive::getChassisSpeeds)
+                        // .aimAtHubWhileDriving(
+                        //        drive, OIController.driveTranslationX(), OIController.driveTranslationY()))
+                        .until(superstructure::atTargetVelocity)
+                        .andThen(Commands.runOnce(drive::stopWithX))
+                        .andThen(Commands.parallel(
+                                superstructure.fireCommand(),
+                                indexer.index(),
+                                Commands.repeatingSequence(intake.currentRunShoot(), intake.currentRunDescend())))))
+                .onFalse(Commands.parallel(
+                                superstructure.stopUpgoerCommand(),
+                                indexer.stop(),
+                                superstructure.setFlywheelVelocityManual(RPM.of(1500)))
+                        .andThen(superstructure.runFlywheelVelocityManual()));
 
         OIController.unjamShooter()
                 .whileTrue(superstructure.unjamCommand().alongWith(indexer.indexReverse()))
@@ -305,9 +334,21 @@ public class RobotContainer {
         OIController.autoSpeedMode()
                 .onTrue(superstructure.changeManualShootingCommand(superstructure.autoChooseShootingCommand(
                         drive, OIController.driveTranslationX(), OIController.driveTranslationY())));
-        OIController.hubShootSpeed().onTrue(superstructure.setFlywheelVelocityManual(RPM.of(2600)).alongWith(superstructure.setManualShootingEnabledCommand(true)).andThen(superstructure.runFlywheelVelocityManual()));
-        OIController.towerShootSpeed().onTrue(superstructure.setFlywheelVelocityManual(RPM.of(3200)).alongWith(superstructure.setManualShootingEnabledCommand(true)).andThen(superstructure.runFlywheelVelocityManual()));
-        OIController.cornerShootSpeed().onTrue(superstructure.setFlywheelVelocityManual(RPM.of(3800)).alongWith(superstructure.setManualShootingEnabledCommand(true)).andThen(superstructure.runFlywheelVelocityManual()));
+        OIController.hubShootSpeed()
+                .onTrue(superstructure
+                        .setFlywheelVelocityManual(RPM.of(2600))
+                        .alongWith(superstructure.setManualShootingEnabledCommand(true))
+                        .andThen(superstructure.runFlywheelVelocityManual()));
+        OIController.towerShootSpeed()
+                .onTrue(superstructure
+                        .setFlywheelVelocityManual(RPM.of(3200))
+                        .alongWith(superstructure.setManualShootingEnabledCommand(true))
+                        .andThen(superstructure.runFlywheelVelocityManual()));
+        OIController.cornerShootSpeed()
+                .onTrue(superstructure
+                        .setFlywheelVelocityManual(RPM.of(3800))
+                        .alongWith(superstructure.setManualShootingEnabledCommand(true))
+                        .andThen(superstructure.runFlywheelVelocityManual()));
 
         // Reset gyro / odometry
         final Runnable resetGyro = Constants.currentMode == Constants.Mode.SIM

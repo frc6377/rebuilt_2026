@@ -8,9 +8,12 @@ import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.PositionVoltage;
+import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Current;
 import frc.robot.Constants;
 import frc.robot.subsystems.intake.IntakeConstants.ExtenderConstants;
 import frc.robot.util.TunableTalonFX;
@@ -54,8 +57,7 @@ public class ExtenderIOReal implements ExtenderIO {
         extenderMotorConfig = new TalonFXConfiguration();
         extenderMotorConfig.ClosedLoopRamps.VoltageClosedLoopRampPeriod = ExtenderConstants.MotorConfig.kRampPeriod;
         extenderMotorConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
-        extenderMotorConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
-
+        extenderMotorConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
         extenderMotor.applyConfiguration(extenderMotorConfig);
         extenderMotor.getConfigurator().apply(currentConfig);
 
@@ -93,8 +95,23 @@ public class ExtenderIOReal implements ExtenderIO {
     }
 
     @Override
+    public void currentRunShoot(double volts) {
+        extenderMotor.setControl(new VoltageOut(volts));
+    }
+
+    @Override
     public void zero() {
         extenderMotor.setPosition(0.0);
+    }
+
+    @Override
+    public AngularVelocity getVelocity() {
+        return extenderMotor.getVelocity().getValue();
+    }
+
+    @Override
+    public Current getCurrent() {
+        return extenderMotor.getStatorCurrent().getValue();
     }
 
     @Override
