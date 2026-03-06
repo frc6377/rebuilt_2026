@@ -84,6 +84,23 @@ public class Intake extends SubsystemBase {
         return runOnce(extender::extend).andThen(runEnd(roller::outtake, roller::stop));
     }
 
+    public Command extendAndIntakeCommand() {
+        return run(() -> {
+                    currentRunDescend();
+                    roller.start();
+                })
+                .until(extender.isExtended());
+    }
+
+    public Command intakeAndSiftCommand() {
+        return run(() -> {
+                    roller.start();
+                    Commands.repeatingSequence(currentRunShoot(), currentRunDescend());
+                })
+                .until(extender.isExtended())
+                .andThen(siftFuelCommand());
+    }
+
     public Command siftFuelCommand() {
         return Commands.repeatingSequence(
                 run(extender::goToSiftAngleOne).until(extender.atTarget()),

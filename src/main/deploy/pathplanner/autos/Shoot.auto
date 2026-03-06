@@ -13,24 +13,6 @@
         {
           "type": "named",
           "data": {
-            "name": "Extend Intake"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "SpinUpHub"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "Intake"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
             "name": "AutoShoot"
           }
         }

@@ -95,7 +95,7 @@ public class Robot extends LoggedRobot {
     @Override
     public void disabledPeriodic() {
         if (Constants.EnabledSubsystems.kQuestNav) {
-            robotContainer.getRobotStartPose(0).schedule();
+            CommandScheduler.getInstance().schedule(robotContainer.getRobotStartPose(0));
         }
     }
 

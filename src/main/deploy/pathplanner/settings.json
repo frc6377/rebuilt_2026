@@ -6,7 +6,10 @@
     "Straight Line"
   ],
   "autoFolders": [
-    "Meter tests"
+    "Denver",
+    "Meter tests",
+    "Santa Fe",
+    "Railway Heist"
   ],
   "defaultMaxVel": 1.0,
   "defaultMaxAccel": 3.0,

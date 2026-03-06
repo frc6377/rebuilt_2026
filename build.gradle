@@ -39,6 +39,19 @@ deploy {
                     jvmArgs.add("-XX:GCTimeRatio=5")
                     jvmArgs.add("-XX:+UseSerialGC")
                     jvmArgs.add("-XX:MaxGCPauseMillis=50")
+
+                    // ── On-robot profiling via Java Flight Recorder ──────────────────
+                    // Deploy with:  ./gradlew deploy -PenableProfiling
+                    // After running, copy the file off the robot with:
+                    //   scp admin@10.63.77.2:/home/lvuser/profile.jfr .
+                    // Then open profile.jfr in IntelliJ (Run -> Open Profiler Snapshot)
+                    // or in JDK Mission Control (jmc).
+                    // WARNING: do not use during a match. Revert with a plain deploy after.
+                    if (project.hasProperty('enableProfiling')) {
+                        jvmArgs.add("-XX:+FlightRecorder")
+                        jvmArgs.add("-XX:StartFlightRecording=duration=60s,filename=/home/lvuser/profile.jfr,settings=profile,name=RobotProfile")
+                        println "WARNING: Profiling mode ON - JFR will save to /home/lvuser/profile.jfr after 60s"
+                    }
                 }
 
                 // Static files artifact
@@ -218,6 +231,22 @@ task syncAdvantageScopeConfig {
     }
 }
 project.compileJava.dependsOn(syncAdvantageScopeConfig)
+
+// Fetch the JFR profile from the roboRIO after a profiling run.
+// Usage: ./gradlew fetchProfile
+// Requires: robot connected, profile.jfr already written (i.e. 60s have elapsed after deploy)
+task fetchProfile(type: Exec) {
+    group = "Profiling"
+    description = "Copies /home/lvuser/profile.jfr from the roboRIO to the project root."
+    commandLine "scp", "-o", "StrictHostKeyChecking=no",
+            "admin@10.63.77.2:/home/lvuser/profile.jfr",
+            "${projectDir}/profile.jfr"
+    doLast {
+        println "Saved to: ${projectDir}/profile.jfr"
+        println "Open in IntelliJ: Run -> Open Profiler Snapshot"
+        println "Or open in JDK Mission Control (jmc)"
+    }
+}
 
 // Spotless formatting
 project.compileJava.dependsOn(spotlessApply)
