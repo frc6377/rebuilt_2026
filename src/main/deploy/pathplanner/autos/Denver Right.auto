@@ -9,15 +9,15 @@
           "data": {
             "commands": [
               {
-                "type": "path",
+                "type": "named",
                 "data": {
-                  "pathName": "back up and shoot - right"
+                  "name": "Unjam"
                 }
               },
               {
-                "type": "named",
+                "type": "path",
                 "data": {
-                  "name": "unjam"
+                  "pathName": "back up and shoot - right"
                 }
               }
             ]
