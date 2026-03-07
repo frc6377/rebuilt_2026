@@ -95,7 +95,7 @@ public class Intake extends SubsystemBase {
     public Command intakeAndSiftCommand() {
         return run(() -> {
                     roller.start();
-                    currentRunDescend();            
+                    currentRunDescend();
                 })
                 .until(extender.isExtended())
                 .andThen(siftFuelCommand());
