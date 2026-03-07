@@ -132,7 +132,7 @@ public class Intake extends SubsystemBase {
     }
 
     public Command currentRunShootManual() {
-        return run(() -> extender.currentRunShoot(-3));
+        return run(() -> extender.currentRunShoot(-4.5));
     }
 
     public Command currentRunDescend() {
