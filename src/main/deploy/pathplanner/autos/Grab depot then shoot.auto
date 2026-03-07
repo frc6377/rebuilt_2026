@@ -5,25 +5,19 @@
     "data": {
       "commands": [
         {
-          "type": "path",
-          "data": {
-            "pathName": "Far left to left shoot"
-          }
-        },
-        {
-          "type": "race",
+          "type": "parallel",
           "data": {
             "commands": [
               {
                 "type": "named",
                 "data": {
-                  "name": "AutoShoot"
+                  "name": "Intake"
                 }
               },
               {
-                "type": "wait",
+                "type": "path",
                 "data": {
-                  "waitTime": 8.0
+                  "pathName": "Grab from depot"
                 }
               }
             ]
@@ -32,13 +26,19 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Through depot"
+            "pathName": "Bundle to shoot"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Spin Up Shooter and Wait"
           }
         }
       ]
     }
   },
   "resetOdom": true,
-  "folder": "Santa Fe",
+  "folder": null,
   "choreoAuto": false
 }
