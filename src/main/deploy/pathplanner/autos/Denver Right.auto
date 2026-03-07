@@ -13,6 +13,12 @@
                 "data": {
                   "pathName": "back up and shoot - right"
                 }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "Unjam"
+                }
               }
             ]
           }

@@ -187,7 +187,10 @@ public class RobotContainer {
                 superstructure
                         .unjamCommand()
                         .alongWith(superstructure.setFlywheelVelocityCommand(RPM.of(-1500)))
-                        .finallyDo(interrupted -> superstructure.stopShooterCommand().alongWith(superstructure.stopUpgoerCommand()).schedule()));
+                        .finallyDo(interrupted -> superstructure
+                                .stopShooterCommand()
+                                .alongWith(superstructure.stopUpgoerCommand())
+                                .schedule()));
         NamedCommands.registerCommand("SpinUpHub", superstructure.setFlywheelVelocityCommand(RPM.of(2600)));
         NamedCommands.registerCommand(
                 "Spin Up Shooter and Wait", superstructure.setFlywheelVelocityAndWaitCommand(RPM.of(3000)));
