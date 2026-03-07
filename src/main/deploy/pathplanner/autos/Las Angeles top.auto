@@ -5,6 +5,18 @@
     "data": {
       "commands": [
         {
+          "type": "path",
+          "data": {
+            "pathName": "Start to middle left"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Extend Intake"
+          }
+        },
+        {
           "type": "parallel",
           "data": {
             "commands": [
@@ -17,28 +29,16 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": "Grab from bundle"
+                  "pathName": "Down middle"
                 }
               }
             ]
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "Bundle to shoot"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "Spin Up Shooter and Wait"
           }
         }
       ]
     }
   },
   "resetOdom": true,
-  "folder": null,
+  "folder": "Las Angeles",
   "choreoAuto": false
 }
