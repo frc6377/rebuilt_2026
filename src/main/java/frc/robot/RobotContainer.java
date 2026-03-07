@@ -212,7 +212,7 @@ public class RobotContainer {
                                 superstructure.fireCommand(),
                                 indexer.index(),
                                 intake.intakeAndSiftCommand()
-                                        .withTimeout(3)
+                                        .withTimeout(2)
                                         .andThen(Commands.repeatingSequence(
                                                 intake.currentRunDescend(), intake.currentRunShoot())))));
         NamedCommands.registerCommand(
