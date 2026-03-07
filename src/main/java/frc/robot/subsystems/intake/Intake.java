@@ -5,6 +5,7 @@ import static edu.wpi.first.units.Units.Amps;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.subsystems.intake.extender.ExtenderIO;
 import frc.robot.subsystems.intake.extender.ExtenderIOInputsAutoLogged;
 import frc.robot.subsystems.intake.roller.RollerIO;
@@ -137,7 +138,7 @@ public class Intake extends SubsystemBase {
 
     public Command currentRunDescend() {
         return run(() -> extender.currentRunShoot(1))
-                .until(() -> extender.getCurrent().gte(Amps.of(10)))
+                .until(() -> extender.getCurrent().gte(Amps.of(8)))
                 .andThen(stop());
     }
 
