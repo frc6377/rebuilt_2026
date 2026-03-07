@@ -180,6 +180,17 @@ public class RobotContainer {
         if (Constants.currentMode == Constants.Mode.SIM) {
             superstructure.configureGamePieceSimulation(driveSimulation);
         }
+        NamedCommands.registerCommand(
+                "Stop", superstructure.stopShooterCommand().alongWith(superstructure.stopUpgoerCommand()));
+        NamedCommands.registerCommand(
+                "Unjam",
+                superstructure
+                        .unjamCommand()
+                        .alongWith(superstructure.setFlywheelVelocityCommand(RPM.of(-1500)))
+                        .finallyDo(interrupted -> superstructure
+                                .stopShooterCommand()
+                                .alongWith(superstructure.stopUpgoerCommand())
+                                .schedule()));
         NamedCommands.registerCommand("SpinUpHub", superstructure.setFlywheelVelocityCommand(RPM.of(2600)));
         NamedCommands.registerCommand(
                 "Spin Up Shooter and Wait", superstructure.setFlywheelVelocityAndWaitCommand(RPM.of(3000)));
@@ -198,7 +209,12 @@ public class RobotContainer {
                         //        drive, OIController.driveTranslationX(), OIController.driveTranslationY()))
                         .until(superstructure::atTargetVelocity)
                         .andThen(Commands.parallel(
-                                superstructure.fireCommand(), indexer.index(), intake.intakeAndSiftCommand())));
+                                superstructure.fireCommand(),
+                                indexer.index(),
+                                intake.intakeAndSiftCommand()
+                                        .withTimeout(3)
+                                        .andThen(Commands.repeatingSequence(
+                                                intake.currentRunDescend(), intake.currentRunShoot())))));
         NamedCommands.registerCommand(
                 "AutoEverything",
                 Commands.sequence(
@@ -331,7 +347,9 @@ public class RobotContainer {
                         .until(superstructure::atTargetVelocity)
                         .andThen(Commands.runOnce(drive::stopWithX))
                         .andThen(Commands.parallel(
-                                superstructure.fireCommand(), indexer.index(), intake.intakeAndSiftCommand()))))
+                                superstructure.fireCommand(),
+                                indexer.index(),
+                                Commands.repeatingSequence(intake.currentRunDescend(), intake.currentRunShoot())))))
                 .onFalse(Commands.parallel(
                                 superstructure.stopUpgoerCommand(),
                                 indexer.stop(),

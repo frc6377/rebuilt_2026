@@ -124,9 +124,9 @@ public class Intake extends SubsystemBase {
     }
 
     public Command currentRunShoot() {
-        return run(() -> extender.currentRunShoot(-1))
+        return run(() -> extender.currentRunShoot(-1.5))
                 .withTimeout(1)
-                .andThen(() -> extender.currentRunShoot(-1))
+                .andThen(() -> extender.currentRunShoot(-1.5))
                 .until(() -> extender.getCurrent().gte(Amps.of(15)))
                 .andThen(stop());
     }

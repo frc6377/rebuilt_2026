@@ -5,9 +5,35 @@
     "data": {
       "commands": [
         {
-          "type": "path",
+          "type": "race",
           "data": {
-            "pathName": "back up and shoot - right"
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "back up and shoot - right"
+                }
+              },
+              {
+                "type": "parallel",
+                "data": {
+                  "commands": [
+                    {
+                      "type": "named",
+                      "data": {
+                        "name": "Unjam"
+                      }
+                    },
+                    {
+                      "type": "named",
+                      "data": {
+                        "name": "Extend Intake"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
           }
         },
         {
