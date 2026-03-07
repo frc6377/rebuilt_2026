@@ -180,6 +180,7 @@ public class RobotContainer {
         if (Constants.currentMode == Constants.Mode.SIM) {
             superstructure.configureGamePieceSimulation(driveSimulation);
         }
+        NamedCommands.registerCommand("Unjam", superstructure.unjamCommand());
         NamedCommands.registerCommand("SpinUpHub", superstructure.setFlywheelVelocityCommand(RPM.of(2600)));
         NamedCommands.registerCommand(
                 "Spin Up Shooter and Wait", superstructure.setFlywheelVelocityAndWaitCommand(RPM.of(3000)));
@@ -198,7 +199,12 @@ public class RobotContainer {
                         //        drive, OIController.driveTranslationX(), OIController.driveTranslationY()))
                         .until(superstructure::atTargetVelocity)
                         .andThen(Commands.parallel(
-                                superstructure.fireCommand(), indexer.index(), intake.intakeAndSiftCommand().withTimeout(3).andThen(Commands.repeatingSequence(intake.currentRunDescend(), intake.currentRunShoot())))));
+                                superstructure.fireCommand(),
+                                indexer.index(),
+                                intake.intakeAndSiftCommand()
+                                        .withTimeout(3)
+                                        .andThen(Commands.repeatingSequence(
+                                                intake.currentRunDescend(), intake.currentRunShoot())))));
         NamedCommands.registerCommand(
                 "AutoEverything",
                 Commands.sequence(

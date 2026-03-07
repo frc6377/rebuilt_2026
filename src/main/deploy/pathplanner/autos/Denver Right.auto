@@ -5,9 +5,22 @@
     "data": {
       "commands": [
         {
-          "type": "path",
+          "type": "parallel",
           "data": {
-            "pathName": "back up and shoot - right"
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "back up and shoot - right"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "unjam"
+                }
+              }
+            ]
           }
         },
         {
