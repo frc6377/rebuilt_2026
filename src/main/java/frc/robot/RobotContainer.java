@@ -198,7 +198,7 @@ public class RobotContainer {
                         //        drive, OIController.driveTranslationX(), OIController.driveTranslationY()))
                         .until(superstructure::atTargetVelocity)
                         .andThen(Commands.parallel(
-                                superstructure.fireCommand(), indexer.index(), intake.intakeAndSiftCommand())));
+                                superstructure.fireCommand(), indexer.index(), intake.intakeAndSiftCommand().withTimeout(3).andThen(Commands.repeatingSequence(intake.currentRunDescend(), intake.currentRunShoot())))));
         NamedCommands.registerCommand(
                 "AutoEverything",
                 Commands.sequence(
