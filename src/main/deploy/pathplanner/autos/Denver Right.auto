@@ -5,7 +5,7 @@
     "data": {
       "commands": [
         {
-          "type": "parallel",
+          "type": "race",
           "data": {
             "commands": [
               {
@@ -15,9 +15,22 @@
                 }
               },
               {
-                "type": "named",
+                "type": "parallel",
                 "data": {
-                  "name": "Unjam"
+                  "commands": [
+                    {
+                      "type": "named",
+                      "data": {
+                        "name": "Unjam"
+                      }
+                    },
+                    {
+                      "type": "named",
+                      "data": {
+                        "name": "Extend Intake"
+                      }
+                    }
+                  ]
                 }
               }
             ]
