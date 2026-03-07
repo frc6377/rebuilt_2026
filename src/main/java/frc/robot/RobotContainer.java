@@ -370,6 +370,7 @@ public class RobotContainer {
                 ? () -> drive.setPose(driveSimulation.getSimulatedDriveTrainPose())
                 : () -> drive.setPose(new Pose2d(drive.getPose().getTranslation(), new Rotation2d()));
         OIController.zeroDrivebase().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
+        OIController.driveLockX().onTrue(Commands.runOnce(drive::stopWithX, drive));
         // OIController.start().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
 
         OIController.intake().whileTrue(intake.intakeCommand().alongWith(indexer.index()));
