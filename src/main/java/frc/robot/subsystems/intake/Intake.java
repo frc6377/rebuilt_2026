@@ -124,25 +124,25 @@ public class Intake extends SubsystemBase {
     }
 
     public Command currentRunShoot() {
-        return run(() -> extender.currentRunShoot(-1.5))
+        return run(() -> extender.currentRunShoot(-1))
                 .withTimeout(1)
-                .andThen(() -> extender.currentRunShoot(-1.5))
+                .andThen(() -> extender.currentRunShoot(-1))
                 .until(() -> extender.getCurrent().gte(Amps.of(15)))
                 .andThen(stop());
     }
 
     public Command currentRunShootManual() {
-        return run(() -> extender.currentRunShoot(-2));
+        return run(() -> extender.currentRunShoot(-1));
     }
 
     public Command currentRunDescend() {
-        return run(() -> extender.currentRunShoot(1.5))
+        return run(() -> extender.currentRunShoot(1))
                 .until(() -> extender.getCurrent().gte(Amps.of(10)))
                 .andThen(stop());
     }
 
     public Command currentRunDescendNoCheck() {
-        return run(() -> extender.currentRunShoot(1.5));
+        return run(() -> extender.currentRunShoot(1));
     }
 
     public Command autoZeroIntakeCommand() {
