@@ -65,7 +65,7 @@ public class Intake extends SubsystemBase {
 
     // Combination Commands
     public Command intakeCommand() {
-        return currentRunDescend().until(extender.isExtended()).andThen(runEnd(roller::start, roller::stop));
+        return runEnd(roller::start, roller::stop);
     }
 
     public Command retractIntakeCommand() {
