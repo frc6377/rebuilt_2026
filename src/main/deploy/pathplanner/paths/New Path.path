@@ -1,0 +1,54 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 3.5676644736842107,
+        "y": 3.0349122807017546
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 3.4164304749499044,
+        "y": 2.8358437557490848
+      },
+      "isLocked": false,
+      "linkedName": "Against hub right"
+    },
+    {
+      "anchor": {
+        "x": 2.8368311403508772,
+        "y": 2.015592105263157
+      },
+      "prevControl": {
+        "x": 2.67691449291032,
+        "y": 1.7868509857530264
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "Shoot half HP"
+    }
+  ],
+  "rotationTargets": [],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [],
+  "globalConstraints": {
+    "maxVelocity": 1.0,
+    "maxAcceleration": 3.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": 48.450843193751155
+  },
+  "reversed": false,
+  "folder": null,
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": 89.14490260373336
+  },
+  "useDefaultConstraints": true
+}

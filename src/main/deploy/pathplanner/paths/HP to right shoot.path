@@ -1,0 +1,68 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 0.5097039473684211,
+        "y": 0.66
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 1.395776596636874,
+        "y": 1.0342637904988101
+      },
+      "isLocked": false,
+      "linkedName": "Human Player"
+    },
+    {
+      "anchor": {
+        "x": 2.8368311403508772,
+        "y": 2.015592105263157
+      },
+      "prevControl": {
+        "x": 2.058600951305506,
+        "y": 1.184366690666005
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "Shoot half HP"
+    }
+  ],
+  "rotationTargets": [],
+  "constraintZones": [
+    {
+      "name": "Constraints Zone",
+      "minWaypointRelativePos": 0,
+      "maxWaypointRelativePos": 1.0,
+      "constraints": {
+        "maxVelocity": 1000.0,
+        "maxAcceleration": 1.0,
+        "maxAngularVelocity": 540.0,
+        "maxAngularAcceleration": 720.0,
+        "nominalVoltage": 12.0,
+        "unlimited": false
+      }
+    }
+  ],
+  "pointTowardsZones": [],
+  "eventMarkers": [],
+  "globalConstraints": {
+    "maxVelocity": 1.0,
+    "maxAcceleration": 3.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": 48.450843193751155
+  },
+  "reversed": false,
+  "folder": null,
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": 0.0
+  },
+  "useDefaultConstraints": true
+}

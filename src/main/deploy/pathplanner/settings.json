@@ -7,9 +7,11 @@
   ],
   "autoFolders": [
     "Denver",
+    "Las Vegas",
     "Meter tests",
-    "Santa Fe",
-    "Railway Heist"
+    "Las Angeles",
+    "Railway Heist",
+    "Santa Fe"
   ],
   "defaultMaxVel": 1.0,
   "defaultMaxAccel": 3.0,

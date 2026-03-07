@@ -332,7 +332,7 @@ public class RobotContainer {
                         .andThen(Commands.parallel(
                                 superstructure.fireCommand(),
                                 indexer.index(),
-                                Commands.repeatingSequence(intake.currentRunShoot(), intake.currentRunDescend())))))
+                                intake.intakeAndSiftCommand()))))
                 .onFalse(Commands.parallel(
                                 superstructure.stopUpgoerCommand(),
                                 indexer.stop(),
@@ -376,7 +376,8 @@ public class RobotContainer {
         OIController.outtake().whileTrue(intake.outtakeRollerCommand().alongWith(indexer.indexReverse()));
         OIController.zeroIntake().onTrue(intake.zeroExtender().ignoringDisable(true));
         OIController.toggleIntakeState().onTrue(intake.retractIntakeCommand());
-        OIController.intakeMiddle().onTrue(intake.goToSiftAngleOneCommand());
+        OIController.intakeMiddle().whileTrue(intake.currentRunShootManual()).onFalse(intake.stop());
+        OIController.intakeManualExtend().whileTrue(intake.currentRunDescendNoCheck()).onFalse(intake.stop());
     }
 
     /**

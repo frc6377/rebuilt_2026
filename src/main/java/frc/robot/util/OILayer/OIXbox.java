@@ -120,10 +120,6 @@ public class OIXbox implements OI {
         return start;
     }
 
-    @Override
-    public Trigger driveLock0() {
-        return a;
-    }
 
     @Override
     public Trigger intakeMiddle() {
@@ -132,7 +128,7 @@ public class OIXbox implements OI {
 
     @Override
     public Trigger shootDriver() {
-        return b;
+        return a;
     }
 
     @Override
@@ -140,6 +136,10 @@ public class OIXbox implements OI {
         return x;
     }
 
+    @Override
+    public Trigger intakeManualExtend() {
+        return b;
+    }
     @Override
     public Trigger spinUpShooter() {
         return operatorRightBumper;

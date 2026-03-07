@@ -104,6 +104,9 @@ public interface OI {
         return noButton;
     }
 
+    default Trigger intakeManualExtend() {
+        return noButton;
+    }
     default Trigger downIntake() {
         return noButton;
     }

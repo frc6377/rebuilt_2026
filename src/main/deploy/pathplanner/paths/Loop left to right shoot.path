@@ -1,0 +1,111 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 4.135021929824561,
+        "y": 7.564155701754386
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 5.135021929824561,
+        "y": 7.564155701754386
+      },
+      "isLocked": false,
+      "linkedName": "Top Side start"
+    },
+    {
+      "anchor": {
+        "x": 8.116140350877194,
+        "y": 6.573684210526316
+      },
+      "prevControl": {
+        "x": 7.996226308075549,
+        "y": 7.719529508408688
+      },
+      "nextControl": {
+        "x": 8.202686403508773,
+        "y": 5.746688596491229
+      },
+      "isLocked": false,
+      "linkedName": "Middle Down top"
+    },
+    {
+      "anchor": {
+        "x": 8.116140350877194,
+        "y": 2.5156359649122804
+      },
+      "prevControl": {
+        "x": 8.19304852662812,
+        "y": 5.141500822693901
+      },
+      "nextControl": {
+        "x": 8.048826754385965,
+        "y": 0.21735745614035062
+      },
+      "isLocked": false,
+      "linkedName": "Middle Down end"
+    },
+    {
+      "anchor": {
+        "x": 4.135021929824561,
+        "y": 0.4866118421052624
+      },
+      "prevControl": {
+        "x": 4.789208207694581,
+        "y": 0.4866118421052625
+      },
+      "nextControl": {
+        "x": 3.249858713356647,
+        "y": 0.4866118421052623
+      },
+      "isLocked": false,
+      "linkedName": "bottom side start"
+    },
+    {
+      "anchor": {
+        "x": 2.8368311403508772,
+        "y": 2.015592105263157
+      },
+      "prevControl": {
+        "x": 2.615657894736842,
+        "y": 0.8039473684210521
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "Shoot half HP"
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 1.6299879081015731,
+      "rotationDegrees": -105.00000000000001
+    },
+    {
+      "waypointRelativePos": 3,
+      "rotationDegrees": 0.0
+    }
+  ],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [],
+  "globalConstraints": {
+    "maxVelocity": 1.0,
+    "maxAcceleration": 3.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": 48.450843193751155
+  },
+  "reversed": false,
+  "folder": null,
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": 180.0
+  },
+  "useDefaultConstraints": true
+}

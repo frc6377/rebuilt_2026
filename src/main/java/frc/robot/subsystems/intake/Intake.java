@@ -130,11 +130,17 @@ public class Intake extends SubsystemBase {
                 .until(() -> extender.getCurrent().gte(Amps.of(15)))
                 .andThen(stop());
     }
+    public Command currentRunShootManual() {
+        return run(() -> extender.currentRunShoot(-2));
+    }
 
     public Command currentRunDescend() {
         return run(() -> extender.currentRunShoot(1.5))
                 .until(() -> extender.getCurrent().gte(Amps.of(10)))
                 .andThen(stop());
+    }
+    public Command currentRunDescendNoCheck() {
+        return run(() -> extender.currentRunShoot(1.5));
     }
 
     public Command autoZeroIntakeCommand() {
@@ -142,7 +148,7 @@ public class Intake extends SubsystemBase {
     }
 
     public Command stop() {
-        return runOnce(extender::stop);
+        return runOnce(() -> extender.currentRunShoot(0));
     }
 
     @Override

@@ -4,52 +4,31 @@
     {
       "anchor": {
         "x": 4.135021929824561,
-        "y": 7.564155701754386
+        "y": 0.47699561403508706
       },
       "prevControl": null,
       "nextControl": {
-        "x": 3.051285708385019,
-        "y": 7.342907203234492
+        "x": 3.019539473684211,
+        "y": 0.40006578947368315
       },
       "isLocked": false,
-      "linkedName": "Top Side start"
+      "linkedName": "bottom side start"
     },
     {
       "anchor": {
-        "x": 0.5,
-        "y": 6.9
+        "x": 2.8368311403508772,
+        "y": 2.015592105263157
       },
       "prevControl": {
-        "x": 0.5296148363305254,
-        "y": 7.148239725807769
-      },
-      "nextControl": {
-        "x": 0.4565773329842595,
-        "y": 6.536019229229413
-      },
-      "isLocked": false,
-      "linkedName": null
-    },
-    {
-      "anchor": {
-        "x": 0.5,
-        "y": 4.971531456951443
-      },
-      "prevControl": {
-        "x": 0.5018436697144,
-        "y": 7.088488398262658
+        "x": 2.602460094966582,
+        "y": 2.258785640740146
       },
       "nextControl": null,
       "isLocked": false,
-      "linkedName": "bundle end"
+      "linkedName": "Shoot half HP"
     }
   ],
-  "rotationTargets": [
-    {
-      "waypointRelativePos": 1,
-      "rotationDegrees": -90.0
-    }
-  ],
+  "rotationTargets": [],
   "constraintZones": [],
   "pointTowardsZones": [],
   "eventMarkers": [],
@@ -63,13 +42,13 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": -90.0
+    "rotation": 48.450843193751155
   },
   "reversed": false,
   "folder": null,
   "idealStartingState": {
     "velocity": 0,
-    "rotation": 180.0
+    "rotation": -0.4441444331119302
   },
   "useDefaultConstraints": true
 }
