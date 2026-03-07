@@ -191,9 +191,9 @@ public class RobotContainer {
                         .andThen(Commands.parallel(indexer.index(), superstructure.fireCommand())));
         NamedCommands.registerCommand(
                 "AutoShoot",
-                Commands.parallel(superstructure
-                        .autoSpeedShooter(drive::getPose, drive::getChassisSpeeds),
-                        intake.currentRunDescendNoCheck())
+                Commands.parallel(
+                                superstructure.autoSpeedShooter(drive::getPose, drive::getChassisSpeeds),
+                                intake.currentRunDescendNoCheck())
                         // .aimAtHubWhileDriving(
                         //        drive, OIController.driveTranslationX(), OIController.driveTranslationY()))
                         .until(superstructure::atTargetVelocity)
