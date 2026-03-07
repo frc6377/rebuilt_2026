@@ -181,9 +181,7 @@ public class RobotContainer {
             superstructure.configureGamePieceSimulation(driveSimulation);
         }
         NamedCommands.registerCommand(
-                "Stop",
-                superstructure.stopShooterCommand().alongWith(superstructure.stopUpgoerCommand())
-        );
+                "Stop", superstructure.stopShooterCommand().alongWith(superstructure.stopUpgoerCommand()));
         NamedCommands.registerCommand(
                 "Unjam",
                 superstructure.unjamCommand().alongWith(superstructure.setFlywheelVelocityCommand(RPM.of(-1500))));

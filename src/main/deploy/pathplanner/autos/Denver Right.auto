@@ -26,6 +26,12 @@
         {
           "type": "named",
           "data": {
+            "name": "Stop"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
             "name": "AutoShoot"
           }
         }
