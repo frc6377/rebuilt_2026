@@ -120,7 +120,6 @@ public class OIXbox implements OI {
         return start;
     }
 
-
     @Override
     public Trigger intakeMiddle() {
         return y;
@@ -140,6 +139,7 @@ public class OIXbox implements OI {
     public Trigger intakeManualExtend() {
         return b;
     }
+
     @Override
     public Trigger spinUpShooter() {
         return operatorRightBumper;

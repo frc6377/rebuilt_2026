@@ -330,9 +330,7 @@ public class RobotContainer {
                         .until(superstructure::atTargetVelocity)
                         .andThen(Commands.runOnce(drive::stopWithX))
                         .andThen(Commands.parallel(
-                                superstructure.fireCommand(),
-                                indexer.index(),
-                                intake.intakeAndSiftCommand()))))
+                                superstructure.fireCommand(), indexer.index(), intake.intakeAndSiftCommand()))))
                 .onFalse(Commands.parallel(
                                 superstructure.stopUpgoerCommand(),
                                 indexer.stop(),
@@ -378,7 +376,9 @@ public class RobotContainer {
         OIController.zeroIntake().onTrue(intake.zeroExtender().ignoringDisable(true));
         OIController.toggleIntakeState().onTrue(intake.retractIntakeCommand());
         OIController.intakeMiddle().whileTrue(intake.currentRunShootManual()).onFalse(intake.stop());
-        OIController.intakeManualExtend().whileTrue(intake.currentRunDescendNoCheck()).onFalse(intake.stop());
+        OIController.intakeManualExtend()
+                .whileTrue(intake.currentRunDescendNoCheck())
+                .onFalse(intake.stop());
     }
 
     /**

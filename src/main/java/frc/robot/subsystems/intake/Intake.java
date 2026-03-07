@@ -95,7 +95,7 @@ public class Intake extends SubsystemBase {
     public Command intakeAndSiftCommand() {
         return run(() -> {
                     roller.start();
-                    Commands.repeatingSequence(currentRunShoot(), currentRunDescend());
+                    currentRunDescend();            
                 })
                 .until(extender.isExtended())
                 .andThen(siftFuelCommand());
@@ -130,6 +130,7 @@ public class Intake extends SubsystemBase {
                 .until(() -> extender.getCurrent().gte(Amps.of(15)))
                 .andThen(stop());
     }
+
     public Command currentRunShootManual() {
         return run(() -> extender.currentRunShoot(-2));
     }
@@ -139,6 +140,7 @@ public class Intake extends SubsystemBase {
                 .until(() -> extender.getCurrent().gte(Amps.of(10)))
                 .andThen(stop());
     }
+
     public Command currentRunDescendNoCheck() {
         return run(() -> extender.currentRunShoot(1.5));
     }
