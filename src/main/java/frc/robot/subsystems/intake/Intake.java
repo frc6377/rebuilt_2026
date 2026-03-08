@@ -97,15 +97,14 @@ public class Intake extends SubsystemBase {
     }
 
     public Command extendAndIntakeCommand() {
-        return runOnce(extender::extend)
-                .alongWith(run(roller::start))
-                .until(extender.isExtended());
+        return runOnce(extender::extend).alongWith(run(roller::start)).until(extender.isExtended());
     }
 
     public Command intakeAndSiftCommand() {
         return runOnce(extender::extend)
                 .alongWith(run(roller::start))
-                .until(extender.isExtended()).withTimeout(2)
+                .until(extender.isExtended())
+                .withTimeout(2)
                 .andThen(siftFuelCommand());
     }
 
