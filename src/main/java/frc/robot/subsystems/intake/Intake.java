@@ -167,11 +167,11 @@ public class Intake extends SubsystemBase {
     public Command voltageSiftFuel() {
         return Commands.runOnce(roller::start)
                 .andThen(Commands.repeatingSequence(
-                        run(() -> extender.currentRunShoot(-1))
-                                .until(() -> extender.getCurrent().gte(Amps.of(8)))
+                        run(() -> extender.currentRunShoot(-2))
+                                .until(() -> extender.getCurrent().gte(Amps.of(15)))
                                 .withTimeout(2),
-                        run(() -> extender.currentRunShoot(1))
-                                .until(() -> extender.getCurrent().gte(Amps.of(8)))
+                        run(() -> extender.currentRunShoot(2))
+                                .until(() -> extender.getCurrent().gte(Amps.of(15)))
                                 .withTimeout(2)));
     }
 
