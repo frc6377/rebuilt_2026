@@ -10,15 +10,15 @@ public interface OI {
     Trigger noButton = new Trigger(() -> false);
     DoubleSupplier noAxis = () -> 0.0;
 
-    ControlCurve driveTranslationCurve = new ControlCurve(1, 4, 0.05, false);
+    ControlCurve driveTranslationCurve = new ControlCurve(1, 4, 0.05, true);
     ControlCurve driveRotationCurve = new ControlCurve(0.75, 2, 0.05, true);
-    ControlCurve driveTranslationCurveIntakeRunning = new ControlCurve(0.8, 4, 0.05, false);
+    ControlCurve driveTranslationCurveIntakeRunning = new ControlCurve(0.8, 4, 0.05, true);
 
     default DoubleSupplier driveTranslationX() {
         return noAxis;
     }
 
-     default DoubleSupplier driveTranslationY() {
+    default DoubleSupplier driveTranslationY() {
         return noAxis;
     }
 

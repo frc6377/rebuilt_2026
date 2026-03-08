@@ -13,9 +13,9 @@
 
 package frc.robot;
 
+import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.RPM;
 import static frc.robot.subsystems.vision.VisionConstants.*;
-import static frc.robot.subsystems.vision.VisionConstants.camera0Name;
 
 import com.ctre.phoenix6.SignalLogger;
 import com.pathplanner.lib.auto.AutoBuilder;
@@ -24,6 +24,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -385,7 +386,12 @@ public class RobotContainer {
         // Reset gyro / odometry
         final Runnable resetGyro = Constants.currentMode == Constants.Mode.SIM
                 ? () -> drive.setPose(driveSimulation.getSimulatedDriveTrainPose())
-                : () -> drive.setPose(new Pose2d(drive.getPose().getTranslation(), new Rotation2d()));
+                : () -> drive.setPose(new Pose2d(
+                        drive.getPose().getTranslation(),
+                        new Rotation2d(
+                                DriverStation.getAlliance().get() == Alliance.Blue
+                                        ? Degrees.zero()
+                                        : Degrees.of(180))));
         OIController.zeroDrivebase().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
         OIController.driveLockX().onTrue(Commands.runOnce(drive::stopWithX, drive));
         // OIController.start().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
