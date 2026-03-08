@@ -124,6 +124,9 @@ public class Robot extends LoggedRobot {
         if (autonomousCommand != null) {
             autonomousCommand.cancel();
         }
+        CommandScheduler.getInstance().schedule(robotContainer.superstructure.stopUpgoerCommand());
+        CommandScheduler.getInstance().schedule(robotContainer.superstructure.stopShooterCommand());
+
     }
 
     /** This function is called periodically during operator control. */

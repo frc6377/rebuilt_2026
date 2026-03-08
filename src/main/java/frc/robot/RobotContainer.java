@@ -75,7 +75,7 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
  */
 public class RobotContainer {
     // Subsystems
-    private final Superstructure superstructure;
+    protected final Superstructure superstructure;
 
     private final Drive drive;
 
@@ -188,11 +188,7 @@ public class RobotContainer {
                 "Unjam",
                 superstructure
                         .unjamCommand()
-                        .alongWith(superstructure.setFlywheelVelocityCommand(RPM.of(-1500)))
-                        .finallyDo(interrupted -> superstructure
-                                .stopShooterCommand()
-                                .alongWith(superstructure.stopUpgoerCommand())
-                                .schedule()));
+                        .alongWith(superstructure.setFlywheelVelocityCommand(RPM.of(-1500))));
         NamedCommands.registerCommand("SpinUpHub", superstructure.setFlywheelVelocityCommand(RPM.of(2600)));
         NamedCommands.registerCommand(
                 "Spin Up Shooter and Wait", superstructure.setFlywheelVelocityAndWaitCommand(RPM.of(3000)));
@@ -212,7 +208,7 @@ public class RobotContainer {
                         // OIController.driveTranslationY()))
                         .until(superstructure::atTargetVelocity)
                         .andThen(Commands.parallel(
-                                superstructure.fireCommand(), indexer.index(), Commands.repeatingSequence(intake.currentRunDescend(),intake.currentRunShoot()))).finallyDo(interrupted -> superstructure.stopUpgoerCommand().alongWith(superstructure.stopShooterCommand())));
+                                superstructure.fireCommand(), indexer.index(), Commands.repeatingSequence(intake.currentRunDescend(),intake.currentRunShoot()))));
         NamedCommands.registerCommand(
                 "AutoEverything",
                 Commands.sequence(
