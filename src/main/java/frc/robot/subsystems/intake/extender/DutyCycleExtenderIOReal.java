@@ -65,13 +65,14 @@ public class DutyCycleExtenderIOReal implements ExtenderIO {
                 Constants.CANIDs.SensorIDs.kExtenderEncoderCANID,
                 1.0,
                 ExtenderConstants.kExtenderZeroAngle.in(Rotations));
+        extenderEncoder.setInverted(true);
 
         extenderPid = new TunablePIDController(
                 "Intake/ExtenderPID",
                 ExtenderConstants.PIDF.kP,
                 ExtenderConstants.PIDF.kI,
                 ExtenderConstants.PIDF.kD,
-                () -> getPosition().in(Rotations),
+                () -> getPosition().in(Degrees) - 15,
                 percent -> extenderMotor.set(percent));
 
         kExtenderStowAngle =
@@ -101,11 +102,13 @@ public class DutyCycleExtenderIOReal implements ExtenderIO {
     public void setPosition(Angle position) {
         this.setpoint = position;
         Logger.recordOutput("Intake/Extender/SetpointDegrees", position);
-        extenderPid.setSetpoint(position.in(Rotations));
+        extenderPid.setSetpoint(position.in(Degrees));
     }
 
     public Angle getPosition() {
-        return Rotations.of(extenderEncoder.get()).div(ExtenderConstants.kGearing);
+        return Degrees.of(Rotations.of(extenderEncoder.get())
+                .div(ExtenderConstants.kGearing)
+                .in(Degrees));
     }
 
     public boolean isAtAngle(Angle angle) {

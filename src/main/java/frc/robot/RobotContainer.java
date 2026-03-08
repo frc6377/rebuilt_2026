@@ -46,8 +46,8 @@ import frc.robot.subsystems.indexer.IndexerIO;
 import frc.robot.subsystems.indexer.IndexerIOReal;
 import frc.robot.subsystems.indexer.IndexerIOSim;
 import frc.robot.subsystems.intake.Intake;
+import frc.robot.subsystems.intake.extender.DutyCycleExtenderIOReal;
 import frc.robot.subsystems.intake.extender.ExtenderIO;
-import frc.robot.subsystems.intake.extender.ExtenderIOReal;
 import frc.robot.subsystems.intake.extender.ExtenderIOSim;
 import frc.robot.subsystems.intake.roller.RollerIO;
 import frc.robot.subsystems.intake.roller.RollerIOReal;
@@ -129,7 +129,7 @@ public class RobotContainer {
                         drive, new QuestNavIO() {}, new VisionIOLimelight("limelight-shooter", drive::getRotation));
                 intake = new Intake(
                         Constants.EnabledSubsystems.kRoller ? new RollerIOReal() : new RollerIO() {},
-                        Constants.EnabledSubsystems.kExtender ? new ExtenderIOReal() : new ExtenderIO() {});
+                        Constants.EnabledSubsystems.kExtender ? new DutyCycleExtenderIOReal() : new ExtenderIO() {});
                 indexer = new Indexer(Constants.EnabledSubsystems.kIndexer ? new IndexerIOReal() : new IndexerIO() {});
                 driveSimulation = null;
                 break;
@@ -202,23 +202,23 @@ public class RobotContainer {
                         .autoSpeedShooter(drive::getPose, drive::getChassisSpeeds)
                         .until(superstructure::atTargetVelocity)
                         .andThen(Commands.parallel(indexer.index(), superstructure.fireCommand())));
-        NamedCommands.registerCommand(
-                "AutoShoot",
-                Commands.parallel(
-                                superstructure.autoSpeedShooter(drive::getPose, drive::getChassisSpeeds),
-                                intake.extendIntakeAndWait())
-                        // .aimAtHubWhileDriving(
-                        // drive, OIController.driveTranslationX(),
-                        // OIController.driveTranslationY()))
-                        .until(superstructure::atTargetVelocity)
-                        .andThen(Commands.parallel(
-                                superstructure.fireCommand(), indexer.index(), intake.intakeAndSiftCommand())));
-        NamedCommands.registerCommand(
-                "AutoEverything",
-                Commands.sequence(
-                        Commands.parallel(superstructure.autoSpeedShooter(), intake.extendAndIntakeCommand())
-                                .until(superstructure::atTargetVelocity),
-                        Commands.parallel(intake.intakeCommand(), superstructure.fireCommand())));
+        // NamedCommands.registerCommand(
+        //         "AutoShoot",
+        //         Commands.parallel(
+        //                         superstructure.autoSpeedShooter(drive::getPose, drive::getChassisSpeeds),
+        //                         intake.extendIntakeAndWait())
+        //                 // .aimAtHubWhileDriving(
+        //                 // drive, OIController.driveTranslationX(),
+        //                 // OIController.driveTranslationY()))
+        //                 .until(superstructure::atTargetVelocity)
+        //                 .andThen(Commands.parallel(
+        //                         superstructure.fireCommand(), indexer.index(), intake.intakeAndSiftCommand())));
+        // NamedCommands.registerCommand(
+        //         "AutoEverything",
+        //         Commands.sequence(
+        //                 Commands.parallel(superstructure.autoSpeedShooter(), intake.extendAndIntakeCommand())
+        //                         .until(superstructure::atTargetVelocity),
+        //                 Commands.parallel(intake.intakeCommand(), superstructure.fireCommand())));
 
         NamedCommands.registerCommand(
                 "Shoot", Commands.deadline(Commands.waitSeconds(5), superstructure.fireCommand()));
@@ -346,8 +346,7 @@ public class RobotContainer {
                         // OIController.driveTranslationY()))
                         .until(superstructure::atTargetVelocity)
                         .andThen(Commands.runOnce(drive::stopWithX))
-                        .andThen(Commands.parallel(
-                                superstructure.fireCommand(), indexer.index(), intake.siftFuelCommand()))))
+                        .andThen(Commands.parallel(superstructure.fireCommand(), indexer.index()))))
                 .onFalse(Commands.parallel(
                                 superstructure.stopUpgoerCommand(),
                                 indexer.stop(),

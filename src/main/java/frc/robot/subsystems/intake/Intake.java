@@ -69,11 +69,11 @@ public class Intake extends SubsystemBase {
 
     // Combination Commands
     public Command intakeCommand() {
-        return extendIntakeAndWait().andThen(runEnd(roller::start, roller::stop));
+        return runOnce(extender::extend).until(extender.isExtended()).andThen(runEnd(roller::start, roller::stop));
     }
 
     public Command retractIntakeCommand() {
-        return runOnce(roller::stop).andThen(retractIntakeAndWait());
+        return runOnce(roller::stop).andThen(runOnce(extender::retract).until(extender.isRetracted()));
     }
 
     public Command goToSiftAngleOneCommand() {
@@ -100,13 +100,15 @@ public class Intake extends SubsystemBase {
         return runOnce(extender::extend).alongWith(run(roller::start)).until(extender.isExtended());
     }
 
-    public Command intakeAndSiftCommand() {
-        return runOnce(extender::extend)
-                .alongWith(run(roller::start))
-                .until(extender.isExtended())
-                .withTimeout(2)
-                .andThen(siftFuelCommand());
-    }
+    // public Command intakeAndSiftCommand() {
+    //     return runOnce(extender::extend)
+    //             .alongWith(run(roller::start))
+    //             .until(extender.isExtended())
+    //             .withTimeout(2)
+    //             .andThen(Commands.repeatingSequence(
+    //                     run(extender::goToSiftAngleOne).until(extender.atTarget()),
+    //                     run(extender::goToSiftAngleTwo).until(extender.atTarget())));
+    // }
 
     public Command siftFuelCommand() {
         return Commands.repeatingSequence(

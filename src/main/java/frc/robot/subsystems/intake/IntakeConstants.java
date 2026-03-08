@@ -46,20 +46,20 @@ public class IntakeConstants {
         public static final double kDownSpeed = 0.05;
 
         public static final Angle kExtenderStowAngle = Degrees.of(0.0);
-        public static final Angle kExtenderIntakeAngle = Degrees.of(118.0);
+        public static final Angle kExtenderIntakeAngle = Degrees.of(130.0);
         public static final Angle kExtenderMaxAngle = Degrees.of(90.0);
         public static final Angle kExtenderMinAngle = Degrees.of(0.0);
         public static final Angle kExtenderTolerance = Degrees.of(2);
         public static final Angle kExtenderSiftAngleOne = Degrees.of(70);
         public static final Angle kExtenderSiftAngleTwo = Degrees.of(5);
-        public static final Angle kExtenderCustomAngleOne = Degrees.of(40.0);
+        public static final Angle kExtenderCustomAngleOne = Degrees.of(70.0);
         public static final Angle kExtenderCustomAngleTwo = Degrees.of(20.0);
-        public static final Angle kExtenderZeroAngle = Degrees.of(0.0);
+        public static final Angle kExtenderZeroAngle = Degrees.of(0);
 
-        public static final Current zeroCurrentLimit = Amps.of(60);
+        public static final Current zeroCurrentLimit = Amps.of(15);
 
         public static class PIDF {
-            public static final double kP = 0;
+            public static final double kP = 0.005;
             public static final double kI = 0.0;
             public static final double kD = 0.0;
             public static final double kS = 0.0;
@@ -69,7 +69,7 @@ public class IntakeConstants {
 
         public static class MotorConfig {
             public static final double kRampPeriod = 0.02;
-            public static final Current kStatorCurrentLimitExtender = Amps.of(10);
+            public static final Current kStatorCurrentLimitExtender = Amps.of(15);
         }
     }
 
