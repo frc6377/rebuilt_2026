@@ -39,6 +39,10 @@ public class Intake extends SubsystemBase {
         return runOnce(extender::extend).until(extender.isExtended());
     }
 
+    public Command retractIntakeAndWait() {
+        return runOnce(extender::retract).until(extender.isRetracted());
+    }
+
     public Command stowIntake() {
         return runOnce(extender::retract);
     }
@@ -65,11 +69,11 @@ public class Intake extends SubsystemBase {
 
     // Combination Commands
     public Command intakeCommand() {
-        return runEnd(roller::start, roller::stop);
+        return runOnce(extender::extend).until(extender.isExtended()).andThen(runEnd(roller::start, roller::stop));
     }
 
     public Command retractIntakeCommand() {
-        return runOnce(roller::stop).andThen(currentRunShoot());
+        return runOnce(roller::stop).andThen(runOnce(extender::retract).until(extender.isRetracted()));
     }
 
     public Command goToSiftAngleOneCommand() {
@@ -80,25 +84,35 @@ public class Intake extends SubsystemBase {
         return runOnce(extender::goToSiftAngleTwo);
     }
 
+    public Command goToCustomAngleOneCommand() {
+        return runOnce(extender::goToCustomAngleOne);
+    }
+
+    public Command goToCustomAngleTwoCommand() {
+        return runOnce(extender::goToCustomAngleTwo);
+    }
+
     public Command outtakeCommand() {
         return runOnce(extender::extend).andThen(runEnd(roller::outtake, roller::stop));
     }
 
     public Command extendAndIntakeCommand() {
-        return run(() -> {
-                    currentRunDescend();
+        return runOnce(() -> {
+                    extender.extend();
                     roller.start();
                 })
                 .until(extender.isExtended());
     }
 
     public Command intakeAndSiftCommand() {
-        return run(() -> {
+        return runOnce(() -> {
+                    extender.extend();
                     roller.start();
-                    currentRunDescend();
                 })
-                .until(extender.isExtended())
-                .andThen(siftFuelCommand());
+                .withTimeout(2)
+                .andThen(Commands.repeatingSequence(
+                        run(extender::goToSiftAngleOne).until(extender.atTarget()),
+                        run(extender::goToSiftAngleTwo).until(extender.atTarget())));
     }
 
     public Command siftFuelCommand() {
@@ -150,7 +164,7 @@ public class Intake extends SubsystemBase {
     }
 
     public Command stop() {
-        return runOnce(() -> extender.currentRunShoot(0));
+        return runOnce(extender::stop);
     }
 
     @Override
