@@ -212,7 +212,11 @@ public class RobotContainer {
                         // OIController.driveTranslationY()))
                         .until(superstructure::atTargetVelocity)
                         .andThen(Commands.parallel(
-                                superstructure.fireCommand(), indexer.index(), Commands.repeatingSequence(intake.currentRunDescend(),intake.currentRunShoot()))).finallyDo(interrupted -> superstructure.stopUpgoerCommand().alongWith(superstructure.stopShooterCommand())));
+                                superstructure.fireCommand(),
+                                indexer.index(),
+                                Commands.repeatingSequence(intake.currentRunDescend(), intake.currentRunShoot())))
+                        .finallyDo(interrupted ->
+                                superstructure.stopUpgoerCommand().alongWith(superstructure.stopShooterCommand())));
         NamedCommands.registerCommand(
                 "AutoEverything",
                 Commands.sequence(
@@ -346,7 +350,10 @@ public class RobotContainer {
                         // OIController.driveTranslationY()))
                         .until(superstructure::atTargetVelocity)
                         .andThen(Commands.runOnce(drive::stopWithX))
-                        .andThen(Commands.parallel(superstructure.fireCommand(), indexer.index(), Commands.repeatingSequence(intake.currentRunDescend(),intake.currentRunShoot())))))
+                        .andThen(Commands.parallel(
+                                superstructure.fireCommand(),
+                                indexer.index(),
+                                Commands.repeatingSequence(intake.currentRunDescend(), intake.currentRunShoot())))))
                 .onFalse(Commands.parallel(
                                 superstructure.stopUpgoerCommand(),
                                 indexer.stop(),

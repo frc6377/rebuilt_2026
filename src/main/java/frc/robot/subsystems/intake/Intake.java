@@ -155,7 +155,6 @@ public class Intake extends SubsystemBase {
                 .andThen(stop());
     }
 
-
     public Command currentRunDescendNoCheck() {
         return run(() -> extender.currentRunShoot(1));
     }
