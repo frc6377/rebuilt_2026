@@ -18,7 +18,7 @@ public interface OI {
         return noAxis;
     }
 
-    default DoubleSupplier driveTranslationY() {
+     default DoubleSupplier driveTranslationY() {
         return noAxis;
     }
 
