@@ -18,7 +18,7 @@ public class IntakeConstants {
 
     public static class RollerConstants {
         // TODO: Fix incorrect Constants
-        public static final double kIntakePercent = 0.6;
+        public static final double kIntakePercent = 0.8;
         public static final double kOuttakePercent = -0.6;
         public static final AngularVelocity kIntakeSpeed = RotationsPerSecond.of(50);
         public static final AngularVelocity kOuttakeSpeed = RotationsPerSecond.of(50);
