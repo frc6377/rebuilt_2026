@@ -3,29 +3,29 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 3.5868969298245617,
-        "y": 2.9483662280701752
+        "x": 3.6061293859649126,
+        "y": 2.967598684210526
       },
       "prevControl": null,
       "nextControl": {
-        "x": 2.4619668406123623,
-        "y": 2.780181539309417
+        "x": 2.558593695346926,
+        "y": 2.0354016473776624
       },
       "isLocked": false,
-      "linkedName": null
+      "linkedName": "Against hub right"
     },
     {
       "anchor": {
-        "x": 2.0675328947368423,
-        "y": 2.6021820175438597
+        "x": 2.8368311403508772,
+        "y": 2.015592105263157
       },
       "prevControl": {
-        "x": 2.3151128160304992,
-        "y": 2.5674806836757416
+        "x": 3.0863938783633156,
+        "y": 2.000812396343998
       },
       "nextControl": null,
       "isLocked": false,
-      "linkedName": null
+      "linkedName": "Shoot half HP"
     }
   ],
   "rotationTargets": [],
@@ -42,7 +42,7 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": 29.091168088697533
+    "rotation": 48.450843193751155
   },
   "reversed": false,
   "folder": null,
