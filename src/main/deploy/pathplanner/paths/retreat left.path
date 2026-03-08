@@ -3,29 +3,29 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 3.55,
-        "y": 4.0
+        "x": 2.0771491228070174,
+        "y": 5.669758771929824
       },
       "prevControl": null,
       "nextControl": {
-        "x": 3.05,
-        "y": 4.0
+        "x": 1.3114604432709855,
+        "y": 6.640566280443793
       },
       "isLocked": false,
-      "linkedName": "Against front of Hub"
+      "linkedName": "Shoot half left"
     },
     {
       "anchor": {
-        "x": 2.5,
-        "y": 4.0
+        "x": 0.5,
+        "y": 7.5
       },
       "prevControl": {
-        "x": 3.0,
-        "y": 4.0
+        "x": 1.148439415629908,
+        "y": 6.735485719700633
       },
       "nextControl": null,
       "isLocked": false,
-      "linkedName": "center away from hub"
+      "linkedName": null
     }
   ],
   "rotationTargets": [],
@@ -48,7 +48,7 @@
   "folder": null,
   "idealStartingState": {
     "velocity": 0,
-    "rotation": 0.0
+    "rotation": -34.77377933104437
   },
   "useDefaultConstraints": true
 }
