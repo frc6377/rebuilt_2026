@@ -50,8 +50,8 @@ public class IntakeConstants {
         public static final Angle kExtenderMaxAngle = Degrees.of(90.0);
         public static final Angle kExtenderMinAngle = Degrees.of(0.0);
         public static final Angle kExtenderTolerance = Degrees.of(2);
-        public static final Angle kExtenderSiftAngleOne = Degrees.of(70);
-        public static final Angle kExtenderSiftAngleTwo = Degrees.of(5);
+        public static final Angle kExtenderSiftAngleOne = Degrees.of(120);
+        public static final Angle kExtenderSiftAngleTwo = Degrees.of(90);
         public static final Angle kExtenderCustomAngleOne = Degrees.of(70.0);
         public static final Angle kExtenderCustomAngleTwo = Degrees.of(20.0);
         public static final Angle kExtenderZeroAngle = Degrees.of(0);

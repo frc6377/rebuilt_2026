@@ -202,23 +202,23 @@ public class RobotContainer {
                         .autoSpeedShooter(drive::getPose, drive::getChassisSpeeds)
                         .until(superstructure::atTargetVelocity)
                         .andThen(Commands.parallel(indexer.index(), superstructure.fireCommand())));
-        // NamedCommands.registerCommand(
-        //         "AutoShoot",
-        //         Commands.parallel(
-        //                         superstructure.autoSpeedShooter(drive::getPose, drive::getChassisSpeeds),
-        //                         intake.extendIntakeAndWait())
-        //                 // .aimAtHubWhileDriving(
-        //                 // drive, OIController.driveTranslationX(),
-        //                 // OIController.driveTranslationY()))
-        //                 .until(superstructure::atTargetVelocity)
-        //                 .andThen(Commands.parallel(
-        //                         superstructure.fireCommand(), indexer.index(), intake.intakeAndSiftCommand())));
-        // NamedCommands.registerCommand(
-        //         "AutoEverything",
-        //         Commands.sequence(
-        //                 Commands.parallel(superstructure.autoSpeedShooter(), intake.extendAndIntakeCommand())
-        //                         .until(superstructure::atTargetVelocity),
-        //                 Commands.parallel(intake.intakeCommand(), superstructure.fireCommand())));
+        NamedCommands.registerCommand(
+                "AutoShoot",
+                Commands.parallel(
+                                superstructure.autoSpeedShooter(drive::getPose, drive::getChassisSpeeds),
+                                intake.extendIntakeAndWait())
+                        // .aimAtHubWhileDriving(
+                        // drive, OIController.driveTranslationX(),
+                        // OIController.driveTranslationY()))
+                        .until(superstructure::atTargetVelocity)
+                        .andThen(Commands.parallel(
+                                superstructure.fireCommand(), indexer.index(), intake.intakeAndSiftCommand())));
+        NamedCommands.registerCommand(
+                "AutoEverything",
+                Commands.sequence(
+                        Commands.parallel(superstructure.autoSpeedShooter(), intake.extendAndIntakeCommand())
+                                .until(superstructure::atTargetVelocity),
+                        Commands.parallel(intake.intakeCommand(), superstructure.fireCommand())));
 
         NamedCommands.registerCommand(
                 "Shoot", Commands.deadline(Commands.waitSeconds(5), superstructure.fireCommand()));

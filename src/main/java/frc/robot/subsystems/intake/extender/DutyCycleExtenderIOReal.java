@@ -20,7 +20,6 @@ import frc.robot.Constants;
 import frc.robot.subsystems.intake.IntakeConstants.ExtenderConstants;
 import frc.robot.util.TunablePIDController;
 import java.util.function.BooleanSupplier;
-import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 public class DutyCycleExtenderIOReal implements ExtenderIO {
@@ -57,7 +56,7 @@ public class DutyCycleExtenderIOReal implements ExtenderIO {
         extenderMotorConfig = new TalonFXConfiguration();
         extenderMotorConfig.ClosedLoopRamps.VoltageClosedLoopRampPeriod = ExtenderConstants.MotorConfig.kRampPeriod;
         extenderMotorConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
-        extenderMotorConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
+        extenderMotorConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
         extenderMotor.getConfigurator().apply(extenderMotorConfig);
         extenderMotor.getConfigurator().apply(currentConfig);
 
@@ -101,7 +100,6 @@ public class DutyCycleExtenderIOReal implements ExtenderIO {
 
     public void setPosition(Angle position) {
         this.setpoint = position;
-        Logger.recordOutput("Intake/Extender/SetpointDegrees", position);
         extenderPid.setSetpoint(position.in(Degrees));
     }
 
