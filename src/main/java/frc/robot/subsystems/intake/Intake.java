@@ -39,6 +39,10 @@ public class Intake extends SubsystemBase {
         return runOnce(extender::extend).until(extender.isExtended());
     }
 
+    public Command retractIntakeAndWait() {
+        return runOnce(extender::retract).until(extender.isRetracted());
+    }
+
     public Command stowIntake() {
         return runOnce(extender::retract);
     }
@@ -65,11 +69,11 @@ public class Intake extends SubsystemBase {
 
     // Combination Commands
     public Command intakeCommand() {
-        return currentRunDescend().until(extender.isExtended()).andThen(runEnd(roller::start, roller::stop));
+        return extendIntakeAndWait().andThen(runEnd(roller::start, roller::stop));
     }
 
     public Command retractIntakeCommand() {
-        return runOnce(roller::stop).andThen(currentRunShoot());
+        return runOnce(roller::stop).andThen(retractIntakeAndWait());
     }
 
     public Command goToSiftAngleOneCommand() {
@@ -80,24 +84,28 @@ public class Intake extends SubsystemBase {
         return runOnce(extender::goToSiftAngleTwo);
     }
 
+    public Command goToCustomAngleOneCommand() {
+        return runOnce(extender::goToCustomAngleOne);
+    }
+
+    public Command goToCustomAngleTwoCommand() {
+        return runOnce(extender::goToCustomAngleTwo);
+    }
+
     public Command outtakeCommand() {
         return runOnce(extender::extend).andThen(runEnd(roller::outtake, roller::stop));
     }
 
     public Command extendAndIntakeCommand() {
-        return run(() -> {
-                    currentRunDescend();
-                    roller.start();
-                })
+        return runOnce(extender::extend)
+                .alongWith(run(roller::start))
                 .until(extender.isExtended());
     }
 
     public Command intakeAndSiftCommand() {
-        return run(() -> {
-                    roller.start();
-                    currentRunDescend();
-                })
-                .until(extender.isExtended())
+        return runOnce(extender::extend)
+                .alongWith(run(roller::start))
+                .until(extender.isExtended()).withTimeout(2)
                 .andThen(siftFuelCommand());
     }
 
@@ -150,7 +158,7 @@ public class Intake extends SubsystemBase {
     }
 
     public Command stop() {
-        return runOnce(() -> extender.currentRunShoot(0));
+        return runOnce(extender::stop);
     }
 
     @Override

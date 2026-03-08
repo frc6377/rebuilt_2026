@@ -40,6 +40,8 @@ public class DutyCycleExtenderIOReal implements ExtenderIO {
     private final LoggedNetworkNumber kExtenderTolerance;
     private final LoggedNetworkNumber kExtenderSiftAngleOne;
     private final LoggedNetworkNumber kExtenderSiftAngleTwo;
+    private final LoggedNetworkNumber kExtenderCustomAngleOne;
+    private final LoggedNetworkNumber kExtenderCustomAngleTwo;
     private final LoggedNetworkNumber kExtenderDownSpeed;
     private final LoggedNetworkNumber kExtenderZeroCurrentLimit;
 
@@ -87,6 +89,10 @@ public class DutyCycleExtenderIOReal implements ExtenderIO {
                 "Intake/Extender/SiftAngleOne", ExtenderConstants.kExtenderSiftAngleOne.in(Degrees));
         kExtenderSiftAngleTwo = new LoggedNetworkNumber(
                 "Intake/Extender/SiftAngleTwo", ExtenderConstants.kExtenderSiftAngleTwo.in(Degrees));
+        kExtenderCustomAngleOne = new LoggedNetworkNumber(
+                "Intake/Extender/CustomAngleOne", ExtenderConstants.kExtenderCustomAngleOne.in(Degrees));
+        kExtenderCustomAngleTwo = new LoggedNetworkNumber(
+                "Intake/Extender/CustomAngleTwo", ExtenderConstants.kExtenderCustomAngleTwo.in(Degrees));
         kExtenderDownSpeed = new LoggedNetworkNumber("Intake/Extender/DownSpeed", ExtenderConstants.kDownSpeed);
         kExtenderZeroCurrentLimit =
                 new LoggedNetworkNumber("Intake/Extender/DownSpeed", ExtenderConstants.zeroCurrentLimit.in(Amps));
@@ -99,7 +105,7 @@ public class DutyCycleExtenderIOReal implements ExtenderIO {
     }
 
     public Angle getPosition() {
-        return Rotations.of(extenderEncoder.get());
+        return Rotations.of(extenderEncoder.get()).div(ExtenderConstants.kGearing);
     }
 
     public boolean isAtAngle(Angle angle) {
@@ -159,6 +165,16 @@ public class DutyCycleExtenderIOReal implements ExtenderIO {
     @Override
     public void goToSiftAngleTwo() {
         setPosition(Degrees.of(kExtenderSiftAngleTwo.get()));
+    }
+
+    @Override
+    public void goToCustomAngleOne() {
+        setPosition(Degrees.of(kExtenderCustomAngleOne.get()));
+    }
+
+    @Override
+    public void goToCustomAngleTwo() {
+        setPosition(Degrees.of(kExtenderCustomAngleTwo.get()));
     }
 
     @Override

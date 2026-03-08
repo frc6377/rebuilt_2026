@@ -39,6 +39,10 @@ public interface ExtenderIO {
 
     default void goToSiftAngleTwo() {}
 
+    default void goToCustomAngleOne() {}
+
+    default void goToCustomAngleTwo() {}
+
     default BooleanSupplier isExtended() {
         return () -> false;
     }

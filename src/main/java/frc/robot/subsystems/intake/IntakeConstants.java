@@ -40,7 +40,7 @@ public class IntakeConstants {
 
     public static class ExtenderConstants {
         public static final int kExtenderTicksPerRevolution = 2048;
-        public static final double kGearing = 54;
+        public static final double kGearing = 1;
         public static final AngularMomentum kMOI = KilogramMetersSquaredPerSecond.of(0.5);
         public static final Distance kExtenderArmLength = Inches.of(12.0);
         public static final double kDownSpeed = 0.05;
@@ -52,6 +52,8 @@ public class IntakeConstants {
         public static final Angle kExtenderTolerance = Degrees.of(2);
         public static final Angle kExtenderSiftAngleOne = Degrees.of(70);
         public static final Angle kExtenderSiftAngleTwo = Degrees.of(5);
+        public static final Angle kExtenderCustomAngleOne = Degrees.of(40.0);
+        public static final Angle kExtenderCustomAngleTwo = Degrees.of(20.0);
         public static final Angle kExtenderZeroAngle = Degrees.of(0.0);
 
         public static final Current zeroCurrentLimit = Amps.of(60);
