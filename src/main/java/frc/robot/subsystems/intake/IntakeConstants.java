@@ -52,6 +52,7 @@ public class IntakeConstants {
         public static final Angle kExtenderTolerance = Degrees.of(2);
         public static final Angle kExtenderSiftAngleOne = Degrees.of(70);
         public static final Angle kExtenderSiftAngleTwo = Degrees.of(5);
+        public static final Angle kExtenderZeroAngle = Degrees.of(0.0);
 
         public static final Current zeroCurrentLimit = Amps.of(60);
 
