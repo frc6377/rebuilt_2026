@@ -2,6 +2,7 @@ package frc.robot.subsystems.intake;
 
 import static edu.wpi.first.units.Units.Amps;
 
+import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -154,13 +155,21 @@ public class Intake extends SubsystemBase {
                 .until(() -> extender.getCurrent().gte(Amps.of(8)))
                 .andThen(stop());
     }
-
-    public Command voltageSiftFuel(){
-        return Commands.repeatingSequence(
-                run(() -> extender.currentRunShoot(-1)).until(() -> extender.getCurrent().gte(Amps.of(8))).withTimeout(2),
-                run(() -> extender.currentRunShoot(1)).until(() -> extender.getCurrent().gte(Amps.of(8))).withTimeout(2));
+    public Command setNeutralModeBrake() {
+        return runOnce(() -> extender.setNeutralMode(NeutralModeValue.Brake));
     }
-
+    public Command setNeutralModeCoast() {
+        return runOnce(() -> extender.setNeutralMode(NeutralModeValue.Coast));
+    }
+    public Command voltageSiftFuel() {
+        return Commands.repeatingSequence(
+                run(() -> extender.currentRunShoot(-1))
+                        .until(() -> extender.getCurrent().gte(Amps.of(8)))
+                        .withTimeout(2),
+                run(() -> extender.currentRunShoot(1))
+                        .until(() -> extender.getCurrent().gte(Amps.of(8)))
+                        .withTimeout(2));
+    }
 
     public Command currentRunDescendNoCheck() {
         return run(() -> extender.currentRunShoot(1));

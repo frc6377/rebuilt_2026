@@ -6,6 +6,8 @@ import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Volts;
 
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
@@ -65,6 +67,7 @@ public interface ExtenderIO {
 
     default void autoZero() {}
 
+    default void setNeutralMode(NeutralModeValue mode) {}
     default void currentRunShoot(double volts) {}
 
     default Current getCurrent() {

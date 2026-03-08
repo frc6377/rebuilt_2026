@@ -82,7 +82,7 @@ public class RobotContainer {
     // Jay was here and basiclly is the reason that this code works <3
 
     private final Vision vision;
-    private final Intake intake;
+    protected final Intake intake;
     private final OI OIController;
     private final Indexer indexer;
     private final SwerveDriveSimulation driveSimulation; // Only used in simulation, but declared here for easy
@@ -186,9 +186,7 @@ public class RobotContainer {
                 "Stop", superstructure.stopShooterCommand().alongWith(superstructure.stopUpgoerCommand()));
         NamedCommands.registerCommand(
                 "Unjam",
-                superstructure
-                        .unjamCommand()
-                        .alongWith(superstructure.setFlywheelVelocityCommand(RPM.of(-1500))));
+                superstructure.unjamCommand().alongWith(superstructure.setFlywheelVelocityCommand(RPM.of(-1500))));
         NamedCommands.registerCommand("SpinUpHub", superstructure.setFlywheelVelocityCommand(RPM.of(2600)));
         NamedCommands.registerCommand(
                 "Spin Up Shooter and Wait", superstructure.setFlywheelVelocityAndWaitCommand(RPM.of(3000)));
@@ -342,7 +340,8 @@ public class RobotContainer {
                         // OIController.driveTranslationY()))
                         .until(superstructure::atTargetVelocity)
                         .andThen(Commands.runOnce(drive::stopWithX))
-                        .andThen(Commands.parallel(superstructure.fireCommand(), indexer.index(), intake.voltageSiftFuel()))))
+                        .andThen(Commands.parallel(
+                                superstructure.fireCommand(), indexer.index(), intake.voltageSiftFuel()))))
                 .onFalse(Commands.parallel(
                                 superstructure.stopUpgoerCommand(),
                                 indexer.stop(),
