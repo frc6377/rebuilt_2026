@@ -71,7 +71,7 @@ public class DutyCycleExtenderIOReal implements ExtenderIO {
                 ExtenderConstants.PIDF.kP,
                 ExtenderConstants.PIDF.kI,
                 ExtenderConstants.PIDF.kD,
-                () -> getPosition().in(Degrees) - 15,
+                () -> getPosition().in(Degrees) - 28,
                 percent -> extenderMotor.set(percent));
 
         kExtenderStowAngle =
@@ -206,11 +206,13 @@ public class DutyCycleExtenderIOReal implements ExtenderIO {
         extenderMotor.getConfigurator().apply(this.extenderMotorConfig);
         goToSiftAngleOne();
     }
+
     @Override
     public void setNeutralMode(NeutralModeValue mode) {
         extenderMotorConfig.MotorOutput.NeutralMode = mode;
         extenderMotor.getConfigurator().apply(extenderMotorConfig);
     }
+
     @Override
     public void toggle() {
         if (Math.abs(setpoint.in(Degrees) - kExtenderStowAngle.get()) < 5.0) {
