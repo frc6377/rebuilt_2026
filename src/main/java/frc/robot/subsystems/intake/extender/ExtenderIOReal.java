@@ -2,6 +2,7 @@ package frc.robot.subsystems.intake.extender;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Volts;
 
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
@@ -58,6 +59,7 @@ public class ExtenderIOReal implements ExtenderIO {
         extenderMotorConfig.ClosedLoopRamps.VoltageClosedLoopRampPeriod = ExtenderConstants.MotorConfig.kRampPeriod;
         extenderMotorConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
         extenderMotorConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
+        extenderMotorConfig.Feedback.SensorToMechanismRatio = ExtenderConstants.kGearing;
         extenderMotor.applyConfiguration(extenderMotorConfig);
         extenderMotor.getConfigurator().apply(currentConfig);
 
@@ -83,11 +85,11 @@ public class ExtenderIOReal implements ExtenderIO {
     public void setPosition(Angle position) {
         this.setpoint = position;
         Logger.recordOutput("Intake/Extender/SetpointDegrees", position);
-        extenderMotor.setControl(new PositionVoltage(position.times(ExtenderConstants.kGearing)));
+        extenderMotor.setControl(new PositionVoltage(position.in(Rotations)));
     }
 
     public Angle getPosition() {
-        return extenderMotor.getPosition().getValue().div(ExtenderConstants.kGearing);
+        return extenderMotor.getPosition().getValue();
     }
 
     public boolean isAtAngle(Angle angle) {
@@ -160,7 +162,7 @@ public class ExtenderIOReal implements ExtenderIO {
 
     @Override
     public void setEncoderPosition(Angle position) {
-        extenderMotor.setPosition(position);
+        extenderMotor.setPosition(position.in(Rotations));
     }
 
     @Override
