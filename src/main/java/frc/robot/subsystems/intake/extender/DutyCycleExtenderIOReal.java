@@ -30,6 +30,7 @@ public class DutyCycleExtenderIOReal implements ExtenderIO {
     private final TalonFXConfiguration extenderMotorConfig;
     private final TunablePIDController extenderPid;
     private Angle setpoint;
+    private boolean pidEnabled = true;
     // Logged network numbers for tuning/monitoring extender angles (no "NN" suffix
     // per request)
     private final LoggedNetworkNumber kExtenderStowAngle;
@@ -71,7 +72,8 @@ public class DutyCycleExtenderIOReal implements ExtenderIO {
                 ExtenderConstants.PIDF.kP,
                 ExtenderConstants.PIDF.kI,
                 ExtenderConstants.PIDF.kD,
-                () -> getPosition().in(Degrees) - 28,
+                //() -> getPosition().in(Degrees) - 28, - Magic number and verify this is correct after testing
+                () -> getPosition().in(Degrees),
                 percent -> extenderMotor.set(percent));
 
         kExtenderStowAngle =
@@ -100,13 +102,15 @@ public class DutyCycleExtenderIOReal implements ExtenderIO {
 
     public void setPosition(Angle position) {
         this.setpoint = position;
+        pidEnabled = true;
         extenderPid.setSetpoint(position.in(Degrees));
     }
 
     public Angle getPosition() {
         return Degrees.of(Rotations.of(extenderEncoder.get())
                 .div(ExtenderConstants.kGearing)
-                .in(Degrees));
+                .in(Degrees)
+                - 15);
     }
 
     public boolean isAtAngle(Angle angle) {
@@ -115,6 +119,7 @@ public class DutyCycleExtenderIOReal implements ExtenderIO {
 
     @Override
     public void currentRunShoot(double volts) {
+        pidEnabled = false;
         extenderMotor.setControl(new VoltageOut(volts));
     }
 
@@ -180,6 +185,7 @@ public class DutyCycleExtenderIOReal implements ExtenderIO {
 
     @Override
     public void stop() {
+        pidEnabled = false;
         extenderMotor.stopMotor();
     }
 
@@ -238,6 +244,8 @@ public class DutyCycleExtenderIOReal implements ExtenderIO {
     @Override
     public void periodic() {
         extenderPid.updateTunableGains();
-        extenderPid.runPid();
+        if (pidEnabled) {
+            extenderPid.runPid();
+        }
     }
 }

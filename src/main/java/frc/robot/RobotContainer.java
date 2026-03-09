@@ -203,7 +203,7 @@ public class RobotContainer {
                                 intake.extendIntakeAndWait())
                         .until(superstructure::atTargetVelocity)
                         .andThen(Commands.parallel(
-                                superstructure.fireCommand(), indexer.index(), intake.voltageSiftFuel())));
+                                superstructure.fireCommand(), indexer.index(), intake.intakeRollerCommand())));
         NamedCommands.registerCommand(
                 "AutoEverything",
                 Commands.sequence(

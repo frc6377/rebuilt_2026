@@ -156,23 +156,25 @@ public class Intake extends SubsystemBase {
                 .andThen(stop());
     }
 
+
     public Command setNeutralModeBrake() {
         return runOnce(() -> extender.setNeutralMode(NeutralModeValue.Brake));
     }
+
 
     public Command setNeutralModeCoast() {
         return runOnce(() -> extender.setNeutralMode(NeutralModeValue.Coast));
     }
 
+
     public Command voltageSiftFuel() {
-        return Commands.runOnce(roller::start)
-                .andThen(Commands.repeatingSequence(
-                        run(() -> extender.currentRunShoot(-2))
-                                .until(() -> extender.getCurrent().gte(Amps.of(15)))
-                                .withTimeout(2),
-                        run(() -> extender.currentRunShoot(2))
-                                .until(() -> extender.getCurrent().gte(Amps.of(15)))
-                                .withTimeout(2)));
+        return Commands.repeatingSequence(
+                run(() -> extender.currentRunShoot(0))
+                        .until(() -> extender.getCurrent().gte(Amps.of(8)))
+                        .withTimeout(2),
+                run(() -> extender.currentRunShoot(1))
+                        .until(() -> extender.getCurrent().gte(Amps.of(8)))
+                        .withTimeout(2));
     }
 
     public Command currentRunDescendNoCheck() {

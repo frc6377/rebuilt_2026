@@ -20,7 +20,7 @@ public class IntakeConstants {
         // TODO: Fix incorrect Constants
         public static final double kIntakePercent = 1;
         public static final double kOuttakePercent = -0.6;
-        public static final AngularVelocity kIntakeSpeed = RotationsPerSecond.of(50);
+        public static final AngularVelocity kIntakeSpeed = RadiansPerSecond.of(400);
         public static final AngularVelocity kOuttakeSpeed = RotationsPerSecond.of(50);
 
         public static class PIDF {
