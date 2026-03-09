@@ -120,11 +120,13 @@ public class ExtenderIOReal implements ExtenderIO {
     public void extend() {
         setPosition(Degrees.of(kExtenderIntakeAngle.get()));
     }
+
     @Override
     public void setNeutralMode(NeutralModeValue mode) {
         extenderMotorConfig.MotorOutput.NeutralMode = mode;
         extenderMotor.getConfigurator().apply(extenderMotorConfig);
     }
+
     @Override
     public void retract() {
         setPosition(Degrees.of(kExtenderStowAngle.get()));

@@ -34,7 +34,7 @@ public class IntakeConstants {
 
         public static class MotorConfig {
             public static final double kRampPeriod = 0.02;
-            public static final Current kStatorCurrentLimit = Amps.of(30);
+            public static final Current kStatorCurrentLimit = Amps.of(70);
         }
     }
 

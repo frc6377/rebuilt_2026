@@ -21,7 +21,7 @@ public class Indexer extends SubsystemBase {
     public Command index() {
         return run(() -> {
             // setpoint = IndexerConstants.kCollectorRPM;
-            indexerIO.setCustomSpeed(-0.9);
+            indexerIO.setCustomSpeed(-1);
         });
     }
 
