@@ -166,7 +166,7 @@ public class Intake extends SubsystemBase {
 
     public Command voltageSiftFuel() {
 
-        return run(() -> extender.currentRunShoot(-1))
+        return run(() -> extender.currentRunShoot(0))
                 .until(() -> extender.getCurrent().gte(Amps.of(8)))
                 .andThen(Commands.repeatingSequence(
                         run(() -> extender.currentRunShoot(0))
