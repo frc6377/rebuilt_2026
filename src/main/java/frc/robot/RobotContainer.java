@@ -200,7 +200,7 @@ public class RobotContainer {
                 "AutoShoot",
                 Commands.parallel(
                                 superstructure.autoSpeedShooter(drive::getPose, drive::getChassisSpeeds),
-                                intake.extendIntakeAndWait())
+                                intake.extendIntake())
                         // .aimAtHubWhileDriving(
                         // drive, OIController.driveTranslationX(),
                         // OIController.driveTranslationY()))

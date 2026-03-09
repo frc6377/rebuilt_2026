@@ -107,8 +107,8 @@ public class DutyCycleExtenderIOReal implements ExtenderIO {
 
     public Angle getPosition() {
         return Degrees.of(Rotations.of(extenderEncoder.get())
-                .div(ExtenderConstants.kGearing)
-                .in(Degrees)
+                        .div(ExtenderConstants.kGearing)
+                        .in(Degrees)
                 - 15);
     }
 
@@ -211,11 +211,13 @@ public class DutyCycleExtenderIOReal implements ExtenderIO {
         extenderMotor.getConfigurator().apply(this.extenderMotorConfig);
         goToSiftAngleOne();
     }
+
     @Override
     public void setNeutralMode(NeutralModeValue mode) {
         extenderMotorConfig.MotorOutput.NeutralMode = mode;
         extenderMotor.getConfigurator().apply(extenderMotorConfig);
     }
+
     @Override
     public void toggle() {
         if (Math.abs(setpoint.in(Degrees) - kExtenderStowAngle.get()) < 5.0) {
