@@ -40,12 +40,6 @@ public class Indexer extends SubsystemBase {
         });
     }
 
-    public Command index(BooleanSupplier supplier) {
-        return run(() -> {
-            indexerIO.setVelocity(supplier.getAsBoolean() ? IndexerConstants.kCollectorRPM : RotationsPerSecond.zero());
-        });
-    }
-
     public Command stop() {
         return runOnce(() -> {
             setpoint = RotationsPerSecond.zero();
