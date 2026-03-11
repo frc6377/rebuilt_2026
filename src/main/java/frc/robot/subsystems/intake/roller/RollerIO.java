@@ -18,6 +18,7 @@ import static edu.wpi.first.units.Units.Celsius;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Volts;
 
+import com.ctre.phoenix6.hardware.TalonFX;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Temperature;
@@ -36,6 +37,10 @@ public interface RollerIO {
     }
 
     default void updateInputs(RollerIOInputs inputs) {}
+
+    default TalonFX getMotor() {
+        return null;
+    }
 
     default void start() {}
 

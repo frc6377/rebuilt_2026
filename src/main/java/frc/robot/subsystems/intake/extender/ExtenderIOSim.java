@@ -43,15 +43,11 @@ public class ExtenderIOSim implements ExtenderIO {
     private final CurrentLimitsConfigs currentConfig;
     private final SingleJointedArmSim armSim;
     private Angle setpoint;
-    // Logged network numbers for tuning/monitoring extender angles (dashboard-tunable)
     private final LoggedNetworkNumber kExtenderStowAngle;
     private final LoggedNetworkNumber kExtenderIntakeAngle;
-    private final LoggedNetworkNumber kExtenderMaxAngle;
-    private final LoggedNetworkNumber kExtenderMinAngle;
     private final LoggedNetworkNumber kExtenderTolerance;
     private final LoggedNetworkNumber kExtenderSiftAngleOne;
     private final LoggedNetworkNumber kExtenderSiftAngleTwo;
-    private final LoggedNetworkNumber kExtenderDownSpeed;
 
     public ExtenderIOSim() {
         setpoint = Degrees.of(0.0);
@@ -77,22 +73,17 @@ public class ExtenderIOSim implements ExtenderIO {
         extenderMotor.applyConfiguration(extenderMotorConfig);
         extenderMotor.getConfigurator().apply(currentConfig);
 
-        // Initialize LoggedNetworkNumber instances for angle constants (only angles initialized in constructor)
         kExtenderStowAngle =
                 new LoggedNetworkNumber("Intake/Extender/StowAngle", ExtenderConstants.kExtenderStowAngle.in(Degrees));
         kExtenderIntakeAngle = new LoggedNetworkNumber(
                 "Intake/Extender/IntakeAngle", ExtenderConstants.kExtenderIntakeAngle.in(Degrees));
-        kExtenderMaxAngle =
-                new LoggedNetworkNumber("Intake/Extender/MaxAngle", ExtenderConstants.kExtenderMaxAngle.in(Degrees));
-        kExtenderMinAngle =
-                new LoggedNetworkNumber("Intake/Extender/MinAngle", ExtenderConstants.kExtenderMinAngle.in(Degrees));
         kExtenderTolerance =
                 new LoggedNetworkNumber("Intake/Extender/Tolerance", ExtenderConstants.kExtenderTolerance.in(Degrees));
         kExtenderSiftAngleOne = new LoggedNetworkNumber(
                 "Intake/Extender/SiftAngleOne", ExtenderConstants.kExtenderSiftAngleOne.in(Degrees));
         kExtenderSiftAngleTwo = new LoggedNetworkNumber(
                 "Intake/Extender/SiftAngleTwo", ExtenderConstants.kExtenderSiftAngleTwo.in(Degrees));
-        kExtenderDownSpeed = new LoggedNetworkNumber("Intake/Extender/DownSpeed", ExtenderConstants.kDownSpeed);
+        new LoggedNetworkNumber("Intake/Extender/DownSpeed", ExtenderConstants.kDownSpeed);
 
         extenderMotorSim = extenderMotor.getSimState();
 
@@ -117,8 +108,7 @@ public class ExtenderIOSim implements ExtenderIO {
     }
 
     public void setPosition(Angle position) {
-        this.setpoint =
-                Degrees.of(Math.max(kExtenderMinAngle.get(), Math.min(kExtenderMaxAngle.get(), position.in(Degrees))));
+        this.setpoint = position;
         Logger.recordOutput("Intake/Extender/SetpointDegrees", this.setpoint);
         extenderMotor.setControl(new PositionVoltage(this.setpoint));
     }
@@ -176,11 +166,6 @@ public class ExtenderIOSim implements ExtenderIO {
     }
 
     @Override
-    public void autoZero() {
-        extenderMotor.set(kExtenderDownSpeed.get());
-    }
-
-    @Override
     public void toggle() {
         if (isRetracted().getAsBoolean()) {
             extend();
@@ -190,18 +175,22 @@ public class ExtenderIOSim implements ExtenderIO {
     }
 
     @Override
-    public void setEncoderPosition(Angle position) {
-        extenderMotor.setPosition(position);
-    }
-
-    @Override
     public void stop() {
         extenderMotor.stopMotor();
     }
 
     @Override
+    public com.ctre.phoenix6.hardware.TalonFX getMotor() {
+        return extenderMotor;
+    }
+
+    @Override
+    public edu.wpi.first.units.measure.Current getCurrent() {
+        return Amps.of(armSim.getCurrentDrawAmps());
+    }
+
+    @Override
     public void updateInputs(ExtenderIOInputs inputs) {
-        // Single getPosition() per cycle; compute booleans from it to avoid extra allocations and repeated calls
         Angle position = getPosition();
         inputs.position = position;
         inputs.setpoint = setpoint;
