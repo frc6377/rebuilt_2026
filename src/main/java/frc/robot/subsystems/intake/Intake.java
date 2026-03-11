@@ -1,6 +1,5 @@
 package frc.robot.subsystems.intake;
 
-import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -29,11 +28,12 @@ public class Intake extends SubsystemBase {
     }
 
     public void setNeutralMode(NeutralModeValue mode) {
-        var extenderMotor = extender.getMotor();
-        if (extenderMotor != null)
-            extenderMotor.getConfigurator().apply(new MotorOutputConfigs().withNeutralMode(mode));
-        var rollerMotor = roller.getMotor();
-        if (rollerMotor != null) rollerMotor.getConfigurator().apply(new MotorOutputConfigs().withNeutralMode(mode));
+        extender.setMode(mode);
+        roller.setMode(mode);
+    }
+
+    public void setExtenderPidEnabled(boolean enabled) {
+        extender.setPidEnabled(enabled);
     }
 
     @Override
