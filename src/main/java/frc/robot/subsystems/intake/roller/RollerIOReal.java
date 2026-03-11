@@ -64,6 +64,11 @@ public class RollerIOReal implements RollerIO {
     }
 
     @Override
+    public TalonFX getMotor() {
+        return rollerMotor;
+    }
+
+    @Override
     public void updateInputs(RollerIO.RollerIOInputs inputs) {
         inputs.rollerSpeedPercentile = rollerMotor.get();
         inputs.rollerAppliedVolts = rollerMotor.getMotorVoltage().getValue();

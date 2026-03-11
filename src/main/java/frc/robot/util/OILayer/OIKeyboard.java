@@ -116,6 +116,11 @@ public class OIKeyboard implements OI {
     }
 
     @Override
+    public Trigger retractIntake() {
+        return Home;
+    }
+
+    @Override
     public Trigger downIntake() {
         return End;
     }

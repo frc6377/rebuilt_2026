@@ -46,8 +46,8 @@ import frc.robot.subsystems.indexer.IndexerIO;
 import frc.robot.subsystems.indexer.IndexerIOReal;
 import frc.robot.subsystems.indexer.IndexerIOSim;
 import frc.robot.subsystems.intake.Intake;
-import frc.robot.subsystems.intake.extender.DutyCycleExtenderIOReal;
 import frc.robot.subsystems.intake.extender.ExtenderIO;
+import frc.robot.subsystems.intake.extender.ExtenderIOReal;
 import frc.robot.subsystems.intake.extender.ExtenderIOSim;
 import frc.robot.subsystems.intake.roller.RollerIO;
 import frc.robot.subsystems.intake.roller.RollerIOReal;
@@ -87,7 +87,6 @@ public class RobotContainer {
     private final Indexer indexer;
     private final SwerveDriveSimulation driveSimulation; // Only used in simulation, but declared here for easy
     // access by subsystems that need it
-    private final RobotState robotState;
 
     private final boolean usingController;
 
@@ -96,7 +95,7 @@ public class RobotContainer {
 
     /** The container for the robot. Contains subsystems, OI devices, and commands. */
     public RobotContainer() {
-        robotState = RobotState.create();
+        RobotState.create();
 
         usingController = true;
 
@@ -128,8 +127,8 @@ public class RobotContainer {
                 vision = new Vision(
                         drive, new QuestNavIO() {}, new VisionIOLimelight("limelight-shooter", drive::getRotation));
                 intake = new Intake(
-                        Constants.EnabledSubsystems.kRoller ? new RollerIOReal() : new RollerIO() {},
-                        Constants.EnabledSubsystems.kExtender ? new DutyCycleExtenderIOReal() : new ExtenderIO() {});
+                        Constants.EnabledSubsystems.kExtender ? new ExtenderIOReal() : new ExtenderIO() {},
+                        Constants.EnabledSubsystems.kRoller ? new RollerIOReal() : new RollerIO() {});
                 indexer = new Indexer(Constants.EnabledSubsystems.kIndexer ? new IndexerIOReal() : new IndexerIO() {});
                 driveSimulation = null;
                 break;
@@ -139,8 +138,8 @@ public class RobotContainer {
 
                 driveSimulation = new SwerveDriveSimulation(Drive.mapleSimConfig, new Pose2d(3, 3, new Rotation2d()));
                 intake = new Intake(
-                        Constants.EnabledSubsystems.kRoller ? new RollerIOSim(driveSimulation) : new RollerIO() {},
-                        Constants.EnabledSubsystems.kExtender ? new ExtenderIOSim() : new ExtenderIO() {});
+                        Constants.EnabledSubsystems.kExtender ? new ExtenderIOSim() : new ExtenderIO() {},
+                        Constants.EnabledSubsystems.kRoller ? new RollerIOSim(driveSimulation) : new RollerIO() {});
                 SimulatedArena.getInstance().addDriveTrainSimulation(driveSimulation);
                 drive = new Drive(
                         new GyroIOSim(driveSimulation.getGyroSimulation()),
@@ -172,7 +171,7 @@ public class RobotContainer {
                         (pose) -> {});
                 driveSimulation = null;
                 vision = new Vision(drive, new QuestNavIO() {}, new VisionIO() {}, new VisionIO() {});
-                intake = new Intake(new RollerIO() {}, new ExtenderIO() {});
+                intake = new Intake(new ExtenderIO() {}, new RollerIO() {});
                 indexer = new Indexer(new IndexerIO() {});
                 break;
         }
@@ -207,7 +206,7 @@ public class RobotContainer {
         NamedCommands.registerCommand(
                 "AutoEverything",
                 Commands.sequence(
-                        Commands.parallel(superstructure.autoSpeedShooter(), intake.extendAndIntakeCommand())
+                        Commands.parallel(superstructure.autoSpeedShooter(), intake.intakeCommand())
                                 .until(superstructure::atTargetVelocity),
                         Commands.parallel(intake.intakeCommand(), superstructure.fireCommand())));
 
@@ -337,8 +336,7 @@ public class RobotContainer {
                         // OIController.driveTranslationY()))
                         .until(superstructure::atTargetVelocity)
                         .andThen(Commands.runOnce(drive::stopWithX))
-                        .andThen(Commands.parallel(
-                                superstructure.fireCommand(), indexer.index(), intake.voltageSiftFuel()))))
+                        .andThen(Commands.parallel(superstructure.fireCommand(), indexer.index()))))
                 .onFalse(Commands.parallel(
                                 superstructure.stopUpgoerCommand(),
                                 indexer.stop(),
@@ -387,8 +385,8 @@ public class RobotContainer {
 
         OIController.intake().whileTrue(intake.intakeCommand().alongWith(indexer.index()));
         OIController.outtake().whileTrue(intake.outtakeRollerCommand().alongWith(indexer.indexReverse()));
-        OIController.zeroIntake().onTrue(intake.zeroExtender().ignoringDisable(true));
-        OIController.toggleIntakeState().onTrue(intake.retractIntakeCommand());
+        OIController.zeroIntake().onTrue(intake.zeroIntake().ignoringDisable(true));
+        OIController.retractIntake().onTrue(intake.retractIntakeCommand());
         OIController.intakeMiddle().onTrue(intake.goToCustomAngleOneCommand());
     }
 
