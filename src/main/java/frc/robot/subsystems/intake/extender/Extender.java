@@ -2,7 +2,7 @@ package frc.robot.subsystems.intake.extender;
 
 import static edu.wpi.first.units.Units.Amps;
 
-import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -75,8 +75,16 @@ public class Extender extends SubsystemBase {
         return Commands.runOnce(io::stop, this).withName("ExtenderStop");
     }
 
-    public TalonFX getMotor() {
-        return io.getMotor();
+    public void setPidEnabled(boolean enabled) {
+        io.setPidEnabled(enabled);
+    }
+
+    public void setMode(NeutralModeValue mode) {
+        io.setMode(mode);
+    }
+
+    public void setMotorPercentage(double percent) {
+        io.setMotorPercentage(percent);
     }
 
     public Command siftFuelPositionCommand() {
@@ -94,7 +102,7 @@ public class Extender extends SubsystemBase {
     }
 
     public Command runUntilCurrentCommand(double percent, Current current) {
-        return Commands.run(() -> io.getMotor().set(percent))
+        return Commands.run(() -> io.setMotorPercentage(percent))
                 .until(() -> Math.abs(io.getCurrent().in(Amps)) >= current.in(Amps))
                 .withName("ExtenderRunUntilCurrent");
     }

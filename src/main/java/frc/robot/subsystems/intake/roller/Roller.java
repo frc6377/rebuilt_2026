@@ -1,6 +1,6 @@
 package frc.robot.subsystems.intake.roller;
 
-import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -45,7 +45,11 @@ public class Roller extends SubsystemBase {
         return io.getIntakedFuel();
     }
 
-    public TalonFX getMotor() {
-        return io.getMotor();
+    public void setMode(NeutralModeValue mode) {
+        io.setMode(mode);
+    }
+
+    public void setMotorPercentage(double percent) {
+        io.setMotorPercentage(percent);
     }
 }
