@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(gh pr view:*)"
+      "Bash(gh pr view:*)",
+      "Bash(ls:*)",
+      "Bash(./gradlew.bat build:*)",
+      "Bash(git checkout:*)",
+      "Bash(git commit:*)"
     ]
   }
 }
