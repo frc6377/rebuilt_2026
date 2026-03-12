@@ -27,6 +27,7 @@ public class Module {
     private final ModuleIOInputsAutoLogged inputs = new ModuleIOInputsAutoLogged();
     private final int index;
     private final SwerveModuleConstants constants;
+    private final String logKey;
 
     private final Alert driveDisconnectedAlert;
     private final Alert turnDisconnectedAlert;
@@ -37,17 +38,16 @@ public class Module {
         this.io = io;
         this.index = index;
         this.constants = constants;
-        driveDisconnectedAlert =
-                new Alert("Disconnected drive motor on module " + Integer.toString(index) + ".", AlertType.kError);
-        turnDisconnectedAlert =
-                new Alert("Disconnected turn motor on module " + Integer.toString(index) + ".", AlertType.kError);
+        this.logKey = "Drive/Module" + index;
+        driveDisconnectedAlert = new Alert("Disconnected drive motor on module " + index + ".", AlertType.kError);
+        turnDisconnectedAlert = new Alert("Disconnected turn motor on module " + index + ".", AlertType.kError);
         turnEncoderDisconnectedAlert =
-                new Alert("Disconnected turn encoder on module " + Integer.toString(index) + ".", AlertType.kError);
+                new Alert("Disconnected turn encoder on module " + index + ".", AlertType.kError);
     }
 
     public void periodic() {
         io.updateInputs(inputs);
-        Logger.processInputs("Drive/Module" + Integer.toString(index), inputs);
+        Logger.processInputs(logKey, inputs);
 
         // Calculate positions for odometry
         int sampleCount = inputs.odometryTimestamps.length; // All signals are sampled together
@@ -79,6 +79,11 @@ public class Module {
     public void runCharacterization(double output) {
         io.setDriveOpenLoop(output);
         io.setTurnPosition(new Rotation2d());
+    }
+
+    public void runCharacterizationTurning(double output) {
+        io.setTurnOpenLoop(0);
+        io.setTurnOpenLoop(output);
     }
 
     /** Disables all outputs to motors. */

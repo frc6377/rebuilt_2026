@@ -1,0 +1,79 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 2.5,
+        "y": 4.0
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 1.634802631578947,
+        "y": 1.640559210526316
+      },
+      "isLocked": false,
+      "linkedName": "Front of hub"
+    },
+    {
+      "anchor": {
+        "x": 3.957599337744713,
+        "y": 0.5502317880758381
+      },
+      "prevControl": {
+        "x": 3.1733991228070177,
+        "y": 0.611622807017543
+      },
+      "nextControl": {
+        "x": 4.666791885791813,
+        "y": 0.49471273526107373
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 8.5,
+        "y": 1.175
+      },
+      "prevControl": {
+        "x": 6.070240066228795,
+        "y": 0.659130794701987
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "Ready to refuel"
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 1.2140266021765407,
+      "rotationDegrees": 0.0
+    },
+    {
+      "waypointRelativePos": 2.0,
+      "rotationDegrees": 0.0
+    }
+  ],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [],
+  "globalConstraints": {
+    "maxVelocity": 3.0,
+    "maxAcceleration": 3.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": 135.0
+  },
+  "reversed": false,
+  "folder": null,
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": 0.0
+  },
+  "useDefaultConstraints": true
+}

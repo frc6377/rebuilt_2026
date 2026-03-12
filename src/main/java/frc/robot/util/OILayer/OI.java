@@ -1,14 +1,18 @@
 package frc.robot.util.OILayer;
 
+import static edu.wpi.first.wpilibj2.command.Commands.runOnce;
+
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import java.util.function.DoubleSupplier;
 
 public interface OI {
-    public final Trigger noButton = new Trigger(() -> false);
-    public final DoubleSupplier noAxis = () -> 0.0;
+    Trigger noButton = new Trigger(() -> false);
+    DoubleSupplier noAxis = () -> 0.0;
 
-    public final ControlCurve driveTranslationCurve = new ControlCurve(1, 3, 0.2, true);
-    public final ControlCurve driveRotationCurve = new ControlCurve(1, 3, 0.2, true);
+    ControlCurve driveTranslationCurve = new ControlCurve(1, 4, 0.05, true);
+    ControlCurve driveRotationCurve = new ControlCurve(1, 2, 0.05, true);
+    ControlCurve driveTranslationCurveIntakeRunning = new ControlCurve(0.8, 4, 0.05, true);
 
     default DoubleSupplier driveTranslationX() {
         return noAxis;
@@ -22,10 +26,32 @@ public interface OI {
         return noAxis;
     }
 
+    default DoubleSupplier driveTranslationXIntakeRunning() {
+        return noAxis;
+    }
+
+    default DoubleSupplier driveTranslationYIntakeRunning() {
+        return noAxis;
+    }
+
     default Trigger zeroDrivebase() {
         return noButton;
     }
 
+    default Trigger stopIntake() {
+        return noButton;
+    }
+
+    default Trigger shootDriver() {
+        return noButton;
+    }
+
+    default Command setRumble(double driverRumble, double operatorRumble) {
+        return runOnce(() -> {
+            // controller.setRumble(GenericHID.RumbleType.kLeftRumble, driverRumble);
+            // controller.setRumble(GenericHID.RumbleType.kRightRumble, operatorRumble);
+        });
+    }
     /* Puts the shooter into a mode where it is able to shoot (e.g. spins up a flywheel that was currently idle)
      * Rumbles joystick or turns on lights on the robot when it gets up to speed to be able to shoot
      * When button is release, return to an idle speed
@@ -43,18 +69,22 @@ public interface OI {
         return noButton;
     }
 
+    default Trigger unjamShooter() {
+        return noButton;
+    }
+
     /* Run the rollers on the intake while held
      *
      * Subsystem: Intake - spin the rollers forward when held, stop spinning when released
      */
-    default DoubleSupplier intake() {
-        return noAxis;
+    default Trigger intake() {
+        return noButton;
     }
 
     /* Run the rollers in reverse while held */
     /* Subsystem: Intake - spin the rollers backwards when held, stop spinning when released */
-    default DoubleSupplier outtake() {
-        return noAxis;
+    default Trigger outtake() {
+        return noButton;
     }
 
     /* When pressed, the intake will extend, and when pressed again, it will retract
@@ -63,6 +93,26 @@ public interface OI {
     /* Subsystem: Intake
     */
     default Trigger toggleIntakeState() {
+        return noButton;
+    }
+
+    default Trigger stopShooterDriver() {
+        return noButton;
+    }
+
+    default Trigger zeroIntake() {
+        return noButton;
+    }
+
+    default Trigger intakeManualExtend() {
+        return noButton;
+    }
+
+    default Trigger downIntake() {
+        return noButton;
+    }
+
+    default Trigger intakeMiddle() {
         return noButton;
     }
 
@@ -91,6 +141,36 @@ public interface OI {
 
     /* Subsystem: Climber */
     default Trigger climb_l3() {
+        return noButton;
+    }
+
+    default Trigger autoSpeedMode() {
+        return noButton;
+    }
+
+    default Trigger hubShootSpeed() {
+        return noButton;
+    }
+
+    default Trigger towerShootSpeed() {
+        return noButton;
+    }
+
+    default Trigger cornerShootSpeed() {
+        return noButton;
+    }
+
+    /** Stop all superstructure mechanisms. */
+    default Trigger stopSuperstructure() {
+        return noButton;
+    }
+
+    /** While held, lock the drive rotation to 0 degrees. */
+    default Trigger driveLock0() {
+        return noButton;
+    }
+
+    default Trigger driveLockX() {
         return noButton;
     }
 }

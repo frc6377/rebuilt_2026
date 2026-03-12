@@ -1,6 +1,10 @@
 package frc.robot.util.OILayer;
 
+import static edu.wpi.first.wpilibj2.command.Commands.runOnce;
+
+import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.POVButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
@@ -9,45 +13,74 @@ import java.util.function.DoubleSupplier;
 public class OIXbox implements OI {
     private static final double triggerThreshold = 0.5;
 
-    private static final XboxController controller = new XboxController(0);
+    private static final XboxController driverController = new XboxController(0);
+    private static final XboxController operatorController = new XboxController(1);
 
     // Face Buttons
-    public static final Trigger a = new JoystickButton(controller, XboxController.Button.kA.value);
-    public static final Trigger b = new JoystickButton(controller, XboxController.Button.kB.value);
-    public static final Trigger x = new JoystickButton(controller, XboxController.Button.kX.value);
-    public static final Trigger y = new JoystickButton(controller, XboxController.Button.kY.value);
+    public static final Trigger a = new JoystickButton(driverController, XboxController.Button.kA.value);
+    public static final Trigger b = new JoystickButton(driverController, XboxController.Button.kB.value);
+    public static final Trigger x = new JoystickButton(driverController, XboxController.Button.kX.value);
+    public static final Trigger y = new JoystickButton(driverController, XboxController.Button.kY.value);
+
+    // Opertator face buttons
+    public static final Trigger opA = new JoystickButton(operatorController, XboxController.Button.kA.value);
+    public static final Trigger opB = new JoystickButton(operatorController, XboxController.Button.kB.value);
+    public static final Trigger opX = new JoystickButton(operatorController, XboxController.Button.kX.value);
+    public static final Trigger opY = new JoystickButton(operatorController, XboxController.Button.kY.value);
 
     // Bumpers and Triggers
-    public static final Trigger leftBumper = new JoystickButton(controller, XboxController.Button.kLeftBumper.value);
-    public static final Trigger rightBumper = new JoystickButton(controller, XboxController.Button.kRightBumper.value);
+    public static final Trigger leftBumper =
+            new JoystickButton(driverController, XboxController.Button.kLeftBumper.value);
+    public static final Trigger rightBumper =
+            new JoystickButton(driverController, XboxController.Button.kRightBumper.value);
     public static final DoubleSupplier leftTrigger =
-            () -> controller.getRawAxis(XboxController.Axis.kLeftTrigger.value);
+            () -> driverController.getRawAxis(XboxController.Axis.kLeftTrigger.value);
     public static final DoubleSupplier rightTrigger =
-            () -> controller.getRawAxis(XboxController.Axis.kRightTrigger.value);
+            () -> driverController.getRawAxis(XboxController.Axis.kRightTrigger.value);
     public static final Trigger leftTriggerAsButton =
-            new Trigger(() -> triggerThreshold < controller.getRawAxis(XboxController.Axis.kLeftTrigger.value));
+            new Trigger(() -> triggerThreshold < driverController.getRawAxis(XboxController.Axis.kLeftTrigger.value));
     public static final Trigger rightTriggerAsButton =
-            new Trigger(() -> triggerThreshold < controller.getRawAxis(XboxController.Axis.kRightTrigger.value));
+            new Trigger(() -> triggerThreshold < driverController.getRawAxis(XboxController.Axis.kRightTrigger.value));
+
+    // Operator Bumpers and Triggers
+    public static final Trigger operatorLeftBumper =
+            new JoystickButton(operatorController, XboxController.Button.kLeftBumper.value);
+    public static final Trigger operatorRightBumper =
+            new JoystickButton(operatorController, XboxController.Button.kRightBumper.value);
+    public static final DoubleSupplier operatorLeftTrigger =
+            () -> operatorController.getRawAxis(XboxController.Axis.kLeftTrigger.value);
+    public static final DoubleSupplier operatorRightTrigger =
+            () -> operatorController.getRawAxis(XboxController.Axis.kRightTrigger.value);
+    public static final Trigger operatorLeftTriggerAsButton =
+            new Trigger(() -> triggerThreshold < operatorController.getRawAxis(XboxController.Axis.kLeftTrigger.value));
+    public static final Trigger operatorRightTriggerAsButton = new Trigger(
+            () -> triggerThreshold < operatorController.getRawAxis(XboxController.Axis.kRightTrigger.value));
 
     // DPad
-    public static final Trigger dPadUp = new POVButton(controller, 0);
-    public static final Trigger dPadDown = new POVButton(controller, 180);
-    public static final Trigger dPadRight = new POVButton(controller, 90);
-    public static final Trigger dPadLeft = new POVButton(controller, 270);
+    public static final Trigger dPadUp = new POVButton(driverController, 0);
+    public static final Trigger dPadDown = new POVButton(driverController, 180);
+    public static final Trigger dPadRight = new POVButton(driverController, 90);
+    public static final Trigger dPadLeft = new POVButton(driverController, 270);
+
+    public static final Trigger operatorDPadUp = new POVButton(operatorController, 0);
+    public static final Trigger operatorDPadRight = new POVButton(operatorController, 90);
+    public static final Trigger operatorDPadDown = new POVButton(operatorController, 180);
+
+    public static final Trigger operatorDPadLeft = new POVButton(operatorController, 270);
 
     // Joysticks
     public static final Trigger leftStickButton =
-            new JoystickButton(controller, XboxController.Button.kLeftStick.value);
+            new JoystickButton(driverController, XboxController.Button.kLeftStick.value);
     public static final Trigger rightStickButton =
-            new JoystickButton(controller, XboxController.Button.kRightStick.value);
-    public static final DoubleSupplier leftX = () -> controller.getRawAxis(XboxController.Axis.kLeftX.value);
-    public static final DoubleSupplier leftY = () -> controller.getRawAxis(XboxController.Axis.kLeftY.value);
-    public static final DoubleSupplier rightX = () -> controller.getRawAxis(XboxController.Axis.kRightX.value);
-    public static final DoubleSupplier rightY = () -> controller.getRawAxis(XboxController.Axis.kRightY.value);
+            new JoystickButton(driverController, XboxController.Button.kRightStick.value);
+    public static final DoubleSupplier leftX = () -> driverController.getRawAxis(XboxController.Axis.kLeftX.value);
+    public static final DoubleSupplier leftY = () -> driverController.getRawAxis(XboxController.Axis.kLeftY.value);
+    public static final DoubleSupplier rightX = () -> driverController.getRawAxis(XboxController.Axis.kRightX.value);
+    public static final DoubleSupplier rightY = () -> driverController.getRawAxis(XboxController.Axis.kRightY.value);
 
     // Top Buttons
-    public static final Trigger start = new JoystickButton(controller, XboxController.Button.kStart.value);
-    public static final Trigger back = new JoystickButton(controller, XboxController.Button.kBack.value);
+    public static final Trigger start = new JoystickButton(driverController, XboxController.Button.kStart.value);
+    public static final Trigger back = new JoystickButton(driverController, XboxController.Button.kBack.value);
 
     @Override
     public DoubleSupplier driveTranslationX() {
@@ -61,7 +94,25 @@ public class OIXbox implements OI {
 
     @Override
     public DoubleSupplier driveRotation() {
-        return rightX;
+        return () -> driveRotationCurve.calculate(rightX.getAsDouble());
+    }
+
+    @Override
+    public DoubleSupplier driveTranslationXIntakeRunning() {
+        return () -> driveTranslationCurveIntakeRunning.calculate(leftX.getAsDouble());
+    }
+
+    @Override
+    public DoubleSupplier driveTranslationYIntakeRunning() {
+        return () -> driveTranslationCurveIntakeRunning.calculate(leftY.getAsDouble());
+    }
+
+    @Override
+    public Command setRumble(double driverRumble, double operatorRumble) {
+        return runOnce(() -> {
+            driverController.setRumble(GenericHID.RumbleType.kBothRumble, driverRumble);
+            operatorController.setRumble(GenericHID.RumbleType.kBothRumble, operatorRumble);
+        });
     }
 
     @Override
@@ -69,37 +120,69 @@ public class OIXbox implements OI {
         return start;
     }
 
-    public Trigger lockto0() {
+    @Override
+    public Trigger intakeMiddle() {
+        return y;
+    }
+
+    @Override
+    public Trigger shootDriver() {
         return a;
     }
 
-    public Trigger xPattern() {
+    @Override
+    public Trigger stopShooterDriver() {
         return x;
     }
 
     @Override
+    public Trigger intakeManualExtend() {
+        return b;
+    }
+
+    @Override
     public Trigger spinUpShooter() {
-        return rightBumper;
+        return operatorRightBumper;
     }
 
     @Override
     public Trigger fireShooter() {
-        return leftBumper;
+        return operatorRightTriggerAsButton;
     }
 
     @Override
-    public DoubleSupplier intake() {
-        return rightTrigger;
+    public Trigger unjamShooter() {
+        return operatorLeftTriggerAsButton;
     }
 
     @Override
-    public DoubleSupplier outtake() {
-        return leftTrigger;
+    public Trigger stopSuperstructure() {
+        return operatorLeftBumper;
+    }
+
+    @Override
+    public Trigger intake() {
+        return rightTriggerAsButton;
+    }
+
+    @Override
+    public Trigger outtake() {
+        return leftTriggerAsButton;
+    }
+
+    @Override
+    public Trigger zeroIntake() {
+        return opX;
+    }
+
+    @Override
+    public Trigger downIntake() {
+        return opY;
     }
 
     @Override
     public Trigger toggleIntakeState() {
-        return y;
+        return rightBumper;
     }
 
     @Override
@@ -125,5 +208,30 @@ public class OIXbox implements OI {
     @Override
     public Trigger climb_l3() {
         return dPadLeft;
+    }
+
+    @Override
+    public Trigger autoSpeedMode() {
+        return operatorDPadDown;
+    }
+
+    @Override
+    public Trigger hubShootSpeed() {
+        return operatorDPadLeft;
+    }
+
+    @Override
+    public Trigger towerShootSpeed() {
+        return operatorDPadUp;
+    }
+
+    @Override
+    public Trigger cornerShootSpeed() {
+        return operatorDPadRight;
+    }
+
+    @Override
+    public Trigger driveLockX() {
+        return opA;
     }
 }

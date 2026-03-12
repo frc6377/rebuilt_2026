@@ -13,7 +13,6 @@
 
 package frc.robot.commands;
 
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -29,15 +28,16 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.subsystems.drive.Drive;
+import frc.robot.util.OILayer.OI;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
 public class DriveCommands {
-    private static final double DEADBAND = 0.1;
     private static final double ANGLE_KP = 5.0;
     private static final double ANGLE_KD = 0.4;
     private static final double ANGLE_MAX_VELOCITY = 8.0;
@@ -51,11 +51,8 @@ public class DriveCommands {
 
     private static Translation2d getLinearVelocityFromJoysticks(double x, double y) {
         // Apply deadband
-        double linearMagnitude = MathUtil.applyDeadband(Math.hypot(x, y), DEADBAND);
+        double linearMagnitude = OI.driveTranslationCurve.calculate(Math.hypot(x, y));
         Rotation2d linearDirection = new Rotation2d(Math.atan2(y, x));
-
-        // Square magnitude for more precise control
-        linearMagnitude = linearMagnitude * linearMagnitude;
 
         // Return new linear velocity
         return new Pose2d(new Translation2d(), linearDirection)
@@ -73,7 +70,7 @@ public class DriveCommands {
                             getLinearVelocityFromJoysticks(xSupplier.getAsDouble(), ySupplier.getAsDouble());
 
                     // Apply rotation deadband
-                    double omega = MathUtil.applyDeadband(omegaSupplier.getAsDouble(), DEADBAND);
+                    double omega = omegaSupplier.getAsDouble();
 
                     // Convert to field relative speeds & send command
                     ChassisSpeeds speeds = new ChassisSpeeds(
@@ -130,6 +127,130 @@ public class DriveCommands {
 
                 // Reset PID controller when command starts
                 .beforeStarting(() -> angleController.reset(drive.getRotation().getRadians()));
+    }
+
+    /**
+     * Field relative drive command using joystick for linear control and PID for angular control when a target angle is
+     * present. When the optional angle is empty, the joystick's angular input is used directly (no forced heading).
+     *
+     * <p>This is useful for hub-aiming: rotate to face the hub when a tag is visible, but let the driver control
+     * rotation freely when no tag is seen.
+     *
+     * @param drive The drive subsystem.
+     * @param xSupplier Joystick translation X.
+     * @param ySupplier Joystick translation Y.
+     * @param omegaSupplier Joystick rotation (used when {@code angleSupplier} returns empty).
+     * @param angleSupplier Supplier of the desired heading. When {@link Optional#empty()}, joystick rotation is used.
+     */
+    public static Command joystickDriveAtOptionalAngle(
+            Drive drive,
+            DoubleSupplier xSupplier,
+            DoubleSupplier ySupplier,
+            DoubleSupplier omegaSupplier,
+            Supplier<Optional<Rotation2d>> angleSupplier) {
+
+        ProfiledPIDController angleController = new ProfiledPIDController(
+                ANGLE_KP, 0.0, ANGLE_KD, new TrapezoidProfile.Constraints(ANGLE_MAX_VELOCITY, ANGLE_MAX_ACCELERATION));
+        angleController.enableContinuousInput(-Math.PI, Math.PI);
+
+        return Commands.run(
+                        () -> {
+                            Translation2d linearVelocity =
+                                    getLinearVelocityFromJoysticks(xSupplier.getAsDouble(), ySupplier.getAsDouble());
+
+                            Optional<Rotation2d> targetAngle = angleSupplier.get();
+                            double omega;
+                            if (targetAngle.isPresent()) {
+                                omega = angleController.calculate(
+                                        drive.getRotation().getRadians(),
+                                        targetAngle.get().getRadians());
+                            } else {
+                                // No tag — let the driver rotate freely
+                                omega = omegaSupplier.getAsDouble() * drive.getMaxAngularSpeedRadPerSec();
+                                // Keep the PID seeded to avoid a snap when a tag reappears
+                                angleController.reset(drive.getRotation().getRadians());
+                            }
+
+                            boolean isFlipped = DriverStation.getAlliance().isPresent()
+                                    && DriverStation.getAlliance().get() == Alliance.Red;
+                            drive.runVelocity(ChassisSpeeds.fromFieldRelativeSpeeds(
+                                    new ChassisSpeeds(
+                                            linearVelocity.getX() * drive.getMaxLinearSpeedMetersPerSec(),
+                                            linearVelocity.getY() * drive.getMaxLinearSpeedMetersPerSec(),
+                                            omega),
+                                    isFlipped
+                                            ? drive.getRotation().plus(new Rotation2d(Math.PI))
+                                            : drive.getRotation()));
+                        },
+                        drive)
+                .beforeStarting(() -> angleController.reset(drive.getRotation().getRadians()))
+                .withName("JoystickDriveAtOptionalAngle");
+    }
+
+    /**
+     * Rotates the robot to center a visible AprilTag in the camera frame while still allowing full joystick
+     * translation.
+     *
+     * <p>The {@code txSupplier} should return the horizontal angle error to the target tag in radians (positive =
+     * target is to the left of center). When no tag is visible, supply {@code Rotation2d.fromDegrees(0)} and the robot
+     * will hold its current heading.
+     *
+     * <p>The command never finishes on its own — bind it with {@code whileTrue}.
+     *
+     * @param drive The drive subsystem.
+     * @param xSupplier Joystick translation X (forward).
+     * @param ySupplier Joystick translation Y (strafe).
+     * @param txSupplier Supplier of the camera's horizontal angle to the tag (Rotation2d). Return {@code null} or
+     *     {@code Rotation2d.fromDegrees(0)} when no tag seen.
+     * @param tagVisible Supplier that returns {@code true} when a target tag is being tracked.
+     */
+    public static Command aimAtTagCommand(
+            Drive drive,
+            DoubleSupplier xSupplier,
+            DoubleSupplier ySupplier,
+            Supplier<Rotation2d> txSupplier,
+            java.util.function.BooleanSupplier tagVisible) {
+
+        // PID on robot-relative yaw error: setpoint = current heading + tx offset
+        ProfiledPIDController aimController = new ProfiledPIDController(
+                ANGLE_KP, 0.0, ANGLE_KD, new TrapezoidProfile.Constraints(ANGLE_MAX_VELOCITY, ANGLE_MAX_ACCELERATION));
+        aimController.enableContinuousInput(-Math.PI, Math.PI);
+
+        return Commands.run(
+                        () -> {
+                            Translation2d linearVelocity =
+                                    getLinearVelocityFromJoysticks(xSupplier.getAsDouble(), ySupplier.getAsDouble());
+
+                            double omega;
+                            if (tagVisible.getAsBoolean() && txSupplier.get() != null) {
+                                // Target heading = current heading adjusted by the camera tx error.
+                                // Negated because positive tx means the tag is left of center, so we
+                                // need to rotate left (positive omega in WPILib convention) to center it.
+                                double targetHeading = drive.getRotation().getRadians()
+                                        - txSupplier.get().getRadians();
+                                omega = aimController.calculate(
+                                        drive.getRotation().getRadians(), targetHeading);
+                            } else {
+                                // No tag visible — hold current heading
+                                omega = aimController.calculate(
+                                        drive.getRotation().getRadians(),
+                                        drive.getRotation().getRadians());
+                            }
+
+                            boolean isFlipped = DriverStation.getAlliance().isPresent()
+                                    && DriverStation.getAlliance().get() == Alliance.Red;
+                            drive.runVelocity(ChassisSpeeds.fromFieldRelativeSpeeds(
+                                    new ChassisSpeeds(
+                                            linearVelocity.getX() * drive.getMaxLinearSpeedMetersPerSec(),
+                                            linearVelocity.getY() * drive.getMaxLinearSpeedMetersPerSec(),
+                                            omega),
+                                    isFlipped
+                                            ? drive.getRotation().plus(new Rotation2d(Math.PI))
+                                            : drive.getRotation()));
+                        },
+                        drive)
+                .beforeStarting(() -> aimController.reset(drive.getRotation().getRadians()))
+                .withName("AimAtTag");
     }
 
     /**
