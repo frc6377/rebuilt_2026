@@ -50,7 +50,6 @@ public class PIDRollerIOReal implements RollerIO {
     @Override
     public void stop() {
         rollerMotor.stopMotor();
-        ;
     }
 
     @Override

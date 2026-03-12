@@ -119,6 +119,7 @@ public class ExtenderIOSim implements ExtenderIO {
     public void setPosition(Angle position) {
         this.setpoint =
                 Degrees.of(Math.max(kExtenderMinAngle.get(), Math.min(kExtenderMaxAngle.get(), position.in(Degrees))));
+        Logger.recordOutput("Intake/Extender/SetpointDegrees", this.setpoint);
         extenderMotor.setControl(new PositionVoltage(this.setpoint));
     }
 
@@ -127,7 +128,11 @@ public class ExtenderIOSim implements ExtenderIO {
     }
 
     public boolean isAtAngle(Angle angle) {
-        return Math.abs((getPosition().minus(angle)).in(Degrees)) < kExtenderTolerance.get();
+        return isAtAngle(getPosition(), angle);
+    }
+
+    private boolean isAtAngle(Angle current, Angle target) {
+        return Math.abs((current.minus(target)).in(Degrees)) < kExtenderTolerance.get();
     }
 
     @Override
@@ -171,16 +176,16 @@ public class ExtenderIOSim implements ExtenderIO {
     }
 
     @Override
-    public void goDown() {
+    public void autoZero() {
         extenderMotor.set(kExtenderDownSpeed.get());
     }
 
     @Override
     public void toggle() {
-        if (isAtAngle(Degrees.of(kExtenderIntakeAngle.get()))) {
-            retract();
-        } else {
+        if (isRetracted().getAsBoolean()) {
             extend();
+        } else {
+            retract();
         }
     }
 
@@ -196,15 +201,17 @@ public class ExtenderIOSim implements ExtenderIO {
 
     @Override
     public void updateInputs(ExtenderIOInputs inputs) {
-        inputs.isExtended = isExtended().getAsBoolean();
-        inputs.isRetracted = isRetracted().getAsBoolean();
-        inputs.position = getPosition();
+        // Single getPosition() per cycle; compute booleans from it to avoid extra allocations and repeated calls
+        Angle position = getPosition();
+        inputs.position = position;
         inputs.setpoint = setpoint;
+        inputs.isExtended = isAtAngle(position, Degrees.of(kExtenderIntakeAngle.get()));
+        inputs.isRetracted = isAtAngle(position, Degrees.of(kExtenderStowAngle.get()));
+        inputs.atTarget = isAtAngle(position, setpoint);
         inputs.velocity = RadiansPerSecond.of(armSim.getVelocityRadPerSec());
         inputs.motorVoltage = Volts.of(extenderMotorSim.getMotorVoltage());
         inputs.motorCurrent = Amps.of(armSim.getCurrentDrawAmps());
         inputs.motorTemp = Celsius.of(25.0);
-        inputs.atTarget = atTarget().getAsBoolean();
     }
 
     @Override

@@ -20,7 +20,7 @@ public class RightShooterConstants {
 
     // Feature flags
     public static final boolean enabled = Constants.EnabledSubsystems.kShooterRight;
-    public static final boolean followerEnabled = false;
+    public static final boolean followerEnabled = true;
     public static final boolean spinMotorEnabled = false;
 
     // Motor inversion (right side is clockwise positive)
@@ -34,11 +34,12 @@ public class RightShooterConstants {
     public static final Time spinClosedLoopRamp = Seconds.of(0.05); // seconds from 0 to full throttle
 
     // Flywheel PID
-    public static final double flywheelKP = 0.6;
+    public static final double flywheelKP = 0.17345;
     public static final double flywheelKI = 0.0;
     public static final double flywheelKD = 0.0;
-    public static final double flywheelKV = 0.0;
-    public static final double flywheelKS = 0.0;
+    public static final double flywheelKV = 0.11725;
+    public static final double flywheelKS = 0.080935;
+    public static final double flywheelKA = 0.0092333;
 
     // Flywheel current limits
     public static final Current flywheelCurrentLimitStator = Amps.of(60.0);

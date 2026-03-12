@@ -8,8 +8,8 @@
       },
       "prevControl": null,
       "nextControl": {
-        "x": 2.454793046357616,
-        "y": 2.0457781456953628
+        "x": 1.634802631578947,
+        "y": 1.640559210526316
       },
       "isLocked": false,
       "linkedName": "Front of hub"
@@ -20,12 +20,12 @@
         "y": 0.5502317880758381
       },
       "prevControl": {
-        "x": 3.2466446142341407,
-        "y": 0.7298414024307689
+        "x": 3.1733991228070177,
+        "y": 0.611622807017543
       },
       "nextControl": {
-        "x": 4.647293046361244,
-        "y": 0.37599337748344397
+        "x": 4.666791885791813,
+        "y": 0.49471273526107373
       },
       "isLocked": false,
       "linkedName": null
@@ -46,8 +46,8 @@
   ],
   "rotationTargets": [
     {
-      "waypointRelativePos": 1.0,
-      "rotationDegrees": 90.0
+      "waypointRelativePos": 1.2140266021765407,
+      "rotationDegrees": 0.0
     },
     {
       "waypointRelativePos": 2.0,
@@ -58,7 +58,7 @@
   "pointTowardsZones": [],
   "eventMarkers": [],
   "globalConstraints": {
-    "maxVelocity": 1.0,
+    "maxVelocity": 3.0,
     "maxAcceleration": 3.0,
     "maxAngularVelocity": 540.0,
     "maxAngularAcceleration": 720.0,

@@ -43,7 +43,12 @@ public class UpgoerIOSim implements UpgoerIO {
     private static final double THERMAL_RESISTANCE = 0.5;
     private static final double THERMAL_TIME_CONSTANT = 30.0;
 
-    public UpgoerIOSim() {
+    /**
+     * @param motorId CAN ID (unused in sim, kept for API consistency).
+     * @param logName Logging key prefix (unused in sim, kept for API consistency).
+     */
+    @SuppressWarnings("unused")
+    public UpgoerIOSim(int motorId, String logName) {
         var plant = LinearSystemId.createFlywheelSystem(MOTOR, ROLLER_MOI, ROLLER_GEARING);
         sim = new FlywheelSim(plant, MOTOR);
 

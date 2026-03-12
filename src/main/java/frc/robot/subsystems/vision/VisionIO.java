@@ -24,10 +24,14 @@ public interface VisionIO {
         public TargetObservation latestTargetObservation = new TargetObservation(new Rotation2d(), new Rotation2d());
         public PoseObservation[] poseObservations = new PoseObservation[0];
         public int[] tagIds = new int[0];
+        public HubTagObservation[] hubTagObservations = new HubTagObservation[0];
     }
 
     /** Represents the angle to a simple target, not used for pose estimation. */
     record TargetObservation(Rotation2d tx, Rotation2d ty) {}
+
+    /** Per-tag observation from rawfiducials — horizontal angle, camera distance, and robot distance. */
+    record HubTagObservation(int tagId, Rotation2d tx, double distToCamera, double distToRobot) {}
 
     /** Represents a robot pose sample used for pose estimation. */
     record PoseObservation(

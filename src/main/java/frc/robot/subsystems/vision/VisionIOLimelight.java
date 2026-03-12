@@ -22,6 +22,7 @@ import edu.wpi.first.networktables.DoubleArraySubscriber;
 import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.RobotController;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -30,6 +31,11 @@ import java.util.function.Supplier;
 
 /** IO implementation for real Limelight hardware. */
 public class VisionIOLimelight implements VisionIO {
+    // rawfiducials entry stride: [id, txnc, tync, ta, distToCamera, distToRobot, ambiguity]
+    private static final int RAW_FIDUCIALS_STRIDE = 7;
+    private static final int IDX_ID = 0;
+    private static final int IDX_TXNC = 1; // horizontal angle to tag center (deg, no crosshair offset)
+
     private final Supplier<Rotation2d> rotationSupplier;
     private final DoubleArrayPublisher orientationPublisher;
 
@@ -38,6 +44,7 @@ public class VisionIOLimelight implements VisionIO {
     private final DoubleSubscriber tySubscriber;
     private final DoubleArraySubscriber megatag1Subscriber;
     private final DoubleArraySubscriber megatag2Subscriber;
+    private final DoubleArraySubscriber rawFiducialsSubscriber;
 
     /**
      * Creates a new VisionIOLimelight.
@@ -55,6 +62,7 @@ public class VisionIOLimelight implements VisionIO {
         tySubscriber = table.getDoubleTopic("ty").subscribe(0.0);
         megatag1Subscriber = table.getDoubleArrayTopic("botpose_wpiblue").subscribe(new double[] {});
         megatag2Subscriber = table.getDoubleArrayTopic("botpose_orb_wpiblue").subscribe(new double[] {});
+        rawFiducialsSubscriber = table.getDoubleArrayTopic("rawfiducials").subscribe(new double[] {});
     }
 
     @Override
@@ -122,18 +130,21 @@ public class VisionIOLimelight implements VisionIO {
                     PoseObservationType.MEGATAG_2));
         }
 
-        // Save pose observations to inputs object
-        inputs.poseObservations = new PoseObservation[poseObservations.size()];
-        for (int i = 0; i < poseObservations.size(); i++) {
-            inputs.poseObservations[i] = poseObservations.get(i);
-        }
+        inputs.poseObservations = poseObservations.toArray(new PoseObservation[0]);
+        inputs.tagIds = tagIds.stream().mapToInt(Integer::intValue).toArray();
 
-        // Save tag IDs to inputs objects
-        inputs.tagIds = new int[tagIds.size()];
-        int i = 0;
-        for (int id : tagIds) {
-            inputs.tagIds[i++] = id;
+        // ── Hub-tag per-tag data from rawfiducials ──────────────────────────
+        // Stride-7 format: [id, txnc, tync, ta, distToCamera, distToRobot, ambiguity]
+        double[] raw = rawFiducialsSubscriber.get();
+        List<HubTagObservation> hubObs = new ArrayList<>();
+        for (int i = 0; i + RAW_FIDUCIALS_STRIDE <= raw.length; i += RAW_FIDUCIALS_STRIDE) {
+            int tagId = (int) raw[i + IDX_ID];
+            Rotation2d tx = Rotation2d.fromDegrees(raw[i + IDX_TXNC]);
+            double distToCamera = raw[i + 4];
+            double distToRobot = raw[i + 5];
+            hubObs.add(new HubTagObservation(tagId, tx, distToCamera, distToRobot));
         }
+        inputs.hubTagObservations = hubObs.toArray(new HubTagObservation[0]);
     }
 
     /** Parses the 3D pose from a Limelight botpose array. */

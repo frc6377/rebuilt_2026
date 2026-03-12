@@ -3,13 +3,13 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 8.5,
-        "y": 5.0
+        "x": 8.116140350877194,
+        "y": 2.5156359649122804
       },
       "prevControl": null,
       "nextControl": {
-        "x": 8.499626094452598,
-        "y": 4.720299580184815
+        "x": 8.115766445329792,
+        "y": 2.235935545097095
       },
       "isLocked": false,
       "linkedName": "Middle Down end"
@@ -54,7 +54,7 @@
   "pointTowardsZones": [],
   "eventMarkers": [],
   "globalConstraints": {
-    "maxVelocity": 1.0,
+    "maxVelocity": 3.0,
     "maxAcceleration": 3.0,
     "maxAngularVelocity": 540.0,
     "maxAngularAcceleration": 720.0,
@@ -69,7 +69,7 @@
   "folder": null,
   "idealStartingState": {
     "velocity": 0,
-    "rotation": -135.0
+    "rotation": -117.89727103094776
   },
   "useDefaultConstraints": true
 }

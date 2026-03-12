@@ -1,15 +1,18 @@
 package frc.robot.util.OILayer;
 
+import static edu.wpi.first.wpilibj2.command.Commands.runOnce;
+
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import java.util.function.DoubleSupplier;
 
 public interface OI {
-    public final Trigger noButton = new Trigger(() -> false);
-    public final DoubleSupplier noAxis = () -> 0.0;
+    Trigger noButton = new Trigger(() -> false);
+    DoubleSupplier noAxis = () -> 0.0;
 
-    public final ControlCurve driveTranslationCurve = new ControlCurve(1, 4, 0.05, true);
-    public final ControlCurve driveRotationCurve = new ControlCurve(0.75, 2, 0.05, true);
-    public final ControlCurve driveTranslationCurveIntakeRunning = new ControlCurve(0.8, 4, 0.05, true);
+    ControlCurve driveTranslationCurve = new ControlCurve(1, 4, 0.05, true);
+    ControlCurve driveRotationCurve = new ControlCurve(1, 2, 0.05, true);
+    ControlCurve driveTranslationCurveIntakeRunning = new ControlCurve(0.8, 4, 0.05, true);
 
     default DoubleSupplier driveTranslationX() {
         return noAxis;
@@ -37,6 +40,17 @@ public interface OI {
 
     default Trigger stopIntake() {
         return noButton;
+    }
+
+    default Trigger shootDriver() {
+        return noButton;
+    }
+
+    default Command setRumble(double driverRumble, double operatorRumble) {
+        return runOnce(() -> {
+            // controller.setRumble(GenericHID.RumbleType.kLeftRumble, driverRumble);
+            // controller.setRumble(GenericHID.RumbleType.kRightRumble, operatorRumble);
+        });
     }
     /* Puts the shooter into a mode where it is able to shoot (e.g. spins up a flywheel that was currently idle)
      * Rumbles joystick or turns on lights on the robot when it gets up to speed to be able to shoot
@@ -82,11 +96,23 @@ public interface OI {
         return noButton;
     }
 
+    default Trigger stopShooterDriver() {
+        return noButton;
+    }
+
     default Trigger zeroIntake() {
         return noButton;
     }
 
+    default Trigger intakeManualExtend() {
+        return noButton;
+    }
+
     default Trigger downIntake() {
+        return noButton;
+    }
+
+    default Trigger intakeMiddle() {
         return noButton;
     }
 
@@ -118,27 +144,23 @@ public interface OI {
         return noButton;
     }
 
+    default Trigger autoSpeedMode() {
+        return noButton;
+    }
+
+    default Trigger hubShootSpeed() {
+        return noButton;
+    }
+
     default Trigger climbExtend() {
         return noButton;
     }
 
-    default Trigger climbToFloor() {
+    default Trigger towerShootSpeed() {
         return noButton;
     }
 
-    default Trigger shootSpeedLow() {
-        return noButton;
-    }
-
-    default Trigger shootSpeedMidLow() {
-        return noButton;
-    }
-
-    default Trigger shootSpeedMidHigh() {
-        return noButton;
-    }
-
-    default Trigger shootSpeedHigh() {
+    default Trigger cornerShootSpeed() {
         return noButton;
     }
 
@@ -152,7 +174,7 @@ public interface OI {
         return noButton;
     }
 
-    default Trigger xPattern() {
+    default Trigger driveLockX() {
         return noButton;
     }
 }

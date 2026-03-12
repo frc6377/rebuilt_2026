@@ -7,7 +7,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Drive in front of hub"
+            "pathName": "Drive in front of hub from left"
           }
         },
         {
@@ -51,6 +51,6 @@
     }
   },
   "resetOdom": true,
-  "folder": null,
+  "folder": "Railway Heist",
   "choreoAuto": false
 }

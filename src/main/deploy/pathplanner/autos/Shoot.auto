@@ -7,13 +7,13 @@
         {
           "type": "path",
           "data": {
-            "pathName": "New Path"
+            "pathName": "back up"
           }
         },
         {
           "type": "named",
           "data": {
-            "name": "Spin Up Shooter and Wait"
+            "name": "AutoShoot"
           }
         }
       ]

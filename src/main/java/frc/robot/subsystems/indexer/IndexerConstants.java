@@ -9,8 +9,8 @@ import edu.wpi.first.wpilibj.RobotController;
 
 public class IndexerConstants {
 
-    public static final double kCollectorSpeed = 0.5; // Adjust speed as needed
-    public static final AngularVelocity kCollectorRPM = RPM.of(300); // Adjust RPM as needed
+    public static final double kCollectorSpeed = -0.5; // Adjust speed as needed
+    public static final AngularVelocity kCollectorRPM = RPM.of(135); // Adjust RPM as needed
 
     public static final String canBus = "rio";
 
@@ -23,7 +23,7 @@ public class IndexerConstants {
     }
 
     public final class PID {
-        public static final double kP = 0.1; // Proportional gain
+        public static final double kP = 0.0; // Proportional gain
         public static final double kI = 0.0; // Integral gain
         public static final double kD = 0.0; // Derivative gain
     }

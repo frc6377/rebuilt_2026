@@ -1,5 +1,8 @@
 package frc.robot.subsystems.intake;
 
+import static edu.wpi.first.units.Units.Amps;
+
+import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -14,8 +17,8 @@ public class Intake extends SubsystemBase {
 
     private final RollerIO roller;
     private final ExtenderIO extender;
-    private final RollerIO.RollerIOInputs rollerInputs;
-    private final ExtenderIO.ExtenderIOInputs extenderInputs;
+    private final RollerIOInputsAutoLogged rollerInputs;
+    private final ExtenderIOInputsAutoLogged extenderInputs;
 
     public Intake(RollerIO rollerIO, ExtenderIO extenderIO) {
         roller = rollerIO;
@@ -30,68 +33,93 @@ public class Intake extends SubsystemBase {
 
     // Extender Commands
     public Command extendIntake() {
-        return runOnce(() -> extender.extend());
+        return runOnce(extender::extend);
+    }
+
+    public Command extendIntakeAndWait() {
+        return runOnce(extender::extend).until(extender.isExtended());
+    }
+
+    public Command retractIntakeAndWait() {
+        return runOnce(extender::retract).until(extender.isRetracted());
     }
 
     public Command stowIntake() {
-        return runOnce(() -> extender.retract());
+        return runOnce(extender::retract);
     }
 
     public Command toggleIntake() {
         // return new ConditionalCommand(
         // runOnce(() -> extender.retract()), runOnce(() -> extender.extend()),
         // extender.isExtended());
-        return runOnce(() -> extender.toggle());
+        return runOnce(extender::toggle);
     }
 
     // Roller Commands
     public Command intakeRollerCommand() {
-        return Commands.runEnd(() -> roller.start(), () -> roller.stop(), this);
+        return Commands.runEnd(roller::start, roller::stop, this);
     }
 
     public Command outtakeRollerCommand() {
-        return Commands.runEnd(() -> roller.outtake(), () -> roller.stop(), this);
+        return Commands.runEnd(roller::outtake, roller::stop, this);
     }
 
     public Command stopRollerCommand() {
-        return runOnce(() -> roller.stop());
+        return runOnce(roller::stop);
     }
 
     // Combination Commands
     public Command intakeCommand() {
-        return runOnce(() -> extender.extend())
-                .until(extender.isExtended())
-                .andThen(runEnd(() -> roller.start(), () -> roller.stop()));
+        return runOnce(extender::extend).until(extender.isExtended()).andThen(runEnd(roller::start, roller::stop));
     }
 
     public Command retractIntakeCommand() {
-        return runOnce(() -> roller.stop()).andThen(runOnce(() -> extender.retract()));
+        return runOnce(roller::stop).andThen(runOnce(extender::retract).until(extender.isRetracted()));
     }
 
     public Command goToSiftAngleOneCommand() {
-        return runOnce(() -> extender.goToSiftAngleOne());
+        return runOnce(extender::goToSiftAngleOne);
     }
 
     public Command goToSiftAngleTwoCommand() {
-        return runOnce(() -> extender.goToSiftAngleTwo());
+        return runOnce(extender::goToSiftAngleTwo);
+    }
+
+    public Command goToCustomAngleOneCommand() {
+        return runOnce(extender::goToCustomAngleOne);
+    }
+
+    public Command goToCustomAngleTwoCommand() {
+        return runOnce(extender::goToCustomAngleTwo);
     }
 
     public Command outtakeCommand() {
-        return runOnce(() -> extender.extend()).andThen(runEnd(() -> roller.outtake(), () -> roller.stop()));
+        return runOnce(extender::extend).andThen(runEnd(roller::outtake, roller::stop));
+    }
+
+    public Command extendAndIntakeCommand() {
+        return runOnce(() -> {
+                    extender.extend();
+                    roller.start();
+                })
+                .until(extender.isExtended());
+    }
+
+    public Command intakeAndSiftCommand() {
+        return runOnce(() -> {
+                    extender.extend();
+                    roller.start();
+                })
+                .withTimeout(2)
+                .andThen(Commands.repeatingSequence(
+                        run(extender::goToSiftAngleOne).until(extender.atTarget()),
+                        run(extender::goToSiftAngleTwo).until(extender.atTarget())));
     }
 
     public Command siftFuelCommand() {
         return Commands.repeatingSequence(
-                Commands.parallel(run(() -> extender.goToSiftAngleOne()), Commands.run(() -> {
-                    while (!extender.atTarget().getAsBoolean()) {
-                        continue;
-                    }
-                })),
-                Commands.parallel(run(() -> extender.goToSiftAngleTwo()), Commands.run(() -> {
-                    while (!extender.atTarget().getAsBoolean()) {
-                        continue;
-                    }
-                })));
+                run(extender::goToSiftAngleOne).until(extender.atTarget()),
+                run(extender::goToSiftAngleTwo).until(extender.atTarget()));
     }
 
     public Command zeroExtender() {
@@ -107,11 +135,58 @@ public class Intake extends SubsystemBase {
     }
 
     public Command zeroIntake() {
-        return runEnd(() -> extender.goDown(), () -> extender.stop()).andThen(() -> extender.zero());
+        return runOnce(extender::zero);
+    }
+
+    public Command currentRunShoot() {
+        return run(() -> extender.currentRunShoot(-1))
+                .withTimeout(1)
+                .andThen(() -> extender.currentRunShoot(-1))
+                .until(() -> extender.getCurrent().gte(Amps.of(15)))
+                .andThen(stop());
+    }
+
+    public Command currentRunShootManual() {
+        return run(() -> extender.currentRunShoot(-1));
+    }
+
+    public Command currentRunDescend() {
+        return run(() -> extender.currentRunShoot(1))
+                .until(() -> extender.getCurrent().gte(Amps.of(8)))
+                .andThen(stop());
+    }
+
+    public Command setNeutralModeBrake() {
+        return runOnce(() -> extender.setNeutralMode(NeutralModeValue.Brake));
+    }
+
+    public Command setNeutralModeCoast() {
+        return runOnce(() -> extender.setNeutralMode(NeutralModeValue.Coast));
+    }
+
+    public Command voltageSiftFuel() {
+
+        return run(() -> extender.currentRunShoot(0))
+                .until(() -> extender.getCurrent().gte(Amps.of(8)))
+                .andThen(Commands.repeatingSequence(
+                        run(() -> extender.currentRunShoot(0))
+                                .until(() -> extender.getCurrent().gte(Amps.of(8)))
+                                .withTimeout(2),
+                        run(() -> extender.currentRunShoot(0))
+                                .until(() -> extender.getCurrent().gte(Amps.of(8)))
+                                .withTimeout(2)));
+    }
+
+    public Command currentRunDescendNoCheck() {
+        return run(() -> extender.currentRunShoot(1));
+    }
+
+    public Command autoZeroIntakeCommand() {
+        return Commands.runEnd(extender::autoZero, extender::stop, this).until(extender.atTarget());
     }
 
     public Command stop() {
-        return runOnce(() -> extender.stop());
+        return runOnce(extender::stop);
     }
 
     @Override
@@ -120,23 +195,15 @@ public class Intake extends SubsystemBase {
         extender.updateInputs(extenderInputs);
         extender.periodic();
         roller.periodic();
+
+        // Use processInputs to log IO structs efficiently (avoids per-cycle
+        // allocation/retention from recordOutput
+        // Unit types)
+        Logger.processInputs("Intake/Extender", extenderInputs);
+        Logger.processInputs("Intake/Roller", rollerInputs);
+
         Logger.recordOutput(
                 "Intake/CurrentCommand",
-                this.getCurrentCommand() != null ? this.getCurrentCommand().getName() : "None");
-
-        Logger.recordOutput("Intake/Extender/IsExtended", extenderInputs.isExtended);
-        Logger.recordOutput("Intake/Extender/IsRetracted", extenderInputs.isRetracted);
-        Logger.recordOutput("Intake/Extender/SetpointDegrees", extenderInputs.setpoint);
-        Logger.recordOutput("Intake/Extender/VelocityRPS", extenderInputs.velocity);
-        Logger.recordOutput("Intake/Extender/MotorVoltage", extenderInputs.motorVoltage);
-        Logger.recordOutput("Intake/Extender/MotorCurrent", extenderInputs.motorCurrent);
-        Logger.recordOutput("Intake/Extender/MotorTemperature", extenderInputs.motorTemp);
-        Logger.recordOutput("Intake/Extender/AtTarget", extenderInputs.atTarget);
-
-        Logger.recordOutput("Intake/Roller/SpeedPercentile", rollerInputs.rollerSpeedPercentile);
-        Logger.recordOutput("Intake/Roller/AppliedVolts", rollerInputs.rollerAppliedVolts);
-        Logger.recordOutput("Intake/Roller/VelocityRPS", rollerInputs.rollerVelocity);
-        Logger.recordOutput("Intake/Roller/StatorCurrent", rollerInputs.statorCurrent);
-        Logger.recordOutput("Intake/Roller/MotorTemperature", rollerInputs.motorTemp);
+                getCurrentCommand() != null ? getCurrentCommand().getName() : "None");
     }
 }

@@ -357,9 +357,9 @@ public class ShooterCalibrationCommand extends Command {
                         tempLowerBound = lowerBound;
                         tempUpperBound = upperBound;
                         successfulShots.add(config);
-                        Logger.recordOutput("Calibration/LastResult", "SUCCESS: " + config.toString() + lastShotResult);
+                        Logger.recordOutput("Calibration/LastResult", "SUCCESS: " + config + lastShotResult);
                     } else {
-                        Logger.recordOutput("Calibration/LastResult", "MISS: " + config.toString() + lastShotResult);
+                        Logger.recordOutput("Calibration/LastResult", "MISS: " + config + lastShotResult);
                     }
 
                     state = CalibrationState.NEXT_CONFIGURATION;
@@ -527,7 +527,7 @@ public class ShooterCalibrationCommand extends Command {
         }
 
         // Print to console as well
-        System.out.println(summary.toString());
+        System.out.println(summary);
     }
 
     @Override
