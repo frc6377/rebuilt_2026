@@ -5,10 +5,10 @@ import static edu.wpi.first.units.Units.*;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.units.measure.AngularMomentum;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.units.measure.MomentOfInertia;
 import edu.wpi.first.wpilibj.TimedRobot;
 import org.ironmaple.simulation.IntakeSimulation.IntakeSide;
 
@@ -47,8 +47,8 @@ public class IntakeConstants {
     public static class ExtenderConstants {
 
         public static final double kGearing = 1;
-        public static final AngularMomentum kMOI = KilogramMetersSquaredPerSecond.of(1.5);
-        public static final Distance kExtenderArmLength = Inches.of(12.0);
+        public static final MomentOfInertia kMOI = KilogramSquareMeters.of(1.1);
+        public static final Distance kExtenderArmLength = Inches.of(13.75);
         public static final double kDownSpeed = 0.05;
 
         public static final Angle kExtenderStowAngle = Degrees.of(0.0);
