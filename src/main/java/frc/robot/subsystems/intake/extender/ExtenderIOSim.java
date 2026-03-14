@@ -3,7 +3,7 @@ package frc.robot.subsystems.intake.extender;
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Celsius;
 import static edu.wpi.first.units.Units.Degrees;
-import static edu.wpi.first.units.Units.KilogramMetersSquaredPerSecond;
+import static edu.wpi.first.units.Units.KilogramSquareMeters;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
@@ -95,11 +95,11 @@ public class ExtenderIOSim implements ExtenderIO {
         armSim = new SingleJointedArmSim(
                 DCMotor.getKrakenX60(1),
                 ExtenderConstants.kGearing,
-                ExtenderConstants.kMOI.in(KilogramMetersSquaredPerSecond),
+                ExtenderConstants.kMOI.in(KilogramSquareMeters),
                 ExtenderConstants.kExtenderArmLength.in(Meters),
                 Degrees.of(extenderStowAngle.get()).in(Radians),
                 Degrees.of(extenderIntakeAngle.get()).in(Radians),
-                false,
+                true,
                 Degrees.of(extenderIntakeAngle.get()).in(Radians),
                 0.0,
                 0.0);
@@ -233,7 +233,11 @@ public class ExtenderIOSim implements ExtenderIO {
 
         armLigament.setAngle(getPosition());
         setpointArmLigament.setAngle(setpoint);
-        Logger.recordOutput("Intake/2D-Simulation", armMech);
+        Logger.recordOutput("Intake/Simulation/2D-Simulation", armMech);
+
+        Logger.recordOutput(
+                "Intake/Simulation/3D-Simulation-Pose",
+                armMech.generate3dMechanism().get(0));
 
         extenderMotor.updateTunableGains();
     }

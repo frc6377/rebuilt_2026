@@ -97,7 +97,7 @@ public class RobotContainer {
     public RobotContainer() {
         RobotState.create();
 
-        usingController = true;
+        usingController = false;
 
         if (usingController || Constants.currentMode != Constants.Mode.SIM) {
             OIController = new OIXbox();
