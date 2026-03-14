@@ -174,7 +174,7 @@ public interface OI {
         return noButton;
     }
 
-    default Trigger wallAlign(){return noButton;}
-
-
+    default Trigger wallAlign() {
+        return noButton;
+    }
 }

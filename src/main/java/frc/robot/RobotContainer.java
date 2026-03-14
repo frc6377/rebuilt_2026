@@ -20,18 +20,9 @@ import static frc.robot.subsystems.vision.VisionConstants.camera1Name;
 import static frc.robot.subsystems.vision.VisionConstants.robotToCamera0;
 import static frc.robot.subsystems.vision.VisionConstants.robotToCamera1;
 
-import java.util.Objects;
-import java.util.function.Supplier;
-
-import org.ironmaple.simulation.SimulatedArena;
-import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
-import org.littletonrobotics.junction.Logger;
-import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
-
 import com.ctre.phoenix6.SignalLogger;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
-
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -74,6 +65,12 @@ import frc.robot.subsystems.vision.questnav.QuestNavIO;
 import frc.robot.util.OILayer.OI;
 import frc.robot.util.OILayer.OIKeyboard;
 import frc.robot.util.OILayer.OIXbox;
+import java.util.Objects;
+import java.util.function.Supplier;
+import org.ironmaple.simulation.SimulatedArena;
+import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
+import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a "declarative" paradigm, very
@@ -413,13 +410,12 @@ public class RobotContainer {
         OIController.toggleIntakeState().onTrue(intake.retractIntakeCommand());
         OIController.intakeMiddle().onTrue(intake.goToCustomAngleOneCommand());
 
-       OIController.wallAlign().whileTrue(
-      DriveCommands.joystickDriveAtAngle(
-          drive,
-          () -> OIController.driveTranslationX().getAsDouble(),
-          () -> OIController.driveTranslationY().getAsDouble(),
-          wallAlignAngle)
-  );
+        OIController.wallAlign()
+                .whileTrue(DriveCommands.joystickDriveAtAngle(
+                        drive,
+                        () -> OIController.driveTranslationX().getAsDouble(),
+                        () -> OIController.driveTranslationY().getAsDouble(),
+                        wallAlignAngle));
     }
 
     /**
