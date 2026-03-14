@@ -15,11 +15,23 @@ package frc.robot;
 
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.RPM;
-import static frc.robot.subsystems.vision.VisionConstants.*;
+import static frc.robot.subsystems.vision.VisionConstants.camera0Name;
+import static frc.robot.subsystems.vision.VisionConstants.camera1Name;
+import static frc.robot.subsystems.vision.VisionConstants.robotToCamera0;
+import static frc.robot.subsystems.vision.VisionConstants.robotToCamera1;
+
+import java.util.Objects;
+import java.util.function.Supplier;
+
+import org.ironmaple.simulation.SimulatedArena;
+import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
+import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 import com.ctre.phoenix6.SignalLogger;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
+
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -62,11 +74,6 @@ import frc.robot.subsystems.vision.questnav.QuestNavIO;
 import frc.robot.util.OILayer.OI;
 import frc.robot.util.OILayer.OIKeyboard;
 import frc.robot.util.OILayer.OIXbox;
-import java.util.Objects;
-import org.ironmaple.simulation.SimulatedArena;
-import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
-import org.littletonrobotics.junction.Logger;
-import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a "declarative" paradigm, very
@@ -90,6 +97,8 @@ public class RobotContainer {
     private final RobotState robotState;
 
     private final boolean usingController;
+
+    private final Supplier<Rotation2d> wallAlignAngle;
 
     // Dashboard inputs
     private final LoggedDashboardChooser<Command> autoChooser;
@@ -281,6 +290,16 @@ public class RobotContainer {
                         .andThen(superstructure.getRightShooter().sysIdDynamic(SysIdRoutine.Direction.kReverse))
                         .andThen(SignalLogger::stop));
 
+        wallAlignAngle = () -> {
+            double robotX = drive.getPose().getTranslation().getX();
+            double fieldMidX = FieldConstants.fieldWidth / 2.0;
+            if (robotX > fieldMidX) {
+                return Rotation2d.fromDegrees(180);
+            } else {
+                return Rotation2d.fromDegrees(90);
+            }
+        };
+
         // Configure the button bindings
         SignalLogger.setPath("Media/sda1/logs/one/");
         configureButtonBindings();
@@ -393,6 +412,14 @@ public class RobotContainer {
         OIController.zeroIntake().onTrue(intake.zeroExtender().ignoringDisable(true));
         OIController.toggleIntakeState().onTrue(intake.retractIntakeCommand());
         OIController.intakeMiddle().onTrue(intake.goToCustomAngleOneCommand());
+
+       OIController.wallAlign().whileTrue(
+      DriveCommands.joystickDriveAtAngle(
+          drive,
+          () -> OIController.driveTranslationX().getAsDouble(),
+          () -> OIController.driveTranslationY().getAsDouble(),
+          wallAlignAngle)
+  );
     }
 
     /**

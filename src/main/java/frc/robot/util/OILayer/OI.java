@@ -173,4 +173,8 @@ public interface OI {
     default Trigger driveLockX() {
         return noButton;
     }
+
+    default Trigger wallAlign(){return noButton;}
+
+
 }
