@@ -368,7 +368,7 @@ public class Superstructure extends SubsystemBase {
     }
 
     /** Command that continuously updates hood angle and flywheel speed based on distance to hub. */
-    public Command autoSpeedShooter(Supplier<Pose2d> poseSupplier, Supplier<ChassisSpeeds> velocitySupplier) {
+    public Command autoSpeedShooter(Drive drive) {
         return Commands.run(
                         () -> {
                             Pose2d robotPose;
@@ -382,68 +382,41 @@ public class Superstructure extends SubsystemBase {
                                 robotPose = new Pose2d(hubPos.getX() - distMeters, hubPos.getY(), new Rotation2d());
                                 speeds = new ChassisSpeeds();
                             } else {
-                                robotPose = poseSupplier.get();
-                                speeds = velocitySupplier.get();
+                                robotPose = drive.getPose();
+                                speeds = drive.getChassisSpeeds();
                             }
 
                             // ── Vision hub-angle distance fallback ────────────────────────────
                             // If two hub tags are visible, override the odometry distance while
                             // keeping the same bearing so SotF heading stays correct.
-                            var hubDistOpt = vision.getHubDistance();
-                            if (hubDistOpt.isPresent()) {
-                                double visionDistM = hubDistOpt.getAsDouble();
-                                lastVisionHubDistanceM = visionDistM;
-                                Translation2d hubPos = FieldConstants.getHubPosition();
-                                Translation2d toRobot =
-                                        robotPose.getTranslation().minus(hubPos);
-                                double odomDistM = toRobot.getNorm();
-                                if (odomDistM > 0.01) {
-                                    // Scale the bearing vector to the vision-measured distance
-                                    Translation2d corrected = hubPos.plus(toRobot.times(visionDistM / odomDistM));
-                                    robotPose = new Pose2d(corrected, robotPose.getRotation());
-                                }
-                                Logger.recordOutput("Shooting/DistanceSource", "Vision");
-                                Logger.recordOutput("Shooting/VisionHubDistanceM", visionDistM);
-                            } else {
-                                double visionDistM = lastVisionHubDistanceM;
-                                Logger.recordOutput("Shooting/DistanceSource", "Odometry");
-                            }
-                            // ─────────────────────────────────────────────────────────────────
+                            var hubDistOpt = robotPose.getTranslation().getDistance(FieldConstants.getHubPosition());
+                            Logger.recordOutput("Shooting/DistanceSource", "Vision");
+                            Logger.recordOutput("Shooting/VisionHubDistanceM", hubDistOpt);
 
                             boolean inZone = isInShootingZone(robotPose);
                             Logger.recordOutput("Shooting/InShootingZone", inZone);
-
-                            if (inZone) {
-                                AngularVelocity flywheelVelocity = TrajectoryBall.getFlywheelVelocityForDistance(
-                                        Meters.of(hubDistOpt.orElse(2.5)));
-
-                                Logger.recordOutput(
-                                        "Shooting/DistanceToHub",
-                                        getDistanceToHub(robotPose).in(Meters));
-                                //                                Logger.recordOutput("Shooting/CalculatedHoodAngle",
-                                // hoodAngle.in(Degrees));
-                                Logger.recordOutput("Shooting/CalculatedRPM", flywheelVelocity.in(RPM));
-                                //                                Logger.recordOutput("Shooting/TargetHeading",
-                                // params.targetHeading());
-
-                                // setHoodAngle(0);
-                                setFlywheelVelocity(flywheelVelocity);
-                            } else {
-                                setFlywheelVelocity(manualShootingVelocity);
-                            }
+                            TrajectoryBall.ShootingParameters flywheelVelocity = TrajectoryBall.calculate(
+                                    CalculationMode.DOU_INTERPOLATION,
+                                    false,
+                                    robotPose,
+                                    speeds,
+                                    Feet.of(8),
+                                    Meters.of(FieldConstants.Hub.height),
+                                    0,
+                                    0,
+                                    false);
+                            Logger.recordOutput(
+                                    "Shooting/DistanceToHub",
+                                    getDistanceToHub(robotPose).in(Meters));
+                            //                                Logger.recordOutput("Shooting/CalculatedHoodAngle",
+                            // hoodAngle.in(Degrees));
+                            Logger.recordOutput("Shooting/CalculatedRPM", flywheelVelocity);
+                            setFlywheelVelocity(flywheelVelocity.flywheelVelocity());
                         },
                         hood,
                         shooter.getLeft(),
                         shooter.getRight())
                 .withName("AutoAimShooter");
-    }
-
-    public Command autoSpeedShooter(Supplier<Pose2d> poseSupplier) {
-        return autoSpeedShooter(poseSupplier, ChassisSpeeds::new);
-    }
-
-    public Command autoSpeedShooter() {
-        return autoSpeedShooter(Pose2d::new, ChassisSpeeds::new);
     }
     /** Command that aims the robot at the hub while driving. */
     public Command aimAtHubWhileDriving(Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier) {
@@ -482,7 +455,7 @@ public class Superstructure extends SubsystemBase {
     /** Full auto-aim command: aims robot at hub AND sets hood/flywheel automatically. */
     public Command fullAutoAim(Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier) {
         return aimAtHubWhileDriving(drive, xSupplier, ySupplier)
-                .alongWith(autoSpeedShooter(drive::getPose, drive::getChassisSpeeds))
+                .alongWith(autoSpeedShooter(drive))
                 .withName("FullAutoAim")
                 .beforeStarting(() -> robotState.setMode(RobotState.Mode.SHOOTING))
                 .finallyDo(() -> robotState.setMode(RobotState.Mode.IDLE));
@@ -499,7 +472,7 @@ public class Superstructure extends SubsystemBase {
         };
 
         return DriveCommands.joystickDriveAtAngle(drive, xSupplier, ySupplier, angleSupplier)
-                .alongWith(autoSpeedShooter(drive::getPose, drive::getChassisSpeeds))
+                .alongWith(autoSpeedShooter(drive))
                 .withName("SpinUpShooter");
     }
 
@@ -525,7 +498,7 @@ public class Superstructure extends SubsystemBase {
         if ((manualShootingEnabled.get() == 1.0) || vision.getTagCount() == 0) {
             return runFlywheelVelocityManual();
         } else if (vision.getTagCount(0) + vision.getTagCount(1) == 1) {
-            return autoSpeedShooter(drive::getPose, drive::getChassisSpeeds);
+            return autoSpeedShooter(drive);
         } else {
             return fullAutoAim(drive, xSupplier, ySupplier);
         }
@@ -555,11 +528,11 @@ public class Superstructure extends SubsystemBase {
                 .withName("SetManualShootingEnabled:" + enabled);
     }
 
-    public Command runToggledSpeed(Supplier<Pose2d> robotPose, Supplier<ChassisSpeeds> chassisSpeeds) {
+    public Command runToggledSpeed(Drive drive) {
         if (manualShootingEnabled.get() == 1.0) {
             return runFlywheelVelocityManual();
         } else {
-            return autoSpeedShooter(robotPose, chassisSpeeds);
+            return autoSpeedShooter(drive);
         }
     }
 
@@ -579,7 +552,8 @@ public class Superstructure extends SubsystemBase {
                             Pose2d robotPose = poseSupplier.get();
                             ChassisSpeeds speeds = velocitySupplier.get();
 
-                            // ── Vision hub distance override (same pattern as autoSpeedShooter) ──
+                            // ── Vision hub distance override (same pattern as autoSpeedShooter) ─
+
                             var hubDistOpt = vision.getHubDistance();
                             if (hubDistOpt.isPresent()) {
                                 double visionDistM = hubDistOpt.getAsDouble();
