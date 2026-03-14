@@ -15,6 +15,7 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.Mass;
+import frc.robot.Constants.EnabledSubsystems;
 
 public class ClimbConstants {
     public class PIDF {
@@ -36,7 +37,7 @@ public class ClimbConstants {
         public static final double kA = 0;
     }
 
-    public static final boolean kDisabled = false;
+    public static final boolean kDisabled = !EnabledSubsystems.kClimb;
 
     public static final TalonFXConfiguration kClimbMotorConfigReal = new TalonFXConfiguration()
             .withMotorOutput(new MotorOutputConfigs()

@@ -9,7 +9,6 @@ import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.SoftwareLimitSwitchConfigs;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import edu.wpi.first.units.measure.Distance;
-import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.DutyCycleEncoder;
 import frc.robot.Constants.CANIDs.MotorIDs;
 import frc.robot.Constants.CANIDs.SensorIDs;
@@ -19,12 +18,12 @@ public class ClimberIOReal implements ClimberIO {
     final TunableTalonFX climbMotor1;
     final DutyCycleEncoder climbEncoder;
     final Slot0Configs climberPID;
-    final DigitalInput limitSwitch;
+    // final DigitalInput limitSwitch;
 
     public ClimberIOReal() {
         climbMotor1 = new TunableTalonFX(MotorIDs.kClimbMotor1ID, "rio", "ClimbMotor1");
         climbEncoder = new DutyCycleEncoder(SensorIDs.kClimbEncoderID);
-        limitSwitch = new DigitalInput(ClimbConstants.kLimitSwitchPort);
+        // limitSwitch = new DigitalInput(ClimbConstants.kLimitSwitchPort);
 
         tryUntilOk(5, () -> climbMotor1.getConfigurator().apply(ClimbConstants.kClimbMotorConfigReal, 0.25));
         tryUntilOk(5, () -> climbMotor1.getConfigurator().apply(ClimbConstants.kLimitSwitchConfig, 0.25));
@@ -73,7 +72,7 @@ public class ClimberIOReal implements ClimberIO {
 
         inputs.motorConnected = climbMotor1.isAlive();
 
-        inputs.limitSwitchPressed = !limitSwitch.get();
+        // inputs.limitSwitchPressed = !limitSwitch.get();
     }
 
     @Override
@@ -96,10 +95,10 @@ public class ClimberIOReal implements ClimberIO {
         tryUntilOk(5, () -> climbMotor1.getConfigurator().apply(ClimbConstants.kLimitSwitchConfig, 0.25));
     }
 
-    @Override
-    public boolean limitHit() {
-        return !limitSwitch.get();
-    }
+    // @Override
+    // public boolean limitHit() {
+    //     return !limitSwitch.get();
+    // }
 
     @Override
     public void periodic() {

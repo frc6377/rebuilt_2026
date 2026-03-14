@@ -58,14 +58,15 @@ public final class Constants {
     //    }
 
     public static final class EnabledSubsystems {
-        public static final boolean kShooterLeft = true;
+        public static final boolean kShooterLeft = false;
         public static final boolean kShooterRight = false;
         public static final boolean kHood = false;
-        public static final boolean kUpgoer = true;
-        public static final boolean kRoller = true;
+        public static final boolean kUpgoer = false;
+        public static final boolean kRoller = false;
         public static final boolean kExtender = false;
-        public static final boolean kDrive = true;
-        public static final boolean kIndexer = true;
+        public static final boolean kDrive = false;
+        public static final boolean kIndexer = false;
+        public static final boolean kClimb = true;
     }
 
     public static enum Mode {
@@ -99,7 +100,7 @@ public final class Constants {
             public static final int kPivotEncoderID = 1;
             public static final int kExtenderEncoderID = 2;
 
-            public static final int kClimbEncoderID = 17;
+            public static final int kClimbEncoderID = 0;
             public static final int kClimbLimitSwitchID = 18;
         }
     }
