@@ -348,6 +348,24 @@ public class Superstructure extends SubsystemBase {
         return vision.getHubFacingAngle(robotPose).orElse(robotPose.getRotation());
     }
 
+    public static Rotation2d getHubAngleFromPose(Pose2d robotPose) {
+        Translation2d hubPos = FieldConstants.getHubPosition();
+        double dx = hubPos.getX() - robotPose.getX();
+        double dy = hubPos.getY() - robotPose.getY();
+        return new Rotation2d(dx, dy).rotateBy(Rotation2d.fromDegrees(180.0));
+    }
+
+    public static Supplier<Rotation2d> hubAngleSupplier(Drive drive) {
+        return () -> getHubAngleFromPose(drive.getPose());
+    }
+
+    public boolean isAimedAtHub(Drive drive) {
+        Rotation2d hubAngle = getHubAngleFromPose(drive.getPose());
+        double errorDeg = Math.IEEEremainder(
+                Math.toDegrees(hubAngle.getRadians() - drive.getRotation().getRadians()), 360.0);
+        return Math.abs(errorDeg) < DriveCommands.getAutoAimToleranceDeg();
+    }
+
     /** Calculate the angle from the robot to the alliance wall center. */
     public Rotation2d getAngleToAllianceWall(Pose2d robotPose) {
         boolean isRed = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
@@ -459,6 +477,85 @@ public class Superstructure extends SubsystemBase {
                 .withName("FullAutoAim")
                 .beforeStarting(() -> robotState.setMode(RobotState.Mode.SHOOTING))
                 .finallyDo(() -> robotState.setMode(RobotState.Mode.IDLE));
+    }
+
+    public Command autoAimHoldCommand(
+            Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier, Indexer indexer) {
+        Supplier<Rotation2d> hubAngle = hubAngleSupplier(drive);
+
+        // Core aiming: lock heading to hub + spin up flywheel
+        Command aimAndSpinUp = DriveCommands.autoAimDrive(drive, xSupplier, ySupplier, hubAngle)
+                .alongWith(autoSpeedShooter(drive));
+
+        // Fire when both heading aligned and flywheel at speed.
+        // The run() loop continuously checks the ready condition and actuates or idles
+        // the upgoers / indexer each cycle so firing starts and stops reactively.
+        Command reactiveFireLoop = Commands.run(
+                        () -> {
+                            boolean aimed = isAimedAtHub(drive);
+                            boolean flywheelReady = isReadyToFire();
+                            boolean shouldFire = aimed && flywheelReady;
+                            Logger.recordOutput("AutoAim/ReadyToFire", shouldFire);
+
+                            if (shouldFire) {
+                                leftUpgoer.setVelocity(UpgoerConstants.defaultFeedVelocity);
+                                rightUpgoer.setVelocity(UpgoerConstants.defaultFeedVelocity);
+                                oi.setRumble(0.0, 0.5);
+                            } else {
+                                leftUpgoer.stop();
+                                rightUpgoer.stop();
+                                oi.setRumble(0.0, 0.0);
+                            }
+                        },
+                        leftUpgoer,
+                        rightUpgoer)
+                .finallyDo(() -> {
+                    leftUpgoer.stop();
+                    rightUpgoer.stop();
+                    oi.setRumble(0.0, 0.0);
+                });
+
+        // Indexer mirrors the same condition (separate subsystem so parallel is safe)
+        Command reactiveIndexLoop = Commands.run(
+                        () -> {
+                            boolean shouldFire = isAimedAtHub(drive) && isReadyToFire();
+                            indexer.setRunning(shouldFire);
+                        },
+                        indexer)
+                .finallyDo(() -> indexer.setRunning(false));
+
+        return Commands.parallel(aimAndSpinUp, reactiveFireLoop, reactiveIndexLoop)
+                .withName("AutoAimHold");
+    }
+
+    public Command turretModeToggleCommand(Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier) {
+        // Capture the normal drive default before first activation
+        final Command[] normalDefault = {null};
+        Supplier<Rotation2d> hubAngle = hubAngleSupplier(drive);
+
+        return Commands.runOnce(() -> {
+                    normalDefault[0] = drive.getDefaultCommand();
+                    drive.setDefaultCommand(DriveCommands.turretModeDrive(drive, xSupplier, ySupplier, hubAngle));
+                    Logger.recordOutput("TurretMode/Active", true);
+                })
+                .andThen(sotfShooter(drive::getPose, drive::getChassisSpeeds).alongWith(Commands.run(() -> {
+                    // Rumble feedback while turret mode is running
+                    boolean ready = isAimedAtHub(drive) && isReadyToFire();
+                    Logger.recordOutput("TurretMode/ReadyToFire", ready);
+                    if (ready) {
+                        oi.setRumble(0.0, 0.3);
+                    } else {
+                        oi.setRumble(0.0, 0.0);
+                    }
+                })))
+                .finallyDo(() -> {
+                    if (normalDefault[0] != null) {
+                        drive.setDefaultCommand(normalDefault[0]);
+                    }
+                    oi.setRumble(0.0, 0.0);
+                    Logger.recordOutput("TurretMode/Active", false);
+                })
+                .withName("TurretModeToggle");
     }
 
     public Command spinUpShooterCommand(Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier) {

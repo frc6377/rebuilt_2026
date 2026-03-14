@@ -266,11 +266,7 @@ public class DriveCommands {
     }
 
     public static Command autoAimDrive(
-            Drive drive,
-            DoubleSupplier xSupplier,
-            DoubleSupplier ySupplier,
-            DoubleSupplier omegaSupplier,
-            Supplier<Optional<Rotation2d>> hubAngleSupplier) {
+            Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier, Supplier<Rotation2d> hubAngleSupplier) {
 
         // PID is rebuilt each time the command starts because gains are tunable at runtime.
         // The controller reference is held in an array so the lambda can capture it mutably.
@@ -303,38 +299,24 @@ public class DriveCommands {
                             Translation2d linearVelocity =
                                     getLinearVelocityFromJoysticks(xSupplier.getAsDouble(), ySupplier.getAsDouble());
 
-                            Optional<Rotation2d> targetAngle = hubAngleSupplier.get();
-                            double omega;
-                            boolean aimed = false;
+                            // Hub angle is always available — computed from the pose estimate,
+                            // which is continuously updated by vision whenever the hub is seen.
+                            Rotation2d targetAngle = hubAngleSupplier.get();
+                            double pidOutput =
+                                    aimController.calculate(drive.getRotation().getRadians(), targetAngle.getRadians());
+                            // Feed-forward from profiled setpoint velocity to reduce tracking lag
+                            double ff = aimController.getSetpoint().velocity;
+                            double omega = pidOutput + ff;
 
-                            if (targetAngle.isPresent()) {
-                                double pidOutput = aimController.calculate(
-                                        drive.getRotation().getRadians(),
-                                        targetAngle.get().getRadians());
-                                // Feed-forward from profiled setpoint velocity to reduce tracking lag
-                                double ff = aimController.getSetpoint().velocity;
-                                omega = pidOutput + ff;
+                            double errorDeg = Math.toDegrees(targetAngle.getRadians()
+                                    - drive.getRotation().getRadians());
+                            // Normalize to [-180, 180]
+                            errorDeg = Math.IEEEremainder(errorDeg, 360.0);
+                            boolean aimed = Math.abs(errorDeg) < AUTO_AIM_TOLERANCE_DEG.get() && aimController.atGoal();
 
-                                double errorDeg =
-                                        Math.toDegrees(targetAngle.get().getRadians()
-                                                - drive.getRotation().getRadians());
-                                // Normalize to [-180, 180]
-                                errorDeg = Math.IEEEremainder(errorDeg, 360.0);
-                                aimed = Math.abs(errorDeg) < AUTO_AIM_TOLERANCE_DEG.get() && aimController.atGoal();
-
-                                Logger.recordOutput("AutoAim/HeadingErrorDeg", errorDeg);
-                                Logger.recordOutput(
-                                        "AutoAim/TargetHeadingDeg",
-                                        targetAngle.get().getDegrees());
-                            } else {
-                                // No hub tag visible — let driver rotate freely
-                                omega = omegaSupplier.getAsDouble() * drive.getMaxAngularSpeedRadPerSec();
-                                // Keep PID seeded to avoid snap when tag reappears
-                                aimController.reset(drive.getRotation().getRadians());
-                            }
-
+                            Logger.recordOutput("AutoAim/HeadingErrorDeg", errorDeg);
+                            Logger.recordOutput("AutoAim/TargetHeadingDeg", targetAngle.getDegrees());
                             Logger.recordOutput("AutoAim/Aimed", aimed);
-                            Logger.recordOutput("AutoAim/HasTarget", targetAngle.isPresent());
 
                             // Convert to field-relative and send
                             boolean isFlipped = DriverStation.getAlliance().isPresent()
@@ -365,10 +347,7 @@ public class DriveCommands {
     }
 
     public static Command turretModeDrive(
-            Drive drive,
-            DoubleSupplier xSupplier,
-            DoubleSupplier ySupplier,
-            Supplier<Optional<Rotation2d>> hubAngleSupplier) {
+            Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier, Supplier<Rotation2d> hubAngleSupplier) {
 
         final ProfiledPIDController[] holder = {null};
 
@@ -396,36 +375,21 @@ public class DriveCommands {
                             Translation2d linearVelocity =
                                     getLinearVelocityFromJoysticks(xSupplier.getAsDouble(), ySupplier.getAsDouble());
 
-                            Optional<Rotation2d> targetAngle = hubAngleSupplier.get();
-                            double omega;
-                            boolean aimed = false;
+                            // Hub angle is always available from pose estimate
+                            Rotation2d targetAngle = hubAngleSupplier.get();
+                            double pidOutput =
+                                    aimController.calculate(drive.getRotation().getRadians(), targetAngle.getRadians());
+                            double ff = aimController.getSetpoint().velocity;
+                            double omega = pidOutput + ff;
 
-                            if (targetAngle.isPresent()) {
-                                double pidOutput = aimController.calculate(
-                                        drive.getRotation().getRadians(),
-                                        targetAngle.get().getRadians());
-                                double ff = aimController.getSetpoint().velocity;
-                                omega = pidOutput + ff;
+                            double errorDeg = Math.toDegrees(targetAngle.getRadians()
+                                    - drive.getRotation().getRadians());
+                            errorDeg = Math.IEEEremainder(errorDeg, 360.0);
+                            boolean aimed = Math.abs(errorDeg) < AUTO_AIM_TOLERANCE_DEG.get() && aimController.atGoal();
 
-                                double errorDeg =
-                                        Math.toDegrees(targetAngle.get().getRadians()
-                                                - drive.getRotation().getRadians());
-                                errorDeg = Math.IEEEremainder(errorDeg, 360.0);
-                                aimed = Math.abs(errorDeg) < AUTO_AIM_TOLERANCE_DEG.get() && aimController.atGoal();
-
-                                Logger.recordOutput("TurretMode/HeadingErrorDeg", errorDeg);
-                                Logger.recordOutput(
-                                        "TurretMode/TargetHeadingDeg",
-                                        targetAngle.get().getDegrees());
-                            } else {
-                                // No hub tag — hold current heading (no driver override in turret mode)
-                                omega = aimController.calculate(
-                                        drive.getRotation().getRadians(),
-                                        drive.getRotation().getRadians());
-                            }
-
+                            Logger.recordOutput("TurretMode/HeadingErrorDeg", errorDeg);
+                            Logger.recordOutput("TurretMode/TargetHeadingDeg", targetAngle.getDegrees());
                             Logger.recordOutput("TurretMode/Aimed", aimed);
-                            Logger.recordOutput("TurretMode/HasTarget", targetAngle.isPresent());
 
                             boolean isFlipped = DriverStation.getAlliance().isPresent()
                                     && DriverStation.getAlliance().get() == Alliance.Red;
