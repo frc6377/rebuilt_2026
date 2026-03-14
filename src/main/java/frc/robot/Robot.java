@@ -20,6 +20,8 @@ import edu.wpi.first.wpilibj.Threads;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import frc.robot.subsystems.superstructure.Superstructure;
+
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.NT4Publisher;
@@ -89,7 +91,6 @@ public class Robot extends LoggedRobot {
     @Override
     public void disabledInit() {
         robotContainer.resetSimulationField();
-        robotContainer.onDisabled();
     }
 
     /** This function is called periodically when disabled. */
@@ -104,7 +105,6 @@ public class Robot extends LoggedRobot {
     @Override
     public void autonomousInit() {
         autonomousCommand = robotContainer.getAutonomousCommand();
-        robotContainer.onAutonomousInit();
         // schedule the autonomous command (example)
         if (autonomousCommand != null) {
             CommandScheduler.getInstance().schedule(autonomousCommand);
@@ -125,7 +125,8 @@ public class Robot extends LoggedRobot {
         if (autonomousCommand != null) {
             autonomousCommand.cancel();
         }
-        robotContainer.onTeleopInit();
+        CommandScheduler.getInstance().schedule(robotContainer.superstructure.stopUpgoerCommand());
+        CommandScheduler.getInstance().schedule(robotContainer.superstructure.stopShooterCommand());
     }
 
     /** This function is called periodically during operator control. */

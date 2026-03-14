@@ -150,8 +150,8 @@ public class Superstructure extends SubsystemBase {
         this.rightUpgoer = new Upgoer(rightUpgoerIO, "RightShooterUpgoer", 1);
         this.indexer = new Indexer(indexerIO);
         this.currentShootingCommand = this.runFlywheelVelocityManual();
-        indexer.setDefaultCommand(
-                Commands.run(() -> indexer.setRunning(atTargetVelocity() || isIntaking.getAsBoolean()), indexer));
+        // indexer.setDefaultCommand(
+        //         Commands.run(() -> indexer.setRunning(shooter.isRunning() || isIntaking.getAsBoolean()), indexer));
     }
 
     @Override

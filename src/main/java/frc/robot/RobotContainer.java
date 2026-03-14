@@ -76,14 +76,14 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
  */
 public class RobotContainer {
     // Subsystems
-    private final Superstructure superstructure;
+    protected final Superstructure superstructure;
 
     private final Drive drive;
 
     // Jay was here and basiclly is the reason that this code works <3
 
     private final Vision vision;
-    private final Intake intake;
+    protected final Intake intake;
     private final OI OIController;
     private final Indexer indexer;
     private final SwerveDriveSimulation driveSimulation; // Only used in simulation, but declared here for easy
@@ -101,7 +101,7 @@ public class RobotContainer {
 
         usingController = Constants.currentMode == Constants.Mode.REAL || DriverStation.isJoystickConnected(0);
 
-        if (usingController) {
+        if (usingController || Constants.currentMode != Constants.Mode.SIM) {
             OIController = new OIXbox();
         } else {
             OIController = new OIKeyboard();
