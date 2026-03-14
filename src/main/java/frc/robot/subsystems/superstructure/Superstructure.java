@@ -90,7 +90,6 @@ public class Superstructure extends SubsystemBase {
     private final Hood hood;
     private final Upgoer leftUpgoer;
     private final Upgoer rightUpgoer;
-    private final Indexer indexer;
     private final Vision vision;
     private final OI oi;
     private final RobotState robotState;
@@ -148,7 +147,6 @@ public class Superstructure extends SubsystemBase {
         this.hood = new Hood(hoodIO);
         this.leftUpgoer = new Upgoer(leftUpgoerIO, "LeftShooterUpgoer", 1);
         this.rightUpgoer = new Upgoer(rightUpgoerIO, "RightShooterUpgoer", 1);
-        this.indexer = new Indexer(indexerIO);
         this.currentShootingCommand = this.runFlywheelVelocityManual();
         // indexer.setDefaultCommand(
         //         Commands.run(() -> indexer.setRunning(shooter.isRunning() || isIntaking.getAsBoolean()), indexer));
