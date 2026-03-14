@@ -234,7 +234,7 @@ public class Vision extends SubsystemBase {
         // Bearing from robot to the middle tag, rotated 180° so the front faces the hub
         double dx = tagPoseOpt.get().getX() - robotPose.getX();
         double dy = tagPoseOpt.get().getY() - robotPose.getY();
-        Rotation2d required = new Rotation2d(dx, dy).rotateBy(Rotation2d.fromDegrees(180.0));
+        Rotation2d required = new Rotation2d(dx, dy).rotateBy(Rotation2d.fromDegrees(90));
 
         Logger.recordOutput("Vision/HubFacing/TagId", bestMiddle.tagId());
         Logger.recordOutput("Vision/HubFacing/GyroFallback", false);
