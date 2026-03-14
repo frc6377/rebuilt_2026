@@ -63,6 +63,8 @@ import frc.robot.util.OILayer.OI;
 import frc.robot.util.OILayer.OIKeyboard;
 import frc.robot.util.OILayer.OIXbox;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Supplier;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
 import org.littletonrobotics.junction.Logger;
@@ -393,6 +395,79 @@ public class RobotContainer {
         OIController.zeroIntake().onTrue(intake.zeroExtender().ignoringDisable(true));
         OIController.toggleIntakeState().onTrue(intake.retractIntakeCommand());
         OIController.intakeMiddle().onTrue(intake.goToCustomAngleOneCommand());
+
+        // Hub angle supplier shared by both auto-aim and turret mode
+        Supplier<Optional<Rotation2d>> hubAngleSupplier = () -> vision.getHubFacingAngle(drive.getPose());
+
+        Trigger turretModeActive = new Trigger(() -> drive.getDefaultCommand() != null
+                && drive.getDefaultCommand().getName().equals("TurretModeDrive"));
+
+        OIController.autoAimHold()
+                .and(turretModeActive.negate())
+                .whileTrue(DriveCommands.autoAimDrive(
+                                drive,
+                                () -> OIController.driveTranslationY().getAsDouble(),
+                                () -> OIController.driveTranslationX().getAsDouble(),
+                                () -> OIController.driveRotation().getAsDouble(),
+                                hubAngleSupplier)
+                        .alongWith(superstructure.autoSpeedShooter(drive::getPose, drive::getChassisSpeeds)));
+
+        Trigger autoAimActive = OIController.autoAimHold().and(turretModeActive.negate());
+        Trigger autoAimAimed = new Trigger(() -> {
+            Optional<Rotation2d> hubAngle = vision.getHubFacingAngle(drive.getPose());
+            if (hubAngle.isEmpty()) return false;
+            double errorDeg = Math.IEEEremainder(
+                    Math.toDegrees(
+                            hubAngle.get().getRadians() - drive.getRotation().getRadians()),
+                    360.0);
+            return Math.abs(errorDeg) < DriveCommands.getAutoAimToleranceDeg();
+        });
+        Trigger autoAimReadyToFire = autoAimActive.and(autoAimAimed).and(superstructure::isReadyToFire);
+
+        // Auto-fire: feed upgoers + indexer when ready. Stops when no longer ready
+        // (heading drifts, flywheel drops, or trigger released).
+        autoAimReadyToFire.whileTrue(
+                Commands.parallel(superstructure.fireCommand(), indexer.index(), intake.voltageSiftFuel()));
+
+        // Rumble the operator controller when ready to fire so they know shots are being taken
+        autoAimReadyToFire.onTrue(OIController.setRumble(0.0, 0.5)).onFalse(OIController.setRumble(0.0, 0.0));
+
+        // The original default command (normal joystick drive)
+        final Command normalDriveDefault = drive.getDefaultCommand();
+
+        // Use toggleOnTrue with a deferred command to avoid WPILib's single-composition
+        // restriction. Each toggle-on creates fresh command instances.
+        OIController.turretModeToggle()
+                .toggleOnTrue(Commands.runOnce(() -> {
+                            // Swap to turret mode default command (heading locked to hub)
+                            drive.setDefaultCommand(DriveCommands.turretModeDrive(
+                                    drive,
+                                    () -> OIController.driveTranslationY().getAsDouble(),
+                                    () -> OIController.driveTranslationX().getAsDouble(),
+                                    hubAngleSupplier));
+                            Logger.recordOutput("TurretMode/Active", true);
+                        })
+                        // SotF flywheel runs as the "body" of the toggled command.
+                        // Requires LeftShooter, RightShooter, Hood — no Drive conflict.
+                        .andThen(superstructure.sotfShooter(drive::getPose, drive::getChassisSpeeds))
+                        .finallyDo(() -> {
+                            // Restore normal drive when turret mode ends
+                            drive.setDefaultCommand(normalDriveDefault);
+                            Logger.recordOutput("TurretMode/Active", false);
+                        }));
+
+        // Turret mode rumble — same pattern as auto-aim (flywheel at speed + heading aimed)
+        Trigger turretReady = turretModeActive.and(() -> {
+            if (!superstructure.isReadyToFire()) return false;
+            Optional<Rotation2d> hubAngle = vision.getHubFacingAngle(drive.getPose());
+            if (hubAngle.isEmpty()) return false;
+            double errorDeg = Math.IEEEremainder(
+                    Math.toDegrees(
+                            hubAngle.get().getRadians() - drive.getRotation().getRadians()),
+                    360.0);
+            return Math.abs(errorDeg) < DriveCommands.getAutoAimToleranceDeg();
+        });
+        turretReady.onTrue(OIController.setRumble(0.0, 0.3)).onFalse(OIController.setRumble(0.0, 0.0));
     }
 
     /**

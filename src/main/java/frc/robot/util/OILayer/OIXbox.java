@@ -147,7 +147,7 @@ public class OIXbox implements OI {
 
     @Override
     public Trigger fireShooter() {
-        return operatorRightTriggerAsButton;
+        return new Trigger(() -> false);
     }
 
     @Override
@@ -233,5 +233,15 @@ public class OIXbox implements OI {
     @Override
     public Trigger driveLockX() {
         return opA;
+    }
+
+    @Override
+    public Trigger autoAimHold() {
+        return operatorRightTriggerAsButton;
+    }
+
+    @Override
+    public Trigger turretModeToggle() {
+        return leftStickButton;
     }
 }

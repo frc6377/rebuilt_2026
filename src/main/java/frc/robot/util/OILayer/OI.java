@@ -173,4 +173,12 @@ public interface OI {
     default Trigger driveLockX() {
         return noButton;
     }
+
+    default Trigger autoAimHold() {
+        return noButton;
+    }
+
+    default Trigger turretModeToggle() {
+        return noButton;
+    }
 }

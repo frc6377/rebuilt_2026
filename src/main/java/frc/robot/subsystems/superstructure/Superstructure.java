@@ -43,6 +43,7 @@ import frc.robot.subsystems.indexer.IndexerIOReal;
 import frc.robot.subsystems.indexer.IndexerIOSim;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.ShooterConstants;
+import frc.robot.subsystems.shooter.ShooterConstants.CalculationMode;
 import frc.robot.subsystems.shooter.left.LeftShooter;
 import frc.robot.subsystems.shooter.right.RightShooter;
 import frc.robot.subsystems.upgoer.Upgoer;
@@ -570,5 +571,64 @@ public class Superstructure extends SubsystemBase {
                         shooter.getLeft(),
                         shooter.getRight())
                 .withName("RunFlywheelVelocityManual");
+    }
+
+    public Command sotfShooter(Supplier<Pose2d> poseSupplier, Supplier<ChassisSpeeds> velocitySupplier) {
+        return Commands.run(
+                        () -> {
+                            Pose2d robotPose = poseSupplier.get();
+                            ChassisSpeeds speeds = velocitySupplier.get();
+
+                            // ── Vision hub distance override (same pattern as autoSpeedShooter) ──
+                            var hubDistOpt = vision.getHubDistance();
+                            if (hubDistOpt.isPresent()) {
+                                double visionDistM = hubDistOpt.getAsDouble();
+                                lastVisionHubDistanceM = visionDistM;
+                                Translation2d hubPos = FieldConstants.getHubPosition();
+                                Translation2d toRobot =
+                                        robotPose.getTranslation().minus(hubPos);
+                                double odomDistM = toRobot.getNorm();
+                                if (odomDistM > 0.01) {
+                                    Translation2d corrected = hubPos.plus(toRobot.times(visionDistM / odomDistM));
+                                    robotPose = new Pose2d(corrected, robotPose.getRotation());
+                                }
+                            }
+
+                            // Determine the calculation mode from the tunable
+                            CalculationMode mode = CalculationMode.values()[(int) calculationMode.get()];
+
+                            // Call TrajectoryBall with SotF explicitly enabled (does NOT touch global flag)
+                            TrajectoryBall.ShootingParameters params = TrajectoryBall.calculate(
+                                    mode,
+                                    hasHood(),
+                                    robotPose,
+                                    speeds,
+                                    Feet.of(maxHeightFeet.get()),
+                                    Feet.of(targetHeightFeet.get()),
+                                    hoodAngleOffset.get(),
+                                    rpmMultiplier.get(),
+                                    true); // SotF always enabled for turret mode
+
+                            Logger.recordOutput(
+                                    "TurretMode/CalculatedRPM",
+                                    params.flywheelVelocity().in(RPM));
+                            Logger.recordOutput(
+                                    "TurretMode/CalculatedHoodAngleDeg",
+                                    params.hoodAngle().in(Degrees));
+                            Logger.recordOutput(
+                                    "TurretMode/SotFTargetHeadingDeg",
+                                    params.targetHeading().getDegrees());
+
+                            // Hood angle is fixed on this robot — do not call setHoodAngle.
+                            setFlywheelVelocity(params.flywheelVelocity());
+                        },
+                        hood,
+                        shooter.getLeft(),
+                        shooter.getRight())
+                .withName("SotFShooter");
+    }
+
+    public boolean isReadyToFire() {
+        return atTargetVelocity();
     }
 }

@@ -36,12 +36,24 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
+import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 public class DriveCommands {
     private static final double ANGLE_KP = 5.0;
     private static final double ANGLE_KD = 0.4;
     private static final double ANGLE_MAX_VELOCITY = 8.0;
     private static final double ANGLE_MAX_ACCELERATION = 20.0;
+
+    private static final LoggedNetworkNumber AUTO_AIM_KP = new LoggedNetworkNumber("AutoAim/KP", 6.0);
+    private static final LoggedNetworkNumber AUTO_AIM_KD = new LoggedNetworkNumber("AutoAim/KD", 0.3);
+    private static final LoggedNetworkNumber AUTO_AIM_MAX_VELOCITY =
+            new LoggedNetworkNumber("AutoAim/MaxVelocityRadPerSec", 8.0);
+    private static final LoggedNetworkNumber AUTO_AIM_MAX_ACCELERATION =
+            new LoggedNetworkNumber("AutoAim/MaxAccelerationRadPerSec2", 20.0);
+    // Heading tolerance for "aimed" state (degrees)
+    private static final LoggedNetworkNumber AUTO_AIM_TOLERANCE_DEG =
+            new LoggedNetworkNumber("AutoAim/ToleranceDeg", 2.0);
     private static final double FF_START_DELAY = 2.0; // Secs
     private static final double FF_RAMP_RATE = 0.1; // Volts/Sec
     private static final double WHEEL_RADIUS_MAX_VELOCITY = 0.25; // Rad/Sec
@@ -251,6 +263,186 @@ public class DriveCommands {
                         drive)
                 .beforeStarting(() -> aimController.reset(drive.getRotation().getRadians()))
                 .withName("AimAtTag");
+    }
+
+    public static Command autoAimDrive(
+            Drive drive,
+            DoubleSupplier xSupplier,
+            DoubleSupplier ySupplier,
+            DoubleSupplier omegaSupplier,
+            Supplier<Optional<Rotation2d>> hubAngleSupplier) {
+
+        // PID is rebuilt each time the command starts because gains are tunable at runtime.
+        // The controller reference is held in an array so the lambda can capture it mutably.
+        final ProfiledPIDController[] holder = {null};
+
+        return Commands.run(
+                        () -> {
+                            ProfiledPIDController aimController = holder[0];
+
+                            // Rebuild controller if gains changed (cheap comparison)
+                            if (aimController == null) {
+                                aimController = new ProfiledPIDController(
+                                        AUTO_AIM_KP.get(),
+                                        0.0,
+                                        AUTO_AIM_KD.get(),
+                                        new TrapezoidProfile.Constraints(
+                                                AUTO_AIM_MAX_VELOCITY.get(), AUTO_AIM_MAX_ACCELERATION.get()));
+                                aimController.enableContinuousInput(-Math.PI, Math.PI);
+                                aimController.reset(drive.getRotation().getRadians());
+                                holder[0] = aimController;
+                            }
+
+                            // Update gains live (cheap to call every loop)
+                            aimController.setP(AUTO_AIM_KP.get());
+                            aimController.setD(AUTO_AIM_KD.get());
+                            aimController.setConstraints(new TrapezoidProfile.Constraints(
+                                    AUTO_AIM_MAX_VELOCITY.get(), AUTO_AIM_MAX_ACCELERATION.get()));
+
+                            // Get translation from joystick
+                            Translation2d linearVelocity =
+                                    getLinearVelocityFromJoysticks(xSupplier.getAsDouble(), ySupplier.getAsDouble());
+
+                            Optional<Rotation2d> targetAngle = hubAngleSupplier.get();
+                            double omega;
+                            boolean aimed = false;
+
+                            if (targetAngle.isPresent()) {
+                                double pidOutput = aimController.calculate(
+                                        drive.getRotation().getRadians(),
+                                        targetAngle.get().getRadians());
+                                // Feed-forward from profiled setpoint velocity to reduce tracking lag
+                                double ff = aimController.getSetpoint().velocity;
+                                omega = pidOutput + ff;
+
+                                double errorDeg =
+                                        Math.toDegrees(targetAngle.get().getRadians()
+                                                - drive.getRotation().getRadians());
+                                // Normalize to [-180, 180]
+                                errorDeg = Math.IEEEremainder(errorDeg, 360.0);
+                                aimed = Math.abs(errorDeg) < AUTO_AIM_TOLERANCE_DEG.get() && aimController.atGoal();
+
+                                Logger.recordOutput("AutoAim/HeadingErrorDeg", errorDeg);
+                                Logger.recordOutput(
+                                        "AutoAim/TargetHeadingDeg",
+                                        targetAngle.get().getDegrees());
+                            } else {
+                                // No hub tag visible — let driver rotate freely
+                                omega = omegaSupplier.getAsDouble() * drive.getMaxAngularSpeedRadPerSec();
+                                // Keep PID seeded to avoid snap when tag reappears
+                                aimController.reset(drive.getRotation().getRadians());
+                            }
+
+                            Logger.recordOutput("AutoAim/Aimed", aimed);
+                            Logger.recordOutput("AutoAim/HasTarget", targetAngle.isPresent());
+
+                            // Convert to field-relative and send
+                            boolean isFlipped = DriverStation.getAlliance().isPresent()
+                                    && DriverStation.getAlliance().get() == Alliance.Red;
+                            drive.runVelocity(ChassisSpeeds.fromFieldRelativeSpeeds(
+                                    new ChassisSpeeds(
+                                            linearVelocity.getX() * drive.getMaxLinearSpeedMetersPerSec(),
+                                            linearVelocity.getY() * drive.getMaxLinearSpeedMetersPerSec(),
+                                            omega),
+                                    isFlipped
+                                            ? drive.getRotation().plus(new Rotation2d(Math.PI))
+                                            : drive.getRotation()));
+                        },
+                        drive)
+                .beforeStarting(() -> {
+                    // Force rebuild on next run() call
+                    holder[0] = null;
+                })
+                .withName("AutoAimDrive");
+    }
+
+    /**
+     * Returns whether the auto-aim heading tolerance threshold is configured (for external queries). This static
+     * accessor lets other classes (e.g. RobotContainer) read the tolerance.
+     */
+    public static double getAutoAimToleranceDeg() {
+        return AUTO_AIM_TOLERANCE_DEG.get();
+    }
+
+    public static Command turretModeDrive(
+            Drive drive,
+            DoubleSupplier xSupplier,
+            DoubleSupplier ySupplier,
+            Supplier<Optional<Rotation2d>> hubAngleSupplier) {
+
+        final ProfiledPIDController[] holder = {null};
+
+        return Commands.run(
+                        () -> {
+                            ProfiledPIDController aimController = holder[0];
+
+                            if (aimController == null) {
+                                aimController = new ProfiledPIDController(
+                                        AUTO_AIM_KP.get(),
+                                        0.0,
+                                        AUTO_AIM_KD.get(),
+                                        new TrapezoidProfile.Constraints(
+                                                AUTO_AIM_MAX_VELOCITY.get(), AUTO_AIM_MAX_ACCELERATION.get()));
+                                aimController.enableContinuousInput(-Math.PI, Math.PI);
+                                aimController.reset(drive.getRotation().getRadians());
+                                holder[0] = aimController;
+                            }
+
+                            aimController.setP(AUTO_AIM_KP.get());
+                            aimController.setD(AUTO_AIM_KD.get());
+                            aimController.setConstraints(new TrapezoidProfile.Constraints(
+                                    AUTO_AIM_MAX_VELOCITY.get(), AUTO_AIM_MAX_ACCELERATION.get()));
+
+                            Translation2d linearVelocity =
+                                    getLinearVelocityFromJoysticks(xSupplier.getAsDouble(), ySupplier.getAsDouble());
+
+                            Optional<Rotation2d> targetAngle = hubAngleSupplier.get();
+                            double omega;
+                            boolean aimed = false;
+
+                            if (targetAngle.isPresent()) {
+                                double pidOutput = aimController.calculate(
+                                        drive.getRotation().getRadians(),
+                                        targetAngle.get().getRadians());
+                                double ff = aimController.getSetpoint().velocity;
+                                omega = pidOutput + ff;
+
+                                double errorDeg =
+                                        Math.toDegrees(targetAngle.get().getRadians()
+                                                - drive.getRotation().getRadians());
+                                errorDeg = Math.IEEEremainder(errorDeg, 360.0);
+                                aimed = Math.abs(errorDeg) < AUTO_AIM_TOLERANCE_DEG.get() && aimController.atGoal();
+
+                                Logger.recordOutput("TurretMode/HeadingErrorDeg", errorDeg);
+                                Logger.recordOutput(
+                                        "TurretMode/TargetHeadingDeg",
+                                        targetAngle.get().getDegrees());
+                            } else {
+                                // No hub tag — hold current heading (no driver override in turret mode)
+                                omega = aimController.calculate(
+                                        drive.getRotation().getRadians(),
+                                        drive.getRotation().getRadians());
+                            }
+
+                            Logger.recordOutput("TurretMode/Aimed", aimed);
+                            Logger.recordOutput("TurretMode/HasTarget", targetAngle.isPresent());
+
+                            boolean isFlipped = DriverStation.getAlliance().isPresent()
+                                    && DriverStation.getAlliance().get() == Alliance.Red;
+                            drive.runVelocity(ChassisSpeeds.fromFieldRelativeSpeeds(
+                                    new ChassisSpeeds(
+                                            linearVelocity.getX() * drive.getMaxLinearSpeedMetersPerSec(),
+                                            linearVelocity.getY() * drive.getMaxLinearSpeedMetersPerSec(),
+                                            omega),
+                                    isFlipped
+                                            ? drive.getRotation().plus(new Rotation2d(Math.PI))
+                                            : drive.getRotation()));
+                        },
+                        drive)
+                .beforeStarting(() -> {
+                    holder[0] = null;
+                })
+                .withName("TurretModeDrive");
     }
 
     /**
