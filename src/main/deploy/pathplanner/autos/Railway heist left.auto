@@ -30,6 +30,12 @@
           }
         },
         {
+          "type": "named",
+          "data": {
+            "name": "Stop shooter"
+          }
+        },
+        {
           "type": "path",
           "data": {
             "pathName": "Middle hub to fuel"

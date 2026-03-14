@@ -16,16 +16,16 @@
     },
     {
       "anchor": {
-        "x": 1.0,
+        "x": 0.55,
         "y": 2.0
       },
       "prevControl": {
-        "x": 1.3730629139072845,
+        "x": 0.9230629139072846,
         "y": 2.132897350993377
       },
       "nextControl": null,
       "isLocked": false,
-      "linkedName": null
+      "linkedName": "Retreat right side"
     }
   ],
   "rotationTargets": [],
