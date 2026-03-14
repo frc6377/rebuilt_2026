@@ -47,8 +47,8 @@ public class IntakeConstants {
     public static class ExtenderConstants {
 
         public static final double kGearing = 1;
-        public static final MomentOfInertia kMOI = KilogramSquareMeters.of(1.1);
-        public static final Distance kExtenderArmLength = Inches.of(13.75);
+        public static final MomentOfInertia kMOI = KilogramSquareMeters.of(1.5);
+        public static final Distance kExtenderArmLength = Inches.of(12.0);
         public static final double kDownSpeed = 0.05;
 
         public static final Angle kExtenderStowAngle = Degrees.of(0.0);
