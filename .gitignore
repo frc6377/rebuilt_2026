@@ -188,9 +188,17 @@ compile_commands.json
 
 ## HOWDY BOT ADDITIONS
 BuildConstants.java
+.claude\settings.local.json
+.vscode\launch.json
+.vscode\settings.json
 
 simgui-ds.json
 .vscode
+
+
+docs
+.claude/
+nul
 
 
 docs
