@@ -42,8 +42,8 @@ public class RightShooterConstants {
     public static final double flywheelKA = 0.0092333;
 
     // Flywheel current limits
-    public static final Current flywheelCurrentLimitStator = Amps.of(60.0);
-    public static final Current flywheelCurrentLimitSupply = Amps.of(40.0);
+    public static final Current flywheelCurrentLimitStator = Amps.of(70);
+    public static final Current flywheelCurrentLimitSupply = Amps.of(50.0);
     public static final boolean flywheelCurrentLimitStatorEnable = true;
     public static final boolean flywheelCurrentLimitSupplyEnable = true;
 

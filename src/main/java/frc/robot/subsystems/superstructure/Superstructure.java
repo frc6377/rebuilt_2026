@@ -374,7 +374,7 @@ public class Superstructure extends SubsystemBase {
                             Pose2d robotPose;
                             ChassisSpeeds speeds;
 
-                            if (benchModeEnabled.get() > 0.5) {
+                            if (benchModeEnabled.get() > 100) {
                                 // Bench mode: use a virtual pose at the configured distance
                                 double distMeters =
                                         Feet.of(benchModeDistanceFeet.get()).in(Meters);
