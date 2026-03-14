@@ -1,5 +1,6 @@
 package frc.robot.subsystems.indexer;
 
+import static edu.wpi.first.units.Units.RPM;
 import static edu.wpi.first.units.Units.Volts;
 
 import com.ctre.phoenix6.configs.Slot0Configs;
@@ -9,12 +10,9 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.units.measure.AngularVelocity;
 import frc.robot.Constants;
 import frc.robot.util.TunableTalonFX;
-import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 public class IndexerIOReal implements IndexerIO {
     private final TunableTalonFX indexerMotor;
-    private final LoggedNetworkNumber indexerMotorOutput;
-    private final LoggedNetworkNumber indexerMotorReverseOutput;
     private final TalonFXConfiguration indexerMotorConfig;
     private final Slot0Configs indexerPIDConfigs;
 
@@ -41,9 +39,6 @@ public class IndexerIOReal implements IndexerIO {
         indexerMotorConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
         indexerMotorConfig.Slot0 = indexerPIDConfigs;
         indexerMotor.applyConfiguration(indexerMotorConfig);
-
-        indexerMotorOutput = new LoggedNetworkNumber("Indexer/IndexerMotorOutput", IndexerConstants.kCollectorSpeed);
-        indexerMotorReverseOutput = new LoggedNetworkNumber("Indexer/IndexerMotorReverseOutput", 0);
     }
 
     @Override
@@ -65,5 +60,6 @@ public class IndexerIOReal implements IndexerIO {
     public void updateInputs(IndexerIOInputs indexerInputs) {
         indexerMotor.updateTunableGains();
         indexerInputs.motorOutput = Volts.of(indexerMotor.getMotorVoltage().getValueAsDouble());
+        indexerInputs.motorVelocity = RPM.of(indexerMotor.getVelocity().getValueAsDouble() * 60.0);
     }
 }

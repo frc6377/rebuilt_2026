@@ -18,8 +18,6 @@ public interface IndexerIO {
 
     default void setCustomSpeed(double speed) {}
 
-    default void runAtSpeed() {}
-
     default void setVelocity(AngularVelocity velocity) {}
 
     default void updateInputs(IndexerIOInputs indexerInputs) {}

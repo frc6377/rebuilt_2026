@@ -18,12 +18,15 @@ public class IndexerIOSim implements IndexerIO {
     private double indexerAppliedVolts = 0.0;
 
     public IndexerIOSim() {
-        var indexerPlant =
-                LinearSystemId.createFlywheelSystem(DCMotor.getKrakenX60Foc(2), 0.5 * 0.5 * 0.01 * 0.01, 1.0);
+        var indexerPlant = LinearSystemId.createFlywheelSystem(
+                DCMotor.getKrakenX60Foc(1),
+                IndexerConstants.SimConstants.ROLLER_MOI,
+                IndexerConstants.SimConstants.ROLLER_GEARING);
 
         indexerSim = new FlywheelSim(indexerPlant, DCMotor.getKrakenX60Foc(1));
 
-        indexerController = new PIDController(0.001, 0.0005, 0.0);
+        indexerController = new PIDController(
+                IndexerConstants.SimPID.kP, IndexerConstants.SimPID.kI, IndexerConstants.SimPID.kD);
     }
 
     @Override
@@ -32,8 +35,17 @@ public class IndexerIOSim implements IndexerIO {
         indexerAppliedVolts = MathUtil.clamp(indexerFB, -12.0, 12.0);
 
         indexerSim.setInputVoltage(indexerAppliedVolts);
-
         indexerSim.update(Robot.defaultPeriodSecs);
+
+        inputs.motorOutput = Volts.of(indexerAppliedVolts);
+        inputs.motorVelocity = RPM.of(indexerSim.getAngularVelocityRPM());
+    }
+
+    @Override
+    public void setCustomSpeed(double speed) {
+        indexerSetpointRPM = 0.0;
+        indexerAppliedVolts = MathUtil.clamp(speed * 12.0, -12.0, 12.0);
+        indexerSim.setInputVoltage(indexerAppliedVolts);
     }
 
     @Override

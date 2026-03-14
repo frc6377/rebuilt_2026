@@ -37,10 +37,6 @@ import frc.robot.subsystems.hood.Hood;
 import frc.robot.subsystems.hood.HoodIO;
 import frc.robot.subsystems.hood.HoodIOKrakenX60;
 import frc.robot.subsystems.hood.HoodIOSim;
-import frc.robot.subsystems.indexer.Indexer;
-import frc.robot.subsystems.indexer.IndexerIO;
-import frc.robot.subsystems.indexer.IndexerIOReal;
-import frc.robot.subsystems.indexer.IndexerIOSim;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.ShooterConstants;
 import frc.robot.subsystems.shooter.left.LeftShooter;
@@ -111,7 +107,6 @@ public class Superstructure extends SubsystemBase {
         HoodIO hoodIO;
         UpgoerIO leftUpgoerIO;
         UpgoerIO rightUpgoerIO;
-        IndexerIO indexerIO;
 
         switch (Constants.currentMode) {
             case REAL:
@@ -124,7 +119,6 @@ public class Superstructure extends SubsystemBase {
                         ? new UpgoerIOKrakenX60(
                                 Constants.CANIDs.MotorIDs.kRightUpgoerMotorCANID, "RightShooterUpgoer", 1)
                         : new UpgoerIO() {};
-                indexerIO = Constants.EnabledSubsystems.kIndexer ? new IndexerIOReal() : new IndexerIO() {};
                 break;
             case SIM:
                 hoodIO = Constants.EnabledSubsystems.kHood ? new HoodIOSim() : new HoodIO() {};
@@ -134,13 +128,11 @@ public class Superstructure extends SubsystemBase {
                 rightUpgoerIO = Constants.EnabledSubsystems.kShooterUpgoerRight
                         ? new UpgoerIOSim(Constants.CANIDs.MotorIDs.kRightUpgoerMotorCANID, "RightShooterUpgoer")
                         : new UpgoerIO() {};
-                indexerIO = Constants.EnabledSubsystems.kIndexer ? new IndexerIOSim() : new IndexerIO() {};
                 break;
             default:
                 hoodIO = new HoodIO() {};
                 leftUpgoerIO = new UpgoerIO() {};
                 rightUpgoerIO = new UpgoerIO() {};
-                indexerIO = new IndexerIO() {};
                 break;
         }
 
@@ -148,8 +140,6 @@ public class Superstructure extends SubsystemBase {
         this.leftUpgoer = new Upgoer(leftUpgoerIO, "LeftShooterUpgoer", 1);
         this.rightUpgoer = new Upgoer(rightUpgoerIO, "RightShooterUpgoer", 1);
         this.currentShootingCommand = this.runFlywheelVelocityManual();
-        // indexer.setDefaultCommand(
-        //         Commands.run(() -> indexer.setRunning(shooter.isRunning() || isIntaking.getAsBoolean()), indexer));
     }
 
     @Override

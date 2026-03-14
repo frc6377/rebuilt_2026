@@ -29,10 +29,6 @@ public class Indexer extends SubsystemBase {
         return runOnce(() -> indexerIO.setCustomSpeed(speed));
     }
 
-    public Command runPercentOutput(double percent) {
-        return run(() -> indexerIO.setCustomSpeed(percent));
-    }
-
     public Command indexReverse() {
         return run(() -> {
             setpoint = IndexerConstants.kCollectorRPM.times(-1);
@@ -41,9 +37,13 @@ public class Indexer extends SubsystemBase {
     }
 
     public Command index(BooleanSupplier supplier) {
-        return run(() -> {
-            indexerIO.setVelocity(supplier.getAsBoolean() ? IndexerConstants.kCollectorRPM : RotationsPerSecond.zero());
-        });
+        return runEnd(() -> {
+            if (supplier.getAsBoolean()) {
+                indexerIO.setCustomSpeed(IndexerConstants.kCollectorSpeed);
+            } else {
+                indexerIO.stop();
+            }
+        }, indexerIO::stop);
     }
 
     public Command stop() {
@@ -56,7 +56,7 @@ public class Indexer extends SubsystemBase {
     public void setRunning(boolean running) {
         if (running) {
             setpoint = IndexerConstants.kCollectorRPM;
-            indexerIO.setVelocity(IndexerConstants.kCollectorRPM);
+            indexerIO.setCustomSpeed(IndexerConstants.kCollectorSpeed);
         } else {
             setpoint = RotationsPerSecond.zero();
             indexerIO.stop();
