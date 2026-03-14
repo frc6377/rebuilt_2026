@@ -7,25 +7,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Right to HP"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "Extend Intake"
-          }
-        },
-        {
-          "type": "wait",
-          "data": {
-            "waitTime": 4.0
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "HP to right shoot"
+            "pathName": "back up and shoot - left"
           }
         },
         {
@@ -33,11 +15,17 @@
           "data": {
             "name": "AutoShoot"
           }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "retreat left"
+          }
         }
       ]
     }
   },
   "resetOdom": true,
-  "folder": "Las Vegas",
+  "folder": "Back up then shoot",
   "choreoAuto": false
 }

@@ -7,38 +7,38 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Start to middle left"
+            "pathName": "Far left to left shoot"
           }
         },
         {
-          "type": "named",
-          "data": {
-            "name": "Extend Intake"
-          }
-        },
-        {
-          "type": "parallel",
+          "type": "race",
           "data": {
             "commands": [
               {
                 "type": "named",
                 "data": {
-                  "name": "Intake"
+                  "name": "AutoShoot"
                 }
               },
               {
-                "type": "path",
+                "type": "wait",
                 "data": {
-                  "pathName": "Down middle"
+                  "waitTime": 8.0
                 }
               }
             ]
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Through depot"
           }
         }
       ]
     }
   },
   "resetOdom": true,
-  "folder": "Las Angeles",
+  "folder": "Shoot depot shoot",
   "choreoAuto": false
 }

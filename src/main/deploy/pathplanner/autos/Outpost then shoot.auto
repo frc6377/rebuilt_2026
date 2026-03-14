@@ -5,28 +5,27 @@
     "data": {
       "commands": [
         {
+          "type": "path",
+          "data": {
+            "pathName": "Right to HP"
+          }
+        },
+        {
           "type": "named",
           "data": {
             "name": "Extend Intake"
           }
         },
         {
-          "type": "parallel",
+          "type": "wait",
           "data": {
-            "commands": [
-              {
-                "type": "path",
-                "data": {
-                  "pathName": "Loop left to right shoot"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "Intake"
-                }
-              }
-            ]
+            "waitTime": 4.0
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "HP to right shoot"
           }
         },
         {
@@ -39,6 +38,6 @@
     }
   },
   "resetOdom": true,
-  "folder": "Las Angeles",
+  "folder": "Outpost to shoot",
   "choreoAuto": false
 }

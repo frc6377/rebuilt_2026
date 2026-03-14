@@ -7,7 +7,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "back up"
+            "pathName": "back up and shoot - right"
           }
         },
         {
@@ -20,6 +20,6 @@
     }
   },
   "resetOdom": true,
-  "folder": "Denver",
+  "folder": "Back up then shoot",
   "choreoAuto": false
 }
