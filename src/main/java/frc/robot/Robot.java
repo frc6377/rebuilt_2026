@@ -50,7 +50,6 @@ public class Robot extends LoggedRobot {
                 break;
         }
 
-        
         WebServer.start(5800, Filesystem.getDeployDirectory().getPath());
 
         DriverStation.silenceJoystickConnectionWarning(true);
