@@ -3,6 +3,7 @@ package frc.robot.subsystems.indexer;
 import static edu.wpi.first.units.Units.*;
 
 import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import java.util.function.BooleanSupplier;
@@ -21,7 +22,9 @@ public class Indexer extends SubsystemBase {
     public Command index() {
         return run(() -> {
             // setpoint = IndexerConstants.kCollectorRPM;
-            indexerIO.setCustomSpeed(IndexerConstants.kCollectorSpeed);
+            indexerIO.setCustomSpeed(IndexerConstants.kCollectorSpeed
+                    + (IndexerConstants.kCollectorVariableSpeed
+                            * Math.sin(DriverStation.getMatchTime() * Math.PI / 2)));
         });
     }
 

@@ -40,7 +40,7 @@ public class Robot extends LoggedRobot {
         switch (Constants.currentMode) {
             case REAL:
                 // Running on a real robot, log to a USB stick ("/U/logs")
-                Logger.addDataReceiver(new WPILOGWriter("/media/sda1/logs/"));
+                Logger.addDataReceiver(new WPILOGWriter("/U/logs"));
                 Logger.addDataReceiver(new NT4Publisher());
                 break;
 
@@ -50,13 +50,15 @@ public class Robot extends LoggedRobot {
                 break;
         }
 
-        SignalLogger.setPath("/media/sda1/logs/");
+        
         WebServer.start(5800, Filesystem.getDeployDirectory().getPath());
 
         DriverStation.silenceJoystickConnectionWarning(true);
 
         // Start AdvantageKit logger
         Logger.start();
+        SignalLogger.setPath("/media/sda1/logs/");
+        SignalLogger.start();
 
         // SignalLogger.stop();
 
