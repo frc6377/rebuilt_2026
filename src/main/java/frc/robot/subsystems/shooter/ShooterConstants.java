@@ -2,6 +2,7 @@ package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.*;
 
+import com.ctre.phoenix6.signals.InvertedValue;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.units.measure.*;
 import frc.robot.Constants;
@@ -35,7 +36,7 @@ public class ShooterConstants {
     public static final AngularVelocity kMaxFlywheelVelocity = RotationsPerSecond.of(100.0); // 6000 RPM
 
     // Velocity tolerance
-    public static final AngularVelocity kFlywheelVelocityTolerance = RPM.of(50);
+    public static final AngularVelocity kFlywheelVelocityTolerance = RPM.of(150.0);
     public static final AngularVelocity kMaxVelocityDifference =
             RotationsPerSecond.of(500.0 / 60.0); // 500 RPM difference
 
@@ -91,4 +92,117 @@ public class ShooterConstants {
                     distance.in(Meters), distanceToAngularVelocity.get(distance).in(RPM));
         }
     }
+
+    public record ShooterConfig(
+            String name,
+            int flywheelLeaderId,
+            int flywheelFollowerId,
+            int spinMotorId,
+            String canBusName,
+            boolean enabled,
+            boolean followerEnabled,
+            boolean spinMotorEnabled,
+            InvertedValue flywheelInverted,
+            InvertedValue spinInverted,
+            // Ramp rates
+            Time flywheelOpenLoopRamp,
+            Time spinOpenLoopRamp,
+            Time flywheelClosedLoopRamp,
+            Time spinClosedLoopRamp,
+            // Flywheel PID
+            double flywheelKP,
+            double flywheelKI,
+            double flywheelKD,
+            double flywheelKV,
+            double flywheelKS,
+            double flywheelKA,
+            // Spin motor PID
+            double spinKP,
+            double spinKI,
+            double spinKD,
+            double spinKV,
+            double spinKS,
+            // Current limits
+            Current flywheelCurrentLimitStator,
+            Current flywheelCurrentLimitSupply,
+            boolean flywheelCurrentLimitStatorEnable,
+            boolean flywheelCurrentLimitSupplyEnable,
+            Current spinCurrentLimitStator,
+            Current spinCurrentLimitSupply,
+            boolean spinCurrentLimitStatorEnable,
+            boolean spinCurrentLimitSupplyEnable,
+            // Default ratios
+            double defaultSpinRatio) {}
+
+    public static final ShooterConfig leftConfig = new ShooterConfig(
+            "LeftShooter",
+            Constants.CANIDs.MotorIDs.kShooterFlywheelLeftMotorCANID,
+            Constants.CANIDs.MotorIDs.kShooterFlywheelLeftFollowerCANID,
+            Constants.CANIDs.MotorIDs.kShooterSpinMotorLeftCANID,
+            "rio",
+            Constants.EnabledSubsystems.kShooterLeft,
+            true,
+            false,
+            InvertedValue.Clockwise_Positive,
+            InvertedValue.CounterClockwise_Positive,
+            Seconds.of(0.05),
+            Seconds.of(0.05),
+            Seconds.of(0.05),
+            Seconds.of(0.05),
+            0.17345,
+            0.0,
+            0.0,
+            0.11725,
+            0.080935,
+            0.0092333,
+            0.3,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            Amps.of(70),
+            Amps.of(50),
+            true,
+            true,
+            Amps.of(70.0),
+            Amps.of(50.0),
+            true,
+            true,
+            0.0);
+
+    public static final ShooterConfig rightConfig = new ShooterConfig(
+            "RightShooter",
+            Constants.CANIDs.MotorIDs.kShooterFlywheelRightMotorCANID,
+            Constants.CANIDs.MotorIDs.kShooterFlywheelRightFollowerCANID,
+            Constants.CANIDs.MotorIDs.kShooterSpinMotorRightCANID,
+            "rio",
+            Constants.EnabledSubsystems.kShooterRight,
+            true,
+            false,
+            InvertedValue.Clockwise_Positive,
+            InvertedValue.Clockwise_Positive,
+            Seconds.of(0.05),
+            Seconds.of(0.05),
+            Seconds.of(0.05),
+            Seconds.of(0.05),
+            0.17345,
+            0.0,
+            0.0,
+            0.11725,
+            0.080935,
+            0.0092333,
+            0.3,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            Amps.of(70),
+            Amps.of(50.0),
+            true,
+            true,
+            Amps.of(60.0),
+            Amps.of(40.0),
+            true,
+            true,
+            0.0);
 }

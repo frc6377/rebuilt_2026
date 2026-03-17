@@ -1,4 +1,4 @@
-package frc.robot.subsystems.shooter.left;
+package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.*;
 
@@ -10,9 +10,8 @@ import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.simulation.FlywheelSim;
 import frc.robot.Robot;
-import frc.robot.subsystems.shooter.ShooterConstants;
 
-public class LeftShooterIOSim implements LeftShooterIO {
+public class BaseShooterIOSim implements BaseShooterIO {
     private final FlywheelSim flywheelSim;
     private final FlywheelSim spinSim;
     private final PIDController flywheelController;
@@ -25,7 +24,7 @@ public class LeftShooterIOSim implements LeftShooterIO {
     private double flywheelAppliedVolts = 0.0;
     private double spinAppliedVolts = 0.0;
 
-    public LeftShooterIOSim() {
+    public BaseShooterIOSim(ShooterConstants.ShooterConfig config) {
         var flywheelPlant = LinearSystemId.createFlywheelSystem(
                 DCMotor.getKrakenX60Foc(2),
                 0.5 * 0.5 * ShooterConstants.flywheelRadius.in(Meters) * ShooterConstants.flywheelRadius.in(Meters),
@@ -46,7 +45,7 @@ public class LeftShooterIOSim implements LeftShooterIO {
     }
 
     @Override
-    public void updateInputs(LeftShooterIOInputs inputs) {
+    public void updateInputs(BaseShooterIOInputs inputs) {
         double flywheelFF = flywheelFeedforward.calculate(flywheelSetpointRPM);
         double flywheelFB = flywheelController.calculate(flywheelSim.getAngularVelocityRPM(), flywheelSetpointRPM);
         flywheelAppliedVolts = MathUtil.clamp(flywheelFF + flywheelFB, -12.0, 12.0);

@@ -41,11 +41,10 @@ import frc.robot.subsystems.indexer.Indexer;
 import frc.robot.subsystems.indexer.IndexerIO;
 import frc.robot.subsystems.indexer.IndexerIOReal;
 import frc.robot.subsystems.indexer.IndexerIOSim;
+import frc.robot.subsystems.shooter.BaseShooter;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.ShooterConstants;
 import frc.robot.subsystems.shooter.ShooterConstants.CalculationMode;
-import frc.robot.subsystems.shooter.left.LeftShooter;
-import frc.robot.subsystems.shooter.right.RightShooter;
 import frc.robot.subsystems.upgoer.Upgoer;
 import frc.robot.subsystems.upgoer.UpgoerConstants;
 import frc.robot.subsystems.upgoer.UpgoerIO;
@@ -60,33 +59,8 @@ import java.util.function.Supplier;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
 import org.littletonrobotics.junction.Logger;
-import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
-/** Superstructure subsystem that owns the shooter and hood. */
 public class Superstructure extends SubsystemBase {
-    // Trajectory target heights (tunable via NetworkTables)
-    private static final LoggedNetworkNumber maxHeightFeet =
-            new LoggedNetworkNumber("Shooting/MaxHeightFeet", ShooterConstants.defaultMaxHeightFeet);
-    private static final LoggedNetworkNumber targetHeightFeet =
-            new LoggedNetworkNumber("Shooting/TargetHeightFeet", ShooterConstants.defaultTargetHeightFeet);
-
-    // Fine-tuning offsets
-    private static final LoggedNetworkNumber hoodAngleOffset =
-            new LoggedNetworkNumber("Shooting/HoodAngleOffset", ShooterConstants.defaultHoodAngleOffset);
-    private static final LoggedNetworkNumber rpmMultiplier =
-            new LoggedNetworkNumber("Shooting/RPMMultiplier", ShooterConstants.defaultRpmMultiplier);
-    private static final LoggedNetworkNumber calculationMode =
-            new LoggedNetworkNumber("Shooting/CalculationMode", ShooterConstants.kDefaultCalculationMode.ordinal());
-    private static final LoggedNetworkNumber manualShootingSpeedRPM =
-            new LoggedNetworkNumber("Shooting/ManualShootingSpeedRPM", ShooterConstants.kManualShootingSpeedRPM);
-    private static final LoggedNetworkNumber manualShootingEnabled = new LoggedNetworkNumber(
-            "Shooting/ManualShootingEnabled", ShooterConstants.kManualShootingEnabled ? 1.0 : 0.0);
-    // Testing / Bench Mode
-    private static final LoggedNetworkNumber benchModeEnabled =
-            new LoggedNetworkNumber("Shooting/BenchMode/Enabled", ShooterConstants.defaultBenchModeEnabled);
-    private static final LoggedNetworkNumber benchModeDistanceFeet = new LoggedNetworkNumber(
-            "Shooting/BenchMode/DistanceMeters", ShooterConstants.defaultBenchModeDistanceMeters);
-
     private final Shooter shooter;
     private final Hood hood;
     private final Upgoer leftUpgoer;
@@ -264,11 +238,11 @@ public class Superstructure extends SubsystemBase {
                 hood, shooter.getLeft(), gamePieceTrajectorySimulation, driveSimulation, poseResetter);
     }
 
-    public LeftShooter getLeftShooter() {
+    public BaseShooter getLeftShooter() {
         return shooter.getLeft();
     }
 
-    public RightShooter getRightShooter() {
+    public BaseShooter getRightShooter() {
         return shooter.getRight();
     }
 
@@ -392,10 +366,10 @@ public class Superstructure extends SubsystemBase {
                             Pose2d robotPose;
                             ChassisSpeeds speeds;
 
-                            if (benchModeEnabled.get() > 100) {
+                            if (SuperstructureConstants.benchModeEnabled.get() > 100) {
                                 // Bench mode: use a virtual pose at the configured distance
-                                double distMeters =
-                                        Feet.of(benchModeDistanceFeet.get()).in(Meters);
+                                double distMeters = Feet.of(SuperstructureConstants.benchModeDistanceFeet.get())
+                                        .in(Meters);
                                 Translation2d hubPos = FieldConstants.getHubPosition();
                                 robotPose = new Pose2d(hubPos.getX() - distMeters, hubPos.getY(), new Rotation2d());
                                 speeds = new ChassisSpeeds();
@@ -421,7 +395,7 @@ public class Superstructure extends SubsystemBase {
                                     Feet.of(8),
                                     Meters.of(FieldConstants.Hub.height),
                                     0,
-                                    0,
+                                    1,
                                     false);
                             Logger.recordOutput(
                                     "Shooting/DistanceToHub",
@@ -592,7 +566,7 @@ public class Superstructure extends SubsystemBase {
     }
 
     public Command autoChooseShootingCommand(Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier) {
-        if ((manualShootingEnabled.get() == 1.0) || vision.getTagCount() == 0) {
+        if ((SuperstructureConstants.manualShootingEnabled.get() == 1.0) || vision.getTagCount() == 0) {
             return runFlywheelVelocityManual();
         } else if (vision.getTagCount(0) + vision.getTagCount(1) == 1) {
             return autoSpeedShooter(drive);
@@ -620,13 +594,13 @@ public class Superstructure extends SubsystemBase {
 
     public Command setManualShootingEnabledCommand(boolean enabled) {
         return Commands.runOnce(() -> {
-                    manualShootingEnabled.set(enabled ? 1.0 : 0.0);
+                    SuperstructureConstants.manualShootingEnabled.set(enabled ? 1.0 : 0.0);
                 })
                 .withName("SetManualShootingEnabled:" + enabled);
     }
 
     public Command runToggledSpeed(Drive drive) {
-        if (manualShootingEnabled.get() == 1.0) {
+        if (SuperstructureConstants.manualShootingEnabled.get() == 1.0) {
             return runFlywheelVelocityManual();
         } else {
             return autoSpeedShooter(drive);
@@ -666,7 +640,8 @@ public class Superstructure extends SubsystemBase {
                             }
 
                             // Determine the calculation mode from the tunable
-                            CalculationMode mode = CalculationMode.values()[(int) calculationMode.get()];
+                            CalculationMode mode =
+                                    CalculationMode.values()[(int) SuperstructureConstants.calculationMode.get()];
 
                             // Call TrajectoryBall with SotF explicitly enabled (does NOT touch global flag)
                             TrajectoryBall.ShootingParameters params = TrajectoryBall.calculate(
@@ -674,10 +649,10 @@ public class Superstructure extends SubsystemBase {
                                     hasHood(),
                                     robotPose,
                                     speeds,
-                                    Feet.of(maxHeightFeet.get()),
-                                    Feet.of(targetHeightFeet.get()),
-                                    hoodAngleOffset.get(),
-                                    rpmMultiplier.get(),
+                                    Feet.of(SuperstructureConstants.maxHeightFeet.get()),
+                                    Feet.of(SuperstructureConstants.targetHeightFeet.get()),
+                                    SuperstructureConstants.hoodAngleOffset.get(),
+                                    SuperstructureConstants.rpmMultiplier.get(),
                                     true); // SotF always enabled for turret mode
 
                             Logger.recordOutput(

@@ -30,8 +30,8 @@ import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Constants;
 import frc.robot.FieldConstants;
 import frc.robot.subsystems.hood.Hood;
+import frc.robot.subsystems.shooter.BaseShooter;
 import frc.robot.subsystems.shooter.ShooterConstants;
-import frc.robot.subsystems.shooter.left.LeftShooter;
 import frc.robot.subsystems.superstructure.GamePieceTrajectorySimulation;
 import frc.robot.subsystems.superstructure.Superstructure;
 import java.util.ArrayList;
@@ -71,7 +71,7 @@ public class ShooterCalibrationCommand extends Command {
 
     // Subsystems
     private final Hood hood;
-    private final LeftShooter shooter;
+    private final BaseShooter shooter;
     private final GamePieceTrajectorySimulation trajectorySim;
     private final SwerveDriveSimulation driveSim;
     private final Consumer<Pose2d> poseResetter;
@@ -139,7 +139,7 @@ public class ShooterCalibrationCommand extends Command {
      */
     public ShooterCalibrationCommand(
             Hood hood,
-            LeftShooter shooter,
+            BaseShooter shooter,
             GamePieceTrajectorySimulation trajectorySim,
             SwerveDriveSimulation driveSim,
             Consumer<Pose2d> poseResetter) {
@@ -200,7 +200,7 @@ public class ShooterCalibrationCommand extends Command {
      */
     public ShooterCalibrationCommand(
             Hood hood,
-            LeftShooter shooter,
+            BaseShooter shooter,
             GamePieceTrajectorySimulation trajectorySim,
             SwerveDriveSimulation driveSim,
             Consumer<Pose2d> poseResetter,
