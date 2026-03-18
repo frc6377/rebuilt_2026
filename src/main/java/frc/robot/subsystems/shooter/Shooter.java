@@ -16,64 +16,52 @@ package frc.robot.subsystems.shooter;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Constants;
-import frc.robot.subsystems.shooter.left.*;
-import frc.robot.subsystems.shooter.right.*;
 
 /**
  * Container class for the left and right shooter subsystems. Handles initialization based on the robot mode and
  * EnabledSubsystems flags.
  */
 public class Shooter {
-    private final LeftShooter left;
-    private final RightShooter right;
+    private final BaseShooter left;
+    private final BaseShooter right;
 
     public Shooter() {
-        LeftShooterIO leftIO;
-        RightShooterIO rightIO;
+        BaseShooterIO leftIO;
+        BaseShooterIO rightIO;
 
         // Choose Left IO
         if (Constants.EnabledSubsystems.kShooterLeft) {
-            switch (Constants.currentMode) {
-                case REAL:
-                    leftIO = new LeftShooterIOKrakenX60();
-                    break;
-                case SIM:
-                    leftIO = new LeftShooterIOSim();
-                    break;
-                default:
-                    leftIO = new LeftShooterIO() {};
-                    break;
-            }
+            leftIO = switch (Constants.currentMode) {
+                case REAL -> new BaseShooterIOKrakenX60(ShooterConstants.leftConfig);
+                case SIM -> new BaseShooterIOSim(ShooterConstants.leftConfig);
+                default -> new BaseShooterIO() {
+                };
+            };
         } else {
-            leftIO = new LeftShooterIO() {};
+            leftIO = new BaseShooterIO() {};
         }
 
         // Choose Right IO
         if (Constants.EnabledSubsystems.kShooterRight) {
-            switch (Constants.currentMode) {
-                case REAL:
-                    rightIO = new RightShooterIOKrakenX60();
-                    break;
-                case SIM:
-                    rightIO = new RightShooterIOSim();
-                    break;
-                default:
-                    rightIO = new RightShooterIO() {};
-                    break;
-            }
+            rightIO = switch (Constants.currentMode) {
+                case REAL -> new BaseShooterIOKrakenX60(ShooterConstants.rightConfig);
+                case SIM -> new BaseShooterIOSim(ShooterConstants.rightConfig);
+                default -> new BaseShooterIO() {
+                };
+            };
         } else {
-            rightIO = new RightShooterIO() {};
+            rightIO = new BaseShooterIO() {};
         }
 
-        left = new LeftShooter(leftIO);
-        right = new RightShooter(rightIO);
+        left = new BaseShooter(leftIO, ShooterConstants.leftConfig);
+        right = new BaseShooter(rightIO, ShooterConstants.rightConfig);
     }
 
-    public LeftShooter getLeft() {
+    public BaseShooter getLeft() {
         return left;
     }
 
-    public RightShooter getRight() {
+    public BaseShooter getRight() {
         return right;
     }
 

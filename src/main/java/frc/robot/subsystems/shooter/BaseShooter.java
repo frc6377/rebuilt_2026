@@ -1,4 +1,4 @@
-package frc.robot.subsystems.shooter.right;
+package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.*;
 
@@ -8,35 +8,33 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
-import frc.robot.subsystems.shooter.ShooterConstants;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
-/** Right shooter subsystem. */
-public class RightShooter extends SubsystemBase {
-    private final RightShooterIO io;
-    private final RightShooterIOInputsAutoLogged inputs = new RightShooterIOInputsAutoLogged();
+/** Base shooter subsystem. */
+public class BaseShooter extends SubsystemBase {
+    private final BaseShooterIO io;
+    private final BaseShooterIOInputsAutoLogged inputs = new BaseShooterIOInputsAutoLogged();
+    private final ShooterConstants.ShooterConfig config;
 
     private final SysIdRoutine sysIdRoutine;
     // Tunable spin ratio
-    private final LoggedNetworkNumber spinRatio =
-            new LoggedNetworkNumber("RightShooter/SpinRatio", RightShooterConstants.defaultSpinRatio);
+    private final LoggedNetworkNumber spinRatio;
 
     // Setpoints
-    @AutoLogOutput(key = "RightShooter/FlywheelSetpoint")
     private AngularVelocity flywheelSetpoint = RPM.of(0.0);
-
-    @AutoLogOutput(key = "RightShooter/SpinSetpoint")
     private AngularVelocity spinSetpoint = RPM.of(0.0);
 
     // Failure state
-    @AutoLogOutput(key = "RightShooter/FlywheelFailed")
     private boolean flywheelFailed = false;
 
-    public RightShooter(RightShooterIO io) {
+    public BaseShooter(BaseShooterIO io, ShooterConstants.ShooterConfig config) {
         this.io = io;
+        this.config = config;
+        this.spinRatio = new LoggedNetworkNumber(config.name() + "/SpinRatio", config.defaultSpinRatio());
+
         sysIdRoutine = new SysIdRoutine(
                 new SysIdRoutine.Config(
                         null, // Use default ramp rate (1 V/s)
@@ -50,19 +48,19 @@ public class RightShooter extends SubsystemBase {
     @Override
     public void periodic() {
         io.updateInputs(inputs);
-        Logger.processInputs("RightShooter", inputs);
-        Logger.recordOutput("RightShooter/Enabled", RightShooterConstants.enabled);
-        Logger.recordOutput("RightShooter/FollowerEnabled", RightShooterConstants.followerEnabled);
-        Logger.recordOutput("RightShooter/SpinMotorEnabled", RightShooterConstants.spinMotorEnabled);
-        Logger.recordOutput("RightShooter/FlywheelFailed", flywheelFailed);
-        Logger.recordOutput("RightShooter/FlywheelSetpoint", flywheelSetpoint);
-        Logger.recordOutput("RightShooter/SpinSetpoint", spinSetpoint);
-        Logger.recordOutput("RightShooter/SpinRatio", spinRatio.get());
+        Logger.processInputs(config.name(), inputs);
+        Logger.recordOutput(config.name() + "/Enabled", config.enabled());
+        Logger.recordOutput(config.name() + "/FollowerEnabled", config.followerEnabled());
+        Logger.recordOutput(config.name() + "/SpinMotorEnabled", config.spinMotorEnabled());
+        Logger.recordOutput(config.name() + "/FlywheelFailed", flywheelFailed);
+        Logger.recordOutput(config.name() + "/FlywheelSetpoint", flywheelSetpoint);
+        Logger.recordOutput(config.name() + "/SpinSetpoint", spinSetpoint);
+        Logger.recordOutput(config.name() + "/SpinRatio", spinRatio.get());
         if (getCurrentCommand() != null) {
             Logger.recordOutput(
-                    "RightShooter/CurrentCommand", getCurrentCommand().getName());
+                    config.name() + "/CurrentCommand", getCurrentCommand().getName());
         } else {
-            Logger.recordOutput("RightShooter/CurrentCommand", "None");
+            Logger.recordOutput(config.name() + "/CurrentCommand", "None");
         }
     }
 
@@ -76,7 +74,7 @@ public class RightShooter extends SubsystemBase {
         double currentSpinRatio = spinRatio.get();
         spinSetpoint = RPM.of(velocity.in(RPM) * currentSpinRatio);
 
-        if (RightShooterConstants.enabled && !flywheelFailed) {
+        if (config.enabled() && !flywheelFailed) {
             io.setFlywheelVelocity(velocity);
             io.setSpinVelocity(spinSetpoint);
         } else {
@@ -88,7 +86,7 @@ public class RightShooter extends SubsystemBase {
     /** Set spin motor velocity directly. */
     public void setSpinVelocity(AngularVelocity velocity) {
         spinSetpoint = velocity;
-        if (RightShooterConstants.enabled && !flywheelFailed) {
+        if (config.enabled() && !flywheelFailed) {
             io.setSpinVelocity(velocity);
         } else {
             io.setSpinVelocity(RPM.of(0.0));
@@ -116,7 +114,7 @@ public class RightShooter extends SubsystemBase {
     }
 
     /** Check if flywheel is at target velocity. */
-    @AutoLogOutput(key = "RightShooter/AtTargetVelocity")
+    @AutoLogOutput(key = "AtTargetVelocity")
     public boolean atTargetVelocity() {
         AngularVelocity tolerance = ShooterConstants.kFlywheelVelocityTolerance;
         return flywheelFailed
@@ -135,26 +133,36 @@ public class RightShooter extends SubsystemBase {
         return Math.abs(flywheelSetpoint.in(RPM)) > 1.0;
     }
 
+    @AutoLogOutput(key = "FlywheelSetpoint")
+    public AngularVelocity getFlywheelSetpoint() {
+        return flywheelSetpoint;
+    }
+
+    @AutoLogOutput(key = "SpinSetpoint")
+    public AngularVelocity getSpinSetpoint() {
+        return spinSetpoint;
+    }
+
     // ========== Command Factory Methods ==========
 
     public Command spinUpFlywheels(AngularVelocity velocity) {
-        return Commands.runOnce(() -> setFlywheelVelocity(velocity), this).withName("RightSpinUp");
+        return Commands.runOnce(() -> setFlywheelVelocity(velocity), this).withName(config.name() + "SpinUp");
     }
 
     public Command spinUpFlywheels(Supplier<AngularVelocity> velocitySupplier) {
         return Commands.run(() -> setFlywheelVelocity(velocitySupplier.get()), this)
-                .withName("RightSpinUp");
+                .withName(config.name() + "SpinUp");
     }
 
     public Command stopCommand() {
-        return Commands.runOnce(this::stop, this).withName("RightStop");
+        return Commands.runOnce(this::stop, this).withName(config.name() + "Stop");
     }
 
     public Command waitUntilReady() {
-        return Commands.waitUntil(this::atTargetVelocity).withName("RightWaitUntilReady");
+        return Commands.waitUntil(this::atTargetVelocity).withName(config.name() + "WaitUntilReady");
     }
 
     public Command spinUpAndWait(AngularVelocity velocity) {
-        return spinUpFlywheels(velocity).andThen(waitUntilReady()).withName("RightSpinUpAndWait");
+        return spinUpFlywheels(velocity).andThen(waitUntilReady()).withName(config.name() + "SpinUpAndWait");
     }
 }

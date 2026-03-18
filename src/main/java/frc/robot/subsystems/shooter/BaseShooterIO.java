@@ -1,13 +1,13 @@
-package frc.robot.subsystems.shooter.left;
+package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.*;
 
 import edu.wpi.first.units.measure.*;
 import org.littletonrobotics.junction.AutoLog;
 
-public interface LeftShooterIO {
+public interface BaseShooterIO {
     @AutoLog
-    class LeftShooterIOInputs {
+    class BaseShooterIOInputs {
         public AngularVelocity flywheelVelocity = RPM.of(0.0);
         public Voltage flywheelAppliedVoltage = Volts.of(0.0);
         public Current flywheelCurrent = Amps.of(0.0);
@@ -20,15 +20,17 @@ public interface LeftShooterIO {
     }
 
     /** Updates the set of loggable inputs. */
-    default void updateInputs(LeftShooterIOInputs inputs) {}
+    default void updateInputs(BaseShooterIOInputs inputs) {}
 
     /** Set flywheel velocity. */
     default void setFlywheelVelocity(AngularVelocity velocity) {}
 
     /** Set spin motor velocity. */
     default void setSpinVelocity(AngularVelocity velocity) {}
+
     /** Set flywheel voltage. */
     default void setFlywheelVoltage(Voltage voltage) {}
+
     /** Stop all motors. */
     default void stop() {}
 }
