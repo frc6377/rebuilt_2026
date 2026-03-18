@@ -34,9 +34,7 @@ public class Shooter {
             leftIO = switch (Constants.currentMode) {
                 case REAL -> new BaseShooterIOKrakenX60(ShooterConstants.leftConfig);
                 case SIM -> new BaseShooterIOSim(ShooterConstants.leftConfig);
-                default -> new BaseShooterIO() {
-                };
-            };
+                default -> new BaseShooterIO() {};};
         } else {
             leftIO = new BaseShooterIO() {};
         }
@@ -46,9 +44,7 @@ public class Shooter {
             rightIO = switch (Constants.currentMode) {
                 case REAL -> new BaseShooterIOKrakenX60(ShooterConstants.rightConfig);
                 case SIM -> new BaseShooterIOSim(ShooterConstants.rightConfig);
-                default -> new BaseShooterIO() {
-                };
-            };
+                default -> new BaseShooterIO() {};};
         } else {
             rightIO = new BaseShooterIO() {};
         }

@@ -41,10 +41,9 @@ import frc.robot.subsystems.indexer.Indexer;
 import frc.robot.subsystems.indexer.IndexerIO;
 import frc.robot.subsystems.indexer.IndexerIOReal;
 import frc.robot.subsystems.indexer.IndexerIOSim;
+import frc.robot.subsystems.shooter.BaseShooter;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.ShooterConstants;
-import frc.robot.subsystems.shooter.left.LeftShooter;
-import frc.robot.subsystems.shooter.right.RightShooter;
 import frc.robot.subsystems.upgoer.Upgoer;
 import frc.robot.subsystems.upgoer.UpgoerConstants;
 import frc.robot.subsystems.upgoer.UpgoerIO;
@@ -263,11 +262,11 @@ public class Superstructure extends SubsystemBase {
                 hood, shooter.getLeft(), gamePieceTrajectorySimulation, driveSimulation, poseResetter);
     }
 
-    public LeftShooter getLeftShooter() {
+    public BaseShooter getLeftShooter() {
         return shooter.getLeft();
     }
 
-    public RightShooter getRightShooter() {
+    public BaseShooter getRightShooter() {
         return shooter.getRight();
     }
 
