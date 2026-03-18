@@ -397,6 +397,9 @@ public class RobotContainer {
         OIController.outtake().whileTrue(intake.outtakeRollerCommand());
         OIController.zeroIntake().onTrue(intake.zeroIntake());
         OIController.toggleIntakeState().onTrue(intake.toggleIntake());
+
+        OIController.declimb().whileTrue(climb.climbDown());
+        OIController.climb_l1().whileTrue(climb.climbUp());
     }
 
     /**
