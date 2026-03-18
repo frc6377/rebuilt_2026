@@ -19,7 +19,7 @@ import frc.robot.Constants.EnabledSubsystems;
 
 public class ClimbConstants {
     public class PIDF {
-        public static final double kP = 50;
+        public static final double kP = 20;
         public static final double kI = 0;
         public static final double kD = 0;
         public static final double kS = 0;
@@ -73,7 +73,7 @@ public class ClimbConstants {
 
     // Sim Constants
     public static final DCMotor kClimbGearBox = DCMotor.getKrakenX60(1);
-    public static final double kClimbGearRatio = 135;
+    public static final double kClimbGearRatio = 9 * 5 * 3;
     public static final Mass kCarriageMass = Pounds.of(2);
     public static final Distance kElevatorDrumRadius = Inches.of(0.8596);
     public static final Distance kElevatorDrumCircumference =
@@ -82,7 +82,7 @@ public class ClimbConstants {
     public static final Distance kClimbMaxHeight = Inches.of(30);
     public static final boolean kSimulateGravity = true;
     public static final Distance kStartHeight = Inches.of(0);
-    public static final double kClimbSpeed = 0.1;
+    public static final double kClimbSpeed = 0.01;
     public static final int kLimitSwitchPort = 0;
 
     public static final double kAppliedVolts = 0.0;

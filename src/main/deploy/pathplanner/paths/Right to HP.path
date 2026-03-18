@@ -3,29 +3,29 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 3.55,
-        "y": 4.0
+        "x": 4.135021929824561,
+        "y": 0.47699561403508706
       },
       "prevControl": null,
       "nextControl": {
-        "x": 3.05,
-        "y": 4.0
+        "x": 4.831855581225654,
+        "y": 0.4316307452494535
       },
       "isLocked": false,
-      "linkedName": "Against front of Hub"
+      "linkedName": "bottom side start"
     },
     {
       "anchor": {
-        "x": 2.5,
-        "y": 4.0
+        "x": 0.5097039473684211,
+        "y": 0.66
       },
       "prevControl": {
-        "x": 3.0,
-        "y": 4.0
+        "x": 0.265044466094519,
+        "y": 0.7113978425888204
       },
       "nextControl": null,
       "isLocked": false,
-      "linkedName": null
+      "linkedName": "Human Player"
     }
   ],
   "rotationTargets": [],
@@ -33,7 +33,7 @@
   "pointTowardsZones": [],
   "eventMarkers": [],
   "globalConstraints": {
-    "maxVelocity": 1.0,
+    "maxVelocity": 3.0,
     "maxAcceleration": 3.0,
     "maxAngularVelocity": 540.0,
     "maxAngularAcceleration": 720.0,
@@ -48,7 +48,7 @@
   "folder": null,
   "idealStartingState": {
     "velocity": 0,
-    "rotation": 0.0
+    "rotation": -0.4441444331119302
   },
   "useDefaultConstraints": true
 }

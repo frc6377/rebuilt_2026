@@ -14,6 +14,7 @@
 package frc.robot.subsystems.superstructure;
 
 import static edu.wpi.first.units.Units.*;
+import static java.lang.Math.round;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -50,6 +51,7 @@ import frc.robot.subsystems.upgoer.UpgoerIO;
 import frc.robot.subsystems.upgoer.UpgoerIOKrakenX60;
 import frc.robot.subsystems.upgoer.UpgoerIOSim;
 import frc.robot.subsystems.vision.Vision;
+import frc.robot.util.OILayer.OI;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.DoubleSupplier;
@@ -82,57 +84,98 @@ public class Superstructure extends SubsystemBase {
     private static final LoggedNetworkNumber benchModeEnabled =
             new LoggedNetworkNumber("Shooting/BenchMode/Enabled", ShooterConstants.defaultBenchModeEnabled);
     private static final LoggedNetworkNumber benchModeDistanceFeet = new LoggedNetworkNumber(
-            "Shooting/BenchMode/DistanceMeters>", ShooterConstants.defaultBenchModeDistanceMeters);
+            "Shooting/BenchMode/DistanceMeters", ShooterConstants.defaultBenchModeDistanceMeters);
 
     private final Shooter shooter;
     private final Hood hood;
-    private final Upgoer upgoer;
+    private final Upgoer leftUpgoer;
+    private final Upgoer rightUpgoer;
     private final Indexer indexer;
+    private final Vision vision;
+    private final OI oi;
     private final RobotState robotState;
     private GamePieceTrajectorySimulation gamePieceTrajectorySimulation;
     private AngularVelocity manualShootingVelocity = RPM.of(ShooterConstants.kManualShootingSpeedRPM);
+    private Command currentShootingCommand;
+    private double lastVisionHubDistanceM = 0.0;
     /** Creates the superstructure and selects IO implementations by mode. */
-    public Superstructure(BooleanSupplier isIntaking) {
+    public Superstructure(BooleanSupplier isIntaking, Vision vision, OI oi) {
         RobotState createdState = RobotState.getInstance();
         if (createdState == null) {
             createdState = RobotState.create();
         }
         this.robotState = createdState;
+        this.vision = vision;
 
         this.shooter = new Shooter();
-
+        this.oi = oi;
         HoodIO hoodIO;
-        UpgoerIO upgoerIO;
+        UpgoerIO leftUpgoerIO;
+        UpgoerIO rightUpgoerIO;
         IndexerIO indexerIO;
 
         switch (Constants.currentMode) {
             case REAL:
                 hoodIO = Constants.EnabledSubsystems.kHood ? new HoodIOKrakenX60() : new HoodIO() {};
-                upgoerIO = Constants.EnabledSubsystems.kUpgoer ? new UpgoerIOKrakenX60() : new UpgoerIO() {};
+                leftUpgoerIO = Constants.EnabledSubsystems.kShooterUpgoerLeft
+                        ? new UpgoerIOKrakenX60(
+                                Constants.CANIDs.MotorIDs.kLeftUpgoerMotorCANID, "LeftShooterUpgoer", -1)
+                        : new UpgoerIO() {};
+                rightUpgoerIO = Constants.EnabledSubsystems.kShooterUpgoerRight
+                        ? new UpgoerIOKrakenX60(
+                                Constants.CANIDs.MotorIDs.kRightUpgoerMotorCANID, "RightShooterUpgoer", 1)
+                        : new UpgoerIO() {};
                 indexerIO = Constants.EnabledSubsystems.kIndexer ? new IndexerIOReal() : new IndexerIO() {};
                 break;
             case SIM:
                 hoodIO = Constants.EnabledSubsystems.kHood ? new HoodIOSim() : new HoodIO() {};
-                upgoerIO = Constants.EnabledSubsystems.kUpgoer ? new UpgoerIOSim() : new UpgoerIO() {};
+                leftUpgoerIO = Constants.EnabledSubsystems.kShooterUpgoerLeft
+                        ? new UpgoerIOSim(Constants.CANIDs.MotorIDs.kLeftUpgoerMotorCANID, "LeftShooterUpgoer")
+                        : new UpgoerIO() {};
+                rightUpgoerIO = Constants.EnabledSubsystems.kShooterUpgoerRight
+                        ? new UpgoerIOSim(Constants.CANIDs.MotorIDs.kRightUpgoerMotorCANID, "RightShooterUpgoer")
+                        : new UpgoerIO() {};
                 indexerIO = Constants.EnabledSubsystems.kIndexer ? new IndexerIOSim() : new IndexerIO() {};
                 break;
             default:
                 hoodIO = new HoodIO() {};
-                upgoerIO = new UpgoerIO() {};
+                leftUpgoerIO = new UpgoerIO() {};
+                rightUpgoerIO = new UpgoerIO() {};
                 indexerIO = new IndexerIO() {};
                 break;
         }
 
         this.hood = new Hood(hoodIO);
-        this.upgoer = new Upgoer(upgoerIO);
+        this.leftUpgoer = new Upgoer(leftUpgoerIO, "LeftShooterUpgoer", 1);
+        this.rightUpgoer = new Upgoer(rightUpgoerIO, "RightShooterUpgoer", 1);
         this.indexer = new Indexer(indexerIO);
-
-        indexer.setDefaultCommand(
-                Commands.run(() -> indexer.setRunning(shooter.isRunning() || isIntaking.getAsBoolean()), indexer));
+        this.currentShootingCommand = this.runFlywheelVelocityManual();
+        // indexer.setDefaultCommand(
+        //         Commands.run(() -> indexer.setRunning(shooter.isRunning() || isIntaking.getAsBoolean()), indexer));
     }
 
     @Override
     public void periodic() {
+        // Log hub active state from game data
+        boolean isHubActive = FieldConstants.isHubActive();
+        Logger.recordOutput("Shooting/HubActive", isHubActive);
+        Logger.recordOutput("Shooting/HubFlashing", FieldConstants.isHubFlashing());
+        Logger.recordOutput("Shooting/HubIndicatorOn", FieldConstants.isHubIndicatorOn());
+        Logger.recordOutput("Shooting/TimeUntilHubStateChange", FieldConstants.getTimeUntilHubStateChange());
+        Logger.recordOutput(
+                "Shooting/DistanceToHub", round(vision.getHubDistanceMeasure().in(Meters) * 100.0) / 100.0);
+        if (FieldConstants.getTimeUntilHubStateChange() > 0 && FieldConstants.getTimeUntilHubStateChange() < 1) {
+            oi.setRumble(1, 1);
+        } else if (FieldConstants.getTimeUntilHubStateChange() > 4.75
+                && FieldConstants.getTimeUntilHubStateChange() < 5) {
+            oi.setRumble(0.7, 0.7);
+        } else if (FieldConstants.getTimeUntilHubStateChange() > 4.25
+                && FieldConstants.getTimeUntilHubStateChange() < 4.5) {
+            oi.setRumble(0.75, 0.75);
+        } else {
+            oi.setRumble(0, 0);
+        }
+
         if (gamePieceTrajectorySimulation == null) {
             return;
         }
@@ -232,8 +275,12 @@ public class Superstructure extends SubsystemBase {
         return hood;
     }
 
-    public Upgoer getUpgoer() {
-        return upgoer;
+    public Upgoer getLeftUpgoer() {
+        return leftUpgoer;
+    }
+
+    public Upgoer getRightUpgoer() {
+        return rightUpgoer;
     }
 
     public boolean hasHood() {
@@ -255,7 +302,8 @@ public class Superstructure extends SubsystemBase {
     }
 
     public void setUpgoerVelocity(AngularVelocity velocity) {
-        upgoer.setVelocity(velocity);
+        leftUpgoer.setVelocity(velocity);
+        rightUpgoer.setVelocity(velocity);
     }
 
     public AngularVelocity getLeftFlywheelVelocity() {
@@ -277,7 +325,8 @@ public class Superstructure extends SubsystemBase {
     }
 
     public void stopUpgoer() {
-        upgoer.stop();
+        leftUpgoer.stop();
+        rightUpgoer.stop();
     }
 
     public Command stopShooterCommand() {
@@ -285,20 +334,17 @@ public class Superstructure extends SubsystemBase {
     }
 
     public Command stopUpgoerCommand() {
-        return upgoer.stopCommand();
+        return leftUpgoer.stopCommand().alongWith(rightUpgoer.stopCommand());
     }
 
     /** Calculate the distance from the robot to the hub. */
     public Distance getDistanceToHub(Pose2d robotPose) {
-        Translation2d hubPosition = FieldConstants.getHubPosition();
-        return Meters.of(robotPose.getTranslation().getDistance(hubPosition));
+        return vision.getHubDistanceMeasure();
     }
 
     /** Calculate the angle from the robot to the hub. */
     public Rotation2d getAngleToHub(Pose2d robotPose) {
-        Translation2d hubPosition = FieldConstants.getHubPosition();
-        Translation2d toHub = hubPosition.minus(robotPose.getTranslation());
-        return new Rotation2d(toHub.getX(), toHub.getY());
+        return vision.getHubFacingAngle(robotPose).orElse(robotPose.getRotation());
     }
 
     /** Calculate the angle from the robot to the alliance wall center. */
@@ -328,11 +374,9 @@ public class Superstructure extends SubsystemBase {
                             ChassisSpeeds speeds;
 
                             if (benchModeEnabled.get() > 0.5) {
-                                // Bench mode: Calculate a virtual pose at the specified distance
+                                // Bench mode: use a virtual pose at the configured distance
                                 double distMeters =
                                         Feet.of(benchModeDistanceFeet.get()).in(Meters);
-                                // Hub is usually at (FieldLength - distance, FieldWidth/2) or similar.
-                                // We'll just mock a static pose at that distance from the hub.
                                 Translation2d hubPos = FieldConstants.getHubPosition();
                                 robotPose = new Pose2d(hubPos.getX() - distMeters, hubPos.getY(), new Rotation2d());
                                 speeds = new ChassisSpeeds();
@@ -341,39 +385,50 @@ public class Superstructure extends SubsystemBase {
                                 speeds = velocitySupplier.get();
                             }
 
-                            boolean inZone = isInShootingZone(robotPose);
+                            // ── Vision hub-angle distance fallback ────────────────────────────
+                            // If two hub tags are visible, override the odometry distance while
+                            // keeping the same bearing so SotF heading stays correct.
+                            var hubDistOpt = vision.getHubDistance();
+                            if (hubDistOpt.isPresent()) {
+                                double visionDistM = hubDistOpt.getAsDouble();
+                                lastVisionHubDistanceM = visionDistM;
+                                Translation2d hubPos = FieldConstants.getHubPosition();
+                                Translation2d toRobot =
+                                        robotPose.getTranslation().minus(hubPos);
+                                double odomDistM = toRobot.getNorm();
+                                if (odomDistM > 0.01) {
+                                    // Scale the bearing vector to the vision-measured distance
+                                    Translation2d corrected = hubPos.plus(toRobot.times(visionDistM / odomDistM));
+                                    robotPose = new Pose2d(corrected, robotPose.getRotation());
+                                }
+                                Logger.recordOutput("Shooting/DistanceSource", "Vision");
+                                Logger.recordOutput("Shooting/VisionHubDistanceM", visionDistM);
+                            } else {
+                                double visionDistM = lastVisionHubDistanceM;
+                                Logger.recordOutput("Shooting/DistanceSource", "Odometry");
+                            }
+                            // ─────────────────────────────────────────────────────────────────
 
+                            boolean inZone = isInShootingZone(robotPose);
                             Logger.recordOutput("Shooting/InShootingZone", inZone);
 
                             if (inZone) {
-                                TrajectoryBall.ShootingParameters params = TrajectoryBall.calculate(
-                                        ShooterConstants.CalculationMode.values()[(int) calculationMode.get()],
-                                        hasHood(),
-                                        robotPose,
-                                        speeds,
-                                        Feet.of(maxHeightFeet.get()),
-                                        Feet.of(targetHeightFeet.get()),
-                                        hoodAngleOffset.get(),
-                                        rpmMultiplier.get(),
-                                        ShooterConstants.kSotfEnabled);
-
-                                Angle hoodAngle = params.hoodAngle();
-                                AngularVelocity flywheelVelocity = params.flywheelVelocity();
+                                AngularVelocity flywheelVelocity = TrajectoryBall.getFlywheelVelocityForDistance(
+                                        Meters.of(hubDistOpt.orElse(2.5)));
 
                                 Logger.recordOutput(
                                         "Shooting/DistanceToHub",
                                         getDistanceToHub(robotPose).in(Meters));
-                                Logger.recordOutput("Shooting/CalculatedHoodAngle", hoodAngle.in(Degrees));
+                                //                                Logger.recordOutput("Shooting/CalculatedHoodAngle",
+                                // hoodAngle.in(Degrees));
                                 Logger.recordOutput("Shooting/CalculatedRPM", flywheelVelocity.in(RPM));
-                                Logger.recordOutput("Shooting/TargetHeading", params.targetHeading());
+                                //                                Logger.recordOutput("Shooting/TargetHeading",
+                                // params.targetHeading());
 
-                                setHoodAngle(hoodAngle);
+                                // setHoodAngle(0);
                                 setFlywheelVelocity(flywheelVelocity);
                             } else {
-                                // Outside shooting zone — idle the shooter
-                                Logger.recordOutput("Shooting/CalculatedHoodAngle", 0.0);
-                                Logger.recordOutput("Shooting/CalculatedRPM", 0.0);
-                                stopShooter();
+                                setFlywheelVelocity(manualShootingVelocity);
                             }
                         },
                         hood,
@@ -391,27 +446,35 @@ public class Superstructure extends SubsystemBase {
     }
     /** Command that aims the robot at the hub while driving. */
     public Command aimAtHubWhileDriving(Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier) {
-        return DriveCommands.joystickDriveAtAngle(drive, xSupplier, ySupplier, () -> getAngleToHub(drive.getPose()))
+        return DriveCommands.joystickDriveAtOptionalAngle(
+                        drive,
+                        xSupplier,
+                        ySupplier,
+                        oi.driveRotation(),
+                        () -> vision.getHubFacingAngle(drive.getPose()))
                 .withName("AimAtHub");
     }
 
-    /** Command that fires the shooter (feeds upgoer only when flywheels are at speed). */
+    /** Command that fires the shooter (feeds both upgoers). */
     public Command fireCommand() {
         return Commands.run(
                         () -> {
-                            upgoer.setVelocity(UpgoerConstants.defaultFeedVelocity);
+                            leftUpgoer.setVelocity(UpgoerConstants.defaultFeedVelocity);
+                            rightUpgoer.setVelocity(UpgoerConstants.defaultFeedVelocity);
                         },
-                        upgoer)
+                        leftUpgoer,
+                        rightUpgoer)
                 .withName("SuperstructureFire");
     }
 
     public Command unjamCommand() {
         return Commands.run(
                         () -> {
-                            shooter.setFlywheelVelocity(ShooterConstants.kDefaultUnjamVelocity);
-                            upgoer.setVelocity(UpgoerConstants.defaultUnjamVelocity);
+                            leftUpgoer.setVelocity(UpgoerConstants.defaultUnjamVelocity);
+                            rightUpgoer.setVelocity(UpgoerConstants.defaultUnjamVelocity);
                         },
-                        upgoer)
+                        leftUpgoer,
+                        rightUpgoer)
                 .withName("SuperstructureUnjam");
     }
 
@@ -457,23 +520,46 @@ public class Superstructure extends SubsystemBase {
         return setFlywheelVelocityCommand(velocity).until(this::atTargetVelocity);
     }
 
-    public Command autoChooseShootingCommand(
-            Drive drive, Vision vision, DoubleSupplier xSupplier, DoubleSupplier ySupplier) {
-        if (ShooterConstants.kManualShootingEnabled) {
-            return Commands.runOnce(
-                            () -> setFlywheelVelocity(RPM.of(manualShootingSpeedRPM.get())),
-                            shooter.getLeft(),
-                            shooter.getRight())
-                    .withName("ManualShooting");
+    public Command autoChooseShootingCommand(Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier) {
+        if ((manualShootingEnabled.get() == 1.0) || vision.getTagCount() == 0) {
+            return runFlywheelVelocityManual();
         } else if (vision.getTagCount(0) + vision.getTagCount(1) == 1) {
             return autoSpeedShooter(drive::getPose, drive::getChassisSpeeds);
         } else {
             return fullAutoAim(drive, xSupplier, ySupplier);
         }
     }
+
     /** Manual override command for testing and bench mode. Doesn't run the shooter */
     public Command setFlywheelVelocityManual(AngularVelocity velocity) {
         return Commands.runOnce(() -> manualShootingVelocity = velocity);
+    }
+
+    public Command changeFlywheelVelocityManual(AngularVelocity deltaRPM) {
+        return Commands.runOnce(() -> manualShootingVelocity = manualShootingVelocity.plus(deltaRPM));
+    }
+
+    public Command changeManualShootingCommand(Command command) {
+        return Commands.runOnce(() -> currentShootingCommand = command);
+    }
+
+    public Supplier<Command> getCurrentShootingCommandSupplier() {
+        return () -> currentShootingCommand;
+    }
+
+    public Command setManualShootingEnabledCommand(boolean enabled) {
+        return Commands.runOnce(() -> {
+                    manualShootingEnabled.set(enabled ? 1.0 : 0.0);
+                })
+                .withName("SetManualShootingEnabled:" + enabled);
+    }
+
+    public Command runToggledSpeed(Supplier<Pose2d> robotPose, Supplier<ChassisSpeeds> chassisSpeeds) {
+        if (manualShootingEnabled.get() == 1.0) {
+            return runFlywheelVelocityManual();
+        } else {
+            return autoSpeedShooter(robotPose, chassisSpeeds);
+        }
     }
 
     public Command runFlywheelVelocityManual() {

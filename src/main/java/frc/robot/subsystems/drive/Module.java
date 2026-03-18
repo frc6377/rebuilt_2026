@@ -39,12 +39,10 @@ public class Module {
         this.index = index;
         this.constants = constants;
         this.logKey = "Drive/Module" + index;
-        driveDisconnectedAlert =
-                new Alert("Disconnected drive motor on module " + Integer.toString(index) + ".", AlertType.kError);
-        turnDisconnectedAlert =
-                new Alert("Disconnected turn motor on module " + Integer.toString(index) + ".", AlertType.kError);
+        driveDisconnectedAlert = new Alert("Disconnected drive motor on module " + index + ".", AlertType.kError);
+        turnDisconnectedAlert = new Alert("Disconnected turn motor on module " + index + ".", AlertType.kError);
         turnEncoderDisconnectedAlert =
-                new Alert("Disconnected turn encoder on module " + Integer.toString(index) + ".", AlertType.kError);
+                new Alert("Disconnected turn encoder on module " + index + ".", AlertType.kError);
     }
 
     public void periodic() {

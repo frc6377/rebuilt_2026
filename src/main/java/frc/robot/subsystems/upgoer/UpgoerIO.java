@@ -20,7 +20,7 @@ import org.littletonrobotics.junction.AutoLog;
 
 public interface UpgoerIO {
     @AutoLog
-    public static class UpgoerIOInputs {
+    class UpgoerIOInputs {
         public AngularVelocity velocity = RPM.of(0.0);
         public AngularAcceleration acceleration = RotationsPerSecondPerSecond.of(0.0);
         public Voltage appliedVoltage = Volts.of(0.0);

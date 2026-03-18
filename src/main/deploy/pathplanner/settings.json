@@ -6,9 +6,15 @@
     "Straight Line"
   ],
   "autoFolders": [
-    "Meter tests"
+    "Denver",
+    "Las Angeles",
+    "Las Vegas",
+    "Meter tests",
+    "Colorado Springs",
+    "Railway Heist",
+    "Santa Fe"
   ],
-  "defaultMaxVel": 1.0,
+  "defaultMaxVel": 3.0,
   "defaultMaxAccel": 3.0,
   "defaultMaxAngVel": 540.0,
   "defaultMaxAngAccel": 720.0,
@@ -32,5 +38,9 @@
   "brModuleY": -0.273,
   "bumperOffsetX": 0.001,
   "bumperOffsetY": 0.0,
-  "robotFeatures": []
+  "robotFeatures": [
+    "{\"name\":\"Rectangle\",\"type\":\"rounded_rect\",\"data\":{\"center\":{\"x\":0.6,\"y\":0.0},\"size\":{\"width\":0.8,\"length\":0.3},\"borderRadius\":0.05,\"strokeWidth\":0.02,\"filled\":false}}",
+    "{\"name\":\"Rectangle\",\"type\":\"rounded_rect\",\"data\":{\"center\":{\"x\":-0.2,\"y\":-0.3},\"size\":{\"width\":0.3,\"length\":0.3},\"borderRadius\":0.05,\"strokeWidth\":0.02,\"filled\":false}}",
+    "{\"name\":\"Rectangle\",\"type\":\"rounded_rect\",\"data\":{\"center\":{\"x\":-0.2,\"y\":0.3},\"size\":{\"width\":0.3,\"length\":0.3},\"borderRadius\":0.05,\"strokeWidth\":0.02,\"filled\":false}}"
+  ]
 }

@@ -16,14 +16,10 @@ package frc.robot.subsystems.upgoer;
 import static edu.wpi.first.units.Units.*;
 
 import edu.wpi.first.units.measure.*;
-import frc.robot.Constants;
 
 public class UpgoerConstants {
     // CAN bus name
     public static final String canBusName = "rio";
-
-    // Feature flags
-    public static final boolean enabled = Constants.EnabledSubsystems.kUpgoer;
 
     // Default PID constants for velocity control
     public static final double defaultKP = 1;
@@ -36,6 +32,6 @@ public class UpgoerConstants {
     public static final Current currentLimit = Amps.of(60.0);
 
     // Default feed velocity
-    public static final AngularVelocity defaultFeedVelocity = RPM.of(-4500.0);
-    public static final AngularVelocity defaultUnjamVelocity = RPM.of(4500.0);
+    public static final AngularVelocity defaultFeedVelocity = RPM.of(4500.0);
+    public static final AngularVelocity defaultUnjamVelocity = RPM.of(-4500.0);
 }

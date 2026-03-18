@@ -27,7 +27,7 @@ public class RollerIOReal implements RollerIO {
 
         rollerMotorConfig = new TalonFXConfiguration();
         rollerMotorConfig.ClosedLoopRamps.VoltageClosedLoopRampPeriod = RollerConstants.MotorConfig.kRampPeriod;
-        rollerMotorConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
+        rollerMotorConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
         rollerMotorConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
 
         rollerMotor = new TalonFX(Constants.CANIDs.MotorIDs.kRollerMotorID);

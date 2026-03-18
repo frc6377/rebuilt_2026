@@ -17,7 +17,7 @@ public class ShooterConstants {
     public static final boolean kHoodEnabled = Constants.EnabledSubsystems.kHood;
 
     /** Set to true to enable Shooting on the Fly compensation */
-    public static final boolean kSotfEnabled = true;
+    public static final boolean kSotfEnabled = false;
 
     public enum CalculationMode {
         PHYSICS,
@@ -25,7 +25,7 @@ public class ShooterConstants {
     }
 
     public static final CalculationMode kDefaultCalculationMode = CalculationMode.DOU_INTERPOLATION;
-    public static final boolean kManualShootingEnabled = true;
+    public static final boolean kManualShootingEnabled = false;
     public static final int kManualShootingSpeedRPM = 3600;
 
     /** Fixed hood angle to use when hood is disabled (degrees) */
@@ -35,7 +35,7 @@ public class ShooterConstants {
     public static final AngularVelocity kMaxFlywheelVelocity = RotationsPerSecond.of(100.0); // 6000 RPM
 
     // Velocity tolerance
-    public static final AngularVelocity kFlywheelVelocityTolerance = RotationsPerSecond.of(2); // 120 RPM
+    public static final AngularVelocity kFlywheelVelocityTolerance = RPM.of(50);
     public static final AngularVelocity kMaxVelocityDifference =
             RotationsPerSecond.of(500.0 / 60.0); // 500 RPM difference
 
@@ -76,11 +76,10 @@ public class ShooterConstants {
     public static final HashMap<Distance, AngularVelocity> distanceToAngularVelocity = new HashMap<>();
 
     static {
-        distanceToAngularVelocity.put(Meters.of(2.0), RPM.of(2750));
-        distanceToAngularVelocity.put(Meters.of(3.0), RPM.of(3156));
-        distanceToAngularVelocity.put(Meters.of(4.0), RPM.of(3512));
-        distanceToAngularVelocity.put(Meters.of(5.0), RPM.of(3823));
-        distanceToAngularVelocity.put(Meters.of(6.0), RPM.of(4095));
+        distanceToAngularVelocity.put(Meters.of(0.0), RPM.of(1500));
+        distanceToAngularVelocity.put(Meters.of(3.18), RPM.of(3600));
+        distanceToAngularVelocity.put(Meters.of(1), RPM.of(2400));
+        distanceToAngularVelocity.put(Meters.of(6), RPM.of(4000));
     }
 
     public static final InterpolatingDoubleTreeMap distanceToAngularVelocityDouMapRPM =

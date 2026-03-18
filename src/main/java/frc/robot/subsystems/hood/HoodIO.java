@@ -20,7 +20,7 @@ import org.littletonrobotics.junction.AutoLog;
 
 public interface HoodIO {
     @AutoLog
-    public static class HoodIOInputs {
+    class HoodIOInputs {
         public Angle angle = Degrees.of(0.0);
         public Voltage appliedVoltage = Volts.of(0.0);
         public Current current = Amps.of(0.0);

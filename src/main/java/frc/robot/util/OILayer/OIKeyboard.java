@@ -115,13 +115,8 @@ public class OIKeyboard implements OI {
     }
 
     @Override
-    public Trigger climbToFloor() {
-        return Slash;
-    }
-
-    @Override
-    public Trigger climb_l1() {
-        return Period;
+    public Trigger intakeMiddle() {
+        return Home;
     }
 
     @Override
@@ -132,5 +127,10 @@ public class OIKeyboard implements OI {
     @Override
     public Trigger downIntake() {
         return End;
+    }
+
+    @Override
+    public Trigger driveLockX() {
+        return Slash;
     }
 }

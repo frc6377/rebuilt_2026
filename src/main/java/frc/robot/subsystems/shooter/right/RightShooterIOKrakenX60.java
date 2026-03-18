@@ -49,7 +49,8 @@ public class RightShooterIOKrakenX60 implements RightShooterIO {
                         .withKI(RightShooterConstants.flywheelKI)
                         .withKD(RightShooterConstants.flywheelKD)
                         .withKV(RightShooterConstants.flywheelKV)
-                        .withKS(RightShooterConstants.flywheelKS));
+                        .withKS(RightShooterConstants.flywheelKS)
+                        .withKA(RightShooterConstants.flywheelKA));
 
         if (RightShooterConstants.followerEnabled) {
             flywheelFollower = new TunableTalonFX(
@@ -61,7 +62,8 @@ public class RightShooterIOKrakenX60 implements RightShooterIO {
                             .withKI(RightShooterConstants.flywheelKI)
                             .withKD(RightShooterConstants.flywheelKD)
                             .withKV(RightShooterConstants.flywheelKV)
-                            .withKS(RightShooterConstants.flywheelKS));
+                            .withKS(RightShooterConstants.flywheelKS)
+                            .withKA(RightShooterConstants.flywheelKA));
         } else {
             flywheelFollower = null;
         }
@@ -99,7 +101,7 @@ public class RightShooterIOKrakenX60 implements RightShooterIO {
 
         if (flywheelFollower != null) {
             tryUntilOk(5, () -> flywheelFollower.applyConfiguration(flywheelConfig, 0.25));
-            flywheelFollower.setControl(new Follower(flywheelMotor.getDeviceID(), MotorAlignmentValue.Aligned));
+            flywheelFollower.setControl(new Follower(flywheelMotor.getDeviceID(), MotorAlignmentValue.Opposed));
         }
 
         // Configure spin motor
@@ -112,6 +114,10 @@ public class RightShooterIOKrakenX60 implements RightShooterIO {
             spinConfig.CurrentLimits.StatorCurrentLimitEnable = RightShooterConstants.spinCurrentLimitStatorEnable;
             spinConfig.CurrentLimits.SupplyCurrentLimit = RightShooterConstants.spinCurrentLimitSupply.in(Amps);
             spinConfig.CurrentLimits.SupplyCurrentLimitEnable = RightShooterConstants.spinCurrentLimitSupplyEnable;
+            spinConfig.ClosedLoopRamps.withDutyCycleClosedLoopRampPeriod(
+                    RightShooterConstants.spinClosedLoopRamp.in(Seconds));
+            spinConfig.OpenLoopRamps.withDutyCycleOpenLoopRampPeriod(
+                    RightShooterConstants.spinOpenLoopRamp.in(Seconds));
             tryUntilOk(5, () -> spinMotor.applyConfiguration(spinConfig, 0.25));
         }
 
@@ -196,8 +202,8 @@ public class RightShooterIOKrakenX60 implements RightShooterIO {
             inputs.spinTemp = Celsius.of(0.0);
         }
         Logger.recordOutput(
-                "RightShooter/FlywheelVelocity (RPS)",
-                flywheelMotor.getVelocity().getValue().in(RotationsPerSecond));
+                "RightShooter/FlywheelVelocity (RPM)",
+                flywheelMotor.getVelocity().getValue().in(RPM));
     }
 
     @Override
@@ -205,7 +211,7 @@ public class RightShooterIOKrakenX60 implements RightShooterIO {
         flywheelMotor.setControl(new VelocityVoltage(velocity));
 
         if (flywheelFollower != null) {
-            flywheelFollower.setControl(new Follower(flywheelMotor.getDeviceID(), MotorAlignmentValue.Aligned));
+            flywheelFollower.setControl(new Follower(flywheelMotor.getDeviceID(), MotorAlignmentValue.Opposed));
         }
     }
 
@@ -213,7 +219,7 @@ public class RightShooterIOKrakenX60 implements RightShooterIO {
     public void setFlywheelVoltage(Voltage voltage) {
         flywheelMotor.setControl(new VoltageOut(voltage));
         if (flywheelFollower != null) {
-            flywheelFollower.setControl(new Follower(flywheelMotor.getDeviceID(), MotorAlignmentValue.Aligned));
+            flywheelFollower.setControl(new Follower(flywheelMotor.getDeviceID(), MotorAlignmentValue.Opposed));
         }
     }
 
