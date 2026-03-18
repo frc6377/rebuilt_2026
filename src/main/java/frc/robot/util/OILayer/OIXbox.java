@@ -21,7 +21,7 @@ public class OIXbox implements OI {
     public static final Trigger b = new JoystickButton(driverController, XboxController.Button.kB.value);
     public static final Trigger x = new JoystickButton(driverController, XboxController.Button.kX.value);
     public static final Trigger y = new JoystickButton(driverController, XboxController.Button.kY.value);
-    
+
     // Opertator face buttons
     public static final Trigger opA = new JoystickButton(operatorController, XboxController.Button.kA.value);
     public static final Trigger opB = new JoystickButton(operatorController, XboxController.Button.kB.value);

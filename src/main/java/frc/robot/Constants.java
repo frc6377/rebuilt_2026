@@ -62,16 +62,17 @@ public final class Constants {
     // }
 
     public static final class EnabledSubsystems {
-        public static final boolean kShooterLeft = true;
-        public static final boolean kShooterRight = true;
-        public static final boolean kShooterUpgoerLeft = true;
-        public static final boolean kShooterUpgoerRight = true;
+        public static final boolean kShooterLeft = false;
+        public static final boolean kShooterRight = false;
+        public static final boolean kShooterUpgoerLeft = false;
+        public static final boolean kShooterUpgoerRight = false;
         public static final boolean kHood = false;
-        public static final boolean kRoller = true;
-        public static final boolean kExtender = true;
-        public static final boolean kDrive = true;
+        public static final boolean kRoller = false;
+        public static final boolean kExtender = false;
+        public static final boolean kDrive = false;
         public static final boolean kQuestNav = false;
-        public static final boolean kIndexer = true;
+        public static final boolean kIndexer = false;
+        public static final boolean kClimb = true;
     }
 
     public enum Mode {
@@ -99,7 +100,7 @@ public final class Constants {
             public static final int kShooterSpinMotorLeftCANID = -1;
             public static final int kShooterSpinMotorRightCANID = -1;
 
-            public static final int kClimbMotor1ID = 16;
+            public static final int kClimbMotor1ID = 19;
         }
 
         public static final class SensorIDs {

@@ -46,9 +46,11 @@ public class Climb extends SubsystemBase {
     }
 
     public Command climbUp() {
-        return startEnd(
+        return runEnd(
                 () -> {
-                    climberIO.set(ClimbConstants.kClimbSpeed);
+                    climberIO.set(
+                            -ClimbConstants
+                                    .kClimbSpeed); // Goes up even though it is negative because of the motor inversion
                 },
                 () -> {
                     climberIO.set(0);
@@ -56,9 +58,11 @@ public class Climb extends SubsystemBase {
     }
 
     public Command climbDown() {
-        return startEnd(
+        return runEnd(
                 () -> {
-                    climberIO.set(-ClimbConstants.kClimbSpeed);
+                    climberIO.set(
+                            ClimbConstants.kClimbSpeed); // Goes down even though it is positive because of the motor
+                    // inversion
                 },
                 () -> {
                     climberIO.set(0);

@@ -14,6 +14,7 @@
 package frc.robot;
 
 import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.RPM;
 import static frc.robot.subsystems.vision.VisionConstants.*;
 
@@ -35,6 +36,7 @@ import frc.robot.commands.DriveCommands;
 import frc.robot.commands.ShooterCalibrationCommand;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.climb.Climb;
+import frc.robot.subsystems.climb.ClimberIO;
 import frc.robot.subsystems.climb.ClimberIOReal;
 import frc.robot.subsystems.climb.ClimberIOSim;
 import frc.robot.subsystems.drive.*;
@@ -134,7 +136,7 @@ public class RobotContainer {
                         Constants.EnabledSubsystems.kExtender ? new DutyCycleExtenderIOReal() : new ExtenderIO() {});
                 indexer = new Indexer(Constants.EnabledSubsystems.kIndexer ? new IndexerIOReal() : new IndexerIO() {});
                 driveSimulation = null;
-                climb = new Climb(new ClimberIOReal() {});
+                climb = new Climb(Constants.EnabledSubsystems.kClimb ? new ClimberIOReal() : new ClimberIO() {});
                 break;
 
             case SIM:
@@ -163,7 +165,7 @@ public class RobotContainer {
                                 camera0Name, robotToCamera0, driveSimulation::getSimulatedDriveTrainPose),
                         new VisionIOPhotonVisionSim(
                                 camera1Name, robotToCamera1, driveSimulation::getSimulatedDriveTrainPose));
-                climb = new Climb(new ClimberIOSim());
+                climb = new Climb(Constants.EnabledSubsystems.kClimb ? new ClimberIOSim() : new ClimberIO() {});
                 indexer = new Indexer(Constants.EnabledSubsystems.kIndexer ? new IndexerIOSim() : new IndexerIO() {});
                 break;
             default:
@@ -178,7 +180,7 @@ public class RobotContainer {
                 vision = new Vision(drive, new QuestNavIO() {}, new VisionIO() {}, new VisionIO() {});
                 intake = new Intake(new RollerIO() {}, new ExtenderIO() {});
                 indexer = new Indexer(new IndexerIO() {});
-                climb = new Climb(new ClimberIOReal() {});
+                climb = new Climb(new ClimberIO() {});
                 break;
         }
 
@@ -398,8 +400,8 @@ public class RobotContainer {
         OIController.zeroIntake().onTrue(intake.zeroIntake());
         OIController.toggleIntakeState().onTrue(intake.toggleIntake());
 
-        OIController.declimb().whileTrue(climb.climbDown());
-        OIController.climb_l1().whileTrue(climb.climbUp());
+        OIController.climb_l1().onTrue(climb.setHeight(Inches.of(0)));
+        OIController.declimb().onTrue(climb.setHeight(Inches.of(10)));
     }
 
     /**
