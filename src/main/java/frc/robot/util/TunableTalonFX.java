@@ -114,6 +114,8 @@ public class TunableTalonFX extends TalonFX {
      * @return true if gains were updated, false otherwise
      */
     public boolean updateTunableGains() {
+
+        if (!TUNING_ENABLED) return false;
         // Check if any values changed
         double currentKP = tunableKP.get();
         double currentKI = tunableKI.get();
@@ -196,27 +198,27 @@ public class TunableTalonFX extends TalonFX {
     }
 
     public double getTunableKI() {
-        return tunableKI.get();
+        return TUNING_ENABLED ? tunableKI.get() : 0.0;
     }
 
     public double getTunableKD() {
-        return tunableKD.get();
+        return TUNING_ENABLED ? tunableKD.get() : 0.0;
     }
 
     public double getTunableKV() {
-        return tunableKV.get();
+        return TUNING_ENABLED ? tunableKV.get() : 0.0;
     }
 
     public double getTunableKS() {
-        return tunableKS.get();
+        return TUNING_ENABLED ? tunableKS.get() : 0.0;
     }
 
     public double getTunableKA() {
-        return tunableKA.get();
+        return TUNING_ENABLED ? tunableKA.get() : 0.0;
     }
 
     public double getTunableKG() {
-        return tunableKG.get();
+        return TUNING_ENABLED ? tunableKG.get() : 0.0;
     }
 
     public String getTunableName() {
