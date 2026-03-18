@@ -216,6 +216,8 @@ public class RobotContainer {
 
         NamedCommands.registerCommand(
                 "Shoot", Commands.deadline(Commands.waitSeconds(5), superstructure.fireCommand()));
+        NamedCommands.registerCommand("Wait 5 seconds", Commands.waitSeconds(5));
+        NamedCommands.registerCommand("Stop shooter", superstructure.stopShooterCommand());
         // NamedCommands.registerCommand("Intake",
         // Commands.deadline(intake.intakeCommand(), Commands.waitSeconds(6)));
         NamedCommands.registerCommand("Extend Intake", intake.extendIntake());

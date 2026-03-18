@@ -7,13 +7,32 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Drive in front of hub from right"
+            "pathName": "Drive in front of hub from left"
+          }
+        },
+        {
+          "type": "deadline",
+          "data": {
+            "commands": [
+              {
+                "type": "named",
+                "data": {
+                  "name": "Wait 5 seconds"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "AutoShoot"
+                }
+              }
+            ]
           }
         },
         {
           "type": "named",
           "data": {
-            "name": "Shoot"
+            "name": "Stop shooter"
           }
         },
         {

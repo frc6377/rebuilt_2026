@@ -3,6 +3,7 @@ package frc.robot.subsystems.indexer;
 import static edu.wpi.first.units.Units.*;
 
 import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import java.util.function.BooleanSupplier;
@@ -69,5 +70,10 @@ public class Indexer extends SubsystemBase {
         Logger.processInputs("Indexer", inputs);
         Logger.recordOutput("Indexer/Setpoint", setpoint);
         Logger.recordOutput("Indexer/Running", Math.abs(setpoint.in(RotationsPerSecond)) > 0.1);
+        Logger.recordOutput(
+                "Indexer/variableSpeed",
+                IndexerConstants.kCollectorSpeed
+                        + (IndexerConstants.kCollectorVariableSpeed
+                                * Math.sin(Timer.getFPGATimestamp() * Math.PI / 2)));
     }
 }
