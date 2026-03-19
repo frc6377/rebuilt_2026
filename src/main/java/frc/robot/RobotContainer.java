@@ -184,9 +184,7 @@ public class RobotContainer {
         }
         NamedCommands.registerCommand(
                 "Stop", superstructure.stopShooterCommand().alongWith(superstructure.stopUpgoerCommand()));
-        NamedCommands.registerCommand(
-                "Unjam",
-                superstructure.unjamCommand().alongWith(superstructure.setFlywheelVelocityCommand(RPM.of(-1500))));
+        NamedCommands.registerCommand("Unjam", superstructure.unjamCommand());
         NamedCommands.registerCommand("SpinUpHub", superstructure.setFlywheelVelocityCommand(RPM.of(2600)));
         NamedCommands.registerCommand(
                 "Spin Up Shooter and Wait", superstructure.setFlywheelVelocityAndWaitCommand(RPM.of(3000)));
@@ -350,7 +348,10 @@ public class RobotContainer {
 
         OIController.unjamShooter()
                 .whileTrue(superstructure.unjamCommand().alongWith(indexer.indexReverse()))
-                .onFalse(superstructure.stopUpgoerCommand().alongWith(superstructure.stopShooterCommand()));
+                .onFalse(superstructure
+                        .stopUpgoerCommand()
+                        .alongWith(superstructure.stopShooterCommand())
+                        .alongWith(indexer.stop()));
 
         // Stop all components
         stopSuperTrigger.onTrue(superstructure.stopShooterCommand().alongWith(superstructure.stopUpgoerCommand()));

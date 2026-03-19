@@ -471,9 +471,12 @@ public class Superstructure extends SubsystemBase {
                         () -> {
                             leftUpgoer.setVelocity(UpgoerConstants.defaultUnjamVelocity);
                             rightUpgoer.setVelocity(UpgoerConstants.defaultUnjamVelocity);
+                            shooter.setFlywheelVelocity(RPM.of(-3000)); // Low speed to help unjam without grinding
                         },
                         leftUpgoer,
-                        rightUpgoer)
+                        rightUpgoer,
+                        shooter.getLeft(),
+                        shooter.getRight())
                 .withName("SuperstructureUnjam");
     }
 
