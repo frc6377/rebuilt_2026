@@ -25,8 +25,8 @@ public class IndexerIOSim implements IndexerIO {
 
         indexerSim = new FlywheelSim(indexerPlant, DCMotor.getKrakenX60Foc(1));
 
-        indexerController = new PIDController(
-                IndexerConstants.SimPID.kP, IndexerConstants.SimPID.kI, IndexerConstants.SimPID.kD);
+        indexerController =
+                new PIDController(IndexerConstants.SimPID.kP, IndexerConstants.SimPID.kI, IndexerConstants.SimPID.kD);
     }
 
     @Override

@@ -1,4 +1,3 @@
-
 package frc.robot.subsystems.indexer;
 
 import static edu.wpi.first.units.Units.RPM;
@@ -6,6 +5,7 @@ import static edu.wpi.first.units.Units.RPM;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.units.measure.AngularVelocity;
+
 public class IndexerConstants {
 
     public static final double kCollectorSpeed = 0.5; // Adjust speed as needed

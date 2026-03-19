@@ -226,8 +226,7 @@ public class RobotContainer {
                 Commands.deadline(Commands.waitSeconds(6), Commands.parallel(intake.intakeCommand(), indexer.index()))
                         .andThen(indexer.stop()));
         NamedCommands.registerCommand(
-                "Index",
-                Commands.run(() -> indexer.index()).withTimeout(3));
+                "Index", Commands.run(() -> indexer.index()).withTimeout(3));
         NamedCommands.registerCommand("Auto Aim", superstructure.aimAtHubWhileDriving(drive, () -> 0, () -> 0));
 
         // Set up auto routines
