@@ -80,7 +80,6 @@ public class TunableTalonFX extends TalonFX {
         this.tunableKS = new LoggedNetworkNumber(tunableName + "/kS", initialGains.kS);
         this.tunableKA = new LoggedNetworkNumber(tunableName + "/kA", initialGains.kA);
         this.tunableKG = new LoggedNetworkNumber(tunableName + "/kG", initialGains.kG);
-
         // Initialize cache
         this.lastKP = initialGains.kP;
         this.lastKI = initialGains.kI;
