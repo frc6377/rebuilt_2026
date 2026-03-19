@@ -135,8 +135,13 @@ public class OIXbox implements OI {
         return x;
     }
 
+    // @Override
+    // public Trigger intakeManualExtend() {
+    //     return b;
+    // }
+
     @Override
-    public Trigger intakeManualExtend() {
+    public Trigger wallAlign() {
         return b;
     }
 
