@@ -77,6 +77,12 @@ public class Climb extends SubsystemBase {
         return Commands.none();
     }
 
+    public Command zeroClimb() {
+        return runOnce(() -> {
+            currentSetpoint = ClimbConstants.kStartHeight;
+        });
+    }
+
     @Override
     public void periodic() {
         // This method will be called once per scheduler run

@@ -401,7 +401,11 @@ public class RobotContainer {
         OIController.toggleIntakeState().onTrue(intake.toggleIntake());
 
         OIController.climb_l1().onTrue(climb.setHeight(Inches.of(0)));
-        OIController.declimb().onTrue(climb.setHeight(Inches.of(9))); // RIGHT NOW SET TO 9 COULD BE REDUCED TO 8.5 (Almost 1 3/4 rotations))
+        OIController.declimb()
+                .onTrue(climb.setHeight(Inches.of(5))
+                        .andThen(climb.zeroClimb())); // RIGHT NOW SET TO 9 COULD BE REDUCED TO 8.5 (Almost 1
+        // 3/4 rotations))
+        OIController.climb_l2().onTrue(climb.zeroClimb());
     }
 
     /**
