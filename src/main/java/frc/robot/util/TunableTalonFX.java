@@ -40,7 +40,7 @@ import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 public class TunableTalonFX extends TalonFX {
     private final String tunableName;
 
-    private final boolean TUNING_ENABLED = true;
+    private final boolean TUNING_ENABLED = false;
 
     // Tunable PID gains
     private final LoggedNetworkNumber tunableKP;

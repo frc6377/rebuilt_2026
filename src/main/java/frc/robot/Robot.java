@@ -40,8 +40,8 @@ public class Robot extends LoggedRobot {
         switch (Constants.currentMode) {
             case REAL:
                 // Running on a real robot, log to a USB stick ("/U/logs")
-                Logger.addDataReceiver(new WPILOGWriter("/U/logs"));
-                Logger.addDataReceiver(new NT4Publisher());
+                Logger.addDataReceiver(new WPILOGWriter("/U/sda1"));
+                // Logger.addDataReceiver(new NT4Publisher());
                 break;
 
             case SIM:
@@ -56,7 +56,7 @@ public class Robot extends LoggedRobot {
 
         // Start AdvantageKit logger
         Logger.start();
-        SignalLogger.setPath("/media/sda1/logs/");
+        SignalLogger.setPath("/U/sda1/hootlogs");
         SignalLogger.start();
 
         // SignalLogger.stop();
