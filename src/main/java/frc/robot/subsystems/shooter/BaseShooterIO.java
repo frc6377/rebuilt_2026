@@ -12,11 +12,6 @@ public interface BaseShooterIO {
         public Voltage flywheelAppliedVoltage = Volts.of(0.0);
         public Current flywheelCurrent = Amps.of(0.0);
         public Temperature flywheelTemp = Celsius.of(0.0);
-
-        public AngularVelocity spinVelocity = RPM.of(0.0);
-        public Voltage spinAppliedVoltage = Volts.of(0.0);
-        public Current spinCurrent = Amps.of(0.0);
-        public Temperature spinTemp = Celsius.of(0.0);
     }
 
     /** Updates the set of loggable inputs. */
@@ -24,9 +19,6 @@ public interface BaseShooterIO {
 
     /** Set flywheel velocity. */
     default void setFlywheelVelocity(AngularVelocity velocity) {}
-
-    /** Set spin motor velocity. */
-    default void setSpinVelocity(AngularVelocity velocity) {}
 
     /** Set flywheel voltage. */
     default void setFlywheelVoltage(Voltage voltage) {}

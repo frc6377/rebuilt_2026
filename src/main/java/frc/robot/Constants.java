@@ -96,8 +96,6 @@ public final class Constants {
 
             // Not implemented in hardware
             public static final int kShooterHoodMotorCANID = -1;
-            public static final int kShooterSpinMotorLeftCANID = -1;
-            public static final int kShooterSpinMotorRightCANID = -1;
         }
 
         public static final class SensorIDs {

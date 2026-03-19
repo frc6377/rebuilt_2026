@@ -11,7 +11,6 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
-import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 /** Base shooter subsystem. */
 public class BaseShooter extends SubsystemBase {
@@ -20,12 +19,9 @@ public class BaseShooter extends SubsystemBase {
     private final ShooterConstants.ShooterConfig config;
 
     private final SysIdRoutine sysIdRoutine;
-    // Tunable spin ratio
-    private final LoggedNetworkNumber spinRatio;
 
     // Setpoints
     private AngularVelocity flywheelSetpoint = RPM.of(0.0);
-    private AngularVelocity spinSetpoint = RPM.of(0.0);
 
     // Failure state
     private boolean flywheelFailed = false;
@@ -33,7 +29,6 @@ public class BaseShooter extends SubsystemBase {
     public BaseShooter(BaseShooterIO io, ShooterConstants.ShooterConfig config) {
         this.io = io;
         this.config = config;
-        this.spinRatio = new LoggedNetworkNumber(config.name() + "/SpinRatio", config.defaultSpinRatio());
 
         sysIdRoutine = new SysIdRoutine(
                 new SysIdRoutine.Config(
@@ -51,11 +46,8 @@ public class BaseShooter extends SubsystemBase {
         Logger.processInputs(config.name(), inputs);
         Logger.recordOutput(config.name() + "/Enabled", config.enabled());
         Logger.recordOutput(config.name() + "/FollowerEnabled", config.followerEnabled());
-        Logger.recordOutput(config.name() + "/SpinMotorEnabled", config.spinMotorEnabled());
         Logger.recordOutput(config.name() + "/FlywheelFailed", flywheelFailed);
         Logger.recordOutput(config.name() + "/FlywheelSetpoint", flywheelSetpoint);
-        Logger.recordOutput(config.name() + "/SpinSetpoint", spinSetpoint);
-        Logger.recordOutput(config.name() + "/SpinRatio", spinRatio.get());
         if (getCurrentCommand() != null) {
             Logger.recordOutput(
                     config.name() + "/CurrentCommand", getCurrentCommand().getName());
@@ -65,38 +57,23 @@ public class BaseShooter extends SubsystemBase {
     }
 
     /**
-     * Set flywheel velocity. Also sets spin motor based on spin ratio.
+     * Set flywheel velocity.
      *
      * @param velocity Target velocity
      */
     public void setFlywheelVelocity(AngularVelocity velocity) {
         flywheelSetpoint = velocity;
-        double currentSpinRatio = spinRatio.get();
-        spinSetpoint = RPM.of(velocity.in(RPM) * currentSpinRatio);
 
         if (config.enabled() && !flywheelFailed) {
             io.setFlywheelVelocity(velocity);
-            io.setSpinVelocity(spinSetpoint);
         } else {
             io.setFlywheelVelocity(RPM.of(0.0));
-            io.setSpinVelocity(RPM.of(0.0));
-        }
-    }
-
-    /** Set spin motor velocity directly. */
-    public void setSpinVelocity(AngularVelocity velocity) {
-        spinSetpoint = velocity;
-        if (config.enabled() && !flywheelFailed) {
-            io.setSpinVelocity(velocity);
-        } else {
-            io.setSpinVelocity(RPM.of(0.0));
         }
     }
 
     /** Stop all motors. */
     public void stop() {
         flywheelSetpoint = RPM.of(0.0);
-        spinSetpoint = RPM.of(0.0);
         io.stop();
     }
 
@@ -136,11 +113,6 @@ public class BaseShooter extends SubsystemBase {
     @AutoLogOutput(key = "FlywheelSetpoint")
     public AngularVelocity getFlywheelSetpoint() {
         return flywheelSetpoint;
-    }
-
-    @AutoLogOutput(key = "SpinSetpoint")
-    public AngularVelocity getSpinSetpoint() {
-        return spinSetpoint;
     }
 
     // ========== Command Factory Methods ==========
