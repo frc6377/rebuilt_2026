@@ -72,7 +72,6 @@ public class TunableTalonFX extends TalonFX {
         super(deviceId, new CANBus(canbus));
         this.tunableName = tunableName;
 
-        if (TUNING_ENABLED){
         // Create tunable values from Slot0Configs
         this.tunableKP = new LoggedNetworkNumber(tunableName + "/kP", initialGains.kP);
         this.tunableKI = new LoggedNetworkNumber(tunableName + "/kI", initialGains.kI);
@@ -81,15 +80,6 @@ public class TunableTalonFX extends TalonFX {
         this.tunableKS = new LoggedNetworkNumber(tunableName + "/kS", initialGains.kS);
         this.tunableKA = new LoggedNetworkNumber(tunableName + "/kA", initialGains.kA);
         this.tunableKG = new LoggedNetworkNumber(tunableName + "/kG", initialGains.kG);
-        } else {
-            this.tunableKP = null;
-            this.tunableKI = null;
-            this.tunableKD = null;
-            this.tunableKV = null;
-            this.tunableKS = null;
-            this.tunableKA = null;
-            this.tunableKG = null;
-        }
 
         // Initialize cache
         this.lastKP = initialGains.kP;

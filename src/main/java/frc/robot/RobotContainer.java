@@ -206,7 +206,13 @@ public class RobotContainer {
                         // OIController.driveTranslationY()))
                         .until(superstructure::atTargetVelocity)
                         .andThen(Commands.parallel(
-                                superstructure.fireCommand(), indexer.index(), intake.intakeRollerCommand())));
+                                superstructure.fireCommand(), indexer.index(), intake.intakeRollerCommand()))
+                // .handleInterrupt(() -> {
+                //     indexer.stop();
+                //     // intake.stop();
+
+                // })
+                );
         NamedCommands.registerCommand(
                 "AutoEverything",
                 Commands.sequence(
