@@ -5,19 +5,23 @@ import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Volts;
 import static frc.robot.util.PhoenixUtil.tryUntilOk;
 
+import com.ctre.phoenix6.configs.MotionMagicConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.SoftwareLimitSwitchConfigs;
-import com.ctre.phoenix6.controls.PositionVoltage;
+import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.DutyCycleEncoder;
 import frc.robot.Constants.CANIDs.MotorIDs;
 import frc.robot.Constants.CANIDs.SensorIDs;
 import frc.robot.util.TunableTalonFX;
+import org.littletonrobotics.junction.Logger;
 
 public class ClimberIOReal implements ClimberIO {
     final TunableTalonFX climbMotor1;
     final DutyCycleEncoder climbEncoder;
     final Slot0Configs climberPID;
+    final MotionMagicConfigs motionMagicConfigs;
+    final MotionMagicVoltage motionMagicRequest;
     // final DigitalInput limitSwitch;
 
     public ClimberIOReal() {
@@ -34,15 +38,29 @@ public class ClimberIOReal implements ClimberIO {
         climberPID.kP = ClimbConstants.PIDF.kP;
         climberPID.kI = ClimbConstants.PIDF.kI;
         climberPID.kD = ClimbConstants.PIDF.kD;
+        climberPID.kV = ClimbConstants.PIDF.kV; // feedforward velocity gain for Motion Magic
+
+        motionMagicConfigs = new MotionMagicConfigs();
+        motionMagicConfigs.MotionMagicCruiseVelocity = ClimbConstants.MotionMagic.kCruiseVelocity;
+        motionMagicConfigs.MotionMagicAcceleration = ClimbConstants.MotionMagic.kAcceleration;
+        motionMagicConfigs.MotionMagicJerk = ClimbConstants.MotionMagic.kJerk;
 
         tryUntilOk(5, () -> climbMotor1.getConfigurator().apply(climberPID, 0.25));
+        tryUntilOk(5, () -> climbMotor1.getConfigurator().apply(motionMagicConfigs, 0.25)); // was missing!
+
+        // Reuse a single request object to avoid repeated allocations
+        motionMagicRequest = new MotionMagicVoltage(0).withSlot(0);
     }
 
     @Override
     public void goToHeight(Distance height) {
-        climbMotor1.setControl(new PositionVoltage(height.times(ClimbConstants.kClimbGearRatio)
+        Logger.recordOutput("Climb/Real/Setpoint (Inches)", height);
+        double targetRotations = height.times(ClimbConstants.kClimbGearRatio)
                 .div(ClimbConstants.kElevatorDrumCircumference)
-                .times(Rotations.one())));
+                .times(Rotations.one())
+                .in(Rotations);
+
+        climbMotor1.setControl(motionMagicRequest.withPosition(targetRotations));
     }
 
     @Override
@@ -103,6 +121,7 @@ public class ClimberIOReal implements ClimberIO {
     @Override
     public void periodic() {
         climbMotor1.updateTunableGains();
+        Logger.recordOutput("Climb/Real/Height (Inches)", getHeight());
     }
 
     @Override

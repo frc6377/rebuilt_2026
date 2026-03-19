@@ -19,7 +19,7 @@ import frc.robot.Constants.EnabledSubsystems;
 
 public class ClimbConstants {
     public class PIDF {
-        public static final double kP = 20;
+        public static final double kP = 5;
         public static final double kI = 0;
         public static final double kD = 0;
         public static final double kS = 0;
@@ -35,6 +35,12 @@ public class ClimbConstants {
         public static final double kS = 0;
         public static final double kV = 0;
         public static final double kA = 0;
+    }
+
+    public static class MotionMagic {
+        public static final double kCruiseVelocity = 1500;
+        public static final double kAcceleration = 3000;
+        public static final double kJerk = 1;
     }
 
     public static final boolean kDisabled = !EnabledSubsystems.kClimb;
