@@ -288,9 +288,9 @@ public class RobotContainer {
             double robotX = drive.getPose().getTranslation().getX();
             double fieldMidX = FieldConstants.fieldWidth / 2.0;
             if (robotX > fieldMidX) {
-                return Rotation2d.fromDegrees(180);
-            } else {
                 return Rotation2d.fromDegrees(90);
+            } else {
+                return Rotation2d.fromDegrees(180);
             }
         };
 
