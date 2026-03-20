@@ -7,7 +7,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "back up and shoot - left"
+            "pathName": "back up"
           }
         },
         {
@@ -15,17 +15,11 @@
           "data": {
             "name": "AutoShoot"
           }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "retreat left"
-          }
         }
       ]
     }
   },
   "resetOdom": true,
-  "folder": "Denver",
+  "folder": "Back up then shoot",
   "choreoAuto": false
 }

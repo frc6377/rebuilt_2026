@@ -8,8 +8,8 @@
       },
       "prevControl": null,
       "nextControl": {
-        "x": 2.7796228574615105,
-        "y": 7.307689808317058
+        "x": 2.6508112582781456,
+        "y": 7.548807947019867
       },
       "isLocked": false,
       "linkedName": "Top Side start"
@@ -20,26 +20,21 @@
         "y": 4.0
       },
       "prevControl": {
-        "x": 3.2420201899664836,
-        "y": 6.625115887891534
+        "x": 3.23853107352753,
+        "y": 5.589544920179641
       },
       "nextControl": null,
       "isLocked": false,
       "linkedName": "Front of hub"
     }
   ],
-  "rotationTargets": [
-    {
-      "waypointRelativePos": 0.5504162812210909,
-      "rotationDegrees": -100.0
-    }
-  ],
+  "rotationTargets": [],
   "constraintZones": [],
   "pointTowardsZones": [],
   "eventMarkers": [],
   "globalConstraints": {
-    "maxVelocity": 3.0,
-    "maxAcceleration": 3.0,
+    "maxVelocity": 2.0,
+    "maxAcceleration": 2.0,
     "maxAngularVelocity": 540.0,
     "maxAngularAcceleration": 720.0,
     "nominalVoltage": 12.0,
@@ -53,7 +48,7 @@
   "folder": null,
   "idealStartingState": {
     "velocity": 0,
-    "rotation": 180.0
+    "rotation": -90.0
   },
   "useDefaultConstraints": true
 }

@@ -7,23 +7,23 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Far left to left shoot"
+            "pathName": "back up and shoot - left"
           }
         },
         {
-          "type": "race",
+          "type": "deadline",
           "data": {
             "commands": [
               {
                 "type": "named",
                 "data": {
-                  "name": "AutoShoot"
+                  "name": "Wait 5 seconds"
                 }
               },
               {
-                "type": "wait",
+                "type": "named",
                 "data": {
-                  "waitTime": 8.0
+                  "name": "AutoShoot"
                 }
               }
             ]
@@ -32,13 +32,13 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Through depot"
+            "pathName": "retreat left"
           }
         }
       ]
     }
   },
   "resetOdom": true,
-  "folder": "Santa Fe",
+  "folder": "Back up then shoot",
   "choreoAuto": false
 }
