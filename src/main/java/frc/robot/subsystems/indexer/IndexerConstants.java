@@ -10,6 +10,8 @@ import edu.wpi.first.wpilibj.RobotController;
 public class IndexerConstants {
 
     public static final double kCollectorSpeed = -0.5; // Adjust speed as needed
+    public static final double kCollectorVariableSpeed =
+            -.15; // max value of ocisllating sin curve min value is this value times -1
     public static final AngularVelocity kCollectorRPM = RPM.of(135); // Adjust RPM as needed
 
     public static final String canBus = "rio";

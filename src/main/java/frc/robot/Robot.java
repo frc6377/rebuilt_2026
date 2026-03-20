@@ -40,7 +40,7 @@ public class Robot extends LoggedRobot {
         switch (Constants.currentMode) {
             case REAL:
                 // Running on a real robot, log to a USB stick ("/U/logs")
-                Logger.addDataReceiver(new WPILOGWriter());
+                Logger.addDataReceiver(new WPILOGWriter("/U/logs"));
                 Logger.addDataReceiver(new NT4Publisher());
                 break;
 
@@ -50,13 +50,14 @@ public class Robot extends LoggedRobot {
                 break;
         }
 
-        SignalLogger.setPath("/media/sda1/logs/");
         WebServer.start(5800, Filesystem.getDeployDirectory().getPath());
 
         DriverStation.silenceJoystickConnectionWarning(true);
 
         // Start AdvantageKit logger
         Logger.start();
+        SignalLogger.setPath("/media/sda1/logs/");
+        SignalLogger.start();
 
         // SignalLogger.stop();
 
@@ -89,8 +90,6 @@ public class Robot extends LoggedRobot {
     @Override
     public void disabledInit() {
         robotContainer.resetSimulationField();
-        CommandScheduler.getInstance()
-                .schedule(robotContainer.intake.setNeutralModeCoast().ignoringDisable(true));
     }
 
     /** This function is called periodically when disabled. */
@@ -105,8 +104,6 @@ public class Robot extends LoggedRobot {
     @Override
     public void autonomousInit() {
         autonomousCommand = robotContainer.getAutonomousCommand();
-        CommandScheduler.getInstance()
-                .schedule(robotContainer.intake.setNeutralModeBrake().ignoringDisable(true));
         // schedule the autonomous command (example)
         if (autonomousCommand != null) {
             CommandScheduler.getInstance().schedule(autonomousCommand);
@@ -127,8 +124,6 @@ public class Robot extends LoggedRobot {
         if (autonomousCommand != null) {
             autonomousCommand.cancel();
         }
-        CommandScheduler.getInstance()
-                .schedule(robotContainer.intake.setNeutralModeBrake().ignoringDisable(true));
         CommandScheduler.getInstance().schedule(robotContainer.superstructure.stopUpgoerCommand());
         CommandScheduler.getInstance().schedule(robotContainer.superstructure.stopShooterCommand());
     }

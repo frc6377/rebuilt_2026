@@ -5,12 +5,6 @@
     "data": {
       "commands": [
         {
-          "type": "path",
-          "data": {
-            "pathName": "Start to middle left"
-          }
-        },
-        {
           "type": "named",
           "data": {
             "name": "Extend Intake"
@@ -21,24 +15,30 @@
           "data": {
             "commands": [
               {
+                "type": "path",
+                "data": {
+                  "pathName": "Loop left to right shoot"
+                }
+              },
+              {
                 "type": "named",
                 "data": {
                   "name": "Intake"
                 }
-              },
-              {
-                "type": "path",
-                "data": {
-                  "pathName": "Down middle"
-                }
               }
             ]
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "AutoShoot"
           }
         }
       ]
     }
   },
   "resetOdom": true,
-  "folder": "Las Angeles",
+  "folder": "Loop Left",
   "choreoAuto": false
 }
