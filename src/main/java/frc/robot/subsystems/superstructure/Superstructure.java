@@ -316,7 +316,7 @@ public class Superstructure extends SubsystemBase {
     /** Calculate the angle from the robot to the hub. */
     public Rotation2d getAngleToHub(Pose2d robotPose) {
         Translation2d toHub = FieldConstants.getHubPosition().minus(robotPose.getTranslation());
-        return new Rotation2d(toHub.getX(), toHub.getY()).rotateBy(Rotation2d.fromDegrees(180.0));
+        return new Rotation2d(toHub.getX(), toHub.getY());
     }
 
     /** Calculate the angle from the robot to the alliance wall center. */

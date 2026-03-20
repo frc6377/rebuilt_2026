@@ -337,9 +337,13 @@ public class RobotContainer {
         shootingTrigger
                 .whileTrue(superstructure
                         .aimAndSpinUp(drive, OIController.driveTranslationX(), OIController.driveTranslationY())
-                        .andThen(Commands.runOnce(drive::stopWithX))
+                        .andThen()
                         .andThen(Commands.parallel(
-                                superstructure.fireCommand(), indexer.index(), intake.voltageSiftFuel())))
+                                superstructure.fireCommand(),
+                                indexer.index(),
+                                intake.voltageSiftFuel(),
+                                superstructure.aimAtHubWhileDriving(
+                                        drive, OIController.driveTranslationY(), OIController.driveTranslationX()))))
                 .onFalse(Commands.parallel(
                         superstructure.stopUpgoerCommand(),
                         indexer.stop(),
