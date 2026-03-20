@@ -90,8 +90,6 @@ public class Robot extends LoggedRobot {
     @Override
     public void disabledInit() {
         robotContainer.resetSimulationField();
-        CommandScheduler.getInstance()
-                .schedule(robotContainer.intake.setNeutralModeCoast().ignoringDisable(true));
     }
 
     /** This function is called periodically when disabled. */
@@ -106,8 +104,6 @@ public class Robot extends LoggedRobot {
     @Override
     public void autonomousInit() {
         autonomousCommand = robotContainer.getAutonomousCommand();
-        CommandScheduler.getInstance()
-                .schedule(robotContainer.intake.setNeutralModeBrake().ignoringDisable(true));
         // schedule the autonomous command (example)
         if (autonomousCommand != null) {
             CommandScheduler.getInstance().schedule(autonomousCommand);
@@ -128,8 +124,6 @@ public class Robot extends LoggedRobot {
         if (autonomousCommand != null) {
             autonomousCommand.cancel();
         }
-        CommandScheduler.getInstance()
-                .schedule(robotContainer.intake.setNeutralModeBrake().ignoringDisable(true));
         CommandScheduler.getInstance().schedule(robotContainer.superstructure.stopUpgoerCommand());
         CommandScheduler.getInstance().schedule(robotContainer.superstructure.stopShooterCommand());
     }
