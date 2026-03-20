@@ -104,11 +104,7 @@ Temporary Items
 .apdisk
 
 ### VisualStudioCode ###
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
+.vscode/
 
 ### Windows ###
 # Windows thumbnail cache files
@@ -186,15 +182,12 @@ compile_commands.json
 # Eclipse generated file for annotation processors
 .factorypath
 
-## HOWDY BOT ADDITIONS
+.claude/
+
 BuildConstants.java
-.claude\settings.local.json
-.vscode\launch.json
-.vscode\settings.json
-
 simgui-ds.json
-.vscode
-
+.wpilib/wpilib_preferences.json
+docs
 
 docs
 .claude/

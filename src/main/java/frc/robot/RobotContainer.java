@@ -28,6 +28,7 @@ import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
@@ -101,7 +102,7 @@ public class RobotContainer {
     public RobotContainer() {
         robotState = RobotState.create();
 
-        usingController = true;
+        usingController = Constants.currentMode == Constants.Mode.REAL || DriverStation.isJoystickConnected(0);
 
         if (usingController || Constants.currentMode != Constants.Mode.SIM) {
             OIController = new OIXbox();
@@ -290,9 +291,9 @@ public class RobotContainer {
             double robotX = drive.getPose().getTranslation().getX();
             double fieldMidX = FieldConstants.fieldWidth / 2.0;
             if (robotX > fieldMidX) {
-                return Rotation2d.fromDegrees(180);
-            } else {
                 return Rotation2d.fromDegrees(90);
+            } else {
+                return Rotation2d.fromDegrees(180);
             }
         };
 
@@ -395,7 +396,7 @@ public class RobotContainer {
                 : () -> drive.setPose(new Pose2d(
                         drive.getPose().getTranslation(),
                         new Rotation2d(
-                                DriverStation.getAlliance().get() == Alliance.Blue
+                                DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Blue
                                         ? Degrees.zero()
                                         : Degrees.of(180))));
         OIController.zeroDrivebase().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
@@ -448,6 +449,20 @@ public class RobotContainer {
         Logger.recordOutput(
                 "Shooting/WhoWonAuton",
                 Objects.equals(DriverStation.getGameSpecificMessage(), "B") ? "363AF4" : "F44336");
+    }
+
+    public void onDisabled() {
+        CommandScheduler.getInstance().schedule(intake.setNeutralModeCoast().ignoringDisable(true));
+    }
+
+    public void onAutonomousInit() {
+        CommandScheduler.getInstance().schedule(intake.setNeutralModeBrake().ignoringDisable(true));
+    }
+
+    public void onTeleopInit() {
+        CommandScheduler.getInstance().schedule(intake.setNeutralModeBrake().ignoringDisable(true));
+        CommandScheduler.getInstance().schedule(superstructure.stopUpgoerCommand());
+        CommandScheduler.getInstance().schedule(superstructure.stopShooterCommand());
     }
 
     public Command getRobotStartPose(int cameraIndex) {
