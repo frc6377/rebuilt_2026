@@ -194,7 +194,7 @@ public class RobotContainer {
                 "AutoShootHub",
                 superstructure
                         .autoSpeedShooter(drive::getPose, drive::getChassisSpeeds)
-                        .until(superstructure::atTargetVelocity)
+                        .until(() -> superstructure.isReadyToShoot(drive.getRotation()))
                         .andThen(Commands.parallel(indexer.index(), superstructure.fireCommand())));
         NamedCommands.registerCommand(
                 "AutoShoot",
@@ -204,14 +204,16 @@ public class RobotContainer {
                         // .aimAtHubWhileDriving(
                         // drive, OIController.driveTranslationX(),
                         // OIController.driveTranslationY()))
-                        .until(superstructure::atTargetVelocity)
+                        .until(() -> superstructure.isReadyToShoot(drive.getRotation()))
                         .andThen(Commands.parallel(
                                 superstructure.fireCommand(), indexer.index(), intake.intakeRollerCommand())));
         NamedCommands.registerCommand(
                 "AutoEverything",
                 Commands.sequence(
-                        Commands.parallel(superstructure.autoSpeedShooter(), intake.extendAndIntakeCommand())
-                                .until(superstructure::atTargetVelocity),
+                        Commands.parallel(
+                                        superstructure.autoSpeedShooter(drive::getPose),
+                                        intake.extendAndIntakeCommand())
+                                .until(() -> superstructure.isReadyToShoot(drive.getRotation())),
                         Commands.parallel(intake.intakeCommand(), superstructure.fireCommand())));
 
         NamedCommands.registerCommand(
@@ -333,20 +335,15 @@ public class RobotContainer {
                         .setFlywheelVelocityManual(RPM.of(1500))
                         .andThen(superstructure.runFlywheelVelocityManual()));
         shootingTrigger
-                .whileTrue(Commands.parallel(superstructure
-                        .runToggledSpeed(drive::getPose, drive::getChassisSpeeds)
-                        // superstructure.aimAtHubWhileDriving(
-                        // drive, OIController.driveTranslationX(),
-                        // OIController.driveTranslationY()))
-                        .until(superstructure::atTargetVelocity)
+                .whileTrue(superstructure
+                        .aimAndSpinUp(drive, OIController.driveTranslationX(), OIController.driveTranslationY())
                         .andThen(Commands.runOnce(drive::stopWithX))
                         .andThen(Commands.parallel(
-                                superstructure.fireCommand(), indexer.index(), intake.voltageSiftFuel()))))
+                                superstructure.fireCommand(), indexer.index(), intake.voltageSiftFuel())))
                 .onFalse(Commands.parallel(
-                                superstructure.stopUpgoerCommand(),
-                                indexer.stop(),
-                                superstructure.setFlywheelVelocityManual(RPM.of(1500)))
-                        .andThen(superstructure.runFlywheelVelocityManual()));
+                        superstructure.stopUpgoerCommand(),
+                        indexer.stop(),
+                        superstructure.setFlywheelVelocityManual(RPM.of(1500))));
 
         OIController.unjamShooter()
                 .whileTrue(superstructure.unjamCommand().alongWith(indexer.indexReverse()))

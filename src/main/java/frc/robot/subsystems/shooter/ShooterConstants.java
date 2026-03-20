@@ -14,9 +14,6 @@ import java.util.HashMap;
  */
 public class ShooterConstants {
     // ==================== Feature Flags ====================
-    /** Set to false to disable the hood motor entirely (for robots without a hood) */
-    public static final boolean kHoodEnabled = Constants.EnabledSubsystems.kHood;
-
     /** Set to true to enable Shooting on the Fly compensation */
     public static final boolean kSotfEnabled = false;
 
@@ -29,7 +26,7 @@ public class ShooterConstants {
     public static final boolean kManualShootingEnabled = false;
     public static final int kManualShootingSpeedRPM = 3600;
 
-    /** Fixed hood angle to use when hood is disabled (degrees) */
+    /** Fixed hood angle to use (degrees) */
     public static final Angle kFixedHoodAngle = Degrees.of(60);
 
     // ==================== Operational Limits ====================
@@ -37,6 +34,7 @@ public class ShooterConstants {
 
     // Velocity tolerance
     public static final AngularVelocity kFlywheelVelocityTolerance = RPM.of(150.0);
+    public static final Angle kHeadingTolerance = Degrees.of(2.0);
     public static final AngularVelocity kMaxVelocityDifference =
             RotationsPerSecond.of(500.0 / 60.0); // 500 RPM difference
 
@@ -54,9 +52,6 @@ public class ShooterConstants {
     public static final double launchEfficiency = 0.75; // Percentage of theoretical velocity achieved at the target
 
     // ==================== Shooting/Trajectory Constants ====================
-    public static final Angle minHoodAngle = Degrees.of(25.0);
-    public static final Angle maxHoodAngle = Degrees.of(80.0);
-
     public static final AngularVelocity minShootingFlywheelVelocity = RPM.of(1500.0);
     public static final AngularVelocity maxShootingFlywheelVelocity = RPM.of(6000.0);
 
@@ -67,7 +62,6 @@ public class ShooterConstants {
     public static final double defaultTargetHeightFeet = 6.0;
 
     // Fine-tuning defaults
-    public static final double defaultHoodAngleOffset = 0.0;
     public static final double defaultRpmMultiplier = 1.3;
 
     // Bench Mode Defaults

@@ -43,7 +43,6 @@ import gg.questnav.questnav.PoseFrame;
 import gg.questnav.questnav.QuestNav;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -200,49 +199,6 @@ public class Vision extends SubsystemBase {
         Logger.recordOutput("Vision/ClosestHubTag/DistToCamera", best.distToCamera());
         Logger.recordOutput("Vision/ClosestHubTag/DistToRobot", best.distToRobot());
         return OptionalDouble.of(best.distToRobot());
-    }
-
-    /**
-     * Returns the field-relative heading the robot must face to be perpendicular to the visible hub face.
-     *
-     * <p>Selects the closest visible middle hub tag (preferred) or any hub tag as a fallback. The required heading is
-     * computed as the bearing from {@code robotPose} to the tag's field-layout position, using the robot's gyro-derived
-     * rotation embedded in {@code robotPose}.
-     *
-     * @param robotPose Current robot pose (translation + gyro rotation) from the drive odometry.
-     * @return Required heading to face the hub, or empty if no hub tags are visible.
-     */
-    public Optional<Rotation2d> getHubFacingAngle(Pose2d robotPose) {
-        if (inputs.length == 0) return Optional.empty();
-        boolean isRed = DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue) == DriverStation.Alliance.Red;
-        Set<Integer> middleTagIds = isRed ? RED_HUB_MIDDLE_TAG_IDS : BLUE_HUB_MIDDLE_TAG_IDS;
-
-        // Only use a directly-visible middle tag — no fallbacks
-        HubTagObservation bestMiddle = null;
-        for (HubTagObservation obs : inputs[0].hubTagObservations) {
-            if (middleTagIds.contains(obs.tagId())) {
-                if (bestMiddle == null || obs.distToCamera() < bestMiddle.distToCamera()) {
-                    bestMiddle = obs;
-                }
-            }
-        }
-        if (bestMiddle == null) return Optional.empty();
-
-        var tagPoseOpt = aprilTagLayout.getTagPose(bestMiddle.tagId());
-        if (tagPoseOpt.isEmpty()) return Optional.empty();
-
-        // Bearing from robot to the middle tag, rotated 180° so the front faces the hub
-        double dx = tagPoseOpt.get().getX() - robotPose.getX();
-        double dy = tagPoseOpt.get().getY() - robotPose.getY();
-        Rotation2d required = new Rotation2d(dx, dy).rotateBy(Rotation2d.fromDegrees(180.0));
-
-        Logger.recordOutput("Vision/HubFacing/TagId", bestMiddle.tagId());
-        Logger.recordOutput("Vision/HubFacing/GyroFallback", false);
-        Logger.recordOutput("Vision/HubFacing/RequiredHeadingDeg", required.getDegrees());
-        Logger.recordOutput(
-                "Vision/HubFacing/HeadingErrorDeg",
-                required.minus(robotPose.getRotation()).getDegrees());
-        return Optional.of(required);
     }
 
     // ========== Standard Vision ==========

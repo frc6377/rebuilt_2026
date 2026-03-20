@@ -33,7 +33,6 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
@@ -127,64 +126,6 @@ public class DriveCommands {
 
                 // Reset PID controller when command starts
                 .beforeStarting(() -> angleController.reset(drive.getRotation().getRadians()));
-    }
-
-    /**
-     * Field relative drive command using joystick for linear control and PID for angular control when a target angle is
-     * present. When the optional angle is empty, the joystick's angular input is used directly (no forced heading).
-     *
-     * <p>This is useful for hub-aiming: rotate to face the hub when a tag is visible, but let the driver control
-     * rotation freely when no tag is seen.
-     *
-     * @param drive The drive subsystem.
-     * @param xSupplier Joystick translation X.
-     * @param ySupplier Joystick translation Y.
-     * @param omegaSupplier Joystick rotation (used when {@code angleSupplier} returns empty).
-     * @param angleSupplier Supplier of the desired heading. When {@link Optional#empty()}, joystick rotation is used.
-     */
-    public static Command joystickDriveAtOptionalAngle(
-            Drive drive,
-            DoubleSupplier xSupplier,
-            DoubleSupplier ySupplier,
-            DoubleSupplier omegaSupplier,
-            Supplier<Optional<Rotation2d>> angleSupplier) {
-
-        ProfiledPIDController angleController = new ProfiledPIDController(
-                ANGLE_KP, 0.0, ANGLE_KD, new TrapezoidProfile.Constraints(ANGLE_MAX_VELOCITY, ANGLE_MAX_ACCELERATION));
-        angleController.enableContinuousInput(-Math.PI, Math.PI);
-
-        return Commands.run(
-                        () -> {
-                            Translation2d linearVelocity =
-                                    getLinearVelocityFromJoysticks(xSupplier.getAsDouble(), ySupplier.getAsDouble());
-
-                            Optional<Rotation2d> targetAngle = angleSupplier.get();
-                            double omega;
-                            if (targetAngle.isPresent()) {
-                                omega = angleController.calculate(
-                                        drive.getRotation().getRadians(),
-                                        targetAngle.get().getRadians());
-                            } else {
-                                // No tag — let the driver rotate freely
-                                omega = omegaSupplier.getAsDouble() * drive.getMaxAngularSpeedRadPerSec();
-                                // Keep the PID seeded to avoid a snap when a tag reappears
-                                angleController.reset(drive.getRotation().getRadians());
-                            }
-
-                            boolean isFlipped = DriverStation.getAlliance().isPresent()
-                                    && DriverStation.getAlliance().get() == Alliance.Red;
-                            drive.runVelocity(ChassisSpeeds.fromFieldRelativeSpeeds(
-                                    new ChassisSpeeds(
-                                            linearVelocity.getX() * drive.getMaxLinearSpeedMetersPerSec(),
-                                            linearVelocity.getY() * drive.getMaxLinearSpeedMetersPerSec(),
-                                            omega),
-                                    isFlipped
-                                            ? drive.getRotation().plus(new Rotation2d(Math.PI))
-                                            : drive.getRotation()));
-                        },
-                        drive)
-                .beforeStarting(() -> angleController.reset(drive.getRotation().getRadians()))
-                .withName("JoystickDriveAtOptionalAngle");
     }
 
     /**
