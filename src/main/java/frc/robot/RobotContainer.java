@@ -207,12 +207,6 @@ public class RobotContainer {
                         .until(superstructure::atTargetVelocity)
                         .andThen(Commands.parallel(
                                 superstructure.fireCommand(), indexer.index(), intake.intakeRollerCommand())));
-        NamedCommands.registerCommand(
-                "AutoEverything",
-                Commands.sequence(
-                        Commands.parallel(superstructure.autoSpeedShooter(), intake.extendAndIntakeCommand())
-                                .until(superstructure::atTargetVelocity),
-                        Commands.parallel(intake.intakeCommand(), superstructure.fireCommand())));
 
         NamedCommands.registerCommand(
                 "Shoot", Commands.deadline(Commands.waitSeconds(5), superstructure.fireCommand()));
