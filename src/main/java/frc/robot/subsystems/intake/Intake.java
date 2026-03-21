@@ -88,7 +88,7 @@ public class Intake extends SubsystemBase {
     }
 
     public Command siftFuelCommand() {
-        return extender.siftFuelSpeedCommand();
+        return extender.siftFuelPositionCommand();
     }
 
     public Command intakeRollerCommand() {
