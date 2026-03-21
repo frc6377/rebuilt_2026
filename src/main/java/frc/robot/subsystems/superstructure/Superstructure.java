@@ -376,11 +376,12 @@ public class Superstructure extends SubsystemBase {
                                     rpmMultiplier.get(),
                                     ShooterConstants.kSotfEnabled);
 
-                            Logger.recordOutput("Shooting/DistanceSource", "Odometry");
-                            Logger.recordOutput("Shooting/OdometryHubDistanceM", hubDistanceMeters);
+                            Logger.recordOutput("Shooting/DistanceSource", "PoseEstimate");
+                            Logger.recordOutput("Shooting/OdometryHubDistanceM", getCalculationModeFromDashboard());
                             Logger.recordOutput(
                                     "Shooting/TargetHeadingDeg",
                                     latestParameters.targetHeading().getDegrees());
+                            Logger.recordOutput("Shooting/CalculationMode", calculationMode.get());
 
                             boolean inZone = isInShootingZone(robotPose);
                             Logger.recordOutput("Shooting/InShootingZone", inZone);

@@ -62,7 +62,7 @@ public class ShooterConstants {
     public static final double defaultTargetHeightFeet = 6.0;
 
     // Fine-tuning defaults
-    public static final double defaultRpmMultiplier = 1.3;
+    public static final double defaultRpmMultiplier = 0.9;
 
     // Bench Mode Defaults
     public static final double defaultBenchModeEnabled = 0;

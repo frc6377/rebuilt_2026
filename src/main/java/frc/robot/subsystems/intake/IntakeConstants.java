@@ -18,8 +18,8 @@ public class IntakeConstants {
 
     public static class RollerConstants {
         // TODO: Fix incorrect Constants
-        public static final double kIntakePercent = 0.6377;
-        public static final double kOuttakePercent = -0.6377;
+        public static final double kIntakePercent = 0.4;
+        public static final double kOuttakePercent = -0.4;
         public static final AngularVelocity kIntakeSpeed = RadiansPerSecond.of(400);
         public static final AngularVelocity kOuttakeSpeed = RotationsPerSecond.of(50);
 
@@ -45,7 +45,7 @@ public class IntakeConstants {
         public static final Distance kExtenderArmLength = Inches.of(12.0);
         public static final double kDownSpeed = 0.05;
 
-        public static final Angle kExtenderStowAngle = Degrees.of(3.7);
+        public static final Angle kExtenderStowAngle = Radians.of(3.7);
         public static final Angle kExtenderIntakeAngle = Radians.of(5.4);
         public static final Angle kExtenderMaxAngle = Radians.of(5.5);
         public static final Angle kExtenderMinAngle = Radians.of(0.0);
