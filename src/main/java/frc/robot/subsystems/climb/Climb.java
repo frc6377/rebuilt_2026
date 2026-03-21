@@ -50,7 +50,8 @@ public class Climb extends SubsystemBase {
                 () -> {
                     climberIO.set(
                             -ClimbConstants
-                                    .kClimbSpeed); // Goes up even though it is negative because of the motor inversion
+                                    .kClimbSpeed); // Goes up even though it is negative because of the motor
+inversion
                 },
                 () -> {
                     climberIO.set(0);
