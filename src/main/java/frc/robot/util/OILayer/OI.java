@@ -46,11 +46,10 @@ public interface OI {
         return noButton;
     }
 
+    default void setRumbleState(double driverRumble, double operatorRumble) {}
+
     default Command setRumble(double driverRumble, double operatorRumble) {
-        return runOnce(() -> {
-            // controller.setRumble(GenericHID.RumbleType.kLeftRumble, driverRumble);
-            // controller.setRumble(GenericHID.RumbleType.kRightRumble, operatorRumble);
-        });
+        return runOnce(() -> setRumbleState(driverRumble, operatorRumble));
     }
     /* Puts the shooter into a mode where it is able to shoot (e.g. spins up a flywheel that was currently idle)
      * Rumbles joystick or turns on lights on the robot when it gets up to speed to be able to shoot

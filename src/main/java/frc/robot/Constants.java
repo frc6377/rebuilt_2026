@@ -26,6 +26,8 @@ public final class Constants {
     public static final Mode simMode = Mode.SIM;
     public static final Mode currentMode = RobotBase.isReal() ? Mode.REAL : simMode;
 
+    public static final double RUMBLE_WARNING_TIME = 5.0;
+
     public static final double intakingDriveSpeedMultiplier = 0.6;
     // /** Field dimensions and hub positions for 2026 FUEL game */
     // public static final class FieldConstants {
