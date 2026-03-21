@@ -150,20 +150,20 @@ public class TunerConstants {
                     .withDriveInertia(kDriveInertia)
                     .withSteerFrictionVoltage(kSteerFrictionVoltage)
                     .withDriveFrictionVoltage(kDriveFrictionVoltage);
-/*
- * Spare Modules
- * Pod 5: 
- *      Drive: 31
- *      Steer: 30
- *      Encoder: 30
- *      Zero(still needs proper zeroing): 0.28515
- * 
- * Pod E:
- *     Drive: 33     
- *     Steer: 32
- *     Encoder: 31
- *     Zero(still needs proper zeroing): 0.3506
- */
+    /*`
+     * Spare Modules
+     * Pod 5:
+     *      Drive: 31
+     *      Steer: 30
+     *      Encoder: 30
+     *      Zero(still needs proper zeroing): 0.28515
+     *
+     * Pod E:
+     *     Drive: 33
+     *     Steer: 32
+     *     Encoder: 31
+     *     Zero(still needs proper zeroing): 0.3506
+     */
 
     // Front Left
     private static final int kFrontLeftDriveMotorId = 1;
@@ -191,7 +191,7 @@ public class TunerConstants {
     private static final int kBackLeftDriveMotorId = 5;
     private static final int kBackLeftSteerMotorId = 6;
     private static final int kBackLeftEncoderId = 3;
-    private static final Angle kBackLeftEncoderOffset = Rotations.of(0);
+    private static final Angle kBackLeftEncoderOffset = Rotations.of(0.02345);
     private static final boolean kBackLeftSteerMotorInverted = false;
     private static final boolean kBackLeftEncoderInverted = false;
 
