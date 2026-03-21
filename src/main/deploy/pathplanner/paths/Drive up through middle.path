@@ -3,25 +3,25 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 8.161,
+        "x": 6.9,
         "y": 1.175
       },
       "prevControl": null,
       "nextControl": {
-        "x": 8.159548922216318,
-        "y": 2.0949766133946746
+        "x": 6.918931528631957,
+        "y": 2.1966392486046846
       },
       "isLocked": false,
       "linkedName": "Ready to refuel"
     },
     {
       "anchor": {
-        "x": 8.161,
+        "x": 6.9,
         "y": 6.8
       },
       "prevControl": {
-        "x": 8.143033891733394,
-        "y": 5.758829211306347
+        "x": 6.914857839807121,
+        "y": 5.872682947841007
       },
       "nextControl": null,
       "isLocked": false,
