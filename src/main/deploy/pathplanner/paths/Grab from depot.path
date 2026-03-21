@@ -17,18 +17,18 @@
     {
       "anchor": {
         "x": 0.5,
-        "y": 6.9
+        "y": 7.4
       },
       "prevControl": {
         "x": 0.5296148363305254,
-        "y": 7.148239725807769
+        "y": 7.648239725807769
       },
       "nextControl": {
         "x": 0.4565773329842595,
-        "y": 6.536019229229413
+        "y": 7.036019229229413
       },
       "isLocked": false,
-      "linkedName": null
+      "linkedName": "Left of Depot"
     },
     {
       "anchor": {
