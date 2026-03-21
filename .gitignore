@@ -169,6 +169,9 @@ networktables.json
 simgui*.json
 *-window.json
 
+### VisualStudioCode ###
+.vscode/
+
 # Simulation data log directory
 logs/
 
@@ -189,4 +192,5 @@ simgui-ds.json
 .wpilib/wpilib_preferences.json
 docs
 
+docs
 nul
