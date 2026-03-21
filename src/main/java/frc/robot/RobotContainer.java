@@ -310,7 +310,6 @@ public class RobotContainer {
                 () -> OIController.driveTranslationY().getAsDouble(),
                 () -> OIController.driveTranslationX().getAsDouble(),
                 () -> OIController.driveRotation().getAsDouble()));
-        indexer.setDefaultCommand(Commands.either(indexer.stop(), Commands.none(), intake.isRetracted()));
         // // Lock to 0° when butn is
         // OIController.driveLock0()
         // .whileTrue(DriveCommands.joystickDriveAtAngle(
@@ -399,8 +398,8 @@ public class RobotContainer {
         // OIController.start().onTrue(Commands.runOnce(resetGyro,
         // drive).ignoringDisable(true));
 
-        OIController.intake().whileTrue(intake.intakeCommand().alongWith(indexer.index()));
-        OIController.outtake().whileTrue(intake.outtakeRollerCommand().alongWith(indexer.indexReverse()));
+        OIController.intake().whileTrue(intake.intakeCommand().alongWith(indexer.index())).onFalse(indexer.stop());
+        OIController.outtake().whileTrue(intake.outtakeRollerCommand().alongWith(indexer.indexReverse())).onFalse(indexer.stop());
         OIController.zeroIntake().onTrue(intake.zeroExtender().ignoringDisable(true));
         OIController.toggleIntakeState().onTrue(intake.retractIntakeCommand());
         OIController.intakeMiddle().onTrue(intake.goToCustomAngleOneCommand());

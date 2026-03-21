@@ -62,11 +62,12 @@ public class ShooterConstants {
     public static final double defaultTargetHeightFeet = 6.0;
 
     // Fine-tuning defaults
-    public static final double defaultRpmMultiplier = 0.9;
+    public static final double defaultRpmMultiplier = 1;
 
     // Bench Mode Defaults
     public static final double defaultBenchModeEnabled = 0;
     public static final double defaultBenchModeDistanceMeters = 10.0;
+    public static final double offsetM = 0.5969;
     // Shooter Tuning
     public static final HashMap<Distance, AngularVelocity> distanceToAngularVelocity = new HashMap<>();
 
@@ -83,7 +84,8 @@ public class ShooterConstants {
     static {
         for (Distance distance : distanceToAngularVelocity.keySet()) {
             distanceToAngularVelocityDouMapRPM.put(
-                    distance.in(Meters), distanceToAngularVelocity.get(distance).in(RPM));
+                    distance.in(Meters) + offsetM,
+                    distanceToAngularVelocity.get(distance).in(RPM));
         }
     }
 
