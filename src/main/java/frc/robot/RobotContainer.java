@@ -289,7 +289,7 @@ public class RobotContainer {
 
         wallAlignAngle = () -> {
             double robotX = drive.getPose().getTranslation().getX();
-            double fieldMidX = FieldConstants.fieldWidth / 2.0;
+            double fieldMidX = FieldConstants.LinesVertical.center;
             if (robotX > fieldMidX) {
                 return Rotation2d.fromDegrees(90);
             } else {
