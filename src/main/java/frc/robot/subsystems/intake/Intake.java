@@ -55,6 +55,9 @@ public class Intake extends SubsystemBase {
         return runOnce(extender::toggle);
     }
 
+    public BooleanSupplier isRetracted() {
+        return extender.isRetracted();
+    }
     // Roller Commands
     public Command intakeRollerCommand() {
         return Commands.runEnd(roller::start, roller::stop, this);

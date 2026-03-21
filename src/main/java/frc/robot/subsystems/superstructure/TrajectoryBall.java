@@ -37,24 +37,20 @@ public class TrajectoryBall {
      * Calculates shooting parameters for a stationary or moving robot.
      *
      * @param mode Calculation mode (Physics vs Map)
-     * @param hasHood Whether the robot has an active hood subsystem
      * @param robotPose Current field pose
      * @param robotSpeeds Current field-relative or robot-relative speeds (for SotF)
-     * @param maxHeight Calculated peak height of the trajectory (ignored if no hood)
+     * @param maxHeight Calculated peak height of the trajectory
      * @param targetHeight Height of the target opening
-     * @param hoodAngleOffset User-defined fine-tuning offset
      * @param rpmMultiplier User-defined fine-tuning multiplier
      * @param isSotfEnabled Whether to apply movement compensation
      * @return Calculated setpoints
      */
     public static ShootingParameters calculate(
             CalculationMode mode,
-            boolean hasHood,
             Pose2d robotPose,
             ChassisSpeeds robotSpeeds,
             Distance maxHeight,
             Distance targetHeight,
-            double hoodAngleOffset,
             double rpmMultiplier,
             boolean isSotfEnabled) {
         Translation2d hubPosition = FieldConstants.getHubPosition();
@@ -71,27 +67,22 @@ public class TrajectoryBall {
         if (mode == CalculationMode.DOU_INTERPOLATION) {
             stationary = calculateStationaryMap(staticDistance);
         } else {
-            if (hasHood) {
-                stationary = calculateStationary(staticDistance, maxHeight, targetHeight);
-            } else {
-                stationary = calculateFixedAngle(staticDistance, targetHeight, ShooterConstants.kFixedHoodAngle);
-            }
+            stationary = calculateFixedAngle(staticDistance, targetHeight, ShooterConstants.kFixedHoodAngle);
         }
 
         if (!isSotfEnabled || robotSpeeds == null || stationary.totalTime() <= 0) {
-            return finalizeParameters(
-                    stationary.launchAngle, stationary.launchSpeed, staticAngle, hoodAngleOffset, rpmMultiplier);
+            return finalizeParameters(stationary.launchAngle, stationary.launchSpeed, staticAngle, rpmMultiplier);
         }
 
         TrajectoryResult compensated =
-                calculateSotf(hubPosition, robotPosition, robotVelocity, stationary, hasHood, mode, maxHeight);
+                calculateSotf(hubPosition, robotPosition, robotVelocity, stationary, mode, maxHeight);
 
         Rotation2d targetHeading =
                 calculateTargetHeading(hubPosition, robotPosition, robotVelocity, stationary.totalTime());
 
-        return finalizeParameters(
-                compensated.launchAngle, compensated.launchSpeed, targetHeading, hoodAngleOffset, rpmMultiplier);
+        return finalizeParameters(compensated.launchAngle, compensated.launchSpeed, targetHeading, rpmMultiplier);
     }
+
     /** Calculates trajectory based on a lookup table (map) of RPM vs Distance. Assumes a fixed hood angle. */
     public static TrajectoryResult calculateStationaryMap(Distance distance) {
         // 1. Get base RPM from interpolation map
@@ -119,44 +110,6 @@ public class TrajectoryBall {
     public static AngularVelocity getFlywheelVelocityForDistance(Distance distance) {
         double rpm = ShooterConstants.distanceToAngularVelocityDouMapRPM.get(distance.in(Meters));
         return RPM.of(rpm);
-    }
-    /**
-     * Calculates a stationary trajectory with a specific peak height (apex). Uses constant acceleration kinematics for
-     * projectile motion.
-     */
-    private static TrajectoryResult calculateStationary(Distance distance, Distance maxHeight, Distance targetHeight) {
-        Distance startHeight = ShooterConstants.shooterHeight;
-        Distance riseHeight = maxHeight.minus(startHeight);
-        Distance fallHeight = maxHeight.minus(targetHeight);
-
-        if (riseHeight.in(Meters) <= 0 || fallHeight.in(Meters) < 0) {
-            return new TrajectoryResult(Degrees.of(45.0), MetersPerSecond.of(0.0), 1.0);
-        }
-
-        double gravityMps2 = ShooterConstants.gravity.in(MetersPerSecondPerSecond);
-        double riseMeters = riseHeight.in(Meters);
-        double fallMeters = fallHeight.in(Meters);
-        double distanceMeters = distance.in(Meters);
-
-        // 1. Calculate time to reach apex and time to fall to target
-        // d = 0.5 * g * t^2  => t = sqrt(2d / g)
-        double timeToRise = Math.sqrt(2.0 * riseMeters / gravityMps2);
-        double timeToFall = Math.sqrt(2.0 * fallMeters / gravityMps2);
-        double totalTime = timeToRise + timeToFall;
-
-        // 2. Calculate required velocities
-        // Horizontal: v_x = distance / totalTime
-        // Vertical: v_y = g * timeToRise (velocity needed to reach peak height)
-        double horizontalVelocity = distanceMeters / totalTime;
-        double verticalVelocity = gravityMps2 * timeToRise;
-
-        // 3. Resultant launch speed and angle
-        // v = sqrt(v_x^2 + v_y^2), theta = atan2(v_y, v_x)
-        Angle launchAngle = Radians.of(Math.atan2(verticalVelocity, horizontalVelocity));
-        LinearVelocity launchSpeed = MetersPerSecond.of(
-                Math.sqrt(horizontalVelocity * horizontalVelocity + verticalVelocity * verticalVelocity));
-
-        return new TrajectoryResult(launchAngle, launchSpeed, totalTime);
     }
 
     /**
@@ -206,7 +159,6 @@ public class TrajectoryBall {
             Translation2d robotPosition,
             Translation2d robotVelocity,
             TrajectoryResult stationary,
-            boolean hasHood,
             CalculationMode mode,
             Distance maxHeight) {
 
@@ -226,16 +178,9 @@ public class TrajectoryBall {
 
         // 3. Vertical velocity
         double verticalVelocity;
-        if (hasHood && mode != CalculationMode.DOU_INTERPOLATION) {
-            // physics mode: maintain peak height (v_y doesn't change with horizontal motion)
-            double gravityMps2 = ShooterConstants.gravity.in(MetersPerSecondPerSecond);
-            double riseMeters = maxHeight.minus(ShooterConstants.shooterHeight).in(Meters);
-            verticalVelocity = gravityMps2 * Math.sqrt(Math.max(0, 2.0 * riseMeters / gravityMps2));
-        } else {
-            // fixed angle mode: v_z = horizontal_v * tan(theta)
-            // theta is the fixed launch angle from the stationary shot
-            verticalVelocity = horizontalLaunchSpeed * Math.tan(stationary.launchAngle.in(Radians));
-        }
+        // fixed angle mode: v_z = horizontal_v * tan(theta)
+        // theta is the fixed launch angle from the stationary shot
+        verticalVelocity = horizontalLaunchSpeed * Math.tan(stationary.launchAngle.in(Radians));
 
         // 4. Resultant launch speed and angle
         Angle launchAngle = Radians.of(Math.atan2(verticalVelocity, horizontalLaunchSpeed));
@@ -262,16 +207,11 @@ public class TrajectoryBall {
         return new Rotation2d(launchVxField, launchVyField);
     }
 
-    /** Applies offsets, clamps, and converts linear speed back to flywheel RPM. */
+    /** Applies multipliers, clamps, and converts linear speed back to flywheel RPM. */
     private static ShootingParameters finalizeParameters(
-            Angle launchAngle, LinearVelocity launchSpeed, Rotation2d heading, double hoodOffset, double rpmMult) {
-        // 1. Final hood angle with manual offset and hardware limits
-        double hoodDegrees = launchAngle.in(Degrees) + hoodOffset;
-        hoodDegrees = Math.max(
-                ShooterConstants.minHoodAngle.in(Degrees),
-                Math.min(ShooterConstants.maxHoodAngle.in(Degrees), hoodDegrees));
+            Angle launchAngle, LinearVelocity launchSpeed, Rotation2d heading, double rpmMult) {
 
-        // 2. Linear speed back to RPM
+        // 1. Linear speed back to RPM
         // omega = (v / efficiency) / r
         double flywheelRadiusMeters = ShooterConstants.flywheelRadius.in(Meters);
         double angularVelRadPerSec =
@@ -281,6 +221,6 @@ public class TrajectoryBall {
         rpm = Math.max(
                 ShooterConstants.minShootingFlywheelVelocity.in(RPM),
                 Math.min(ShooterConstants.maxShootingFlywheelVelocity.in(RPM), rpm));
-        return new ShootingParameters(Degrees.of(hoodDegrees), RPM.of(rpm), heading);
+        return new ShootingParameters(launchAngle, RPM.of(rpm), heading);
     }
 }
