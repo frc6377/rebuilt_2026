@@ -1,0 +1,32 @@
+{
+  "name": "Lone Ranger",
+  "isFTC": false,
+  "disableSimplification": true,
+  "rotations": [
+    {
+      "axis": "x",
+      "degrees": 90
+    }
+  ],
+  "position": [
+    0,
+    0,
+    0.05
+  ],
+  "cameras": [
+    {
+      "name": "camera",
+      "rotations": [],
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "resolution": [
+        1280,
+        800
+      ]
+    }
+  ],
+  "components": []
+}

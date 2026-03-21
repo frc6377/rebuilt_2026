@@ -62,21 +62,15 @@ public interface ExtenderIO {
 
     default void stop() {}
 
+    default void setPidEnabled(boolean enabled) {}
+
+    default void setMode(NeutralModeValue mode) {}
+
+    default void setMotorPercentage(double percent) {}
+
     default void periodic() {}
-
-    default void autoZero() {}
-
-    default void setNeutralMode(NeutralModeValue mode) {}
-
-    default void currentRunShoot(double volts) {}
 
     default Current getCurrent() {
         return Amps.of(0.0);
     }
-
-    default AngularVelocity getVelocity() {
-        return RotationsPerSecond.of(0.0);
-    }
-
-    default void setEncoderPosition(Angle position) {}
 }
