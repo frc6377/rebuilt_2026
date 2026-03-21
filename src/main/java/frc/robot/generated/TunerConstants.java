@@ -150,6 +150,14 @@ public class TunerConstants {
                     .withDriveInertia(kDriveInertia)
                     .withSteerFrictionVoltage(kSteerFrictionVoltage)
                     .withDriveFrictionVoltage(kDriveFrictionVoltage);
+/*
+ * Spare Modules
+ * Pod 5: 
+ *      Drive: 31
+ *      Steer: 30
+ *      Encoder: 30
+ *      Zero: 0.28515
+ */
 
     // Front Left
     private static final int kFrontLeftDriveMotorId = 1;
