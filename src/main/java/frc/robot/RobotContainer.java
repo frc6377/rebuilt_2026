@@ -321,6 +321,14 @@ public class RobotContainer {
         // .onFalse(superstructure.stopUpgoerCommand().alongWith(indexer.stop()));
         Trigger shootingTrigger = OIController.fireShooter().or(OIController.shootDriver());
         Trigger stopSuperTrigger = OIController.stopShooterDriver().or(OIController.stopSuperstructure());
+
+        new Trigger(() -> {
+                    double t = FieldConstants.getTimeUntilHubStateChange();
+                    return t > 0 && t <= Constants.RUMBLE_WARNING_TIME;
+                })
+                .onTrue(OIController.setRumble(1.0, 1.0))
+                .onFalse(OIController.setRumble(0, 0));
+
         OIController.spinUpShooter()
                 .whileTrue(Commands.parallel(superstructure.runFlywheelVelocityManual())
                         .until(superstructure::atTargetVelocity)

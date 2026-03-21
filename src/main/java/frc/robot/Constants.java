@@ -60,6 +60,7 @@ public final class Constants {
     // : BLUE_HUB_POSITION;
     // }
     // }
+    public static final double RUMBLE_WARNING_TIME = 5;
 
     public static final class EnabledSubsystems {
         public static final boolean kShooterLeft = true;
