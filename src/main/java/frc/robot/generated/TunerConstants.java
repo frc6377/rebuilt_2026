@@ -156,7 +156,13 @@ public class TunerConstants {
  *      Drive: 31
  *      Steer: 30
  *      Encoder: 30
- *      Zero: 0.28515
+ *      Zero(still needs proper zeroing): 0.28515
+ * 
+ * Pod E:
+ *     Drive: 33     
+ *     Steer: 32
+ *     Encoder: 31
+ *     Zero(still needs proper zeroing): 0.3506
  */
 
     // Front Left
