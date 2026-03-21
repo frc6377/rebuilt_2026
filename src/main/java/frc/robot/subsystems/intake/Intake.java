@@ -55,7 +55,16 @@ public class Intake extends SubsystemBase {
 
     public Command toggleIntake() {
         return extender.toggleCommand();
+        // return new ConditionalCommand(
+        // runOnce(() -> extender.retract()), runOnce(() -> extender.extend()),
+        // extender.isExtended());
+        return runOnce(extender::toggle);
     }
+
+    public BooleanSupplier isRetracted() {
+        return extender.isRetracted();
+    }
+
 
     public Command goToSiftAngleOneCommand() {
         return extender.goToSiftAngleOneCommand();

@@ -25,46 +25,12 @@ public final class Constants {
     public static final Mode currentMode = RobotBase.isReal() ? Mode.REAL : simMode;
 
     public static final double intakingDriveSpeedMultiplier = 0.6;
-    // /** Field dimensions and hub positions for 2026 FUEL game */
-    // public static final class FieldConstants {
-    // // Standard FRC field dimensions (2026 FUEL)
-    // public static final Distance FIELD_LENGTH = Feet.of(54.0); // ~16.46m
-    // public static final Distance FIELD_WIDTH = Feet.of(27.0); // ~8.23m
-    //
-    // // Hub dimensions
-    // public static final Distance HUB_OPENING_HEIGHT = Inches.of(72.0); // 1.83m
-    // public static final Distance HUB_OPENING_DIAMETER = Inches.of(41.7); //
-    // ~1.06m hexagonal
-    //
-    // // Hub is centered 158.6in (4.03m) from alliance wall, centered on field
-    // width
-    // public static final Distance MIDDLE_HUB_DISTANCE_FROM_WALL =
-    // Inches.of(158.6).plus(HUB_OPENING_DIAMETER.div(2)); // 4.03m
-    //
-    // // Blue alliance hub position (blue wall is at x = 0)
-    // public static final Translation2d BLUE_HUB_POSITION =
-    // new Translation2d(MIDDLE_HUB_DISTANCE_FROM_WALL.in(Meters),
-    // FIELD_WIDTH.in(Meters) / 2.0);
-    //
-    // // Red alliance hub position (red wall is at x = field length)
-    // public static final Translation2d RED_HUB_POSITION = new Translation2d(
-    // FIELD_LENGTH.in(Meters) - MIDDLE_HUB_DISTANCE_FROM_WALL.in(Meters),
-    // FIELD_WIDTH.in(Meters) / 2.0);
-    //
-    // /** Get the hub position for the current alliance */
-    // public static Translation2d getHubPosition() {
-    // return DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red
-    // ? RED_HUB_POSITION
-    // : BLUE_HUB_POSITION;
-    // }
-    // }
 
     public static final class EnabledSubsystems {
         public static final boolean kShooterLeft = true;
         public static final boolean kShooterRight = true;
         public static final boolean kShooterUpgoerLeft = true;
         public static final boolean kShooterUpgoerRight = true;
-        public static final boolean kHood = false;
         public static final boolean kRoller = true;
         public static final boolean kExtender = true;
         public static final boolean kDrive = true;
@@ -91,11 +57,6 @@ public final class Constants {
             public static final int kIndexerMotorID = 16;
             public static final int kExtenderMotorID = 17;
             public static final int kRollerMotorID = 18;
-
-            // Not implemented in hardware
-            public static final int kShooterHoodMotorCANID = -1;
-            public static final int kShooterSpinMotorLeftCANID = -1;
-            public static final int kShooterSpinMotorRightCANID = -1;
         }
 
         public static final class SensorIDs {
