@@ -1,16 +1,18 @@
 package frc.robot.subsystems.climb;
 
 import static edu.wpi.first.units.Units.Amps;
-import static edu.wpi.first.units.Units.Kilograms;
-import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Volts;
 import static frc.robot.util.PhoenixUtil.tryUntilOk;
 
-import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.units.measure.Distance;
+import com.ctre.phoenix6.controls.MotionMagicVoltage;
+import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.math.system.plant.LinearSystemId;
+import edu.wpi.first.math.util.Units;
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.TimedRobot;
-import edu.wpi.first.wpilibj.simulation.ElevatorSim;
+import edu.wpi.first.wpilibj.simulation.DCMotorSim;
+import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.util.Color8Bit;
@@ -22,113 +24,228 @@ import org.littletonrobotics.junction.mechanism.LoggedMechanismLigament2d;
 import org.littletonrobotics.junction.mechanism.LoggedMechanismRoot2d;
 
 public class ClimberIOSim implements ClimberIO {
-    // Sim
-    private final TunableTalonFX climbMotor1;
 
+    // Motors
+    private final TunableTalonFX pivotMotor;
+    private final TunableTalonFX hookMotor;
+
+    // Pivot arm: SingleJointedArmSim because it swings through a bounded angle
+    // and gravity acts on it
+    private final SingleJointedArmSim pivotSim;
+
+    // Hook: DCMotorSim because it just spins freely — no angle limits, no gravity
+    // It is NOT an arm, it is a continuously rotating hook
+    private final DCMotorSim hookSim;
+
+    // Mechanism2d
     private static LoggedMechanism2d climbMech;
-    private ElevatorSim climbSim;
-
-    private LoggedMechanismLigament2d climbLig;
     private LoggedMechanismRoot2d mechRoot;
-    private final PIDController pidController;
+    private LoggedMechanismLigament2d pivotLig;
+    private LoggedMechanismLigament2d hookSpinIndicator;
 
-    private double appliedVolts = 0;
-    private Distance targetHeight = ClimbConstants.kStartHeight;
-    private boolean closedLoopControl = ClimbConstants.kClosedLoopControl;
+    // Applied voltages
+    private double pivotAppliedVolts = 0.0;
+    private double hookAppliedVolts  = 0.0;
 
-    // private double integralAccumulator = ClimbConstants.kIntegralAccumulator;
-    // private double previousError = ClimbConstants.kPreviousError;
-    // private static final double DT = ClimbConstants.kDT;
+    // Simulated current spike state for hook motor
+    // Because there is no real pole in sim, we count how long the hook has been
+    // spinning and inject fake current spikes so the command sequence can progress
+    private double hookRunningSeconds    = 0.0;
+    private boolean hookContactSimulated = false;
+    private boolean climbDoneSimulated   = false;
+
+    // How many seconds of continuous spinning before each fake spike fires
+    private static final double kHookContactSimDelay = 1.5; // → fakes pole contact (low spike)
+    private static final double kClimbDoneSimDelay   = 3.0; // → fakes robot fully lifted (high spike)
 
     public ClimberIOSim() {
-        climbMotor1 = new TunableTalonFX(MotorIDs.kClimbMotor1ID, "sim", "ClimbMotor1");
-        tryUntilOk(5, () -> climbMotor1.getConfigurator().apply(ClimbConstants.kClimbMotorConfigSim, 0.25));
+        pivotMotor = new TunableTalonFX(MotorIDs.kClimbMotor2ID, "sim", "PivotMotor");
+        hookMotor  = new TunableTalonFX(MotorIDs.kClimbMotor1ID, "sim", "HookMotor");
 
-        pidController =
-                new PIDController(ClimbConstants.SimPIDF.kP, ClimbConstants.SimPIDF.kI, ClimbConstants.SimPIDF.kD);
-        climbSim = new ElevatorSim(
-                ClimbConstants.kClimbGearBox,
-                ClimbConstants.kClimbGearRatio,
-                ClimbConstants.kCarriageMass.in(Kilograms),
-                ClimbConstants.kElevatorDrumRadius.in(Meters),
-                ClimbConstants.kClimbMinHeight.in(Meters),
-                ClimbConstants.kClimbMaxHeight.in(Meters),
-                ClimbConstants.kSimulateGravity,
-                ClimbConstants.kStartHeight.in(Meters));
+        tryUntilOk(5, () -> pivotMotor.getConfigurator().apply(ClimbConstants.kPivotMotorConfigSim, 0.25));
+        tryUntilOk(5, () -> hookMotor.getConfigurator().apply(ClimbConstants.kHookMotorConfigSim,   0.25));
 
-        climbMech = new LoggedMechanism2d(Meters.of(2), Meters.of(2));
-        mechRoot = climbMech.getRoot("root", 1, 0);
-        climbLig = new LoggedMechanismLigament2d("Climber Mech [0]", 1, 90, 10, new Color8Bit(Color.kBlue));
-        SmartDashboard.putData("Mech2Ds/Elevator Mech", climbMech);
-        mechRoot.append(climbLig);
+        // --- Pivot arm sim ---
+        // Bounded rotation from stow angle to extended angle, gravity enabled
+        pivotSim = new SingleJointedArmSim(
+                DCMotor.getKrakenX60(1),
+                ClimbConstants.kPivotGearRatio,
+                SingleJointedArmSim.estimateMOI(
+                        ClimbConstants.kPivotArmLengthMeters,
+                        ClimbConstants.kPivotArmMassKg),
+                ClimbConstants.kPivotArmLengthMeters,
+                ClimbConstants.kPivotMinAngleRad,  // stow angle
+                ClimbConstants.kPivotMaxAngleRad,  // extended angle
+                true,                              // simulate gravity
+                ClimbConstants.kPivotMinAngleRad); // start at stow
+
+        // --- Hook motor sim ---
+        // Free-spinning rotor — no angle limits, no gravity
+        hookSim = new DCMotorSim(
+                LinearSystemId.createDCMotorSystem(
+                        DCMotor.getKrakenX60(1),
+                        ClimbConstants.kHookMomentOfInertia,
+                        ClimbConstants.kHookGearRatio),
+                DCMotor.getKrakenX60(1));
+
+        // --- Mechanism2d ---
+        // Pivot ligament shows the arm swinging; hook indicator is a short
+        // ligament at the tip of the pivot that rotates to show the hook spinning
+        climbMech = new LoggedMechanism2d(2, 2);
+        mechRoot  = climbMech.getRoot("ClimberRoot", 1.0, 0.1);
+
+        pivotLig = new LoggedMechanismLigament2d(
+                "PivotArm",
+                ClimbConstants.kPivotArmLengthMeters,
+                Units.radiansToDegrees(ClimbConstants.kPivotMinAngleRad),
+                6,
+                new Color8Bit(Color.kOrange));
+
+        // Short indicator at the tip of the pivot to visualise hook spinning
+        hookSpinIndicator = new LoggedMechanismLigament2d(
+                "HookSpin",
+                0.1,
+                0,
+                3,
+                new Color8Bit(Color.kAqua));
+
+        mechRoot.append(pivotLig);
+        pivotLig.append(hookSpinIndicator);
+
+        SmartDashboard.putData("Mech2Ds/ClimberMech", climbMech);
+    }
+
+    // -------------------------------------------------------------------------
+    // ClimberIO overrides
+    // -------------------------------------------------------------------------
+
+    @Override
+    public void goToPivotAngle(Angle angle) {
+        pivotMotor.setControl(
+                new MotionMagicVoltage(angle.in(Rotations)).withSlot(0));
     }
 
     @Override
-    public void goToHeight(Distance height) {
-        pidController.setSetpoint(height.in(Meters));
-        targetHeight = height;
-        closedLoopControl = true;
+    public void setHookPercent(double percent) {
+        hookMotor.set(percent);
+        // Reset spike timers if hook is commanded to stop
+        if (Math.abs(percent) < 0.05) {
+            hookRunningSeconds   = 0.0;
+            hookContactSimulated = false;
+            climbDoneSimulated   = false;
+        }
     }
 
     @Override
     public void stop() {
-        appliedVolts = 0.0;
-        closedLoopControl = false;
+        pivotMotor.stopMotor();
+        hookMotor.stopMotor();
+        pivotAppliedVolts    = 0.0;
+        hookAppliedVolts     = 0.0;
+        hookRunningSeconds   = 0.0;
+        hookContactSimulated = false;
+        climbDoneSimulated   = false;
     }
 
     @Override
     public void set(double percent) {
-        climbMotor1.set(percent);
-        closedLoopControl = false;
+        pivotMotor.set(percent);
     }
 
     @Override
     public void updateInputs(ClimberIOInputs inputs) {
-        double positionMeters = climbSim.getPositionMeters();
-        inputs.height = Meters.of(positionMeters);
+        // --- Pivot inputs ---
+        inputs.pivotAngle =
+                Rotations.of(pivotSim.getAngleRads() / (2 * Math.PI));
+        inputs.pivotAppliedVoltage     = Volts.of(pivotAppliedVolts);
+        inputs.pivotStatorCurrent      = Amps.of(pivotSim.getCurrentDrawAmps());
+        inputs.pivotSupplyCurrent      = Amps.of(pivotSim.getCurrentDrawAmps());
+        inputs.pivotTemperatureCelsius = 25.0;
+        inputs.pivotMotorConnected     = true;
+        inputs.pivotAbsoluteEncoderPosition =
+                (pivotSim.getAngleRads() / (2 * Math.PI)) % 1.0;
 
-        double rotations = (positionMeters * ClimbConstants.kClimbGearRatio)
-                / ClimbConstants.kElevatorDrumCircumference.in(Meters);
-        inputs.motorPosition = Rotations.of(rotations);
+        // --- Hook inputs ---
+        inputs.hookAngle =
+                Rotations.of(hookSim.getAngularPositionRotations());
+        inputs.hookAppliedVoltage     = Volts.of(hookAppliedVolts);
+        inputs.hookTemperatureCelsius = 25.0;
+        inputs.hookMotorConnected     = true;
+        inputs.hookAbsoluteEncoderPosition =
+                hookSim.getAngularPositionRotations() % 1.0;
 
-        inputs.appliedVoltage = Volts.of(appliedVolts);
-        inputs.statorCurrent = Amps.of(climbSim.getCurrentDrawAmps());
-        inputs.supplyCurrent = Amps.of(climbSim.getCurrentDrawAmps());
-        inputs.temperatureCelsius = 25.0;
-
-        inputs.absoluteEncoderPosition = rotations % 1.0;
-
-        inputs.motorConnected = true;
+        // Simulated current spikes — kClimbDone check comes first so the larger spike wins
+        if (hookContactSimulated && !climbDoneSimulated
+                && hookRunningSeconds >= kClimbDoneSimDelay) {
+            inputs.hookStatorCurrent = Amps.of(ClimbConstants.kClimbDoneAmps + 5.0);
+            inputs.hookSupplyCurrent = inputs.hookStatorCurrent;
+            climbDoneSimulated = true;
+        } else if (!hookContactSimulated
+                && hookRunningSeconds >= kHookContactSimDelay) {
+            inputs.hookStatorCurrent = Amps.of(ClimbConstants.kHookContactAmps + 5.0);
+            inputs.hookSupplyCurrent = inputs.hookStatorCurrent;
+            hookContactSimulated = true;
+        } else {
+            inputs.hookStatorCurrent = Amps.of(hookSim.getCurrentDrawAmps());
+            inputs.hookSupplyCurrent = inputs.hookStatorCurrent;
+        }
     }
 
     @Override
-    public Distance getHeight() {
-        return Meters.of(climbSim.getPositionMeters());
+    public Angle getPivotAngle() {
+        return Rotations.of(pivotSim.getAngleRads() / (2 * Math.PI));
+    }
+
+    @Override
+    public void resetToAbsolute() {
+        // Sim encoder is always accurate — nothing to reset
+    }
+
+    @Override
+    public void zeroEncoder() {
+        // No-op for sim
     }
 
     @Override
     public void periodic() {
-        set(pidController.calculate(getHeight().in(Meters)));
+        // Pull voltage from TalonFX sim state and feed into physics sims
+        pivotAppliedVolts = pivotMotor.getMotorVoltage().getValueAsDouble();
+        hookAppliedVolts  = hookMotor.getMotorVoltage().getValueAsDouble();
 
-        Logger.recordOutput("Climb/Simulation/PID/kP", pidController.getP());
-        Logger.recordOutput("Climb/Simulation/PID/kI", pidController.getI());
-        Logger.recordOutput("Climb/Simulation/PID/kD", pidController.getD());
-        Logger.recordOutput("Climb/Simulation/PID/Error", pidController.getPositionError());
+        pivotSim.setInputVoltage(pivotAppliedVolts);
+        hookSim.setInputVoltage(hookAppliedVolts);
 
-        climbSim.setInputVoltage(climbMotor1.getMotorVoltage().getValueAsDouble());
-        climbSim.update(TimedRobot.kDefaultPeriod);
+        pivotSim.update(TimedRobot.kDefaultPeriod);
+        hookSim.update(TimedRobot.kDefaultPeriod);
 
-        climbLig.setLength(Meters.of(climbSim.getPositionMeters()));
+        // Advance hook-running timer while the hook motor is powered
+        if (Math.abs(hookAppliedVolts) > 0.5) {
+            hookRunningSeconds += TimedRobot.kDefaultPeriod;
+        }
 
-        Logger.recordOutput("Climb/Simulation/Height (Meters)", getHeight());
-        Logger.recordOutput("Climb/Simulation/Velocity (M/s)", climbSim.getVelocityMetersPerSecond());
-        Logger.recordOutput("Climb/Simulation/Current (Amps)", climbSim.getCurrentDrawAmps());
-        Logger.recordOutput(
-                "Climb/Simulation/Applied Volts", climbMotor1.getMotorVoltage().getValueAsDouble());
-        Logger.recordOutput("Climb/Simulation/Target Height", targetHeight.in(Meters));
-        Logger.recordOutput("Climb/Simulation/2D Mech", climbMech);
+        // Update Mechanism2d
+        pivotLig.setAngle(Units.radiansToDegrees(pivotSim.getAngleRads()));
+        // Spin the hook indicator proportionally so it visually rotates in AdvantageScope
+        hookSpinIndicator.setAngle(
+                Units.radiansToDegrees(hookSim.getAngularPositionRotations() * 2 * Math.PI));
+
+        // AdvantageKit logging
+        Logger.recordOutput("Climb/Sim/Pivot/AngleRad",     pivotSim.getAngleRads());
+        Logger.recordOutput("Climb/Sim/Pivot/VelocityRadS", pivotSim.getVelocityRadPerSec());
+        Logger.recordOutput("Climb/Sim/Pivot/CurrentAmps",  pivotSim.getCurrentDrawAmps());
+        Logger.recordOutput("Climb/Sim/Pivot/AppliedVolts", pivotAppliedVolts);
+
+        Logger.recordOutput("Climb/Sim/Hook/PositionRot",   hookSim.getAngularPositionRotations());
+        Logger.recordOutput("Climb/Sim/Hook/VelocityRPS",   hookSim.getAngularVelocityRPM() / 60.0);
+        Logger.recordOutput("Climb/Sim/Hook/CurrentAmps",   hookSim.getCurrentDrawAmps());
+        Logger.recordOutput("Climb/Sim/Hook/AppliedVolts",  hookAppliedVolts);
+        Logger.recordOutput("Climb/Sim/Hook/RunningSeconds",     hookRunningSeconds);
+        Logger.recordOutput("Climb/Sim/Hook/ContactSimulated",   hookContactSimulated);
+        Logger.recordOutput("Climb/Sim/Hook/ClimbDoneSimulated", climbDoneSimulated);
+
+        Logger.recordOutput("Climb/Sim/2DMech", climbMech);
+
+        pivotMotor.updateTunableGains();
+        hookMotor.updateTunableGains();
     }
-
-    @Override
-    public void resetToAbsolute() {}
 }

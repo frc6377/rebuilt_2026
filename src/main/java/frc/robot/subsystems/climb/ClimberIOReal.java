@@ -30,7 +30,6 @@ public class ClimberIOReal implements ClimberIO {
         // limitSwitch = new DigitalInput(ClimbConstants.kLimitSwitchPort);
 
         tryUntilOk(5, () -> climbMotor1.getConfigurator().apply(ClimbConstants.kClimbMotorConfigReal, 0.25));
-        tryUntilOk(5, () -> climbMotor1.getConfigurator().apply(ClimbConstants.kLimitSwitchConfig, 0.25));
 
         climbMotor1.setPosition(climbEncoder.get());
 

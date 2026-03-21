@@ -101,6 +101,7 @@ public final class Constants {
             public static final int kShooterSpinMotorRightCANID = -1;
 
             public static final int kClimbMotor1ID = 19;
+            public static final int kClimbMotor2ID = 20;
         }
 
         public static final class SensorIDs {
