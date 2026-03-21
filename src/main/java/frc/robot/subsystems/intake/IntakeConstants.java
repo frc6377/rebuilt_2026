@@ -18,8 +18,8 @@ public class IntakeConstants {
 
     public static class RollerConstants {
         // TODO: Fix incorrect Constants
-        public static final double kIntakePercent = 0.8;
-        public static final double kOuttakePercent = -0.6;
+        public static final double kIntakePercent = 0.6377;
+        public static final double kOuttakePercent = -0.6377;
         public static final AngularVelocity kIntakeSpeed = RadiansPerSecond.of(400);
         public static final AngularVelocity kOuttakeSpeed = RotationsPerSecond.of(50);
 
@@ -34,7 +34,7 @@ public class IntakeConstants {
 
         public static class MotorConfig {
             public static final double kRampPeriod = 0.02;
-            public static final Current kStatorCurrentLimit = Amps.of(70);
+            public static final Current kStatorCurrentLimit = Amps.of(40);
         }
     }
 
@@ -45,15 +45,15 @@ public class IntakeConstants {
         public static final Distance kExtenderArmLength = Inches.of(12.0);
         public static final double kDownSpeed = 0.05;
 
-        public static final Angle kExtenderStowAngle = Degrees.of(0.0);
-        public static final Angle kExtenderIntakeAngle = Degrees.of(130.0);
-        public static final Angle kExtenderMaxAngle = Degrees.of(90.0);
-        public static final Angle kExtenderMinAngle = Degrees.of(0.0);
+        public static final Angle kExtenderStowAngle = Degrees.of(3.7);
+        public static final Angle kExtenderIntakeAngle = Radians.of(5.4);
+        public static final Angle kExtenderMaxAngle = Radians.of(5.5);
+        public static final Angle kExtenderMinAngle = Radians.of(0.0);
         public static final Angle kExtenderTolerance = Degrees.of(2);
-        public static final Angle kExtenderSiftAngleOne = Degrees.of(120);
-        public static final Angle kExtenderSiftAngleTwo = Degrees.of(90);
-        public static final Angle kExtenderCustomAngleOne = Degrees.of(70.0);
-        public static final Angle kExtenderCustomAngleTwo = Degrees.of(20.0);
+        public static final Angle kExtenderSiftAngleOne = Radians.of(5);
+        public static final Angle kExtenderSiftAngleTwo = Radians.of(4.5);
+        public static final Angle kExtenderCustomAngleOne = Radians.of(4);
+        public static final Angle kExtenderCustomAngleTwo = Degrees.of(4.5);
         public static final Angle kExtenderZeroAngle = Degrees.of(0);
 
         public static final Current zeroCurrentLimit = Amps.of(15);

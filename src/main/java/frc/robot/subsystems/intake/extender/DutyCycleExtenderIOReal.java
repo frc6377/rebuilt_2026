@@ -73,7 +73,7 @@ public class DutyCycleExtenderIOReal implements ExtenderIO {
                 ExtenderConstants.PIDF.kI,
                 ExtenderConstants.PIDF.kD,
                 () -> getPosition().in(Degrees),
-                percent -> extenderMotor.set(percent));
+                extenderMotor::set);
 
         kExtenderStowAngle =
                 new LoggedNetworkNumber("Intake/Extender/StowAngle", ExtenderConstants.kExtenderStowAngle.in(Degrees));

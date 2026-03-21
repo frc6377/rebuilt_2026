@@ -304,6 +304,7 @@ public class RobotContainer {
                 () -> OIController.driveTranslationY().getAsDouble(),
                 () -> OIController.driveTranslationX().getAsDouble(),
                 () -> OIController.driveRotation().getAsDouble()));
+        indexer.setDefaultCommand(Commands.either(indexer.stop(), Commands.none(), intake.isRetracted()));
         // // Lock to 0° when butn is
         // OIController.driveLock0()
         // .whileTrue(DriveCommands.joystickDriveAtAngle(
