@@ -2,7 +2,6 @@ package frc.robot.subsystems.intake.extender;
 
 import static edu.wpi.first.units.Units.*;
 
-import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.system.plant.DCMotor;
@@ -59,11 +58,10 @@ public class ExtenderIOSim implements ExtenderIO {
         armSim = new SingleJointedArmSim(
                 DCMotor.getKrakenX60(1),
                 ExtenderConstants.kGearing,
-                ExtenderConstants.kMOI.in(KilogramSquareMeters), 
+                ExtenderConstants.kMOI.in(KilogramSquareMeters),
                 ExtenderConstants.kExtenderArmLength.in(Meters),
                 ExtenderConstants.kExtenderStowAngle.in(Radians),
-                ExtenderConstants.kExtenderIntakeAngle.in(Radians)
-                ,
+                ExtenderConstants.kExtenderIntakeAngle.in(Radians),
                 false,
                 ExtenderConstants.kExtenderZeroAngle.in(Radians),
                 0.0,
@@ -104,8 +102,7 @@ public class ExtenderIOSim implements ExtenderIO {
 
     @Override
     public void retract() {
-        setPosition(Degrees.of(extenderIntakeAngle.get())
-            );
+        setPosition(Degrees.of(extenderIntakeAngle.get()));
     }
 
     @Override
@@ -167,7 +164,7 @@ public class ExtenderIOSim implements ExtenderIO {
 
     @Override
     public void updateInputs(ExtenderIOInputs inputs) {
-        
+
         if (pidEnabled) {
             appliedVolts = MathUtil.clamp(pidController.calculate(getPosition().in(Degrees)), -12.0, 12.0);
         }

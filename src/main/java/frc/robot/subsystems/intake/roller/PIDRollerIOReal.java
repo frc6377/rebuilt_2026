@@ -1,5 +1,9 @@
 package frc.robot.subsystems.intake.roller;
 
+import static edu.wpi.first.units.Units.RPM;
+
+import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
+
 import com.ctre.phoenix6.configs.ClosedLoopRampsConfigs;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
@@ -17,12 +21,17 @@ public class PIDRollerIOReal implements RollerIO {
 
     private final TunableTalonFX rollerMotor;
     private final Slot0Configs rollerPID;
+    private final LoggedNetworkNumber intakeSpeed;
+    private final LoggedNetworkNumber outtakeSpeed;
+
 
     public PIDRollerIOReal() {
         rollerPID = new Slot0Configs();
         rollerPID.kP = IntakeConstants.RollerConstants.PIDF.kP;
         rollerPID.kI = IntakeConstants.RollerConstants.PIDF.kI;
         rollerPID.kD = IntakeConstants.RollerConstants.PIDF.kD;
+        intakeSpeed = new LoggedNetworkNumber("Intake/Roller/IntakeSpeed", IntakeConstants.RollerConstants.kIntakeSpeed.in(RPM));
+        outtakeSpeed = new LoggedNetworkNumber("Intake/Roller/OuttakeSpeed", IntakeConstants.RollerConstants.kOuttakeSpeed.in(RPM));
 
         var config = new TalonFXConfiguration()
                 .withMotorOutput(new MotorOutputConfigs()
@@ -57,12 +66,12 @@ public class PIDRollerIOReal implements RollerIO {
 
     @Override
     public void start() {
-        setRollerSpeed(IntakeConstants.RollerConstants.kIntakeSpeed);
+        setRollerSpeed(RPM.of(intakeSpeed.get()));
     }
 
     @Override
     public void outtake() {
-        setRollerSpeed(IntakeConstants.RollerConstants.kOuttakeSpeed);
+        setRollerSpeed(RPM.of(outtakeSpeed.get()));
     }
 
     @Override

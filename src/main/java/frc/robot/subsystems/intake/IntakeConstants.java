@@ -23,8 +23,8 @@ public class IntakeConstants {
         // TODO: Fix incorrect Constants
         public static final double kIntakePercent = 1;
         public static final double kOuttakePercent = -0.6;
-        public static final AngularVelocity kIntakeSpeed = RadiansPerSecond.of(400);
-        public static final AngularVelocity kOuttakeSpeed = RotationsPerSecond.of(50);
+        public static final AngularVelocity kIntakeSpeed = RPM.of(400);
+        public static final AngularVelocity kOuttakeSpeed = RPM.of(400);
 
         public static class PIDF {
             public static final double kP = 0.0;
@@ -59,6 +59,7 @@ public class IntakeConstants {
         public static final Angle kExtenderCustomAngleOne = Degrees.of(45.0);
         public static final Angle kExtenderCustomAngleTwo = Degrees.of(60.0);
         public static final Angle kExtenderZeroAngle = Degrees.of(212.0);
+
         public static class PIDF {
             public static final double kP = 0.005;
             public static final double kI = 0.0;
