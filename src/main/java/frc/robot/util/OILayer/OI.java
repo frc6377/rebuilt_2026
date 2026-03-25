@@ -92,7 +92,7 @@ public interface OI {
     /* be able to avoid damaging the robot if things are in the way.
     /* Subsystem: Intake
     */
-    default Trigger retractIntake() {
+    default Trigger toggleIntakeState() {
         return noButton;
     }
 

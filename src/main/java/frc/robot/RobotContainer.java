@@ -28,6 +28,7 @@ import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
@@ -46,8 +47,8 @@ import frc.robot.subsystems.indexer.IndexerIO;
 import frc.robot.subsystems.indexer.IndexerIOReal;
 import frc.robot.subsystems.indexer.IndexerIOSim;
 import frc.robot.subsystems.intake.Intake;
+import frc.robot.subsystems.intake.extender.DutyCycleExtenderIOReal;
 import frc.robot.subsystems.intake.extender.ExtenderIO;
-import frc.robot.subsystems.intake.extender.ExtenderIOReal;
 import frc.robot.subsystems.intake.extender.ExtenderIOSim;
 import frc.robot.subsystems.intake.roller.RollerIO;
 import frc.robot.subsystems.intake.roller.RollerIOReal;
@@ -87,6 +88,7 @@ public class RobotContainer {
     private final Indexer indexer;
     private final SwerveDriveSimulation driveSimulation; // Only used in simulation, but declared here for easy
     // access by subsystems that need it
+    private final RobotState robotState;
 
     private final boolean usingController;
 
@@ -95,9 +97,9 @@ public class RobotContainer {
 
     /** The container for the robot. Contains subsystems, OI devices, and commands. */
     public RobotContainer() {
-        RobotState.create();
+        robotState = RobotState.create();
 
-        usingController = false;
+        usingController = Constants.currentMode == Constants.Mode.REAL || DriverStation.isJoystickConnected(0);
 
         if (usingController || Constants.currentMode != Constants.Mode.SIM) {
             OIController = new OIXbox();
@@ -127,8 +129,8 @@ public class RobotContainer {
                 vision = new Vision(
                         drive, new QuestNavIO() {}, new VisionIOLimelight("limelight-shooter", drive::getRotation));
                 intake = new Intake(
-                        Constants.EnabledSubsystems.kExtender ? new ExtenderIOReal() : new ExtenderIO() {},
-                        Constants.EnabledSubsystems.kRoller ? new RollerIOReal() : new RollerIO() {});
+                        Constants.EnabledSubsystems.kRoller ? new RollerIOReal() : new RollerIO() {},
+                        Constants.EnabledSubsystems.kExtender ? new DutyCycleExtenderIOReal() : new ExtenderIO() {});
                 indexer = new Indexer(Constants.EnabledSubsystems.kIndexer ? new IndexerIOReal() : new IndexerIO() {});
                 driveSimulation = null;
                 break;
@@ -138,8 +140,8 @@ public class RobotContainer {
 
                 driveSimulation = new SwerveDriveSimulation(Drive.mapleSimConfig, new Pose2d(3, 3, new Rotation2d()));
                 intake = new Intake(
-                        Constants.EnabledSubsystems.kExtender ? new ExtenderIOSim() : new ExtenderIO() {},
-                        Constants.EnabledSubsystems.kRoller ? new RollerIOSim(driveSimulation) : new RollerIO() {});
+                        Constants.EnabledSubsystems.kRoller ? new RollerIOSim(driveSimulation) : new RollerIO() {},
+                        Constants.EnabledSubsystems.kExtender ? new ExtenderIOSim() : new ExtenderIO() {});
                 SimulatedArena.getInstance().addDriveTrainSimulation(driveSimulation);
                 drive = new Drive(
                         new GyroIOSim(driveSimulation.getGyroSimulation()),
@@ -171,7 +173,7 @@ public class RobotContainer {
                         (pose) -> {});
                 driveSimulation = null;
                 vision = new Vision(drive, new QuestNavIO() {}, new VisionIO() {}, new VisionIO() {});
-                intake = new Intake(new ExtenderIO() {}, new RollerIO() {});
+                intake = new Intake(new RollerIO() {}, new ExtenderIO() {});
                 indexer = new Indexer(new IndexerIO() {});
                 break;
         }
@@ -193,25 +195,38 @@ public class RobotContainer {
                 "AutoShootHub",
                 superstructure
                         .autoSpeedShooter(drive::getPose, drive::getChassisSpeeds)
-                        .until(superstructure::atTargetVelocity)
+                        .until(() -> superstructure.isReadyToShoot(drive.getRotation()))
                         .andThen(Commands.parallel(indexer.index(), superstructure.fireCommand())));
         NamedCommands.registerCommand(
                 "AutoShoot",
                 Commands.parallel(
                                 superstructure.autoSpeedShooter(drive::getPose, drive::getChassisSpeeds),
-                                intake.extendIntakeAndWait())
-                        .until(superstructure::atTargetVelocity)
+                                intake.extendIntake())
+                        // .aimAtHubWhileDriving(
+                        // drive, OIController.driveTranslationX(),
+                        // OIController.driveTranslationY()))
+                        .until(() -> superstructure.isReadyToShoot(drive.getRotation()))
                         .andThen(Commands.parallel(
-                                superstructure.fireCommand(), indexer.index(), intake.intakeRollerCommand())));
+                                superstructure.fireCommand(), indexer.index(), intake.intakeRollerCommand()))
+                // .handleInterrupt(() -> {
+                //     indexer.stop();
+                //     // intake.stop();
+
+                // })
+                );
         NamedCommands.registerCommand(
                 "AutoEverything",
                 Commands.sequence(
-                        Commands.parallel(superstructure.autoSpeedShooter(), intake.intakeCommand())
-                                .until(superstructure::atTargetVelocity),
+                        Commands.parallel(
+                                        superstructure.autoSpeedShooter(drive::getPose),
+                                        intake.extendAndIntakeCommand())
+                                .until(() -> superstructure.isReadyToShoot(drive.getRotation())),
                         Commands.parallel(intake.intakeCommand(), superstructure.fireCommand())));
 
         NamedCommands.registerCommand(
                 "Shoot", Commands.deadline(Commands.waitSeconds(5), superstructure.fireCommand()));
+        NamedCommands.registerCommand("Wait 5 seconds", Commands.waitSeconds(5));
+        NamedCommands.registerCommand("Stop shooter", superstructure.stopShooterCommand());
         // NamedCommands.registerCommand("Intake",
         // Commands.deadline(intake.intakeCommand(), Commands.waitSeconds(6)));
         NamedCommands.registerCommand("Extend Intake", intake.extendIntake());
@@ -329,20 +344,19 @@ public class RobotContainer {
                         .setFlywheelVelocityManual(RPM.of(1500))
                         .andThen(superstructure.runFlywheelVelocityManual()));
         shootingTrigger
-                .whileTrue(Commands.parallel(superstructure
-                        .runToggledSpeed(drive::getPose, drive::getChassisSpeeds)
-                        // superstructure.aimAtHubWhileDriving(
-                        // drive, OIController.driveTranslationX(),
-                        // OIController.driveTranslationY()))
-                        .until(superstructure::atTargetVelocity)
-                        .andThen(Commands.runOnce(drive::stopWithX))
+                .whileTrue(superstructure
+                        .aimAndSpinUp(drive, OIController.driveTranslationX(), OIController.driveTranslationY())
+                        .andThen()
                         .andThen(Commands.parallel(
-                                superstructure.fireCommand(), indexer.index(), intake.siftFuelCommand()))))
+                                superstructure.fireCommand(),
+                                indexer.index(),
+                                intake.voltageSiftFuel(),
+                                superstructure.aimAtHubWhileDriving(
+                                        drive, OIController.driveTranslationY(), OIController.driveTranslationX()))))
                 .onFalse(Commands.parallel(
-                                superstructure.stopUpgoerCommand(),
-                                indexer.stop(),
-                                superstructure.setFlywheelVelocityManual(RPM.of(1500)))
-                        .andThen(superstructure.runFlywheelVelocityManual()));
+                        superstructure.stopUpgoerCommand(),
+                        indexer.stop(),
+                        superstructure.setFlywheelVelocityManual(RPM.of(1500))));
 
         OIController.unjamShooter()
                 .whileTrue(superstructure.unjamCommand().alongWith(indexer.indexReverse()))
@@ -376,7 +390,7 @@ public class RobotContainer {
                 : () -> drive.setPose(new Pose2d(
                         drive.getPose().getTranslation(),
                         new Rotation2d(
-                                DriverStation.getAlliance().get() == Alliance.Blue
+                                DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Blue
                                         ? Degrees.zero()
                                         : Degrees.of(180))));
         OIController.zeroDrivebase().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
@@ -384,10 +398,14 @@ public class RobotContainer {
         // OIController.start().onTrue(Commands.runOnce(resetGyro,
         // drive).ignoringDisable(true));
 
-        OIController.intake().whileTrue(intake.intakeCommand().alongWith(indexer.index()));
-        OIController.outtake().whileTrue(intake.outtakeRollerCommand().alongWith(indexer.indexReverse()));
-        OIController.zeroIntake().onTrue(intake.zeroIntake().ignoringDisable(true));
-        OIController.retractIntake().onTrue(intake.retractIntakeCommand());
+        OIController.intake()
+                .whileTrue(intake.intakeCommand().alongWith(indexer.index()))
+                .onFalse(indexer.stop());
+        OIController.outtake()
+                .whileTrue(intake.outtakeRollerCommand().alongWith(indexer.indexReverse()))
+                .onFalse(indexer.stop());
+        OIController.zeroIntake().onTrue(intake.zeroExtender().ignoringDisable(true));
+        OIController.toggleIntakeState().onTrue(intake.retractIntakeCommand());
         OIController.intakeMiddle().onTrue(intake.goToCustomAngleOneCommand());
     }
 
@@ -422,6 +440,20 @@ public class RobotContainer {
         Logger.recordOutput(
                 "Shooting/WhoWonAuton",
                 Objects.equals(DriverStation.getGameSpecificMessage(), "B") ? "363AF4" : "F44336");
+    }
+
+    public void onDisabled() {
+        CommandScheduler.getInstance().schedule(intake.setNeutralModeCoast().ignoringDisable(true));
+    }
+
+    public void onAutonomousInit() {
+        CommandScheduler.getInstance().schedule(intake.setNeutralModeBrake().ignoringDisable(true));
+    }
+
+    public void onTeleopInit() {
+        CommandScheduler.getInstance().schedule(intake.setNeutralModeBrake().ignoringDisable(true));
+        CommandScheduler.getInstance().schedule(superstructure.stopUpgoerCommand());
+        CommandScheduler.getInstance().schedule(superstructure.stopShooterCommand());
     }
 
     public Command getRobotStartPose(int cameraIndex) {

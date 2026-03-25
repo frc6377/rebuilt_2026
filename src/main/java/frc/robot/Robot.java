@@ -13,7 +13,6 @@
 package frc.robot;
 
 import com.ctre.phoenix6.SignalLogger;
-import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.net.WebServer;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Filesystem;
@@ -41,7 +40,7 @@ public class Robot extends LoggedRobot {
         switch (Constants.currentMode) {
             case REAL:
                 // Running on a real robot, log to a USB stick ("/U/logs")
-                Logger.addDataReceiver(new WPILOGWriter());
+                Logger.addDataReceiver(new WPILOGWriter("/U/sda1"));
                 Logger.addDataReceiver(new NT4Publisher());
                 break;
 
@@ -51,13 +50,14 @@ public class Robot extends LoggedRobot {
                 break;
         }
 
-        SignalLogger.setPath("/media/sda1/logs/");
         WebServer.start(5800, Filesystem.getDeployDirectory().getPath());
 
         DriverStation.silenceJoystickConnectionWarning(true);
 
         // Start AdvantageKit logger
         Logger.start();
+        SignalLogger.setPath("/U/sda1/hootlogs");
+        SignalLogger.start();
 
         // SignalLogger.stop();
 
@@ -90,7 +90,6 @@ public class Robot extends LoggedRobot {
     @Override
     public void disabledInit() {
         robotContainer.resetSimulationField();
-        robotContainer.intake.setNeutralMode(NeutralModeValue.Coast);
     }
 
     /** This function is called periodically when disabled. */
@@ -105,7 +104,6 @@ public class Robot extends LoggedRobot {
     @Override
     public void autonomousInit() {
         autonomousCommand = robotContainer.getAutonomousCommand();
-        robotContainer.intake.setNeutralMode(NeutralModeValue.Brake);
         // schedule the autonomous command (example)
         if (autonomousCommand != null) {
             CommandScheduler.getInstance().schedule(autonomousCommand);
@@ -126,7 +124,6 @@ public class Robot extends LoggedRobot {
         if (autonomousCommand != null) {
             autonomousCommand.cancel();
         }
-        robotContainer.intake.setNeutralMode(NeutralModeValue.Brake);
         CommandScheduler.getInstance().schedule(robotContainer.superstructure.stopUpgoerCommand());
         CommandScheduler.getInstance().schedule(robotContainer.superstructure.stopShooterCommand());
     }
