@@ -6,6 +6,7 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import java.util.function.BooleanSupplier;
 import org.littletonrobotics.junction.Logger;
 
 public class Indexer extends SubsystemBase {

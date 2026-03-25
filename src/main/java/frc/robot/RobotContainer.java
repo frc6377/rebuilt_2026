@@ -336,7 +336,8 @@ public class RobotContainer {
                         // OIController.driveTranslationY()))
                         .until(superstructure::atTargetVelocity)
                         .andThen(Commands.runOnce(drive::stopWithX))
-                        .andThen(Commands.parallel(superstructure.fireCommand(), indexer.index(), intake.siftFuelCommand()))))
+                        .andThen(Commands.parallel(
+                                superstructure.fireCommand(), indexer.index(), intake.siftFuelCommand()))))
                 .onFalse(Commands.parallel(
                                 superstructure.stopUpgoerCommand(),
                                 indexer.stop(),
