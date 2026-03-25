@@ -181,7 +181,7 @@ public class OIXbox implements OI {
     }
 
     @Override
-    public Trigger retractIntake() {
+    public Trigger toggleIntakeState() {
         return rightBumper;
     }
 

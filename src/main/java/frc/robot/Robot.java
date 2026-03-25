@@ -13,7 +13,6 @@
 package frc.robot;
 
 import com.ctre.phoenix6.SignalLogger;
-import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.net.WebServer;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Filesystem;
@@ -91,7 +90,6 @@ public class Robot extends LoggedRobot {
     @Override
     public void disabledInit() {
         robotContainer.resetSimulationField();
-        robotContainer.intake.setNeutralMode(NeutralModeValue.Coast);
     }
 
     /** This function is called periodically when disabled. */
@@ -106,7 +104,6 @@ public class Robot extends LoggedRobot {
     @Override
     public void autonomousInit() {
         autonomousCommand = robotContainer.getAutonomousCommand();
-        robotContainer.intake.setNeutralMode(NeutralModeValue.Brake);
         // schedule the autonomous command (example)
         if (autonomousCommand != null) {
             CommandScheduler.getInstance().schedule(autonomousCommand);
@@ -127,7 +124,6 @@ public class Robot extends LoggedRobot {
         if (autonomousCommand != null) {
             autonomousCommand.cancel();
         }
-        robotContainer.intake.setNeutralMode(NeutralModeValue.Brake);
         CommandScheduler.getInstance().schedule(robotContainer.superstructure.stopUpgoerCommand());
         CommandScheduler.getInstance().schedule(robotContainer.superstructure.stopShooterCommand());
     }

@@ -47,8 +47,8 @@ import frc.robot.subsystems.indexer.IndexerIO;
 import frc.robot.subsystems.indexer.IndexerIOReal;
 import frc.robot.subsystems.indexer.IndexerIOSim;
 import frc.robot.subsystems.intake.Intake;
+import frc.robot.subsystems.intake.extender.DutyCycleExtenderIOReal;
 import frc.robot.subsystems.intake.extender.ExtenderIO;
-import frc.robot.subsystems.intake.extender.ExtenderIOReal;
 import frc.robot.subsystems.intake.extender.ExtenderIOSim;
 import frc.robot.subsystems.intake.roller.RollerIO;
 import frc.robot.subsystems.intake.roller.RollerIOReal;
@@ -88,6 +88,7 @@ public class RobotContainer {
     private final Indexer indexer;
     private final SwerveDriveSimulation driveSimulation; // Only used in simulation, but declared here for easy
     // access by subsystems that need it
+    private final RobotState robotState;
 
     private final boolean usingController;
 
@@ -96,7 +97,7 @@ public class RobotContainer {
 
     /** The container for the robot. Contains subsystems, OI devices, and commands. */
     public RobotContainer() {
-        RobotState.create();
+        robotState = RobotState.create();
 
         usingController = Constants.currentMode == Constants.Mode.REAL || DriverStation.isJoystickConnected(0);
 
@@ -128,8 +129,8 @@ public class RobotContainer {
                 vision = new Vision(
                         drive, new QuestNavIO() {}, new VisionIOLimelight("limelight-shooter", drive::getRotation));
                 intake = new Intake(
-                        Constants.EnabledSubsystems.kExtender ? new ExtenderIOReal() : new ExtenderIO() {},
-                        Constants.EnabledSubsystems.kRoller ? new RollerIOReal() : new RollerIO() {});
+                        Constants.EnabledSubsystems.kRoller ? new RollerIOReal() : new RollerIO() {},
+                        Constants.EnabledSubsystems.kExtender ? new DutyCycleExtenderIOReal() : new ExtenderIO() {});
                 indexer = new Indexer(Constants.EnabledSubsystems.kIndexer ? new IndexerIOReal() : new IndexerIO() {});
                 driveSimulation = null;
                 break;
@@ -139,8 +140,8 @@ public class RobotContainer {
 
                 driveSimulation = new SwerveDriveSimulation(Drive.mapleSimConfig, new Pose2d(3, 3, new Rotation2d()));
                 intake = new Intake(
-                        Constants.EnabledSubsystems.kExtender ? new ExtenderIOSim() : new ExtenderIO() {},
-                        Constants.EnabledSubsystems.kRoller ? new RollerIOSim(driveSimulation) : new RollerIO() {});
+                        Constants.EnabledSubsystems.kRoller ? new RollerIOSim(driveSimulation) : new RollerIO() {},
+                        Constants.EnabledSubsystems.kExtender ? new ExtenderIOSim() : new ExtenderIO() {});
                 SimulatedArena.getInstance().addDriveTrainSimulation(driveSimulation);
                 drive = new Drive(
                         new GyroIOSim(driveSimulation.getGyroSimulation()),
@@ -172,7 +173,7 @@ public class RobotContainer {
                         (pose) -> {});
                 driveSimulation = null;
                 vision = new Vision(drive, new QuestNavIO() {}, new VisionIO() {}, new VisionIO() {});
-                intake = new Intake(new ExtenderIO() {}, new RollerIO() {});
+                intake = new Intake(new RollerIO() {}, new ExtenderIO() {});
                 indexer = new Indexer(new IndexerIO() {});
                 break;
         }
