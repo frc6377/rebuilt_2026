@@ -413,8 +413,8 @@ public class RobotContainer {
         OIController.wallAlign()
                 .whileTrue(DriveCommands.joystickDriveAtAngle(
                         drive,
-                        () -> OIController.driveTranslationX().getAsDouble(),
                         () -> OIController.driveTranslationY().getAsDouble(),
+                        () -> OIController.driveTranslationX().getAsDouble(),
                         wallAlignAngle));
     }
 
