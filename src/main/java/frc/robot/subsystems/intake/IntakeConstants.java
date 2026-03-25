@@ -2,11 +2,14 @@ package frc.robot.subsystems.intake;
 
 import static edu.wpi.first.units.Units.*;
 
+import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.units.measure.AngularMomentum;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.units.measure.MomentOfInertia;
+import edu.wpi.first.wpilibj.TimedRobot;
 import org.ironmaple.simulation.IntakeSimulation.IntakeSide;
 
 public class IntakeConstants {
@@ -39,9 +42,9 @@ public class IntakeConstants {
     }
 
     public static class ExtenderConstants {
-        public static final int kExtenderTicksPerRevolution = 2048;
+
         public static final double kGearing = 1;
-        public static final AngularMomentum kMOI = KilogramMetersSquaredPerSecond.of(0.5);
+        public static final MomentOfInertia kMOI = KilogramSquareMeters.of(1.5);
         public static final Distance kExtenderArmLength = Inches.of(12.0);
         public static final double kDownSpeed = 0.05;
 
@@ -68,10 +71,10 @@ public class IntakeConstants {
         }
 
         public static class MotorConfig {
-            public static final double kRampPeriod = 0.02;
+            public static final double kRampPeriod = TimedRobot.kDefaultPeriod;
             public static final Current kStatorCurrentLimitExtender = Amps.of(15);
+            public static final InvertedValue kInverted = InvertedValue.Clockwise_Positive;
+            public static final NeutralModeValue kNeutralMode = NeutralModeValue.Brake;
         }
     }
-
-    public static final boolean disabled = false;
 }
