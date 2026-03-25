@@ -18,7 +18,7 @@ public class IntakeConstants {
 
     public static class RollerConstants {
         // TODO: Fix incorrect Constants
-        public static final double kIntakePercent = 0.5;
+        public static final double kIntakePercent = 0.8;
         public static final double kOuttakePercent = -0.5;
         public static final AngularVelocity kIntakeSpeed = RadiansPerSecond.of(400);
         public static final AngularVelocity kOuttakeSpeed = RotationsPerSecond.of(50);
@@ -59,7 +59,7 @@ public class IntakeConstants {
         public static final Current zeroCurrentLimit = Amps.of(15);
 
         public static class PIDF {
-            public static final double kP = 0.005;
+            public static final double kP = 0.0075;
             public static final double kI = 0.0;
             public static final double kD = 0.0;
             public static final double kS = 0.0;
