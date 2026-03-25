@@ -14,7 +14,6 @@
 package frc.robot;
 
 import static edu.wpi.first.units.Units.Degrees;
-import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.RPM;
 import static frc.robot.subsystems.vision.VisionConstants.*;
 
@@ -404,7 +403,6 @@ public class RobotContainer {
         // Climb Commands
         OIController.declimb().whileTrue(climb.manualHook(-ClimbConstants.kHookClimbSpeed));
         OIController.climb_l3().whileTrue(climb.climb());
-
     }
 
     /**
