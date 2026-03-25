@@ -33,12 +33,6 @@ public class IndexerConstants {
         public static final double kD = 0.0; // Derivative gain
     }
 
-    public final class Feedforward {
-        public static final double NOMINAL_VOLTAGE = 12.0; // Volts
-        public static final double kS = 0.0; // Static friction (V)
-        public static final double kA = 0.0; // Acceleration (V/(RPM/s))
-    }
-
     public final class SimConstants {
         public static final double ROLLER_MASS_KG = 0.25;
         public static final double ROLLER_RADIUS_M = 0.02;
