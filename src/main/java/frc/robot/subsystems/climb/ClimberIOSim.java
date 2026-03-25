@@ -87,7 +87,6 @@ public class ClimberIOSim implements ClimberIO {
         SmartDashboard.putData("Mech2Ds/ClimberMech", climbMech);
     }
 
-
     @Override
     public void goToPivotAngle(Angle angle) {
         pivotMotor.setControl(new MotionMagicVoltage(angle.in(Rotations)).withSlot(0));
@@ -179,7 +178,6 @@ public class ClimberIOSim implements ClimberIO {
             hookRunningSeconds += TimedRobot.kDefaultPeriod;
         }
 
-        
         pivotLig.setAngle(Units.radiansToDegrees(pivotSim.getAngleRads()));
         hookSpinIndicator.setAngle(Units.radiansToDegrees(hookSim.getAngularPositionRotations() * 2 * Math.PI));
 

@@ -1,6 +1,7 @@
 package frc.robot.subsystems.climb;
 
 import static edu.wpi.first.units.Units.Amps;
+import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.Kilograms;
 import static edu.wpi.first.units.Units.Meters;
@@ -13,6 +14,8 @@ import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Distance;
 import frc.robot.Constants.EnabledSubsystems;
 
@@ -89,7 +92,7 @@ public class ClimbConstants {
                     .withStatorCurrentLimitEnable(true)
                     .withStatorCurrentLimit(Amps.of(70)));
 
-        public static final TalonFXConfiguration kHookMotorConfigReal = new TalonFXConfiguration()
+    public static final TalonFXConfiguration kHookMotorConfigReal = new TalonFXConfiguration()
             .withMotorOutput(new MotorOutputConfigs()
                     .withInverted(InvertedValue.Clockwise_Positive)
                     .withNeutralMode(NeutralModeValue.Brake))
@@ -123,4 +126,12 @@ public class ClimbConstants {
 
     public static final double kClimbDoneAmps = 10;
     public static final double kHookContactAmps = 0.5;
+
+    // Constants (Placeholders, need to be tuned)
+    public static final Angle kPivotStowAngle = Degrees.of(0);
+    public static final Angle kPivotAngleTolerance = Degrees.of(2);
+    public static final Current kHookContactCurrentThreshold = Amps.of(1);
+    public static final Current kClimbDoneCurrentThreshold = Amps.of(10);
+    public static final double kHookRotateSpeed = 0.5;
+    public static final double kHookClimbSpeed = 0.5;
 }

@@ -7,7 +7,6 @@ import static frc.robot.util.PhoenixUtil.tryUntilOk;
 
 import com.ctre.phoenix6.configs.MotionMagicConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
-import com.ctre.phoenix6.configs.SoftwareLimitSwitchConfigs;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.DutyCycleEncoder;
@@ -32,14 +31,14 @@ public class ClimberIOReal implements ClimberIO {
     final MotionMagicVoltage pivotMotionMagicRequest;
 
     public ClimberIOReal() {
-        hookMotor  = new TunableTalonFX(MotorIDs.kClimbMotor1ID, "rio", "HookMotor");
+        hookMotor = new TunableTalonFX(MotorIDs.kClimbMotor1ID, "rio", "HookMotor");
         pivotMotor = new TunableTalonFX(MotorIDs.kClimbMotor2ID, "rio", "PivotMotor");
 
-        hookEncoder  = new DutyCycleEncoder(SensorIDs.kClimbHookEncoderID);
+        hookEncoder = new DutyCycleEncoder(SensorIDs.kClimbHookEncoderID);
         pivotEncoder = new DutyCycleEncoder(SensorIDs.kClimbPivotEncoderID);
 
         // Apply configs
-        tryUntilOk(5, () -> hookMotor.getConfigurator().apply(ClimbConstants.kHookMotorConfigReal,  0.25));
+        tryUntilOk(5, () -> hookMotor.getConfigurator().apply(ClimbConstants.kHookMotorConfigReal, 0.25));
         tryUntilOk(5, () -> pivotMotor.getConfigurator().apply(ClimbConstants.kPivotMotorConfigReal, 0.25));
 
         // Seed both TalonFX position registers from the absolute through bore encoders
@@ -58,15 +57,14 @@ public class ClimberIOReal implements ClimberIO {
 
         MotionMagicConfigs pivotMotionMagic = new MotionMagicConfigs();
         pivotMotionMagic.MotionMagicCruiseVelocity = ClimbConstants.MotionMagic.kCruiseVelocity;
-        pivotMotionMagic.MotionMagicAcceleration   = ClimbConstants.MotionMagic.kAcceleration;
-        pivotMotionMagic.MotionMagicJerk           = ClimbConstants.MotionMagic.kJerk;
+        pivotMotionMagic.MotionMagicAcceleration = ClimbConstants.MotionMagic.kAcceleration;
+        pivotMotionMagic.MotionMagicJerk = ClimbConstants.MotionMagic.kJerk;
 
-        tryUntilOk(5, () -> pivotMotor.getConfigurator().apply(pivotPID,          0.25));
-        tryUntilOk(5, () -> pivotMotor.getConfigurator().apply(pivotMotionMagic,  0.25));
+        tryUntilOk(5, () -> pivotMotor.getConfigurator().apply(pivotPID, 0.25));
+        tryUntilOk(5, () -> pivotMotor.getConfigurator().apply(pivotMotionMagic, 0.25));
 
         pivotMotionMagicRequest = new MotionMagicVoltage(0).withSlot(0);
     }
-
 
     @Override
     public void goToPivotAngle(Angle angle) {
@@ -92,36 +90,22 @@ public class ClimberIOReal implements ClimberIO {
 
     @Override
     public void updateInputs(ClimberIOInputs inputs) {
-        inputs.pivotAngle =
-                Rotations.of(pivotMotor.getPosition().getValue().in(Rotations));
-        inputs.pivotAppliedVoltage =
-                Volts.of(pivotMotor.getMotorVoltage().getValueAsDouble());
-        inputs.pivotStatorCurrent =
-                Amps.of(pivotMotor.getStatorCurrent().getValueAsDouble());
-        inputs.pivotSupplyCurrent =
-                Amps.of(pivotMotor.getSupplyCurrent().getValueAsDouble());
-        inputs.pivotTemperatureCelsius =
-                pivotMotor.getDeviceTemp().getValueAsDouble();
-        inputs.pivotMotorConnected =
-                pivotMotor.isAlive();
+        inputs.pivotAngle = Rotations.of(pivotMotor.getPosition().getValue().in(Rotations));
+        inputs.pivotAppliedVoltage = Volts.of(pivotMotor.getMotorVoltage().getValueAsDouble());
+        inputs.pivotStatorCurrent = Amps.of(pivotMotor.getStatorCurrent().getValueAsDouble());
+        inputs.pivotSupplyCurrent = Amps.of(pivotMotor.getSupplyCurrent().getValueAsDouble());
+        inputs.pivotTemperatureCelsius = pivotMotor.getDeviceTemp().getValueAsDouble();
+        inputs.pivotMotorConnected = pivotMotor.isAlive();
 
-        inputs.pivotAbsoluteEncoderPosition =
-                pivotEncoder.get();
+        inputs.pivotAbsoluteEncoderPosition = pivotEncoder.get();
 
-        inputs.hookAngle =
-                Rotations.of(hookMotor.getPosition().getValue().in(Rotations));
-        inputs.hookAppliedVoltage =
-                Volts.of(hookMotor.getMotorVoltage().getValueAsDouble());
-        inputs.hookStatorCurrent =
-                Amps.of(hookMotor.getStatorCurrent().getValueAsDouble());
-        inputs.hookSupplyCurrent =
-                Amps.of(hookMotor.getSupplyCurrent().getValueAsDouble());
-        inputs.hookTemperatureCelsius =
-                hookMotor.getDeviceTemp().getValueAsDouble();
-        inputs.hookMotorConnected =
-                hookMotor.isAlive();
-        inputs.hookAbsoluteEncoderPosition =
-                hookEncoder.get();
+        inputs.hookAngle = Rotations.of(hookMotor.getPosition().getValue().in(Rotations));
+        inputs.hookAppliedVoltage = Volts.of(hookMotor.getMotorVoltage().getValueAsDouble());
+        inputs.hookStatorCurrent = Amps.of(hookMotor.getStatorCurrent().getValueAsDouble());
+        inputs.hookSupplyCurrent = Amps.of(hookMotor.getSupplyCurrent().getValueAsDouble());
+        inputs.hookTemperatureCelsius = hookMotor.getDeviceTemp().getValueAsDouble();
+        inputs.hookMotorConnected = hookMotor.isAlive();
+        inputs.hookAbsoluteEncoderPosition = hookEncoder.get();
     }
 
     @Override
@@ -129,8 +113,6 @@ public class ClimberIOReal implements ClimberIO {
         return Rotations.of(pivotMotor.getPosition().getValue().in(Rotations));
     }
 
-
-    
     @Override
     public void resetToAbsolute() {
         hookMotor.setPosition(hookEncoder.get());
@@ -143,19 +125,20 @@ public class ClimberIOReal implements ClimberIO {
         pivotMotor.setPosition(0);
     }
 
-    
-
     @Override
     public void periodic() {
         hookMotor.updateTunableGains();
         pivotMotor.updateTunableGains();
 
-        Logger.recordOutput("Climb/Real/Pivot/Angle (Rotations)", getPivotAngle().in(Rotations));
-        Logger.recordOutput("Climb/Real/Pivot/AbsEncoder",        pivotEncoder.get());
-        Logger.recordOutput("Climb/Real/Hook/Angle (Rotations)",
+        Logger.recordOutput(
+                "Climb/Real/Pivot/Angle (Rotations)", getPivotAngle().in(Rotations));
+        Logger.recordOutput("Climb/Real/Pivot/AbsEncoder", pivotEncoder.get());
+        Logger.recordOutput(
+                "Climb/Real/Hook/Angle (Rotations)",
                 hookMotor.getPosition().getValue().in(Rotations));
-        Logger.recordOutput("Climb/Real/Hook/AbsEncoder",         hookEncoder.get());
-        Logger.recordOutput("Climb/Real/Hook/StatorCurrent (A)",
+        Logger.recordOutput("Climb/Real/Hook/AbsEncoder", hookEncoder.get());
+        Logger.recordOutput(
+                "Climb/Real/Hook/StatorCurrent (A)",
                 hookMotor.getStatorCurrent().getValueAsDouble());
     }
 }
