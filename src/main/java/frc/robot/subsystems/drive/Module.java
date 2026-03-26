@@ -29,9 +29,13 @@ public class Module {
     private final SwerveModuleConstants constants;
     private final String logKey;
 
+    private static final double TEMP_WARNING_CELSIUS = 70.0;
+
     private final Alert driveDisconnectedAlert;
     private final Alert turnDisconnectedAlert;
     private final Alert turnEncoderDisconnectedAlert;
+    private final Alert driveOverheatAlert;
+    private final Alert turnOverheatAlert;
     private SwerveModulePosition[] odometryPositions = new SwerveModulePosition[] {};
 
     public Module(ModuleIO io, int index, SwerveModuleConstants constants) {
@@ -43,6 +47,8 @@ public class Module {
         turnDisconnectedAlert = new Alert("Disconnected turn motor on module " + index + ".", AlertType.kError);
         turnEncoderDisconnectedAlert =
                 new Alert("Disconnected turn encoder on module " + index + ".", AlertType.kError);
+        driveOverheatAlert = new Alert("Drive motor on module " + index + " is overheating!", AlertType.kWarning);
+        turnOverheatAlert = new Alert("Turn motor on module " + index + " is overheating!", AlertType.kWarning);
     }
 
     public void periodic() {
@@ -62,6 +68,8 @@ public class Module {
         driveDisconnectedAlert.set(!inputs.driveConnected);
         turnDisconnectedAlert.set(!inputs.turnConnected);
         turnEncoderDisconnectedAlert.set(!inputs.turnEncoderConnected);
+        driveOverheatAlert.set(inputs.driveTempCelsius > TEMP_WARNING_CELSIUS);
+        turnOverheatAlert.set(inputs.turnTempCelsius > TEMP_WARNING_CELSIUS);
     }
 
     /** Runs the module with the specified setpoint state. Mutates the state to optimize it. */

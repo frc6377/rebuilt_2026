@@ -54,6 +54,10 @@ public abstract class ModuleIOTalonFX implements ModuleIO {
     protected final StatusSignal<Voltage> turnAppliedVolts;
     protected final StatusSignal<Current> turnCurrent;
 
+    // Temperature signals
+    protected final StatusSignal<edu.wpi.first.units.measure.Temperature> driveTemp;
+    protected final StatusSignal<edu.wpi.first.units.measure.Temperature> turnTemp;
+
     // Connection debouncers
     private final Debouncer driveConnectedDebounce = new Debouncer(0.5);
     private final Debouncer turnConnectedDebounce = new Debouncer(0.5);
@@ -127,10 +131,15 @@ public abstract class ModuleIOTalonFX implements ModuleIO {
         turnAppliedVolts = turnTalon.getMotorVoltage();
         turnCurrent = turnTalon.getStatorCurrent();
 
+        // Create temperature signals
+        driveTemp = driveTalon.getDeviceTemp();
+        turnTemp = turnTalon.getDeviceTemp();
+
         // Configure periodic frames
         BaseStatusSignal.setUpdateFrequencyForAll(Drive.ODOMETRY_FREQUENCY, turnAbsolutePosition, drivePosition);
         BaseStatusSignal.setUpdateFrequencyForAll(
                 10.0, driveVelocity, driveAppliedVolts, driveCurrent, turnVelocity, turnAppliedVolts, turnCurrent);
+        BaseStatusSignal.setUpdateFrequencyForAll(1.0, driveTemp, turnTemp);
         ParentDevice.optimizeBusUtilizationForAll(driveTalon, turnTalon);
     }
 
@@ -157,6 +166,9 @@ public abstract class ModuleIOTalonFX implements ModuleIO {
         inputs.turnVelocityRadPerSec = Units.rotationsToRadians(turnVelocity.getValueAsDouble());
         inputs.turnAppliedVolts = turnAppliedVolts.getValueAsDouble();
         inputs.turnCurrentAmps = turnCurrent.getValueAsDouble();
+
+        inputs.driveTempCelsius = driveTemp.getValueAsDouble();
+        inputs.turnTempCelsius = turnTemp.getValueAsDouble();
     }
 
     @Override
