@@ -7,7 +7,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Start to middle left"
+            "pathName": "Face trench to middle"
           }
         },
         {
@@ -29,7 +29,7 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": "Half down middle"
+                  "pathName": "Half down middle left"
                 }
               }
             ]
@@ -48,7 +48,38 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": "Half up middle"
+                  "pathName": "Half up middle left"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Stop intake"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "middle to trench"
+          }
+        },
+        {
+          "type": "deadline",
+          "data": {
+            "commands": [
+              {
+                "type": "named",
+                "data": {
+                  "name": "Wait 5 seconds"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "AutoShoot"
                 }
               }
             ]
@@ -58,6 +89,6 @@
     }
   },
   "resetOdom": true,
-  "folder": null,
+  "folder": "Double trouble",
   "choreoAuto": false
 }

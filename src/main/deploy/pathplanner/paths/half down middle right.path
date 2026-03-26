@@ -3,32 +3,37 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 3.6061293859649126,
-        "y": 2.967598684210526
+        "x": 6.9,
+        "y": 4.334
       },
       "prevControl": null,
       "nextControl": {
-        "x": 2.558593695346926,
-        "y": 2.0354016473776624
+        "x": 6.932426574824343,
+        "y": 4.0636016441882745
       },
       "isLocked": false,
-      "linkedName": "Against hub right"
+      "linkedName": "middle up end"
     },
     {
       "anchor": {
-        "x": 2.8368311403508772,
-        "y": 2.015592105263157
+        "x": 6.3,
+        "y": 1.2499999999999996
       },
       "prevControl": {
-        "x": 3.0863938783633156,
-        "y": 2.000812396343998
+        "x": 6.942141907634786,
+        "y": 3.92840903702739
       },
       "nextControl": null,
       "isLocked": false,
-      "linkedName": "Shoot half HP"
+      "linkedName": "half down end right"
     }
   ],
-  "rotationTargets": [],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.25,
+      "rotationDegrees": -135.0
+    }
+  ],
   "constraintZones": [],
   "pointTowardsZones": [],
   "eventMarkers": [],
@@ -41,14 +46,14 @@
     "unlimited": false
   },
   "goalEndState": {
-    "velocity": 0,
-    "rotation": 48.450843193751155
+    "velocity": 1.0,
+    "rotation": -135.0
   },
   "reversed": false,
   "folder": null,
   "idealStartingState": {
     "velocity": 0,
-    "rotation": 0.0
+    "rotation": 135.0
   },
   "useDefaultConstraints": true
 }

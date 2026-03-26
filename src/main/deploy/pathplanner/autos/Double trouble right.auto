@@ -5,12 +5,6 @@
     "data": {
       "commands": [
         {
-          "type": "path",
-          "data": {
-            "pathName": "Drive in front of hub from right"
-          }
-        },
-        {
           "type": "deadline",
           "data": {
             "commands": [
@@ -38,7 +32,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Middle hub to fuel"
+            "pathName": "Face trench middle right"
           }
         },
         {
@@ -60,7 +54,57 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": "Drive up through middle"
+                  "pathName": "half up middle right"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "parallel",
+          "data": {
+            "commands": [
+              {
+                "type": "named",
+                "data": {
+                  "name": "Intake"
+                }
+              },
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "half down middle right"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Stop intake"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "middle to trench right"
+          }
+        },
+        {
+          "type": "deadline",
+          "data": {
+            "commands": [
+              {
+                "type": "named",
+                "data": {
+                  "name": "Wait 5 seconds"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "AutoShoot"
                 }
               }
             ]
@@ -70,6 +114,6 @@
     }
   },
   "resetOdom": true,
-  "folder": "Railway Heist",
+  "folder": "Double trouble",
   "choreoAuto": false
 }

@@ -3,59 +3,43 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 6.9,
-        "y": 3.716
-      },
-      "prevControl": null,
-      "nextControl": {
-        "x": 6.960173879253745,
-        "y": 3.473349831536107
-      },
-      "isLocked": false,
-      "linkedName": "Middle Down end"
-    },
-    {
-      "anchor": {
-        "x": 6.482,
-        "y": 5.674
-      },
-      "prevControl": {
-        "x": 6.8408945418529585,
-        "y": 4.21311304870195
-      },
-      "nextControl": {
-        "x": 6.204376100884377,
-        "y": 6.804073278608592
-      },
-      "isLocked": false,
-      "linkedName": null
-    },
-    {
-      "anchor": {
         "x": 6.3,
         "y": 6.8
       },
+      "prevControl": null,
+      "nextControl": {
+        "x": 6.2662550688022,
+        "y": 7.614301098868506
+      },
+      "isLocked": false,
+      "linkedName": "Half up end"
+    },
+    {
+      "anchor": {
+        "x": 4.0,
+        "y": 7.6
+      },
       "prevControl": {
-        "x": 6.449551249046478,
-        "y": 6.14992543971628
+        "x": 5.808643192846118,
+        "y": 7.635927718705758
       },
       "nextControl": null,
       "isLocked": false,
-      "linkedName": null
+      "linkedName": "Trench Shot"
     }
   ],
   "rotationTargets": [
     {
       "waypointRelativePos": 0.5,
-      "rotationDegrees": 135.0
+      "rotationDegrees": -90.0
     }
   ],
   "constraintZones": [],
   "pointTowardsZones": [],
   "eventMarkers": [],
   "globalConstraints": {
-    "maxVelocity": 2.0,
-    "maxAcceleration": 2.0,
+    "maxVelocity": 4.0,
+    "maxAcceleration": 3.5,
     "maxAngularVelocity": 540.0,
     "maxAngularAcceleration": 720.0,
     "nominalVoltage": 12.0,
@@ -63,13 +47,13 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": 135.0
+    "rotation": -90.0
   },
   "reversed": false,
   "folder": null,
   "idealStartingState": {
-    "velocity": 0,
-    "rotation": -117.89727103094776
+    "velocity": 1.0,
+    "rotation": 135.0
   },
   "useDefaultConstraints": true
 }

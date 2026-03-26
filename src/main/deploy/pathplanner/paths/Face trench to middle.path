@@ -3,29 +3,29 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 3.6061293859649126,
-        "y": 2.967598684210526
+        "x": 4.0,
+        "y": 7.6
       },
       "prevControl": null,
       "nextControl": {
-        "x": 2.558593695346926,
-        "y": 2.0354016473776624
+        "x": 5.79392386810335,
+        "y": 7.583472584923337
       },
       "isLocked": false,
-      "linkedName": "Against hub right"
+      "linkedName": "Trench Shot"
     },
     {
       "anchor": {
-        "x": 2.8368311403508772,
-        "y": 2.015592105263157
+        "x": 6.9,
+        "y": 6.573684210526316
       },
       "prevControl": {
-        "x": 3.0863938783633156,
-        "y": 2.000812396343998
+        "x": 5.801803576874654,
+        "y": 7.4833218396043435
       },
       "nextControl": null,
       "isLocked": false,
-      "linkedName": "Shoot half HP"
+      "linkedName": "Middle Down top"
     }
   ],
   "rotationTargets": [],
@@ -41,14 +41,14 @@
     "unlimited": false
   },
   "goalEndState": {
-    "velocity": 0,
-    "rotation": 48.450843193751155
+    "velocity": 1.0,
+    "rotation": -135.0
   },
   "reversed": false,
   "folder": null,
   "idealStartingState": {
     "velocity": 0,
-    "rotation": 0.0
+    "rotation": -90.0
   },
   "useDefaultConstraints": true
 }
