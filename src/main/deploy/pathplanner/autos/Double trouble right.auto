@@ -32,7 +32,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Face trench to middle"
+            "pathName": "Face trench middle right"
           }
         },
         {
@@ -54,7 +54,7 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": "Half down middle"
+                  "pathName": "half up middle right"
                 }
               }
             ]
@@ -73,7 +73,7 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": "Half up middle"
+                  "pathName": "half down middle right"
                 }
               }
             ]
@@ -88,7 +88,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "middle to trench"
+            "pathName": "middle to trench right"
           }
         },
         {
@@ -114,6 +114,6 @@
     }
   },
   "resetOdom": true,
-  "folder": null,
+  "folder": "Double trouble",
   "choreoAuto": false
 }

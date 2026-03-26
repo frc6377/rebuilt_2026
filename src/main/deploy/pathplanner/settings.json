@@ -7,12 +7,13 @@
   ],
   "autoFolders": [
     "Back up then shoot",
-    "Target practice",
     "Loop Left",
     "Meter tests",
+    "Double trouble",
     "Outpost to shoot",
     "Railway Heist",
-    "Shoot depot shoot"
+    "Shoot depot shoot",
+    "Target practice"
   ],
   "defaultMaxVel": 4.0,
   "defaultMaxAccel": 3.5,
