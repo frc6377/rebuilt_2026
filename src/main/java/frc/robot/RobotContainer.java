@@ -330,15 +330,18 @@ public class RobotContainer {
                         .setFlywheelVelocityManual(RPM.of(1500))
                         .andThen(superstructure.runFlywheelVelocityManual()));
         shootingTrigger
-                .whileTrue(Commands.parallel(superstructure
-                        .runToggledSpeed(drive::getPose, drive::getChassisSpeeds)
-                        // superstructure.aimAtHubWhileDriving(
-                        // drive, OIController.driveTranslationX(),
-                        // OIController.driveTranslationY()))
-                        .until(superstructure::atTargetVelocity)
-                        .andThen(Commands.runOnce(drive::stopWithX))
-                        .andThen(Commands.parallel(
-                                superstructure.fireCommand(), indexer.index(), intake.siftFuelCommand()))))
+                .whileTrue(Commands.parallel(
+                        superstructure.aimAtHubWhileDriving(
+                                drive, OIController.driveTranslationX(), OIController.driveTranslationY()),
+                        superstructure
+                                .runToggledSpeed(drive::getPose, drive::getChassisSpeeds)
+                                // superstructure.aimAtHubWhileDriving(
+                                // drive, OIController.driveTranslationX(),
+                                // OIController.driveTranslationY()))
+                                .until(() -> superstructure.isReadyToShoot(drive.getRotation()))
+                                .andThen(Commands.runOnce(drive::stopWithX))
+                                .andThen(Commands.parallel(
+                                        superstructure.fireCommand(), indexer.index(), intake.siftFuelCommand()))))
                 .onFalse(Commands.parallel(
                                 superstructure.stopUpgoerCommand(),
                                 indexer.stop(),
@@ -385,8 +388,12 @@ public class RobotContainer {
         // OIController.start().onTrue(Commands.runOnce(resetGyro,
         // drive).ignoringDisable(true));
 
-        OIController.intake().whileTrue(intake.intakeCommand().alongWith(indexer.index()));
-        OIController.outtake().whileTrue(intake.outtakeRollerCommand().alongWith(indexer.indexReverse()));
+        OIController.intake()
+                .whileTrue(intake.intakeCommand().alongWith(indexer.index()))
+                .onFalse(indexer.stop());
+        OIController.outtake()
+                .whileTrue(intake.outtakeRollerCommand().alongWith(indexer.indexReverse()))
+                .onFalse(indexer.stop());
         OIController.zeroIntake().onTrue(intake.zeroIntake().ignoringDisable(true));
         OIController.retractIntake().onTrue(intake.retractIntakeCommand());
         OIController.intakeMiddle().onTrue(intake.goToCustomAngleOneCommand());

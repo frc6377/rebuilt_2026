@@ -34,7 +34,7 @@ public class ShooterConstants {
 
     // Velocity tolerance
     public static final AngularVelocity kFlywheelVelocityTolerance = RPM.of(150.0);
-    public static final Angle kHeadingTolerance = Degrees.of(2.0);
+    public static final Angle kHeadingTolerance = Degrees.of(5);
     public static final AngularVelocity kMaxVelocityDifference =
             RotationsPerSecond.of(500.0 / 60.0); // 500 RPM difference
 

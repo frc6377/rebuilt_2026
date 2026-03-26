@@ -63,7 +63,7 @@ public class ExtenderIOReal implements ExtenderIO {
                 ExtenderConstants.PIDF.kI,
                 ExtenderConstants.PIDF.kD,
                 () -> getPosition().in(Degrees),
-                percent -> extenderMotor.set(percent));
+                percent -> extenderMotor.set(-percent));
 
         extenderStowAngle =
                 new LoggedNetworkNumber("Intake/Extender/StowAngle", ExtenderConstants.kExtenderStowAngle.in(Degrees));
@@ -90,10 +90,7 @@ public class ExtenderIOReal implements ExtenderIO {
     }
 
     public Angle getPosition() {
-        return Degrees.of(Rotations.of(extenderEncoder.get())
-                        .div(ExtenderConstants.kGearing)
-                        .in(Degrees)
-                - extenderZeroAngle.get());
+        return Degrees.of(Rotations.of(extenderEncoder.get()).in(Degrees));
     }
 
     public boolean isAtAngle(Angle angle) {
@@ -102,7 +99,7 @@ public class ExtenderIOReal implements ExtenderIO {
 
     @Override
     public void zero() {
-        extenderZeroAngle.set(0.0);
+        extenderZeroAngle.set(Rotations.of(extenderEncoder.get()).in(Degrees));
     }
 
     @Override

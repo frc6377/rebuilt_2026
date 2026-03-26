@@ -112,11 +112,11 @@ public class Intake extends SubsystemBase {
     }
 
     public Command intakeCommand() {
-        return extender.extendAndWaitCommand().andThen(roller.runCommand());
+        return extender.extendCommand().andThen(roller.runCommand());
     }
 
     public Command retractIntakeCommand() {
-        return roller.stopCommand().andThen(extender.retractAndWaitCommand());
+        return roller.stopCommand().andThen(extender.retractCommand());
     }
 
     public Command outtakeCommand() {
