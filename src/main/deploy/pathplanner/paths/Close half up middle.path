@@ -3,51 +3,51 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 2.0771491228070174,
-        "y": 5.669758771929824
+        "x": 6.9,
+        "y": 3.716
       },
       "prevControl": null,
       "nextControl": {
-        "x": 2.474304985418492,
-        "y": 5.296494739095188
+        "x": 6.960173879253745,
+        "y": 3.473349831536107
       },
       "isLocked": false,
-      "linkedName": "Shoot half left"
+      "linkedName": "Middle Down end"
     },
     {
       "anchor": {
-        "x": 0.5,
-        "y": 7.4
+        "x": 6.482,
+        "y": 5.674
       },
       "prevControl": {
-        "x": 0.5042711523965994,
-        "y": 7.649963511851641
+        "x": 6.8408945418529585,
+        "y": 4.21311304870195
       },
       "nextControl": {
-        "x": 0.4542298903656734,
-        "y": 4.72136522425657
+        "x": 6.204376100884377,
+        "y": 6.804073278608592
       },
       "isLocked": false,
-      "linkedName": "Left of Depot"
+      "linkedName": null
     },
     {
       "anchor": {
-        "x": 0.5,
-        "y": 4.971531456951443
+        "x": 6.3,
+        "y": 6.8
       },
       "prevControl": {
-        "x": 0.5708502566321998,
-        "y": 5.869750267957964
+        "x": 6.449551249046478,
+        "y": 6.14992543971628
       },
       "nextControl": null,
       "isLocked": false,
-      "linkedName": "bundle end"
+      "linkedName": "Half up end"
     }
   ],
   "rotationTargets": [
     {
-      "waypointRelativePos": 0.953995157384981,
-      "rotationDegrees": -90.0
+      "waypointRelativePos": 0.5,
+      "rotationDegrees": 135.0
     }
   ],
   "constraintZones": [],
@@ -63,13 +63,13 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": -90.0
+    "rotation": 135.0
   },
   "reversed": false,
   "folder": null,
   "idealStartingState": {
     "velocity": 0,
-    "rotation": -34.77377933104437
+    "rotation": -135.0
   },
   "useDefaultConstraints": true
 }

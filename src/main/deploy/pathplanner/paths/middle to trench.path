@@ -3,50 +3,34 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 2.0771491228070174,
-        "y": 5.669758771929824
+        "x": 6.3,
+        "y": 6.8
       },
       "prevControl": null,
       "nextControl": {
-        "x": 2.474304985418492,
-        "y": 5.296494739095188
+        "x": 6.2662582781456955,
+        "y": 7.6141473509933775
       },
       "isLocked": false,
-      "linkedName": "Shoot half left"
+      "linkedName": "Half up end"
     },
     {
       "anchor": {
-        "x": 0.5,
-        "y": 7.4
+        "x": 4.0,
+        "y": 7.6
       },
       "prevControl": {
-        "x": 0.5042711523965994,
-        "y": 7.649963511851641
-      },
-      "nextControl": {
-        "x": 0.4542298903656734,
-        "y": 4.72136522425657
-      },
-      "isLocked": false,
-      "linkedName": "Left of Depot"
-    },
-    {
-      "anchor": {
-        "x": 0.5,
-        "y": 4.971531456951443
-      },
-      "prevControl": {
-        "x": 0.5708502566321998,
-        "y": 5.869750267957964
+        "x": 5.808882450331127,
+        "y": 7.63592715231788
       },
       "nextControl": null,
       "isLocked": false,
-      "linkedName": "bundle end"
+      "linkedName": "Trench Shot"
     }
   ],
   "rotationTargets": [
     {
-      "waypointRelativePos": 0.953995157384981,
+      "waypointRelativePos": 0.5,
       "rotationDegrees": -90.0
     }
   ],
@@ -68,8 +52,8 @@
   "reversed": false,
   "folder": null,
   "idealStartingState": {
-    "velocity": 0,
-    "rotation": -34.77377933104437
+    "velocity": 1.0,
+    "rotation": 135.0
   },
   "useDefaultConstraints": true
 }

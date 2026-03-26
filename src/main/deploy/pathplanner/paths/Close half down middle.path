@@ -3,29 +3,29 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 3.6061293859649126,
-        "y": 2.967598684210526
+        "x": 6.9,
+        "y": 6.573684210526316
       },
       "prevControl": null,
       "nextControl": {
-        "x": 2.558593695346926,
-        "y": 2.0354016473776624
+        "x": 6.903703513312488,
+        "y": 5.661563100497961
       },
       "isLocked": false,
-      "linkedName": "Against hub right"
+      "linkedName": "Middle Down top"
     },
     {
       "anchor": {
-        "x": 2.8368311403508772,
-        "y": 2.015592105263157
+        "x": 6.9,
+        "y": 3.716
       },
       "prevControl": {
-        "x": 3.0863938783633156,
-        "y": 2.000812396343998
+        "x": 6.898663647107281,
+        "y": 3.433807475338215
       },
       "nextControl": null,
       "isLocked": false,
-      "linkedName": "Shoot half HP"
+      "linkedName": "Middle Down end"
     }
   ],
   "rotationTargets": [],
@@ -41,14 +41,14 @@
     "unlimited": false
   },
   "goalEndState": {
-    "velocity": 0,
-    "rotation": 48.450843193751155
+    "velocity": 0.0,
+    "rotation": -135.0
   },
   "reversed": false,
   "folder": null,
   "idealStartingState": {
-    "velocity": 0,
-    "rotation": 0.0
+    "velocity": 0.0,
+    "rotation": -135.0
   },
   "useDefaultConstraints": true
 }
