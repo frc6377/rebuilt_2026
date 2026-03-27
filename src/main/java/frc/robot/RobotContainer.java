@@ -329,16 +329,29 @@ public class RobotContainer {
                 .onFalse(superstructure
                         .setFlywheelVelocityManual(RPM.of(1500))
                         .andThen(superstructure.runFlywheelVelocityManual()));
-        shootingTrigger
+        shootingTrigger.and(OIController.manualHold().negate())
                 .whileTrue(Commands.parallel(
                         superstructure.aimAtHubWhileDriving(
                                 drive, OIController.driveTranslationX(), OIController.driveTranslationY()),
                         superstructure
-                                .runToggledSpeed(drive::getPose, drive::getChassisSpeeds)
+                                .autoSpeedShooter(drive::getPose, drive::getChassisSpeeds)
                                 .until(() -> superstructure.isReadyToShoot(drive.getRotation()))
                                 .andThen(Commands.runOnce(drive::stopWithX))
                                 .andThen(Commands.parallel(
                                         superstructure.fireCommand(), indexer.index(), intake.siftFuelCommand()))))
+                .onFalse(Commands.parallel(
+                                superstructure.stopUpgoerCommand(),
+                                indexer.stop(),
+                                superstructure.setFlywheelVelocityManual(RPM.of(1500)))
+                        .andThen(superstructure.runFlywheelVelocityManual()));
+        shootingTrigger.and(OIController.manualHold())
+                .whileTrue(Commands.parallel(
+                        superstructure
+                                .runFlywheelVelocityManual()
+                                .until(superstructure::atTargetVelocity))
+                                .andThen(Commands.runOnce(drive::stopWithX))
+                                .andThen(Commands.parallel(
+                                        superstructure.fireCommand(), indexer.index(), intake.siftFuelCommand())))
                 .onFalse(Commands.parallel(
                                 superstructure.stopUpgoerCommand(),
                                 indexer.stop(),
@@ -381,7 +394,7 @@ public class RobotContainer {
                                         ? Degrees.zero()
                                         : Degrees.of(180))));
         OIController.zeroDrivebase().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
-        OIController.driveLockX().onTrue(Commands.runOnce(drive::stopWithX, drive));
+//        OIController.manualHold().onTrue(Commands.runOnce(drive::stopWithX, drive));
         // OIController.start().onTrue(Commands.runOnce(resetGyro,
         // drive).ignoringDisable(true));
 
