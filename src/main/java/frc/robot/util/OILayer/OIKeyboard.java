@@ -126,7 +126,7 @@ public class OIKeyboard implements OI {
     }
 
     @Override
-    public Trigger driveLockX() {
+    public Trigger manualHold() {
         return Slash;
     }
 }

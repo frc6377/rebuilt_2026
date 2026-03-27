@@ -53,7 +53,7 @@ public class IntakeConstants {
 
         public static final Angle kExtenderStowAngle = Degrees.of(2.0);
         public static final Angle kExtenderIntakeAngle = Degrees.of(97.0);
-        public static final Angle kExtenderTolerance = Degrees.of(5.0);
+        public static final Angle kExtenderTolerance = Degrees.of(2.5);
         public static final Angle kExtenderSiftAngleOne = Degrees.of(45.0);
         public static final Angle kExtenderSiftAngleTwo = Degrees.of(60.0);
         public static final Angle kExtenderCustomAngleOne = Degrees.of(45.0);
@@ -61,7 +61,7 @@ public class IntakeConstants {
         public static final Angle kExtenderZeroAngle = Degrees.of(-282.0);
 
         public static class PIDF {
-            public static final double kP = 0.005;
+            public static final double kP = 0.03;
             public static final double kI = 0.0;
             public static final double kD = 0.0;
             public static final double kS = 0.0;

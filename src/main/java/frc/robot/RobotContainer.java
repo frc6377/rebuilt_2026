@@ -329,19 +329,29 @@ public class RobotContainer {
                 .onFalse(superstructure
                         .setFlywheelVelocityManual(RPM.of(1500))
                         .andThen(superstructure.runFlywheelVelocityManual()));
-        shootingTrigger
+        shootingTrigger.and(OIController.manualHold().negate())
                 .whileTrue(Commands.parallel(
                         superstructure.aimAtHubWhileDriving(
                                 drive, OIController.driveTranslationX(), OIController.driveTranslationY()),
                         superstructure
-                                .runToggledSpeed(drive::getPose, drive::getChassisSpeeds)
-                                // superstructure.aimAtHubWhileDriving(
-                                // drive, OIController.driveTranslationX(),
-                                // OIController.driveTranslationY()))
+                                .autoSpeedShooter(drive::getPose, drive::getChassisSpeeds)
                                 .until(() -> superstructure.isReadyToShoot(drive.getRotation()))
                                 .andThen(Commands.runOnce(drive::stopWithX))
                                 .andThen(Commands.parallel(
                                         superstructure.fireCommand(), indexer.index(), intake.siftFuelCommand()))))
+                .onFalse(Commands.parallel(
+                                superstructure.stopUpgoerCommand(),
+                                indexer.stop(),
+                                superstructure.setFlywheelVelocityManual(RPM.of(1500)))
+                        .andThen(superstructure.runFlywheelVelocityManual()));
+        shootingTrigger.and(OIController.manualHold())
+                .whileTrue(Commands.parallel(
+                        superstructure
+                                .runFlywheelVelocityManual()
+                                .until(superstructure::atTargetVelocity))
+                                .andThen(Commands.runOnce(drive::stopWithX))
+                                .andThen(Commands.parallel(
+                                        superstructure.fireCommand(), indexer.index(), intake.siftFuelCommand())))
                 .onFalse(Commands.parallel(
                                 superstructure.stopUpgoerCommand(),
                                 indexer.stop(),
@@ -384,23 +394,23 @@ public class RobotContainer {
                                         ? Degrees.zero()
                                         : Degrees.of(180))));
         OIController.zeroDrivebase().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
-        OIController.driveLockX().onTrue(Commands.runOnce(drive::stopWithX, drive));
+//        OIController.manualHold().onTrue(Commands.runOnce(drive::stopWithX, drive));
         // OIController.start().onTrue(Commands.runOnce(resetGyro,
         // drive).ignoringDisable(true));
 
         OIController.intake()
-                .whileTrue(intake.intakeCommand().alongWith(indexer.index()))
+                .whileTrue(intake.intakeRollerCommand().alongWith(indexer.index()))
                 .onFalse(indexer.stop());
         OIController.outtake()
                 .whileTrue(intake.outtakeRollerCommand().alongWith(indexer.indexReverse()))
                 .onFalse(indexer.stop());
         OIController.zeroIntake().onTrue(intake.zeroIntake().ignoringDisable(true));
-        OIController.retractIntake().onTrue(intake.retractIntakeCommand());
+        OIController.retractIntake().onTrue(intake.toggleIntake());
         OIController.intakeMiddle().onTrue(intake.goToCustomAngleOneCommand());
     }
 
     /**
-     * Use this to pass the autonomous command to the main {@link Robot} class.
+     * s Use this to pass the autonomous command to the main {@link Robot} class.
      *
      * @return the command to run in autonomous
      */

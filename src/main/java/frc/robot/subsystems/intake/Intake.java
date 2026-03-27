@@ -2,15 +2,13 @@ package frc.robot.subsystems.intake;
 
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.intake.extender.Extender;
 import frc.robot.subsystems.intake.extender.ExtenderIO;
 import frc.robot.subsystems.intake.roller.Roller;
 import frc.robot.subsystems.intake.roller.RollerIO;
 import java.util.function.BooleanSupplier;
-import org.littletonrobotics.junction.Logger;
 
-public class Intake extends SubsystemBase {
+public class Intake {
     private final Extender extender;
     private final Roller roller;
 
@@ -36,12 +34,12 @@ public class Intake extends SubsystemBase {
         extender.setPidEnabled(enabled);
     }
 
-    @Override
-    public void periodic() {
-        Logger.recordOutput(
-                "Intake/CurrentCommand",
-                getCurrentCommand() != null ? getCurrentCommand().getName() : "None");
-    }
+    // @Override
+    // public void periodic() {
+    //     Logger.recordOutput(
+    //             "Intake/CurrentCommand",
+    //             getCurrentCommand() != null ? getCurrentCommand().getName() : "None");
+    // }
 
     public Command extendIntake() {
         return extender.extendCommand();

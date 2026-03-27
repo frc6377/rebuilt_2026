@@ -170,7 +170,7 @@ public interface OI {
         return noButton;
     }
 
-    default Trigger driveLockX() {
+    default Trigger manualHold() {
         return noButton;
     }
 }
