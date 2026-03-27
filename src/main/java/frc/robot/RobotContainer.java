@@ -201,7 +201,8 @@ public class RobotContainer {
                                 intake.siftFuelCommand())));
         NamedCommands.registerCommand(
                 "AutoShoot",
-                Commands.parallel(superstructure.autoSpeedShooter(drive::getPose, drive::getChassisSpeeds))
+                superstructure
+                        .autoSpeedShooter(drive::getPose, drive::getChassisSpeeds)
                         .until(superstructure::atTargetVelocity)
                         .andThen(Commands.parallel(
                                 superstructure.fireCommand(),
