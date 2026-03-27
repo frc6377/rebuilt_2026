@@ -12,6 +12,9 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Temperature;
 import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import java.util.function.BooleanSupplier;
 import org.littletonrobotics.junction.AutoLog;
 
@@ -28,6 +31,7 @@ public interface ExtenderIO {
         public Current motorCurrent = Amps.of(0.0);
         public Temperature motorTemp = Celsius.of(0.0);
         public boolean atTarget = false;
+        public double rawEncoderRotations = 0.0;
     }
 
     default void updateInputs(ExtenderIOInputs inputs) {}
@@ -43,6 +47,10 @@ public interface ExtenderIO {
     default void goToCustomAngleOne() {}
 
     default void goToCustomAngleTwo() {}
+
+    default Command sift(SubsystemBase subsystem) {
+        return Commands.none();
+    }
 
     default BooleanSupplier isExtended() {
         return () -> false;

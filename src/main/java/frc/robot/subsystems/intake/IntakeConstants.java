@@ -9,6 +9,7 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.MomentOfInertia;
+import edu.wpi.first.units.measure.Time;
 import org.ironmaple.simulation.IntakeSimulation.IntakeSide;
 
 public class IntakeConstants {
@@ -58,6 +59,10 @@ public class IntakeConstants {
         public static final Angle kExtenderCustomAngleOne = Degrees.of(45.0);
         public static final Angle kExtenderCustomAngleTwo = Degrees.of(60.0);
         public static final Angle kExtenderZeroAngle = Degrees.of(-282.0);
+
+        // Sift Constants
+        public static final Current kSiftCurrentLimit = Amps.of(6);
+        public static final Time kSiftTimeout = Seconds.of(1.5);
 
         public static class PIDF {
             public static final double kP = 0.03;
