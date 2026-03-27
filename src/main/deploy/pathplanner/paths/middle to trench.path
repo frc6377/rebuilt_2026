@@ -8,8 +8,8 @@
       },
       "prevControl": null,
       "nextControl": {
-        "x": 6.2662550688022,
-        "y": 7.614301098868506
+        "x": 6.3,
+        "y": 7.7669999999999995
       },
       "isLocked": false,
       "linkedName": "Half up end"
@@ -20,8 +20,8 @@
         "y": 7.6
       },
       "prevControl": {
-        "x": 5.808643192846118,
-        "y": 7.635927718705758
+        "x": 5.821,
+        "y": 7.6
       },
       "nextControl": null,
       "isLocked": false,
@@ -52,8 +52,8 @@
   "reversed": false,
   "folder": null,
   "idealStartingState": {
-    "velocity": 1.0,
-    "rotation": 135.0
+    "velocity": 0.2,
+    "rotation": -135.0
   },
   "useDefaultConstraints": true
 }

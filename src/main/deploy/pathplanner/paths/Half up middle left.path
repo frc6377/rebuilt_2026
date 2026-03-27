@@ -16,22 +16,6 @@
     },
     {
       "anchor": {
-        "x": 6.482,
-        "y": 5.674
-      },
-      "prevControl": {
-        "x": 6.8408945418529585,
-        "y": 4.21311304870195
-      },
-      "nextControl": {
-        "x": 6.204376100884377,
-        "y": 6.804073278608592
-      },
-      "isLocked": false,
-      "linkedName": null
-    },
-    {
-      "anchor": {
         "x": 6.3,
         "y": 6.8
       },
@@ -44,12 +28,7 @@
       "linkedName": "Half up end"
     }
   ],
-  "rotationTargets": [
-    {
-      "waypointRelativePos": 0.5,
-      "rotationDegrees": 135.0
-    }
-  ],
+  "rotationTargets": [],
   "constraintZones": [],
   "pointTowardsZones": [],
   "eventMarkers": [],
@@ -62,8 +41,8 @@
     "unlimited": false
   },
   "goalEndState": {
-    "velocity": 1.0,
-    "rotation": 135.0
+    "velocity": 0.2,
+    "rotation": -135.0
   },
   "reversed": false,
   "folder": null,
