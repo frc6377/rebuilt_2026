@@ -9,7 +9,6 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.MomentOfInertia;
-import edu.wpi.first.wpilibj.TimedRobot;
 import org.ironmaple.simulation.IntakeSimulation.IntakeSide;
 
 public class IntakeConstants {
@@ -70,7 +69,7 @@ public class IntakeConstants {
         }
 
         public static class MotorConfig {
-            public static final double kRampPeriod = TimedRobot.kDefaultPeriod;
+            public static final double kRampPeriod = 0.5;
             public static final Current kStatorCurrentLimitExtender = Amps.of(15);
             public static final InvertedValue kInverted = InvertedValue.Clockwise_Positive;
             public static final NeutralModeValue kNeutralMode = NeutralModeValue.Brake;
