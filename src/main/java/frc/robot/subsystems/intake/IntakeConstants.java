@@ -58,7 +58,7 @@ public class IntakeConstants {
         public static final Angle kExtenderSiftAngleTwo = Degrees.of(60.0);
         public static final Angle kExtenderCustomAngleOne = Degrees.of(45.0);
         public static final Angle kExtenderCustomAngleTwo = Degrees.of(60.0);
-        public static final Angle kExtenderZeroAngle = Degrees.of(-223);
+        public static final Angle kExtenderZeroAngle = Degrees.of(-282.0);
 
         public static class PIDF {
             public static final double kP = 0.005;
@@ -71,7 +71,7 @@ public class IntakeConstants {
 
         public static class MotorConfig {
             public static final double kRampPeriod = TimedRobot.kDefaultPeriod;
-            public static final Current kStatorCurrentLimitExtender = Amps.of(20);
+            public static final Current kStatorCurrentLimitExtender = Amps.of(15);
             public static final InvertedValue kInverted = InvertedValue.Clockwise_Positive;
             public static final NeutralModeValue kNeutralMode = NeutralModeValue.Brake;
         }

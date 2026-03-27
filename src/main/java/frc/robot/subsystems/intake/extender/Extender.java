@@ -90,12 +90,12 @@ public class Extender extends SubsystemBase {
     public Command siftFuelPositionCommand() {
         return Commands.repeatingSequence(
                         Commands.run(io::goToSiftAngleOne, this)
-                                .until(() -> io.atTarget().getAsBoolean() || io.getCurrent().gte(Amps.of(15)))
-                                
+                                .until(() -> io.atTarget().getAsBoolean()
+                                        || io.getCurrent().gte(Amps.of(15)))
                                 .withTimeout(1.5),
                         Commands.run(io::goToSiftAngleTwo, this)
-                                .until(() -> io.atTarget().getAsBoolean() || io.getCurrent().gte(Amps.of(15)))
-                                
+                                .until(() -> io.atTarget().getAsBoolean()
+                                        || io.getCurrent().gte(Amps.of(15)))
                                 .withTimeout(1.5))
                 .withName("ExtenderSiftPositionFuel");
     }
@@ -109,7 +109,7 @@ public class Extender extends SubsystemBase {
 
     public Command runUntilCurrentCommand(double percent, Current current) {
         return Commands.run(() -> io.setMotorPercentage(percent))
-                .until(() -> io.getCurrent().gte(current) )
+                .until(() -> io.getCurrent().gte(current))
                 .withName("ExtenderRunUntilCurrent");
     }
 }

@@ -65,6 +65,8 @@ public class ExtenderIOReal implements ExtenderIO {
                 () -> getPosition().in(Degrees),
                 percent -> extenderMotor.set(-percent));
 
+        extenderPid.getController().enableContinuousInput(0, 360);
+
         extenderStowAngle =
                 new LoggedNetworkNumber("Intake/Extender/StowAngle", ExtenderConstants.kExtenderStowAngle.in(Degrees));
         extenderIntakeAngle = new LoggedNetworkNumber(
