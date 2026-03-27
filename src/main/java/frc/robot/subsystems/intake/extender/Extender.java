@@ -89,16 +89,16 @@ public class Extender extends SubsystemBase {
 
     public Command siftFuelPositionCommand() {
         // return Commands.repeatingSequence(
-        //                 Commands.run(io::goToSiftAngleOne, this)
-        //                         .until(() -> io.atTarget().getAsBoolean()
-        //                                 || io.getCurrent().gte(Amps.of(6)))
-        //                         .withTimeout(1.5),
-        //                 Commands.run(io::goToSiftAngleTwo, this)
-        //                         .until(() -> io.atTarget().getAsBoolean()
-        //                                 || io.getCurrent().gte(Amps.of(6)))
-        //                         .withTimeout(1.5))
-        //         .withName("ExtenderSiftPositionFuel");
-        return io.sift(this);
+        // Commands.run(io::goToSiftAngleOne, this)
+        // .until(() -> io.atTarget().getAsBoolean()
+        // || io.getCurrent().gte(Amps.of(6)))
+        // .withTimeout(1.5),
+        // Commands.run(io::goToSiftAngleTwo, this)
+        // .until(() -> io.atTarget().getAsBoolean()
+        // || io.getCurrent().gte(Amps.of(6)))
+        // .withTimeout(1.5))
+        // .withName("ExtenderSiftPositionFuel");
+        return io.siftPosition(this);
     }
 
     public Command siftFuelSpeedCommand() {

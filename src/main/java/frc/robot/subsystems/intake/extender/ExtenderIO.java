@@ -31,7 +31,7 @@ public interface ExtenderIO {
         public Current motorCurrent = Amps.of(0.0);
         public Temperature motorTemp = Celsius.of(0.0);
         public boolean atTarget = false;
-        public double rawEncoderRotations = 0.0;
+        public double rawEncoderDegrees = 0.0;
     }
 
     default void updateInputs(ExtenderIOInputs inputs) {}
@@ -48,7 +48,7 @@ public interface ExtenderIO {
 
     default void goToCustomAngleTwo() {}
 
-    default Command sift(SubsystemBase subsystem) {
+    default Command siftPosition(SubsystemBase subsystem) {
         return Commands.none();
     }
 
