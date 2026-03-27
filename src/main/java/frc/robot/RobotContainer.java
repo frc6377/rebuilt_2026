@@ -64,7 +64,6 @@ import frc.robot.util.OILayer.OI;
 import frc.robot.util.OILayer.OIKeyboard;
 import frc.robot.util.OILayer.OIXbox;
 import java.util.Objects;
-import java.util.function.Supplier;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
 import org.littletonrobotics.junction.Logger;
@@ -92,8 +91,6 @@ public class RobotContainer {
     private final RobotState robotState;
 
     private final boolean usingController;
-
-    private final Supplier<Rotation2d> wallAlignAngle;
 
     // Dashboard inputs
     private final LoggedDashboardChooser<Command> autoChooser;
@@ -281,16 +278,6 @@ public class RobotContainer {
                         .andThen(superstructure.getRightShooter().sysIdDynamic(SysIdRoutine.Direction.kReverse))
                         .andThen(SignalLogger::stop));
 
-        wallAlignAngle = () -> {
-            double robotX = drive.getPose().getTranslation().getX();
-            double fieldMidX = FieldConstants.LinesVertical.center;
-            if (robotX > fieldMidX) {
-                return Rotation2d.fromDegrees(90);
-            } else {
-                return Rotation2d.fromDegrees(180);
-            }
-        };
-
         // Configure the button bindings
         SignalLogger.setPath("Media/sda1/logs/one/");
         configureButtonBindings();
@@ -412,12 +399,19 @@ public class RobotContainer {
         OIController.toggleIntakeState().onTrue(intake.retractIntakeCommand());
         OIController.intakeMiddle().onTrue(intake.goToCustomAngleOneCommand());
 
-        OIController.wallAlign()
+        OIController.wallAlign90()
                 .whileTrue(DriveCommands.joystickDriveAtAngle(
                         drive,
                         () -> OIController.driveTranslationY().getAsDouble(),
                         () -> OIController.driveTranslationX().getAsDouble(),
-                        wallAlignAngle));
+                        () -> Rotation2d.fromDegrees(90)));
+
+        OIController.wallAlign180()
+                .whileTrue(DriveCommands.joystickDriveAtAngle(
+                        drive,
+                        () -> OIController.driveTranslationY().getAsDouble(),
+                        () -> OIController.driveTranslationX().getAsDouble(),
+                        () -> Rotation2d.fromDegrees(180)));
     }
 
     /**
