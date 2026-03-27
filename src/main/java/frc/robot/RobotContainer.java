@@ -335,9 +335,6 @@ public class RobotContainer {
                                 drive, OIController.driveTranslationX(), OIController.driveTranslationY()),
                         superstructure
                                 .runToggledSpeed(drive::getPose, drive::getChassisSpeeds)
-                                // superstructure.aimAtHubWhileDriving(
-                                // drive, OIController.driveTranslationX(),
-                                // OIController.driveTranslationY()))
                                 .until(() -> superstructure.isReadyToShoot(drive.getRotation()))
                                 .andThen(Commands.runOnce(drive::stopWithX))
                                 .andThen(Commands.parallel(
@@ -400,7 +397,7 @@ public class RobotContainer {
     }
 
     /**
-     * Use this to pass the autonomous command to the main {@link Robot} class.
+     * s Use this to pass the autonomous command to the main {@link Robot} class.
      *
      * @return the command to run in autonomous
      */
