@@ -178,7 +178,7 @@ public class ExtenderIOReal implements ExtenderIO {
 
     @Override
     public void toggle() {
-        if (isRetracted().getAsBoolean()) {
+        if (this.setpoint.equals(Degrees.of(extenderStowAngle.get()))) {
             extend();
         } else {
             retract();

@@ -386,13 +386,13 @@ public class RobotContainer {
         // drive).ignoringDisable(true));
 
         OIController.intake()
-                .whileTrue(intake.intakeCommand().alongWith(indexer.index()))
+                .whileTrue(intake.intakeRollerCommand().alongWith(indexer.index()))
                 .onFalse(indexer.stop());
         OIController.outtake()
                 .whileTrue(intake.outtakeRollerCommand().alongWith(indexer.indexReverse()))
                 .onFalse(indexer.stop());
         OIController.zeroIntake().onTrue(intake.zeroIntake().ignoringDisable(true));
-        OIController.retractIntake().onTrue(intake.retractIntakeCommand());
+        OIController.retractIntake().onTrue(intake.toggleIntake());
         OIController.intakeMiddle().onTrue(intake.goToCustomAngleOneCommand());
     }
 
