@@ -194,15 +194,20 @@ public class RobotContainer {
                 superstructure
                         .autoSpeedShooter(drive::getPose, drive::getChassisSpeeds)
                         .until(superstructure::atTargetVelocity)
-                        .andThen(Commands.parallel(indexer.index(), superstructure.fireCommand(), intake.intakeRollerCommand(), intake.siftFuelCommand())));
+                        .andThen(Commands.parallel(
+                                indexer.index(),
+                                superstructure.fireCommand(),
+                                intake.intakeRollerCommand(),
+                                intake.siftFuelCommand())));
         NamedCommands.registerCommand(
                 "AutoShoot",
-                Commands.parallel(
-                                superstructure.autoSpeedShooter(drive::getPose, drive::getChassisSpeeds),
-                                intake.extendIntakeAndWait())
+                Commands.parallel(superstructure.autoSpeedShooter(drive::getPose, drive::getChassisSpeeds))
                         .until(superstructure::atTargetVelocity)
                         .andThen(Commands.parallel(
-                                superstructure.fireCommand(), indexer.index(), intake.intakeRollerCommand(), intake.siftFuelCommand())));
+                                superstructure.fireCommand(),
+                                indexer.index(),
+                                intake.intakeRollerCommand(),
+                                intake.siftFuelCommand())));
         NamedCommands.registerCommand(
                 "AutoEverything",
                 Commands.sequence(
@@ -342,11 +347,15 @@ public class RobotContainer {
                                 .until(() -> superstructure.isReadyToShoot(drive.getRotation()))
                                 .andThen(Commands.runOnce(drive::stopWithX))
                                 .andThen(Commands.parallel(
-                                        superstructure.fireCommand(), indexer.index(), intake.siftFuelCommand(), intake.intakeRollerCommand()))))
+                                        superstructure.fireCommand(),
+                                        indexer.index(),
+                                        intake.siftFuelCommand(),
+                                        intake.intakeRollerCommand()))))
                 .onFalse(Commands.parallel(
                                 superstructure.stopUpgoerCommand(),
                                 indexer.stop(),
-                                superstructure.setFlywheelVelocityManual(RPM.of(1500)))
+                                superstructure.setFlywheelVelocityManual(RPM.of(1500)),
+                                intake.extendIntake())
                         .andThen(superstructure.runFlywheelVelocityManual()));
         shootingTrigger
                 .and(OIController.manualHold())
@@ -358,7 +367,8 @@ public class RobotContainer {
                 .onFalse(Commands.parallel(
                                 superstructure.stopUpgoerCommand(),
                                 indexer.stop(),
-                                superstructure.setFlywheelVelocityManual(RPM.of(1500)))
+                                superstructure.setFlywheelVelocityManual(RPM.of(1500)),
+                                intake.extendIntake())
                         .andThen(superstructure.runFlywheelVelocityManual()));
 
         OIController.unjamShooter()
