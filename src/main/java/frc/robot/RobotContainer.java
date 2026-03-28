@@ -364,7 +364,7 @@ public class RobotContainer {
                 .and(OIController.manualHold())
                 .whileTrue(superstructure
                         .runFlywheelVelocityManual()
-                        .withTimeout(1)
+                        .withTimeout(0.5)
                         .until(superstructure::atTargetVelocity)
                         .andThen(Commands.runOnce(drive::stopWithX))
                         .andThen(Commands.parallel(
