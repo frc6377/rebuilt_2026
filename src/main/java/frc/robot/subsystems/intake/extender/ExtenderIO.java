@@ -16,6 +16,9 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import java.util.function.BooleanSupplier;
+
+import javax.swing.text.StyledEditorKit.BoldAction;
+
 import org.littletonrobotics.junction.AutoLog;
 
 public interface ExtenderIO {
@@ -32,6 +35,7 @@ public interface ExtenderIO {
         public Temperature motorTemp = Celsius.of(0.0);
         public boolean atTarget = false;
         public double rawEncoderDegrees = 0.0;
+        public boolean atSiftCurrent = false;
     }
 
     default void updateInputs(ExtenderIOInputs inputs) {}

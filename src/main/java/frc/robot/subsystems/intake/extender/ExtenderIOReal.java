@@ -214,6 +214,7 @@ public class ExtenderIOReal implements ExtenderIO {
         inputs.motorTemp = extenderMotor.getDeviceTemp().getValue();
         inputs.atTarget = atTarget().getAsBoolean();
         inputs.rawEncoderDegrees = Rotations.of(extenderEncoder.get()).in(Degrees);
+        inputs.atSiftCurrent = getCurrent().gte(Amps.of(siftCurrentLimit.get()));
     }
 
     @Override
