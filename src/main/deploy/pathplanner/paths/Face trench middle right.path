@@ -8,20 +8,20 @@
       },
       "prevControl": null,
       "nextControl": {
-        "x": 5.736283112582782,
-        "y": 0.5647516556291385
+        "x": 6.046728070175439,
+        "y": 0.47314912280701715
       },
       "isLocked": false,
       "linkedName": "Trench right"
     },
     {
       "anchor": {
-        "x": 6.9,
+        "x": 8.4,
         "y": 0.95
       },
       "prevControl": {
-        "x": 5.714503311258278,
-        "y": 0.5502317880794703
+        "x": 6.8237192982456145,
+        "y": 0.5193070175438592
       },
       "nextControl": null,
       "isLocked": false,

@@ -61,7 +61,7 @@ public class IntakeConstants {
         public static final Angle kExtenderZeroAngle = Degrees.of(-282.0);
 
         // Sift Constants
-        public static final Current kSiftCurrentLimit = Amps.of(20);
+        public static final Current kSiftCurrentLimit = Amps.of(15);
         public static final Time kSiftTimeout = Seconds.of(1.5);
 
         public static class PIDF {
