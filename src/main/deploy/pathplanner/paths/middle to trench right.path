@@ -16,16 +16,16 @@
     },
     {
       "anchor": {
-        "x": 4.0,
+        "x": 3.9,
         "y": 0.45
       },
       "prevControl": {
-        "x": 5.821,
+        "x": 5.721,
         "y": 0.4499999999999998
       },
       "nextControl": null,
       "isLocked": false,
-      "linkedName": "Trench right"
+      "linkedName": "Trench end right"
     }
   ],
   "rotationTargets": [
