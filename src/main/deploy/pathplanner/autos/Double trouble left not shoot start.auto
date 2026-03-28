@@ -29,15 +29,41 @@
           }
         },
         {
-          "type": "path",
+          "type": "deadline",
           "data": {
-            "pathName": "Half down middle left"
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "Half down middle left"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "Intake"
+                }
+              }
+            ]
           }
         },
         {
-          "type": "path",
+          "type": "parallel",
           "data": {
-            "pathName": "Half up middle left"
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "Half up middle left"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "Intake"
+                }
+              }
+            ]
           }
         },
         {

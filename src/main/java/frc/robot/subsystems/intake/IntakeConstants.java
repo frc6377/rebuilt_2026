@@ -52,7 +52,7 @@ public class IntakeConstants {
         public static final double kDownSpeed = 0.05;
 
         public static final Angle kExtenderStowAngle = Degrees.of(8.0);
-        public static final Angle kExtenderIntakeAngle = Radians.of(1.63);
+        public static final Angle kExtenderIntakeAngle = Degrees.of(97);
         public static final Angle kExtenderTolerance = Degrees.of(2.5);
         public static final Angle kExtenderSiftAngleOne = Degrees.of(30.0);
         public static final Angle kExtenderSiftAngleTwo = Degrees.of(60.0);
@@ -65,9 +65,9 @@ public class IntakeConstants {
         public static final Time kSiftTimeout = Seconds.of(1.5);
 
         public static class PIDF {
-            public static final double kP = 0.009;
+            public static final double kP = 0.006;
             public static final double kI = 0.0;
-            public static final double kD = 0.003;
+            public static final double kD = 0.00001;
             public static final double kS = 0.0;
             public static final double kV = 0.0;
             public static final double kA = 0.0;

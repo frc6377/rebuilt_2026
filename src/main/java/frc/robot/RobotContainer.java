@@ -351,12 +351,12 @@ public class RobotContainer {
                                         superstructure.fireCommand(),
                                         indexer.index(),
                                         intake.siftFuelCommand(),
-                                        intake.intakeRollerCommand()))))
+                                        intake.intakeRollerCommand()))).withName("ShootManual"))
                 .onFalse(Commands.parallel(
                                 superstructure.stopUpgoerCommand(),
                                 indexer.stop(),
                                 superstructure.setFlywheelVelocityManual(RPM.of(1500)),
-                                intake.extendIntake())
+                                intake.extendIntake()).withName("Shoot Manual Stop")
                         .andThen(superstructure.runFlywheelVelocityManual()));
         shootingTrigger
                 .and(OIController.manualHold())
@@ -418,7 +418,8 @@ public class RobotContainer {
         OIController.outtake()
                 .whileTrue(intake.outtakeRollerCommand().alongWith(indexer.indexReverse()))
                 .onFalse(indexer.stop());
-        OIController.zeroIntake().whileTrue(intake.siftFuelCommand()).onFalse(intake.stop());
+        // OIController.zeroIntake().whileTrue(intake.siftFuelCommand()).onFalse(intake.stop());
+        OIController.zeroIntake().whileTrue(superstructure.fireCommand());
         OIController.retractIntake().onTrue(intake.toggleIntake());
         OIController.intakeMiddle().onTrue(intake.goToCustomAngleOneCommand());
     }

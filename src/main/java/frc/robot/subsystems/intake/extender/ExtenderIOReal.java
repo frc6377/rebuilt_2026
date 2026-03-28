@@ -3,6 +3,7 @@ package frc.robot.subsystems.intake.extender;
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Rotations;
+import static edu.wpi.first.units.Units.Second;
 import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
 
@@ -91,6 +92,16 @@ public class ExtenderIOReal implements ExtenderIO {
                 "Intake/Extender/Sifting/SiftCurrentLimit", ExtenderConstants.kSiftCurrentLimit.in(Amps));
         siftTimeout = new LoggedNetworkNumber(
                 "Intake/Extender/Sifting/SiftTimeout", ExtenderConstants.kSiftTimeout.in(Seconds));
+
+        extenderStowAngle.set(ExtenderConstants.kExtenderStowAngle.in(Degrees));
+        extenderIntakeAngle.set(ExtenderConstants.kExtenderIntakeAngle.in(Degrees));
+        extenderTolerance.set(ExtenderConstants.kExtenderTolerance.in(Degrees));
+        extenderSiftAngleOne.set(ExtenderConstants.kExtenderSiftAngleOne.in(Degrees));
+        extenderSiftAngleTwo.set(ExtenderConstants.kExtenderSiftAngleTwo.in(Degrees));
+        extenderCustomAngleOne.set(ExtenderConstants.kExtenderCustomAngleOne.in(Degrees));
+        extenderCustomAngleTwo.set(ExtenderConstants.kExtenderCustomAngleTwo.in(Degrees));
+        siftCurrentLimit.set(ExtenderConstants.kSiftCurrentLimit.in(Amps));
+        siftTimeout.set(ExtenderConstants.kSiftTimeout.in(Seconds));
     }
 
     public void setPosition(Angle position) {

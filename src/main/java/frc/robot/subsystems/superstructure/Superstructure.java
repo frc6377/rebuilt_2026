@@ -463,6 +463,7 @@ public class Superstructure extends SubsystemBase {
     }
 
     public boolean atTargetVelocity() {
+        Logger.recordOutput("Shooting/Ready to shoot", shooter.getLeft().atTargetVelocity() && shooter.getRight().atTargetVelocity());
         return shooter.getLeft().atTargetVelocity() && shooter.getRight().atTargetVelocity();
     }
 
@@ -473,7 +474,7 @@ public class Superstructure extends SubsystemBase {
         boolean headingReady =
                 Math.abs(currentHeading.minus(latestParameters.targetHeading()).getDegrees())
                         < ShooterConstants.kHeadingTolerance.in(Degrees);
-
+        Logger.recordOutput("Shooting/Ready to shoot", flywheelReady && headingReady);
         return flywheelReady && headingReady;
     }
 
