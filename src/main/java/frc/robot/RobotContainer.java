@@ -223,7 +223,7 @@ public class RobotContainer {
         NamedCommands.registerCommand("Extend Intake", intake.extendIntake());
         NamedCommands.registerCommand(
                 "Intake",
-                Commands.deadline(Commands.waitSeconds(6), Commands.parallel(intake.intakeCommand(), indexer.index()))
+                Commands.deadline(Commands.waitSeconds(7), Commands.parallel(intake.intakeCommand(), indexer.index()))
                         .andThen(indexer.stop()));
         NamedCommands.registerCommand(
                 "Index",

@@ -48,41 +48,21 @@
           }
         },
         {
-          "type": "parallel",
+          "type": "named",
           "data": {
-            "commands": [
-              {
-                "type": "named",
-                "data": {
-                  "name": "Intake"
-                }
-              },
-              {
-                "type": "path",
-                "data": {
-                  "pathName": "Half down middle left"
-                }
-              }
-            ]
+            "name": "Intake"
           }
         },
         {
-          "type": "parallel",
+          "type": "path",
           "data": {
-            "commands": [
-              {
-                "type": "named",
-                "data": {
-                  "name": "Intake"
-                }
-              },
-              {
-                "type": "path",
-                "data": {
-                  "pathName": "Half up middle left"
-                }
-              }
-            ]
+            "pathName": "Half down middle left"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Half up middle left"
           }
         },
         {
