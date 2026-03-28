@@ -79,7 +79,7 @@ public class TunerConstants {
     // Some configs will be overwritten; check the `with*InitialConfigs()` API documentation.
     private static final TalonFXConfiguration driveInitialConfigs = new TalonFXConfiguration()
             .withCurrentLimits(new CurrentLimitsConfigs()
-                    .withStatorCurrentLimit(Amps.of(30))
+                    .withStatorCurrentLimit(Amps.of(45))
                     .withStatorCurrentLimitEnable(true)
                     .withSupplyCurrentLimitEnable(false));
     private static final TalonFXConfiguration steerInitialConfigs = new TalonFXConfiguration()
