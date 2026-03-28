@@ -362,8 +362,10 @@ public class RobotContainer {
                         .andThen(superstructure.runFlywheelVelocityManual()));
         shootingTrigger
                 .and(OIController.manualHold())
-                .whileTrue(
-                                superstructure.runFlywheelVelocityManual().until(superstructure::atTargetVelocity)
+                .whileTrue(superstructure
+                        .runFlywheelVelocityManual()
+                        .withTimeout(1)
+                        // .until(superstructure::atTargetVelocity)
                         .andThen(Commands.runOnce(drive::stopWithX))
                         .andThen(Commands.parallel(
                                 superstructure.fireCommand(), indexer.index(), intake.siftFuelCommand())))
