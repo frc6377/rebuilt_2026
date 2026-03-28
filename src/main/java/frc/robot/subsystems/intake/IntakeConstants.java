@@ -75,7 +75,7 @@ public class IntakeConstants {
 
         public static class MotorConfig {
             public static final double kRampPeriod = 0.5;
-            public static final Current kStatorCurrentLimitExtender = Amps.of(15);
+            public static final Current kStatorCurrentLimitExtender = Amps.of(30);
             public static final InvertedValue kInverted = InvertedValue.Clockwise_Positive;
             public static final NeutralModeValue kNeutralMode = NeutralModeValue.Brake;
         }
