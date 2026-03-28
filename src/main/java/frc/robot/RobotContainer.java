@@ -341,27 +341,29 @@ public class RobotContainer {
         shootingTrigger
                 .and(OIController.manualHold().negate())
                 .whileTrue(Commands.parallel(
-                        superstructure.aimAtHubWhileDriving(
-                                drive, OIController.driveTranslationX(), OIController.driveTranslationY()),
-                        superstructure
-                                .autoSpeedShooter(drive::getPose, drive::getChassisSpeeds)
-                                .until(() -> superstructure.isReadyToShoot(drive.getRotation()))
-                                .andThen(Commands.runOnce(drive::stopWithX))
-                                .andThen(Commands.parallel(
-                                        superstructure.fireCommand(),
-                                        indexer.index(),
-                                        intake.siftFuelCommand(),
-                                        intake.intakeRollerCommand()))).withName("ShootManual"))
+                                superstructure.aimAtHubWhileDriving(
+                                        drive, OIController.driveTranslationX(), OIController.driveTranslationY()),
+                                superstructure
+                                        .autoSpeedShooter(drive::getPose, drive::getChassisSpeeds)
+                                        .until(() -> superstructure.isReadyToShoot(drive.getRotation()))
+                                        .andThen(Commands.runOnce(drive::stopWithX))
+                                        .andThen(Commands.parallel(
+                                                superstructure.fireCommand(),
+                                                indexer.index(),
+                                                intake.siftFuelCommand(),
+                                                intake.intakeRollerCommand())))
+                        .withName("ShootManual"))
                 .onFalse(Commands.parallel(
                                 superstructure.stopUpgoerCommand(),
                                 indexer.stop(),
                                 superstructure.setFlywheelVelocityManual(RPM.of(1500)),
-                                intake.extendIntake()).withName("Shoot Manual Stop")
+                                intake.extendIntake())
+                        .withName("Shoot Manual Stop")
                         .andThen(superstructure.runFlywheelVelocityManual()));
         shootingTrigger
                 .and(OIController.manualHold())
-                .whileTrue(Commands.parallel(
-                                superstructure.runFlywheelVelocityManual().until(superstructure::atTargetVelocity))
+                .whileTrue(
+                                superstructure.runFlywheelVelocityManual().until(superstructure::atTargetVelocity)
                         .andThen(Commands.runOnce(drive::stopWithX))
                         .andThen(Commands.parallel(
                                 superstructure.fireCommand(), indexer.index(), intake.siftFuelCommand())))
