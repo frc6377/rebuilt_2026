@@ -24,7 +24,7 @@ public class Extender extends SubsystemBase {
         Logger.processInputs("Intake/Extender", inputs);
         Logger.recordOutput(
                 "Intake/Extender/CurrentCommand",
-                getCurrentCommand() != null ? getCurrentCommand().getName() : "None");
+                this.getCurrentCommand().getName());
     }
 
     public boolean isExtended() {
