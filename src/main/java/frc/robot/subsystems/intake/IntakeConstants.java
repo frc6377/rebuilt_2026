@@ -58,7 +58,8 @@ public class IntakeConstants {
         public static final Angle kExtenderSiftAngleTwo = Degrees.of(60.0);
         public static final Angle kExtenderCustomAngleOne = Degrees.of(45.0);
         public static final Angle kExtenderCustomAngleTwo = Degrees.of(60.0);
-        public static final Angle kExtenderZeroAngle = Degrees.of(-283.0);
+        public static final Angle kExtenderZeroAngle = Degrees.of(-284/5);
+        
 
         // Sift Constants
         public static final Current kSiftCurrentLimit = Amps.of(15);
