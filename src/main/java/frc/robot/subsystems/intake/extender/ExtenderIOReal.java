@@ -73,12 +73,12 @@ public class ExtenderIOReal implements ExtenderIO {
 
         extenderPid.getController().enableContinuousInput(0, 360);
 
-        extenderStowAngle = new LoggedNetworkNumber("Intake/Extender/StowAngle",
-                ExtenderConstants.kExtenderStowAngle.in(Degrees));
+        extenderStowAngle =
+                new LoggedNetworkNumber("Intake/Extender/StowAngle", ExtenderConstants.kExtenderStowAngle.in(Degrees));
         extenderIntakeAngle = new LoggedNetworkNumber(
                 "Intake/Extender/IntakingAngle", ExtenderConstants.kExtenderIntakeAngle.in(Degrees));
-        extenderTolerance = new LoggedNetworkNumber("Intake/Extender/Tolerance",
-                ExtenderConstants.kExtenderTolerance.in(Degrees));
+        extenderTolerance =
+                new LoggedNetworkNumber("Intake/Extender/Tolerance", ExtenderConstants.kExtenderTolerance.in(Degrees));
         extenderSiftAngleOne = new LoggedNetworkNumber(
                 "Intake/Extender/Sifting/SiftAngleOne", ExtenderConstants.kExtenderSiftAngleOne.in(Degrees));
         extenderSiftAngleTwo = new LoggedNetworkNumber(
@@ -160,14 +160,14 @@ public class ExtenderIOReal implements ExtenderIO {
     @Override
     public Command siftPosition(SubsystemBase subsystem) {
         return Commands.repeatingSequence(
-                Commands.run(this::goToSiftAngleOne, subsystem)
-                        .until(() -> atTarget().getAsBoolean()
-                                || getCurrent().gte(Amps.of(siftCurrentLimit.get())))
-                        .withTimeout(siftTimeout.get()),
-                Commands.run(this::goToSiftAngleTwo, subsystem)
-                        .until(() -> atTarget().getAsBoolean()
-                                || getCurrent().gte(Amps.of(siftCurrentLimit.get())))
-                        .withTimeout(siftTimeout.get()))
+                        Commands.run(this::goToSiftAngleOne, subsystem)
+                                .until(() -> atTarget().getAsBoolean()
+                                        || getCurrent().gte(Amps.of(siftCurrentLimit.get())))
+                                .withTimeout(siftTimeout.get()),
+                        Commands.run(this::goToSiftAngleTwo, subsystem)
+                                .until(() -> atTarget().getAsBoolean()
+                                        || getCurrent().gte(Amps.of(siftCurrentLimit.get())))
+                                .withTimeout(siftTimeout.get()))
                 .withName("ExtenderSiftPositionFuel");
     }
 
