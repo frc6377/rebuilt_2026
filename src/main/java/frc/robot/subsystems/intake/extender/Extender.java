@@ -22,8 +22,11 @@ public class Extender extends SubsystemBase {
         io.updateInputs(inputs);
         io.periodic();
         Logger.processInputs("Intake/Extender", inputs);
-        Logger.recordOutput(
-                "Intake/Extender/CurrentCommand", this.getCurrentCommand().getName() != null ? "None" : this.getCurrentCommand().getName());
+        // Logger.recordOutput(
+        //         "Intake/Extender/CurrentCommand",
+        //         this.getCurrentCommand().getName() != null
+        //                 ? "None"
+        //                 : this.getCurrentCommand().getName());
     }
 
     public boolean isExtended() {
