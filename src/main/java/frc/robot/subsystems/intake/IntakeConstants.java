@@ -65,9 +65,9 @@ public class IntakeConstants {
         public static final Time kSiftTimeout = Seconds.of(1.5);
 
         public static class PIDF {
-            public static final double kP = 0.03;
+            public static final double kP = 0.009;
             public static final double kI = 0.0;
-            public static final double kD = 0.0;
+            public static final double kD = 0.003;
             public static final double kS = 0.0;
             public static final double kV = 0.0;
             public static final double kA = 0.0;
