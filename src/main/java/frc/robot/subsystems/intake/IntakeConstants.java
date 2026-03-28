@@ -51,17 +51,17 @@ public class IntakeConstants {
         public static final Distance kExtenderArmLength = Inches.of(12.0);
         public static final double kDownSpeed = 0.05;
 
-        public static final Angle kExtenderStowAngle = Degrees.of(2.0);
+        public static final Angle kExtenderStowAngle = Degrees.of(8.0);
         public static final Angle kExtenderIntakeAngle = Degrees.of(97.0);
         public static final Angle kExtenderTolerance = Degrees.of(2.5);
-        public static final Angle kExtenderSiftAngleOne = Degrees.of(45.0);
+        public static final Angle kExtenderSiftAngleOne = Degrees.of(30.0);
         public static final Angle kExtenderSiftAngleTwo = Degrees.of(60.0);
         public static final Angle kExtenderCustomAngleOne = Degrees.of(45.0);
         public static final Angle kExtenderCustomAngleTwo = Degrees.of(60.0);
         public static final Angle kExtenderZeroAngle = Degrees.of(-282.0);
 
         // Sift Constants
-        public static final Current kSiftCurrentLimit = Amps.of(6);
+        public static final Current kSiftCurrentLimit = Amps.of(20);
         public static final Time kSiftTimeout = Seconds.of(1.5);
 
         public static class PIDF {
