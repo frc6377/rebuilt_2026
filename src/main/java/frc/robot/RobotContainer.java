@@ -418,7 +418,7 @@ public class RobotContainer {
         OIController.outtake()
                 .whileTrue(intake.outtakeRollerCommand().alongWith(indexer.indexReverse()))
                 .onFalse(indexer.stop());
-        OIController.zeroIntake().whileTrue(intake.siftFuelCommand().ignoringDisable(false));
+        OIController.zeroIntake().whileTrue(intake.siftFuelCommand()).onFalse(intake.stop());
         OIController.retractIntake().onTrue(intake.toggleIntake());
         OIController.intakeMiddle().onTrue(intake.goToCustomAngleOneCommand());
     }
