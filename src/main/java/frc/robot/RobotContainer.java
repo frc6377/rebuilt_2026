@@ -343,9 +343,10 @@ public class RobotContainer {
                 .whileTrue(Commands.parallel(
                                 superstructure.aimAtHubWhileDriving(
                                         drive, OIController.driveTranslationX(), OIController.driveTranslationY()),
-                                superstructure
+                                Commands.parallel(superstructure
                                         .autoSpeedShooter(drive::getPose, drive::getChassisSpeeds)
-                                        .until(() -> superstructure.isReadyToShoot(drive.getRotation()))
+                                        .until(() -> superstructure.isReadyToShoot(drive.getRotation())), 
+                                        Commands.waitSeconds(0.5))
                                         .andThen(Commands.runOnce(drive::stopWithX))
                                         .andThen(Commands.parallel(
                                                 superstructure.fireCommand(),
