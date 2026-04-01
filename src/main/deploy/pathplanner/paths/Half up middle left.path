@@ -3,13 +3,13 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 7.6,
+        "x": 6.8,
         "y": 4.716
       },
       "prevControl": null,
       "nextControl": {
-        "x": 7.330286987153267,
-        "y": 5.012007742226066
+        "x": 6.743483011285388,
+        "y": 4.959527883386343
       },
       "isLocked": false,
       "linkedName": "Middle Down end"
@@ -20,8 +20,8 @@
         "y": 6.8
       },
       "prevControl": {
-        "x": 6.769720943663094,
-        "y": 6.3598476429108475
+        "x": 6.489298743305752,
+        "y": 5.984829525991714
       },
       "nextControl": null,
       "isLocked": false,
@@ -34,14 +34,14 @@
   "eventMarkers": [],
   "globalConstraints": {
     "maxVelocity": 4.0,
-    "maxAcceleration": 3.5,
+    "maxAcceleration": 4.0,
     "maxAngularVelocity": 540.0,
     "maxAngularAcceleration": 720.0,
     "nominalVoltage": 12.0,
     "unlimited": false
   },
   "goalEndState": {
-    "velocity": 0.2,
+    "velocity": 3.0,
     "rotation": -100.0
   },
   "reversed": false,

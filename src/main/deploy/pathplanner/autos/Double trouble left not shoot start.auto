@@ -23,12 +23,6 @@
           }
         },
         {
-          "type": "named",
-          "data": {
-            "name": "Intake"
-          }
-        },
-        {
           "type": "deadline",
           "data": {
             "commands": [
@@ -48,7 +42,7 @@
           }
         },
         {
-          "type": "parallel",
+          "type": "deadline",
           "data": {
             "commands": [
               {
@@ -67,27 +61,28 @@
           }
         },
         {
-          "type": "named",
+          "type": "deadline",
           "data": {
-            "name": "Stop intake"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "middle to trench"
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "middle to trench"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "Stop intake"
+                }
+              }
+            ]
           }
         },
         {
           "type": "deadline",
           "data": {
             "commands": [
-              {
-                "type": "named",
-                "data": {
-                  "name": "Wait 5 seconds"
-                }
-              },
               {
                 "type": "named",
                 "data": {
