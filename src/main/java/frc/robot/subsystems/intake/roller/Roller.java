@@ -12,7 +12,7 @@ public class Roller extends SubsystemBase {
 
     public Roller(RollerIO io) {
         this.io = io;
-        setDefaultCommand(Commands.run(() -> {}, this).withName("RollerIdle"));
+        setDefaultCommand(run(io::idle).withName("RollerIdle"));
     }
 
     @Override

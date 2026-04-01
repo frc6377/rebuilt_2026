@@ -30,10 +30,10 @@ public interface RollerIO {
     @AutoLog
     class RollerIOInputs {
         public double rollerSpeedPercentile = 0.0;
-        public Voltage rollerAppliedVolts = Volts.of(0.0);
-        public AngularVelocity rollerVelocity = RotationsPerSecond.of(0.0);
+        public Voltage rollerAppliedVolts = Volts.zero();
+        public AngularVelocity rollerVelocity = RotationsPerSecond.zero();
         public Current statorCurrent = Amps.zero();
-        public Temperature motorTemp = Celsius.of(0.0);
+        public Temperature motorTemp = Celsius.zero();
     }
 
     default void updateInputs(RollerIOInputs inputs) {}
@@ -53,4 +53,6 @@ public interface RollerIO {
     }
 
     default void periodic() {}
+
+    default void idle() {}
 }

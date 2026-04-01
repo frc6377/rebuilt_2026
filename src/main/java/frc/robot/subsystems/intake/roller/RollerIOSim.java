@@ -31,7 +31,7 @@ public class RollerIOSim implements RollerIO {
     public RollerIOSim(AbstractDriveTrainSimulation driveSim) {
         var config = new TalonFXConfiguration()
                 .withMotorOutput(new MotorOutputConfigs()
-                        .withInverted(RollerConstants.MotorConfig.kInvertedSim)
+                        .withInverted(RollerConstants.MotorConfig.kInverted)
                         .withNeutralMode(RollerConstants.MotorConfig.kNeutralMode))
                 .withClosedLoopRamps(new ClosedLoopRampsConfigs()
                         .withVoltageClosedLoopRampPeriod(RollerConstants.MotorConfig.kRampPeriod))
@@ -39,7 +39,7 @@ public class RollerIOSim implements RollerIO {
                         .withStatorCurrentLimitEnable(true)
                         .withStatorCurrentLimit(RollerConstants.MotorConfig.kStatorCurrentLimit));
 
-        rollerMotor = new TalonFX(Constants.CANIDs.MotorIDs.kRollerMotorID);
+        rollerMotor = new TalonFX(Constants.CANIDs.MotorIDs.kRollerLeaderMotorID);
         rollerMotor.getConfigurator().apply(config);
         intakeMotorSim = rollerMotor.getSimState();
         intakeMotorSim.setMotorType(MotorType.KrakenX60);

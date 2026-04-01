@@ -3,6 +3,7 @@ package frc.robot.subsystems.intake;
 import static edu.wpi.first.units.Units.*;
 
 import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
@@ -20,11 +21,19 @@ public class IntakeConstants {
     public static final int kIntakeCapacity = 50;
 
     public static class RollerConstants {
-        // TODO: Fix incorrect Constants
+
+        public static final boolean kfollowerEnabled = false;
+        public static final boolean kIdleEnabled = false;
+
+        // for normal roller io
         public static final double kIntakePercent = 1;
         public static final double kOuttakePercent = -0.6;
+        public static final double kIdlePercent = 0.1;
+
+        // for pid roller io
         public static final AngularVelocity kIntakeSpeed = RPM.of(400);
         public static final AngularVelocity kOuttakeSpeed = RPM.of(400);
+        public static final AngularVelocity kIdleSpeed = RPM.of(100);
 
         public static class PIDF {
             public static final double kP = 0.0;
@@ -38,9 +47,10 @@ public class IntakeConstants {
         public static class MotorConfig {
             public static final double kRampPeriod = 0.02;
             public static final Current kStatorCurrentLimit = Amps.of(70);
-            public static final InvertedValue kInvertedReal = InvertedValue.CounterClockwise_Positive;
-            public static final InvertedValue kInvertedSim = InvertedValue.Clockwise_Positive;
+            public static final InvertedValue kInverted = InvertedValue.CounterClockwise_Positive;
             public static final NeutralModeValue kNeutralMode = NeutralModeValue.Coast;
+
+            public static final MotorAlignmentValue kFollowerInverted = MotorAlignmentValue.Opposed;
         }
     }
 
