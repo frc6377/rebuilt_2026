@@ -18,6 +18,7 @@ public class RollerIOReal implements RollerIO {
 
     private final LoggedNetworkNumber kRollerIntakePercent;
     private final LoggedNetworkNumber kRollerOuttakePercent;
+    private final LoggedNetworkNumber kRollerIdlePercent;
 
     public RollerIOReal() {
         var config = new TalonFXConfiguration()
@@ -39,6 +40,7 @@ public class RollerIOReal implements RollerIO {
         kRollerIntakePercent = new LoggedNetworkNumber("Intake/Roller/IntakePercent", RollerConstants.kIntakePercent);
         kRollerOuttakePercent =
                 new LoggedNetworkNumber("Intake/Roller/OuttakePercent", RollerConstants.kOuttakePercent);
+        kRollerIdlePercent = new LoggedNetworkNumber("Intake/Roller/IdlePercent", RollerConstants.kIdlePercent);
     }
 
     public void setRollerSpeed(double speed) {
@@ -56,7 +58,7 @@ public class RollerIOReal implements RollerIO {
     @Override
     public void idle() {
         if (RollerConstants.kIdleEnabled) {
-            setRollerSpeed(RollerConstants.kIdlePercent);
+            setRollerSpeed(kRollerIdlePercent.get());
         }
     }
 

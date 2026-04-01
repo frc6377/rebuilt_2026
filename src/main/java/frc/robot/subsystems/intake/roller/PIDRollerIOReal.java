@@ -25,6 +25,7 @@ public class PIDRollerIOReal implements RollerIO {
     private final Slot0Configs rollerPID;
     private final LoggedNetworkNumber intakeSpeed;
     private final LoggedNetworkNumber outtakeSpeed;
+    private final LoggedNetworkNumber idleSpeed;
 
     public PIDRollerIOReal() {
         rollerPID = new Slot0Configs();
@@ -35,6 +36,8 @@ public class PIDRollerIOReal implements RollerIO {
                 "Intake/Roller/IntakeSpeed", IntakeConstants.RollerConstants.kIntakeSpeed.in(RPM));
         outtakeSpeed = new LoggedNetworkNumber(
                 "Intake/Roller/OuttakeSpeed", IntakeConstants.RollerConstants.kOuttakeSpeed.in(RPM));
+        idleSpeed = new LoggedNetworkNumber(
+                "Intake/Roller/IdleSpeed", IntakeConstants.RollerConstants.kIdleSpeed.in(RPM));
 
         var config = new TalonFXConfiguration()
                 .withMotorOutput(new MotorOutputConfigs()
@@ -52,6 +55,10 @@ public class PIDRollerIOReal implements RollerIO {
                         .withKS(RollerConstants.PIDF.kS)
                         .withKV(RollerConstants.PIDF.kV)
                         .withKA(RollerConstants.PIDF.kA));
+
+        intakeSpeed.set(RollerConstants.kIntakeSpeed.in(RPM));
+        outtakeSpeed.set(RollerConstants.kOuttakeSpeed.in(RPM));
+        idleSpeed.set(RollerConstants.kIdleSpeed.in(RPM));
 
         leaderMotor = new TunableTalonFX(
                 Constants.CANIDs.MotorIDs.kRollerLeaderMotorID, "rio", "Intake/RollerPID", rollerPID);
@@ -80,7 +87,7 @@ public class PIDRollerIOReal implements RollerIO {
     @Override
     public void idle() {
         if (RollerConstants.kIdleEnabled) {
-            setRollerSpeed(RollerConstants.kIdleSpeed);
+            setRollerSpeed(RPM.of(idleSpeed.get()));
         }
     }
 
