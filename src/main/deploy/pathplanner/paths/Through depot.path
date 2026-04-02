@@ -8,45 +8,45 @@
       },
       "prevControl": null,
       "nextControl": {
-        "x": 2.540934479936466,
-        "y": 5.487522489874005
+        "x": 2.474304985418492,
+        "y": 5.296494739095188
       },
       "isLocked": false,
       "linkedName": "Shoot half left"
     },
     {
       "anchor": {
-        "x": 0.5770175438596492,
-        "y": 7.458377192982456
+        "x": 0.5,
+        "y": 7.4
       },
       "prevControl": {
-        "x": 0.5588057144787356,
-        "y": 7.707712969137024
+        "x": 0.5042711523965994,
+        "y": 7.649963511851641
       },
       "nextControl": {
-        "x": 0.711842342636825,
-        "y": 5.612508491663439
+        "x": 0.4542298903656734,
+        "y": 4.72136522425657
       },
       "isLocked": false,
-      "linkedName": null
+      "linkedName": "Left of Depot"
     },
     {
       "anchor": {
-        "x": 0.5770175438596492,
-        "y": 5.121633771929823
+        "x": 0.5,
+        "y": 4.971531456951443
       },
       "prevControl": {
-        "x": 0.5398945246298104,
-        "y": 6.953517678784978
+        "x": 0.5708502566321998,
+        "y": 5.869750267957964
       },
       "nextControl": null,
       "isLocked": false,
-      "linkedName": "through Depot"
+      "linkedName": "bundle end"
     }
   ],
   "rotationTargets": [
     {
-      "waypointRelativePos": 1.36154776299879,
+      "waypointRelativePos": 0.953995157384981,
       "rotationDegrees": -90.0
     }
   ],
@@ -54,8 +54,8 @@
   "pointTowardsZones": [],
   "eventMarkers": [],
   "globalConstraints": {
-    "maxVelocity": 2.0,
-    "maxAcceleration": 2.0,
+    "maxVelocity": 4.0,
+    "maxAcceleration": 3.5,
     "maxAngularVelocity": 540.0,
     "maxAngularAcceleration": 720.0,
     "nominalVoltage": 12.0,
@@ -63,7 +63,7 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": -88.95837332399002
+    "rotation": -90.0
   },
   "reversed": false,
   "folder": null,

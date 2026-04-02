@@ -92,7 +92,7 @@ public interface OI {
     /* be able to avoid damaging the robot if things are in the way.
     /* Subsystem: Intake
     */
-    default Trigger toggleIntakeState() {
+    default Trigger retractIntake() {
         return noButton;
     }
 
@@ -170,7 +170,7 @@ public interface OI {
         return noButton;
     }
 
-    default Trigger driveLockX() {
+    default Trigger manualHold() {
         return noButton;
     }
 }

@@ -181,7 +181,7 @@ public class OIXbox implements OI {
     }
 
     @Override
-    public Trigger toggleIntakeState() {
+    public Trigger retractIntake() {
         return rightBumper;
     }
 
@@ -231,7 +231,7 @@ public class OIXbox implements OI {
     }
 
     @Override
-    public Trigger driveLockX() {
+    public Trigger manualHold() {
         return opA;
     }
 }
