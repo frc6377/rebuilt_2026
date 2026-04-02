@@ -84,13 +84,13 @@ public class RollerIOSim implements RollerIO {
     }
 
     @Override
-    public void setMode(NeutralModeValue mode) {
-        rollerMotor.getConfigurator().apply(new MotorOutputConfigs().withNeutralMode(mode));
+    public void setMotorPercentage(double percent) {
+        rollerMotor.set(percent);
     }
 
     @Override
-    public void setMotorPercentage(double percent) {
-        rollerMotor.set(percent);
+    public void setMode(NeutralModeValue mode) {
+        rollerMotor.getConfigurator().apply(new MotorOutputConfigs().withNeutralMode(mode));
     }
 
     @Override
