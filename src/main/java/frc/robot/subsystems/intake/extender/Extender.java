@@ -1,9 +1,6 @@
 package frc.robot.subsystems.intake.extender;
 
-import static edu.wpi.first.units.Units.Amps;
-
 import com.ctre.phoenix6.signals.NeutralModeValue;
-import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -89,30 +86,8 @@ public class Extender extends SubsystemBase {
         io.setMotorPercentage(percent);
     }
 
-    public Command siftFuelPositionCommand() {
-        // return Commands.repeatingSequence(
-        // Commands.run(io::goToSiftAngleOne, this)
-        // .until(() -> io.atTarget().getAsBoolean()
-        // || io.getCurrent().gte(Amps.of(6)))
-        // .withTimeout(1.5),
-        // Commands.run(io::goToSiftAngleTwo, this)
-        // .until(() -> io.atTarget().getAsBoolean()
-        // || io.getCurrent().gte(Amps.of(6)))
-        // .withTimeout(1.5))
-        // .withName("ExtenderSiftPositionFuel");
-        return io.siftPosition(this);
-    }
-
-    public Command siftFuelSpeedCommand() {
-        return runUntilCurrentCommand(-0.1, Amps.of(8))
-                .andThen(Commands.repeatingSequence(
-                        runUntilCurrentCommand(0.25, Amps.of(8)).withTimeout(1),
-                        runUntilCurrentCommand(-0.25, Amps.of(8)).withTimeout(1)));
-    }
-
-    public Command runUntilCurrentCommand(double percent, Current current) {
-        return Commands.run(() -> io.setMotorPercentage(percent))
-                .until(() -> io.getCurrent().gte(current))
-                .withName("ExtenderRunUntilCurrent");
+    public Command siftFuel() {
+        return Commands.repeatingSequence(run(io::toggleSift), Commands.waitSeconds(0.5))
+                .withName("ExtenderSiftFuel");
     }
 }

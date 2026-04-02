@@ -1,9 +1,7 @@
 package frc.robot.subsystems.intake.extender;
 
-import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Rotations;
-import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
 
 import com.ctre.phoenix6.configs.ClosedLoopRampsConfigs;
@@ -15,9 +13,6 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.wpilibj.DutyCycleEncoder;
-import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.subsystems.intake.IntakeConstants.ExtenderConstants;
 import frc.robot.util.TunablePIDController;
@@ -38,8 +33,6 @@ public class ExtenderIOReal implements ExtenderIO {
     private final LoggedNetworkNumber extenderSiftAngleTwo;
     private final LoggedNetworkNumber extenderCustomAngleOne;
     private final LoggedNetworkNumber extenderCustomAngleTwo;
-    private final LoggedNetworkNumber siftCurrentLimit;
-    private final LoggedNetworkNumber siftTimeout;
 
     public ExtenderIOReal() {
         this.setpoint = Degrees.of(0.0);
@@ -87,10 +80,6 @@ public class ExtenderIOReal implements ExtenderIO {
                 "Intake/Extender/CustomAngleOne", ExtenderConstants.kExtenderCustomAngleOne.in(Degrees));
         extenderCustomAngleTwo = new LoggedNetworkNumber(
                 "Intake/Extender/CustomAngleTwo", ExtenderConstants.kExtenderCustomAngleTwo.in(Degrees));
-        siftCurrentLimit = new LoggedNetworkNumber(
-                "Intake/Extender/Sifting/SiftCurrentLimit", ExtenderConstants.kSiftCurrentLimit.in(Amps));
-        siftTimeout = new LoggedNetworkNumber(
-                "Intake/Extender/Sifting/SiftTimeout", ExtenderConstants.kSiftTimeout.in(Seconds));
 
         extenderStowAngle.set(ExtenderConstants.kExtenderStowAngle.in(Degrees));
         extenderIntakeAngle.set(ExtenderConstants.kExtenderIntakeAngle.in(Degrees));
@@ -99,8 +88,6 @@ public class ExtenderIOReal implements ExtenderIO {
         extenderSiftAngleTwo.set(ExtenderConstants.kExtenderSiftAngleTwo.in(Degrees));
         extenderCustomAngleOne.set(ExtenderConstants.kExtenderCustomAngleOne.in(Degrees));
         extenderCustomAngleTwo.set(ExtenderConstants.kExtenderCustomAngleTwo.in(Degrees));
-        siftCurrentLimit.set(ExtenderConstants.kSiftCurrentLimit.in(Amps));
-        siftTimeout.set(ExtenderConstants.kSiftTimeout.in(Seconds));
     }
 
     public void setPosition(Angle position) {
@@ -168,30 +155,12 @@ public class ExtenderIOReal implements ExtenderIO {
     }
 
     @Override
-    public Command siftPosition(SubsystemBase subsystem) {
-        // return Commands.repeatingSequence(
-        //                 Commands.run(this::goToSiftAngleOne, subsystem)
-        //                         .until(() -> atTarget().getAsBoolean()
-        //                                 || getCurrent().gte(Amps.of(siftCurrentLimit.get())))
-        //                         .withTimeout(siftTimeout.get()),
-        //                 Commands.run(this::goToSiftAngleTwo, subsystem)
-        //                         .until(() -> atTarget().getAsBoolean()
-        //                                 || getCurrent().gte(Amps.of(siftCurrentLimit.get())))
-        //                         .withTimeout(siftTimeout.get()))
-        //         .withName("ExtenderSiftPositionFuel");
-
-        // return Commands.repeatingSequence(
-        //                 Commands.run(this::goToSiftAngleOne, subsystem).withTimeout(siftTimeout.get()),
-        //                 Commands.run(this::goToSiftAngleTwo, subsystem).withTimeout(siftTimeout.get()))
-        //         .withName("ExtenderSiftPositionFuel");
-
-        // return Commands.repeatingSequence(
-        //                 Commands.run(this::toggle, subsystem), Commands.waitSeconds(siftTimeout.get()))
-        //         .withName("ExtenderSiftPositionFuel");
-
-        return Commands.repeatingSequence(
-                        Commands.run(this::toggle, subsystem), Commands.waitSeconds(siftTimeout.get()))
-                .withName("ExtenderSiftPositionFuel");
+    public void toggleSift() {
+        if (this.setpoint.equals(Degrees.of(extenderSiftAngleOne.get()))) {
+            goToSiftAngleTwo();
+        } else {
+            goToSiftAngleOne();
+        }
     }
 
     @Override
@@ -218,7 +187,8 @@ public class ExtenderIOReal implements ExtenderIO {
 
     @Override
     public void toggle() {
-        if (this.setpoint.equals(Degrees.of(extenderStowAngle.get()))) {
+        double stowDeg = extenderStowAngle.get();
+        if (Math.abs(setpoint.minus(Degrees.of(stowDeg)).in(Degrees)) < extenderTolerance.get()) {
             extend();
         } else {
             retract();
@@ -236,8 +206,9 @@ public class ExtenderIOReal implements ExtenderIO {
         inputs.motorCurrent = extenderMotor.getStatorCurrent().getValue();
         inputs.motorTemp = extenderMotor.getDeviceTemp().getValue();
         inputs.atTarget = atTarget().getAsBoolean();
-        inputs.rawEncoderDegrees = Rotations.of(extenderEncoder.get()).in(Degrees);
-        inputs.atSiftCurrent = getCurrent().gte(Amps.of(siftCurrentLimit.get()));
+        inputs.rawEncoderDegrees = Rotations.of(extenderEncoder.get())
+                .plus(ExtenderConstants.kExtenderZeroAngle)
+                .in(Degrees);
     }
 
     @Override
