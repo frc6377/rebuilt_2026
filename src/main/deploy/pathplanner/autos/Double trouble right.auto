@@ -9,9 +9,9 @@
           "data": {
             "commands": [
               {
-                "type": "named",
+                "type": "wait",
                 "data": {
-                  "name": "Wait 5 seconds"
+                  "waitTime": 4.0
                 }
               },
               {
@@ -93,12 +93,6 @@
                 "type": "path",
                 "data": {
                   "pathName": "middle to trench right"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "Stop intake"
                 }
               }
             ]
