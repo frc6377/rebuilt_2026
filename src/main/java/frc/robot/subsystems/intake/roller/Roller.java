@@ -38,7 +38,7 @@ public class Roller extends SubsystemBase {
     }
 
     public boolean isRunning() {
-        return Math.abs(inputs.rollerSpeedPercentile) > 0.1;
+        return Math.abs(inputs.leaderSpeedPercentile) > 0.1;
     }
 
     public int getIntakedFuel() {

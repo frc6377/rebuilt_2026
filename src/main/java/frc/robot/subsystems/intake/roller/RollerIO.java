@@ -29,11 +29,19 @@ public interface RollerIO {
 
     @AutoLog
     class RollerIOInputs {
-        public double rollerSpeedPercentile = 0.0;
-        public Voltage rollerAppliedVolts = Volts.zero();
-        public AngularVelocity rollerVelocity = RotationsPerSecond.zero();
-        public Current statorCurrent = Amps.zero();
-        public Temperature motorTemp = Celsius.zero();
+        public double leaderSpeedPercentile = 0.0;
+        public Voltage leaderAppliedVolts = Volts.zero();
+        public AngularVelocity leaderVelocity = RotationsPerSecond.zero();
+        public Current leaderStatorCurrent = Amps.zero();
+        public Temperature leaderMotorTemp = Celsius.zero();
+
+        public double followerSpeedPercentile = 0.0;
+        public Voltage followerAppliedVolts = Volts.zero();
+        public AngularVelocity followerVelocity = RotationsPerSecond.zero();
+        public Current followerStatorCurrent = Amps.zero();
+        public Temperature followerMotorTemp = Celsius.zero();
+
+        public boolean isRunning = false;
     }
 
     default void updateInputs(RollerIOInputs inputs) {}
@@ -50,6 +58,10 @@ public interface RollerIO {
 
     default int getIntakedFuel() {
         return 0;
+    }
+
+    default boolean isRunning() {
+        return false;
     }
 
     default void periodic() {}

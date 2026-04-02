@@ -113,11 +113,19 @@ public class PIDRollerIOSim implements RollerIO {
 
     @Override
     public void updateInputs(RollerIO.RollerIOInputs inputs) {
-        inputs.rollerSpeedPercentile = rollerMotor.get();
-        inputs.rollerAppliedVolts = rollerMotor.getMotorVoltage().getValue();
-        inputs.rollerVelocity = rollerMotor.getVelocity().getValue();
-        inputs.statorCurrent = rollerMotor.getStatorCurrent().getValue();
-        inputs.motorTemp = rollerMotor.getDeviceTemp().getValue();
+        inputs.leaderSpeedPercentile = rollerMotor.get();
+        inputs.leaderAppliedVolts = rollerMotor.getMotorVoltage().getValue();
+        inputs.leaderVelocity = rollerMotor.getVelocity().getValue();
+        inputs.leaderStatorCurrent = rollerMotor.getStatorCurrent().getValue();
+        inputs.leaderMotorTemp = rollerMotor.getDeviceTemp().getValue();
+
+        if (followerMotor != null) {
+            inputs.followerSpeedPercentile = followerMotor.get();
+            inputs.followerAppliedVolts = followerMotor.getMotorVoltage().getValue();
+            inputs.followerVelocity = followerMotor.getVelocity().getValue();
+            inputs.followerStatorCurrent = followerMotor.getStatorCurrent().getValue();
+            inputs.followerMotorTemp = followerMotor.getDeviceTemp().getValue();
+        }
     }
 
     @Override

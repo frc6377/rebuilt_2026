@@ -92,6 +92,11 @@ public class PIDRollerIOReal implements RollerIO {
     }
 
     @Override
+    public boolean isRunning() {
+        return Math.abs(leaderMotor.get()) > 0.1;
+    }
+
+    @Override
     public void stop() {
         setRollerSpeed(RPM.zero());
     }
@@ -123,11 +128,21 @@ public class PIDRollerIOReal implements RollerIO {
 
     @Override
     public void updateInputs(RollerIO.RollerIOInputs inputs) {
-        inputs.rollerSpeedPercentile = leaderMotor.get();
-        inputs.rollerAppliedVolts = leaderMotor.getMotorVoltage().getValue();
-        inputs.rollerVelocity = leaderMotor.getVelocity().getValue();
-        inputs.statorCurrent = leaderMotor.getStatorCurrent().getValue();
-        inputs.motorTemp = leaderMotor.getDeviceTemp().getValue();
+        inputs.leaderSpeedPercentile = leaderMotor.get();
+        inputs.leaderAppliedVolts = leaderMotor.getMotorVoltage().getValue();
+        inputs.leaderVelocity = leaderMotor.getVelocity().getValue();
+        inputs.leaderStatorCurrent = leaderMotor.getStatorCurrent().getValue();
+        inputs.leaderMotorTemp = leaderMotor.getDeviceTemp().getValue();
+
+        if (followerMotor != null) {
+            inputs.followerSpeedPercentile = followerMotor.get();
+            inputs.followerAppliedVolts = followerMotor.getMotorVoltage().getValue();
+            inputs.followerVelocity = followerMotor.getVelocity().getValue();
+            inputs.followerStatorCurrent = followerMotor.getStatorCurrent().getValue();
+            inputs.followerMotorTemp = followerMotor.getDeviceTemp().getValue();
+        }
+
+        inputs.isRunning = isRunning();
     }
 
     @Override

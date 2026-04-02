@@ -95,9 +95,9 @@ public class RollerIOSim implements RollerIO {
 
     @Override
     public void updateInputs(RollerIO.RollerIOInputs inputs) {
-        inputs.rollerSpeedPercentile = intakeMotorSim.getMotorVoltage() / RobotController.getBatteryVoltage();
-        inputs.rollerAppliedVolts = intakeMotorSim.getMotorVoltageMeasure();
-        inputs.rollerVelocity = rollerMotor.getVelocity().getValue();
-        inputs.motorTemp = Celsius.of(25.0);
+        inputs.leaderSpeedPercentile = intakeMotorSim.getMotorVoltage() / RobotController.getBatteryVoltage();
+        inputs.leaderAppliedVolts = intakeMotorSim.getMotorVoltageMeasure();
+        inputs.leaderVelocity = rollerMotor.getVelocity().getValue();
+        inputs.leaderMotorTemp = Celsius.of(25.0);
     }
 }
