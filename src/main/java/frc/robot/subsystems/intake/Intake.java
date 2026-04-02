@@ -34,13 +34,6 @@ public class Intake {
         extender.setPidEnabled(enabled);
     }
 
-    // @Override
-    // public void periodic() {
-    //     Logger.recordOutput(
-    //             "Intake/CurrentCommand",
-    //             getCurrentCommand() != null ? getCurrentCommand().getName() : "None");
-    // }
-
     public Command extendIntake() {
         return extender.extendCommand();
     }

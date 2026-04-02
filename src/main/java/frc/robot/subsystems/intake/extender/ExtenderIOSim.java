@@ -53,7 +53,7 @@ public class ExtenderIOSim implements ExtenderIO {
         new LoggedNetworkNumber("Intake/Extender/DownSpeed", ExtenderConstants.kDownSpeed);
 
         pidController =
-                new PIDController(ExtenderConstants.PIDF.kP, ExtenderConstants.PIDF.kI, ExtenderConstants.PIDF.kD);
+                new PIDController(ExtenderConstants.PIDF.normalPID.kP(), ExtenderConstants.PIDF.normalPID.kI(), ExtenderConstants.PIDF.normalPID.kD());
 
         armSim = new SingleJointedArmSim(
                 DCMotor.getKrakenX60(1),

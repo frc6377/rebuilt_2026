@@ -11,6 +11,8 @@ import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.MomentOfInertia;
 import edu.wpi.first.units.measure.Time;
+import frc.robot.util.TunablePIDFController.PIDFConfig;
+
 import org.ironmaple.simulation.IntakeSimulation.IntakeSide;
 
 public class IntakeConstants {
@@ -56,6 +58,8 @@ public class IntakeConstants {
 
     public static class ExtenderConstants {
 
+        public static final boolean floatEnabled = false;
+
         public static final double kGearing = 1;
         public static final MomentOfInertia kMOI = KilogramSquareMeters.of(1.5);
         public static final Distance kExtenderArmLength = Inches.of(12.0);
@@ -68,19 +72,26 @@ public class IntakeConstants {
         public static final Angle kExtenderSiftAngleTwo = Degrees.of(90.0);
         public static final Angle kExtenderCustomAngleOne = Degrees.of(45.0);
         public static final Angle kExtenderCustomAngleTwo = Degrees.of(60.0);
+        public static final Angle kExtenderFloatLimit = Degrees.of(50);
         public static final Angle kExtenderZeroAngle = Degrees.of(-290.0);
 
-        // Sift Constants
-        public static final Current kSiftCurrentLimit = Amps.of(30);
         public static final Time kSiftTimeout = Seconds.of(0.5);
 
-        public static class PIDF {
-            public static final double kP = 0.006;
-            public static final double kI = 0.0;
-            public static final double kD = 0.00001;
-            public static final double kS = 0.0;
-            public static final double kV = 0.0;
-            public static final double kA = 0.0;
+        public static class PIDF  {
+
+            public static final PIDFConfig normalPID = new PIDFConfig(0.006,
+                0.0,
+                0.00001,
+                0.0,
+                0.0,
+                0.0);
+
+            public static final PIDFConfig floatPID = new PIDFConfig(0.01,
+                0.0,
+                0.00001,
+                0.0,
+                0.0,
+                0.0);
         }
 
         public static class MotorConfig {

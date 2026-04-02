@@ -15,7 +15,9 @@ import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.wpilibj.DutyCycleEncoder;
 import frc.robot.Constants;
 import frc.robot.subsystems.intake.IntakeConstants.ExtenderConstants;
-import frc.robot.util.TunablePIDController;
+import frc.robot.util.TunablePIDFController;
+import frc.robot.util.TunablePIDFController.PIDFConfig;
+
 import java.util.function.BooleanSupplier;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
@@ -23,7 +25,7 @@ public class ExtenderIOReal implements ExtenderIO {
 
     private final TalonFX extenderMotor;
     private final DutyCycleEncoder extenderEncoder;
-    private final TunablePIDController extenderPid;
+    private final TunablePIDFController extenderPid;
     private Angle setpoint;
     private boolean pidEnabled = true;
     private final LoggedNetworkNumber extenderStowAngle;
@@ -56,13 +58,12 @@ public class ExtenderIOReal implements ExtenderIO {
                 ExtenderConstants.kExtenderZeroAngle.in(Rotations));
         extenderEncoder.setInverted(true);
 
-        extenderPid = new TunablePIDController(
+        extenderPid = new TunablePIDFController(
                 "Intake/ExtenderPID",
-                ExtenderConstants.PIDF.kP,
-                ExtenderConstants.PIDF.kI,
-                ExtenderConstants.PIDF.kD,
+                ExtenderConstants.PIDF.normalPID,
                 () -> getPosition().in(Degrees),
-                percent -> extenderMotor.set(-percent));
+                percent -> extenderMotor.set(-percent),
+                () -> extenderMotor.getVelocity().getValueAsDouble());
 
         extenderPid.getController().enableContinuousInput(0, 360);
 
@@ -93,6 +94,7 @@ public class ExtenderIOReal implements ExtenderIO {
     public void setPosition(Angle position) {
         this.setpoint = position;
         setPidEnabled(true);
+        
         extenderPid.setSetpoint(position.in(Degrees));
     }
 
