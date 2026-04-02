@@ -338,7 +338,7 @@ public class RobotContainer {
                         .setFlywheelVelocityManual(RPM.of(1500))
                         .andThen(superstructure.runFlywheelVelocityManual()));
         shootingTrigger
-                .whileTrue(Commands.parallel(superstructure
+                .whileTrue(superstructure
                         .runToggledSpeed(drive::getPose, drive::getChassisSpeeds)
                         // superstructure.aimAtHubWhileDriving(
                         // drive, OIController.driveTranslationX(),
@@ -346,7 +346,7 @@ public class RobotContainer {
                         .until(superstructure::atTargetVelocity)
                         .andThen(Commands.runOnce(drive::stopWithX))
                         .andThen(Commands.parallel(
-                                superstructure.fireCommand(), indexer.index(), intake.voltageSiftFuel()))))
+                                superstructure.fireCommand(), indexer.index(), intake.voltageSiftFuel())))
                 .onFalse(Commands.parallel(
                                 superstructure.stopUpgoerCommand(),
                                 indexer.stop(),
