@@ -336,17 +336,18 @@ public class RobotContainer {
                         .setFlywheelVelocityManual(RPM.of(1500))
                         .andThen(superstructure.runFlywheelVelocityManual()));
 
-        // Commands.either(Manual(), Auto(), ismanual)
-        //
+        //Automatic
         shootingTrigger
                 .and(OIController.manualHold().negate())
                 .whileTrue(Commands.parallel(
                                 superstructure.aimAtHubWhileDriving(
                                         drive, OIController.driveTranslationX(), OIController.driveTranslationY()),
-                                Commands.parallel(superstructure
-                                        .autoSpeedShooter(drive::getPose, drive::getChassisSpeeds)
-                                        .until(() -> superstructure.isReadyToShoot(drive.getRotation())), 
-                                        Commands.waitSeconds(0.5))
+                                Commands.parallel(
+                                                superstructure
+                                                        .autoSpeedShooter(drive::getPose, drive::getChassisSpeeds)
+                                                        .until(() ->
+                                                                superstructure.isReadyToShoot(drive.getRotation())),
+                                                Commands.waitSeconds(0.5))
                                         .andThen(Commands.runOnce(drive::stopWithX))
                                         .andThen(Commands.parallel(
                                                 superstructure.fireCommand(),
@@ -361,6 +362,8 @@ public class RobotContainer {
                                 intake.extendIntake())
                         .withName("Shoot Manual Stop")
                         .andThen(superstructure.runFlywheelVelocityManual()));
+
+        // Manual
         shootingTrigger
                 .and(OIController.manualHold())
                 .whileTrue(superstructure
