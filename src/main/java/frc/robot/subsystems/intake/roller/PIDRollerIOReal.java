@@ -36,8 +36,8 @@ public class PIDRollerIOReal implements RollerIO {
                 "Intake/Roller/IntakeSpeed", IntakeConstants.RollerConstants.kIntakeSpeed.in(RPM));
         outtakeSpeed = new LoggedNetworkNumber(
                 "Intake/Roller/OuttakeSpeed", IntakeConstants.RollerConstants.kOuttakeSpeed.in(RPM));
-        idleSpeed = new LoggedNetworkNumber(
-                "Intake/Roller/IdleSpeed", IntakeConstants.RollerConstants.kIdleSpeed.in(RPM));
+        idleSpeed =
+                new LoggedNetworkNumber("Intake/Roller/IdleSpeed", IntakeConstants.RollerConstants.kIdleSpeed.in(RPM));
 
         var config = new TalonFXConfiguration()
                 .withMotorOutput(new MotorOutputConfigs()
