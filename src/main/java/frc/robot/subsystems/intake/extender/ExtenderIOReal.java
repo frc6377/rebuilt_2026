@@ -16,7 +16,6 @@ import edu.wpi.first.wpilibj.DutyCycleEncoder;
 import frc.robot.Constants;
 import frc.robot.subsystems.intake.IntakeConstants.ExtenderConstants;
 import frc.robot.util.TunablePIDFController;
-import frc.robot.util.TunablePIDFController.PIDFConfig;
 
 import java.util.function.BooleanSupplier;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
@@ -60,19 +59,21 @@ public class ExtenderIOReal implements ExtenderIO {
 
         extenderPid = new TunablePIDFController(
                 "Intake/ExtenderPID",
-                ExtenderConstants.PIDF.normalPID,
                 () -> getPosition().in(Degrees),
                 percent -> extenderMotor.set(-percent),
                 () -> extenderMotor.getVelocity().getValueAsDouble());
 
+        extenderPid.addPreset("default", ExtenderConstants.PIDF.normalPID);
+        extenderPid.addPreset("float", ExtenderConstants.PIDF.floatPID);
+
         extenderPid.getController().enableContinuousInput(0, 360);
 
-        extenderStowAngle =
-                new LoggedNetworkNumber("Intake/Extender/StowAngle", ExtenderConstants.kExtenderStowAngle.in(Degrees));
+        extenderStowAngle = new LoggedNetworkNumber("Intake/Extender/StowAngle",
+                ExtenderConstants.kExtenderStowAngle.in(Degrees));
         extenderIntakeAngle = new LoggedNetworkNumber(
                 "Intake/Extender/IntakingAngle", ExtenderConstants.kExtenderIntakeAngle.in(Degrees));
-        extenderTolerance =
-                new LoggedNetworkNumber("Intake/Extender/Tolerance", ExtenderConstants.kExtenderTolerance.in(Degrees));
+        extenderTolerance = new LoggedNetworkNumber("Intake/Extender/Tolerance",
+                ExtenderConstants.kExtenderTolerance.in(Degrees));
         extenderSiftAngleOne = new LoggedNetworkNumber(
                 "Intake/Extender/Sifting/SiftAngleOne", ExtenderConstants.kExtenderSiftAngleOne.in(Degrees));
         extenderSiftAngleTwo = new LoggedNetworkNumber(
@@ -94,7 +95,13 @@ public class ExtenderIOReal implements ExtenderIO {
     public void setPosition(Angle position) {
         this.setpoint = position;
         setPidEnabled(true);
-        
+        if (ExtenderConstants.floatEnabled) {
+            if (position.gte(ExtenderConstants.kExtenderFloatLimit)) {
+                extenderPid.applyPreset("float");
+            } else {
+                extenderPid.applyPreset("default");
+            }
+        }
         extenderPid.setSetpoint(position.in(Degrees));
     }
 

@@ -51,6 +51,8 @@ public class TunablePIDFController {
      */
     public static record PIDFConfig(
         double kP, double kI, double kD, double kS, double kV, double kA) {}
+        
+    public static final PIDFConfig defaultConfig = new PIDFConfig(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 
     private final String tunableName;
     private final DoubleSupplier encoderPosition;
@@ -118,7 +120,6 @@ public class TunablePIDFController {
      */
     public TunablePIDFController(
             String tunableName,
-            PIDFConfig config,
             DoubleSupplier encoderPosition,
             Consumer<Double> outputConsumer,
             DoubleSupplier velocitySupplier) {
@@ -126,27 +127,27 @@ public class TunablePIDFController {
         this.encoderPosition = encoderPosition;
         this.outputConsumer = outputConsumer;
 
-        this.tunableKP = new LoggedNetworkNumber(tunableName + "/kP", config.kP());
-        this.tunableKI = new LoggedNetworkNumber(tunableName + "/kI", config.kI());
-        this.tunableKD = new LoggedNetworkNumber(tunableName + "/kD", config.kD());
+        this.tunableKP = new LoggedNetworkNumber(tunableName + "/kP", defaultConfig.kP());
+        this.tunableKI = new LoggedNetworkNumber(tunableName + "/kI", defaultConfig.kI());
+        this.tunableKD = new LoggedNetworkNumber(tunableName + "/kD", defaultConfig.kD());
 
-        this.lastKP = config.kP();
-        this.lastKI = config.kI();
-        this.lastKD = config.kD();
+        this.lastKP = defaultConfig.kP();
+        this.lastKI = defaultConfig.kI();
+        this.lastKD = defaultConfig.kD();
 
         // Feedforward tunables
-        this.tunableKS = new LoggedNetworkNumber(tunableName + "/kS", config.kS());
-        this.tunableKV = new LoggedNetworkNumber(tunableName + "/kV", config.kV());
-        this.tunableKA = new LoggedNetworkNumber(tunableName + "/kA", config.kA());
+        this.tunableKS = new LoggedNetworkNumber(tunableName + "/kS", defaultConfig.kS());
+        this.tunableKV = new LoggedNetworkNumber(tunableName + "/kV", defaultConfig.kV());
+        this.tunableKA = new LoggedNetworkNumber(tunableName + "/kA", defaultConfig.kA());
 
-        this.lastKS = config.kS();
-        this.lastKV = config.kV();
-        this.lastKA = config.kA();
+        this.lastKS = defaultConfig.kS();
+        this.lastKV = defaultConfig.kV();
+        this.lastKA = defaultConfig.kA();
 
-        this.pidController = new PIDController(config.kP(), config.kI(), config.kD());
+        this.pidController = new PIDController(defaultConfig.kP(), defaultConfig.kI(), defaultConfig.kD());
         this.setpoint = 0.0;
 
-        this.feedforward = new SimpleMotorFeedforward(config.kS(), config.kV(), config.kA());
+        this.feedforward = new SimpleMotorFeedforward(defaultConfig.kS(), defaultConfig.kV(), defaultConfig.kA());
         this.velocitySupplier = velocitySupplier;
     }
 
