@@ -30,14 +30,20 @@ import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
  * A WPILib PIDController with tunable P, I, D gains via NetworkTables. Uses a passed-in encoder (position supplier) and
  * applies the PID output to a motor via a consumer as duty cycle (percentage, -1 to 1).
  *
+ * <p>Initial gains are zero until you {@link #applyPreset}, tune the main {@code tunableName/kP} (etc.) keys from the
+ * dashboard, or call {@link #updateTunableGains} after those values change.
+ *
  * <p>Usage example:
  *
  * <pre>{@code
- * TunablePIDController extenderPid = new TunablePIDController(
+ * TunablePIDFController extenderPid = new TunablePIDFController(
  *     "Extender",
  *     0.1, 0.0, 0.01,
  *     () -> extenderEncoder.get(),
  *     percent -> extenderMotor.set(percent));
+ *
+ * extenderPid.addPreset("default", new PIDFConfig(0.01, 0, 0, 0, 0, 0));
+ * extenderPid.applyPreset("default");
  *
  * // In periodic():
  * extenderPid.updateTunableGains();

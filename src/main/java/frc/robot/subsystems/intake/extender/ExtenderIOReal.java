@@ -65,6 +65,8 @@ public class ExtenderIOReal implements ExtenderIO {
 
         extenderPid.addPreset("default", ExtenderConstants.PIDF.normalPID);
         extenderPid.addPreset("float", ExtenderConstants.PIDF.floatPID);
+        
+        extenderPid.applyPreset("default");
 
         extenderPid.getController().enableContinuousInput(0, 360);
 
