@@ -100,7 +100,7 @@ public interface OI {
         return noButton;
     }
 
-    default Trigger zeroIntake() {
+    default Trigger xDrive() {
         return noButton;
     }
 

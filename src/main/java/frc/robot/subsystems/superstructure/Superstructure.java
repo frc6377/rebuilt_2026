@@ -143,6 +143,7 @@ public class Superstructure extends SubsystemBase {
     @Override
     public void periodic() {
         // Log hub active state from game data
+
         boolean isHubActive = FieldConstants.isHubActive();
         Logger.recordOutput("Shooting/HubActive", isHubActive);
         Logger.recordOutput("Shooting/HubFlashing", FieldConstants.isHubFlashing());
@@ -410,9 +411,13 @@ public class Superstructure extends SubsystemBase {
         return autoSpeedShooter(Pose2d::new, ChassisSpeeds::new);
     }
     /** Command that aims the robot at the hub while driving. */
-    public Command aimAtHubWhileDriving(Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier) {
-        return DriveCommands.joystickDriveAtAngle(drive, xSupplier, ySupplier, () -> latestParameters.targetHeading())
-                .withName("AimAtHub");
+    public Command aimAtHubWhileDriving(
+            Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier, BooleanSupplier xModePressed) {
+        return xModePressed.getAsBoolean()
+                ? Commands.none()
+                : DriveCommands.joystickDriveAtAngle(
+                                drive, xSupplier, ySupplier, () -> latestParameters.targetHeading())
+                        .withName("AimAtHub");
     }
 
     /** Command that fires the shooter (feeds both upgoers). */
@@ -440,7 +445,7 @@ public class Superstructure extends SubsystemBase {
 
     /** Full auto-aim command: aims robot at hub AND sets flywheel automatically. */
     public Command fullAutoAim(Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier) {
-        return aimAtHubWhileDriving(drive, xSupplier, ySupplier)
+        return aimAtHubWhileDriving(drive, xSupplier, ySupplier, () -> false)
                 .alongWith(autoSpeedShooter(drive::getPose, drive::getChassisSpeeds))
                 .withName("FullAutoAim")
                 .beforeStarting(() -> robotState.setMode(RobotState.Mode.SHOOTING))
