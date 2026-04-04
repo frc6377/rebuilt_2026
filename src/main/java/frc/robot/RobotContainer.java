@@ -435,24 +435,24 @@ public class RobotContainer {
                 .onFalse(Commands.runOnce(() -> OIController.setRumble(0, 0)));
         
         while (DriverStation.getMatchTime() > 0) {
-                if (DriverStation.getMatchTime() > 130 - 5) {
+                if (DriverStation.getMatchTime() == 130 - 5) {
                 // Transition period after auto, hub is active.
                 OIController.setRumble(1, 0);
-                } else if (DriverStation.getMatchTime() == 105 - 5) {
+                } else if (DriverStation.getMatchTime() > 105 + 4.5 && DriverStation.getMatchTime() < 105 + 5.5) {
                 // Shift 1
                 OIController.setRumble(1, 0);
-                } else if (DriverStation.getMatchTime() == 80 - 5) {
+                } else if (DriverStation.getMatchTime() > 80 + 4.5 && DriverStation.getMatchTime() < 80 + 5.5) {
                 // Shift 2
                 OIController.setRumble(1, 0);
-                } else if (DriverStation.getMatchTime() == 55 - 5) {
+                } else if (DriverStation.getMatchTime() > 55 + 4.5 && DriverStation.getMatchTime() < 55 + 5.5) {
                 // Shift 3
                 OIController.setRumble(1, 0);
-                } else if (DriverStation.getMatchTime() == 30 - 5) {
+                } else if (DriverStation.getMatchTime() > 30 + 4.5 && DriverStation.getMatchTime() < 30 + 5.5) {
                 // Shift 4
                 OIController.setRumble(1, 0);
                 } else {
                 // End game, hub always active.
-                OIController.setRumble(1, 0);
+                OIController.setRumble(0, 0);
                 }
         }
     }
