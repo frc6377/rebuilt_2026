@@ -10,6 +10,7 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import frc.robot.Constants;
 import frc.robot.subsystems.intake.IntakeConstants.RollerConstants;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
+import frc.robot.subsystems.shooter.Shooter;
 
 public class RollerIOReal implements RollerIO {
 
@@ -74,12 +75,16 @@ public class RollerIOReal implements RollerIO {
 
     @Override
     public void start() {
-        setRollerSpeed(kRollerIntakePercent.get());
+        if (!Shooter.isRunning()) {
+            setRollerSpeed(kRollerIntakePercent.get());
+        }
     }
 
     @Override
     public void outtake() {
-        setRollerSpeed(kRollerOuttakePercent.get());
+        if (!Shooter.isRunning()) {
+            setRollerSpeed(kRollerOuttakePercent.get());
+        }
     }
 
     @Override

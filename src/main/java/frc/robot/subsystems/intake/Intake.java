@@ -12,6 +12,7 @@ import java.util.function.BooleanSupplier;
 public class Intake {
     private final Extender extender;
     private final Roller roller;
+    private BooleanSupplier isShooterRunning = () -> false;
 
     public Intake(ExtenderIO extenderIO, RollerIO rollerIO) {
         this.extender = new Extender(extenderIO);

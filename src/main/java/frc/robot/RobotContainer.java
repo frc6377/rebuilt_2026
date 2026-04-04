@@ -328,6 +328,7 @@ public class RobotContainer {
         // .alongWith(Commands.runOnce(drive::stopWithX)))
         // .onFalse(superstructure.stopUpgoerCommand().alongWith(indexer.stop()));
         Trigger shootingTrigger = OIController.fireShooter().or(OIController.shootDriver());
+        intake.setShooterRunningSupplier(shootingTrigger::getAsBoolean);
         Trigger stopSuperTrigger = OIController.stopShooterDriver().or(OIController.stopSuperstructure());
         OIController.spinUpShooter()
                 .whileTrue(Commands.parallel(superstructure.runFlywheelVelocityManual())
