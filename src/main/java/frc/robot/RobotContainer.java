@@ -343,10 +343,12 @@ public class RobotContainer {
                 .whileTrue(Commands.parallel(
                                 superstructure.aimAtHubWhileDriving(
                                         drive, OIController.driveTranslationX(), OIController.driveTranslationY()),
-                                Commands.parallel(superstructure
-                                        .autoSpeedShooter(drive::getPose, drive::getChassisSpeeds)
-                                        .until(() -> superstructure.isReadyToShoot(drive.getRotation())), 
-                                        Commands.waitSeconds(0.5))
+                                Commands.parallel(
+                                                superstructure
+                                                        .autoSpeedShooter(drive::getPose, drive::getChassisSpeeds)
+                                                        .until(() ->
+                                                                superstructure.isReadyToShoot(drive.getRotation())),
+                                                Commands.waitSeconds(0.5))
                                         .andThen(Commands.runOnce(drive::stopWithX))
                                         .andThen(Commands.parallel(
                                                 superstructure.fireCommand(),
@@ -428,10 +430,10 @@ public class RobotContainer {
         OIController.retractIntake().onTrue(intake.toggleIntake());
         OIController.intakeMiddle().onTrue(intake.goToCustomAngleOneCommand());
 
-                // At the bottom of configureButtonBindings()
+        // At the bottom of configureButtonBindings()
         new Trigger(() -> vision.getTagCount() >= 2)
-        .onTrue(Commands.runOnce(() -> OIController.setRumble(0, 1)))
-        .onFalse(Commands.runOnce(() -> OIController.setRumble(0, 0)));
+                .onTrue(Commands.runOnce(() -> OIController.setRumble(0, 1)))
+                .onFalse(Commands.runOnce(() -> OIController.setRumble(0, 0)));
     }
 
     /**
