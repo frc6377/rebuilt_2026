@@ -67,7 +67,7 @@ public class Robot extends LoggedRobot {
 
         // Instantiate our RobotContainer. This will perform all our button bindings,
         // and put our autonomous chooser on the dashboard.
-        robotContainer = new RobotContainer();
+        robotContainer = new RobotContainer(OIController);
     }
 
     /** This function is called periodically during all modes. */
@@ -83,31 +83,12 @@ public class Robot extends LoggedRobot {
         // This must be called from the robot's periodic block in order for anything in
         // the Command-based framework to work.
         CommandScheduler.getInstance().run();
+
         double newTime = Timer.getFPGATimestamp() * 1000;
         Logger.recordOutput("Loop Time (ms)", newTime - lastTime);
 
         // Return to normal thread priority
         Threads.setCurrentThreadPriority(false, 10);
-
-        if (DriverStation.getMatchTime() > 130 + 4 && DriverStation.getMatchTime() < 130 + 5) {
-            // Transition period after auto, hub is active.
-            OIController.setRumble(1, 0);
-        } else if (DriverStation.getMatchTime() > 105 + 4 && DriverStation.getMatchTime() < 105 + 5) {
-            // Shift 1
-            OIController.setRumble(1, 0);
-        } else if (DriverStation.getMatchTime() > 80 + 4 && DriverStation.getMatchTime() < 80 + 5) {
-            // Shift 2
-            OIController.setRumble(1, 0);
-        } else if (DriverStation.getMatchTime() > 55 + 4 && DriverStation.getMatchTime() < 55 + 5) {
-            // Shift 3
-            OIController.setRumble(1, 0);
-        } else if (DriverStation.getMatchTime() > 30 + 4 && DriverStation.getMatchTime() < 30 + 5) {
-            // Shift 4
-            OIController.setRumble(1, 0);
-        } else {
-            // End game, hub always active.
-            OIController.setRumble(0, 0);
-        }
     }
 
     /** This function is called once when the robot is disabled. */

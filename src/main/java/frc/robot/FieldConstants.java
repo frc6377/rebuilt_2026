@@ -501,7 +501,7 @@ public class FieldConstants {
             // Next is Endgame (Active).
             if (!shift1Active) { // Shift 4 is Active (because shift1Active is false -> !false = true)
                 // Active -> Active (Endgame). No change.
-                return 0.0;
+                return matchTime;
             } else {
                 // Shift 4 is Inactive.
                 // Inactive -> Active. Change happens at t4.
@@ -509,7 +509,7 @@ public class FieldConstants {
             }
         } else {
             // Endgame. Always Active. No change.
-            return 0.0;
+            return matchTime; // Time until end of match, but hub is active, so return 0.
         }
     }
 

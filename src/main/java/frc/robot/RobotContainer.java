@@ -61,7 +61,6 @@ import frc.robot.subsystems.vision.VisionIOPhotonVisionSim;
 import frc.robot.subsystems.vision.questnav.QuestNavIO;
 import frc.robot.util.OILayer.OI;
 import frc.robot.util.OILayer.OIKeyboard;
-import frc.robot.util.OILayer.OIXbox;
 import java.util.Objects;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
@@ -94,13 +93,13 @@ public class RobotContainer {
     private final LoggedDashboardChooser<Command> autoChooser;
 
     /** The container for the robot. Contains subsystems, OI devices, and commands. */
-    public RobotContainer() {
+    public RobotContainer(OI oiController) {
         RobotState.create();
 
         usingController = false;
 
         if (usingController || Constants.currentMode != Constants.Mode.SIM) {
-            OIController = new OIXbox();
+            OIController = oiController;
         } else {
             OIController = new OIKeyboard();
         }
