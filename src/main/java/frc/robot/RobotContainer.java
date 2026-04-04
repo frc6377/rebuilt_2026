@@ -344,16 +344,14 @@ public class RobotContainer {
                 .and(OIController.manualHold().negate())
                 .whileTrue(Commands.parallel(
                                 superstructure.aimAtHubWhileDriving(
-                                        drive,
-                                        OIController.driveTranslationX(),
-                                        OIController.driveTranslationY(),
-                                        () -> OIController.xDrive().getAsBoolean()),
+                                        drive, OIController.driveTranslationX(), OIController.driveTranslationY(), OIController.xDrive()::getAsBoolean)),
                                 Commands.parallel(
                                                 superstructure
                                                         .autoSpeedShooter(drive::getPose, drive::getChassisSpeeds)
                                                         .until(() ->
                                                                 superstructure.isReadyToShoot(drive.getRotation())),
                                                 Commands.waitSeconds(0.5))
+                                        .andThen(Commands.runOnce(drive::stopWithX))
                                         .andThen(Commands.parallel(
                                                 superstructure.fireCommand(),
                                                 indexer.index(),
@@ -370,13 +368,16 @@ public class RobotContainer {
                         .withName("Shoot Manual Stop")
                         .andThen(superstructure.runFlywheelVelocityManual()));
         shootingTrigger
-                .and(OIController.manualHold())
-                .whileTrue(superstructure
-                        .runFlywheelVelocityManual()
+                .whileTrue(Commands.parallel(superstructure
+                        .runToggledSpeed(drive::getPose, drive::getChassisSpeeds)
+                        // superstructure.aimAtHubWhileDriving(
+                        // drive, OIController.driveTranslationX(),
+                        // OIController.driveTranslationY()))
                         .withTimeout(0.5)
                         .until(superstructure::atTargetVelocity)
+                        .andThen(Commands.runOnce(drive::stopWithX))
                         .andThen(Commands.parallel(
-                                superstructure.fireCommand(), indexer.index(), intake.siftFuelCommand())))
+                                superstructure.fireCommand(), indexer.index(), intake.siftFuelCommand()))))
                 .onFalse(Commands.parallel(
                                 superstructure.stopUpgoerCommand(),
                                 indexer.stop(),
