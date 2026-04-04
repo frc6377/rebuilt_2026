@@ -23,6 +23,8 @@ public class IntakeConstants {
 
     public static class RollerConstants {
 
+        // for normal roller io
+
         public static final boolean kfollowerEnabled = false;
         public static final boolean kIdleEnabled = false;
 
