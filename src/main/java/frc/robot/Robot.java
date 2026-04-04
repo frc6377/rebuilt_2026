@@ -22,14 +22,11 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.util.OILayer.OI;
-import frc.robot.util.OILayer.OIKeyboard;
 import frc.robot.util.OILayer.OIXbox;
-
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.NT4Publisher;
 import org.littletonrobotics.junction.wpilog.WPILOGWriter;
-
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to each mode, as
@@ -93,23 +90,23 @@ public class Robot extends LoggedRobot {
         Threads.setCurrentThreadPriority(false, 10);
 
         if (DriverStation.getMatchTime() > 130 + 4 && DriverStation.getMatchTime() < 130 + 5) {
-                // Transition period after auto, hub is active.
-                OIController.setRumble(1, 0);
-                } else if (DriverStation.getMatchTime() > 105 + 4 && DriverStation.getMatchTime() < 105 + 5) {
-                // Shift 1
-                OIController.setRumble(1, 0);
-                } else if (DriverStation.getMatchTime() > 80 + 4 && DriverStation.getMatchTime() < 80 + 5) {
-                // Shift 2
-                OIController.setRumble(1, 0);
-                } else if (DriverStation.getMatchTime() > 55 + 4 && DriverStation.getMatchTime() < 55 + 5) {
-                // Shift 3
-                OIController.setRumble(1, 0);
-                } else if (DriverStation.getMatchTime() > 30 + 4 && DriverStation.getMatchTime() < 30 + 5) {
-                // Shift 4
-                OIController.setRumble(1, 0);
-                } else {
-                // End game, hub always active.
-                OIController.setRumble(0, 0);
+            // Transition period after auto, hub is active.
+            OIController.setRumble(1, 0);
+        } else if (DriverStation.getMatchTime() > 105 + 4 && DriverStation.getMatchTime() < 105 + 5) {
+            // Shift 1
+            OIController.setRumble(1, 0);
+        } else if (DriverStation.getMatchTime() > 80 + 4 && DriverStation.getMatchTime() < 80 + 5) {
+            // Shift 2
+            OIController.setRumble(1, 0);
+        } else if (DriverStation.getMatchTime() > 55 + 4 && DriverStation.getMatchTime() < 55 + 5) {
+            // Shift 3
+            OIController.setRumble(1, 0);
+        } else if (DriverStation.getMatchTime() > 30 + 4 && DriverStation.getMatchTime() < 30 + 5) {
+            // Shift 4
+            OIController.setRumble(1, 0);
+        } else {
+            // End game, hub always active.
+            OIController.setRumble(0, 0);
         }
     }
 

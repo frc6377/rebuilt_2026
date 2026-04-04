@@ -433,7 +433,6 @@ public class RobotContainer {
         new Trigger(() -> vision.getTagCount() >= 2)
                 .onTrue(Commands.runOnce(() -> OIController.setRumble(0, 1)))
                 .onFalse(Commands.runOnce(() -> OIController.setRumble(0, 0)));
-        
     }
 
     /**
