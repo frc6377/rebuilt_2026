@@ -19,12 +19,17 @@ public class Intake extends SubsystemBase {
     private final ExtenderIO extender;
     private final RollerIOInputsAutoLogged rollerInputs;
     private final ExtenderIOInputsAutoLogged extenderInputs;
+    private BooleanSupplier isShooterRunning = () -> false;
 
     public Intake(RollerIO rollerIO, ExtenderIO extenderIO) {
         roller = rollerIO;
         extender = extenderIO;
         rollerInputs = new RollerIOInputsAutoLogged();
         extenderInputs = new ExtenderIOInputsAutoLogged();
+    }
+
+    public void setShooterRunningSupplier(BooleanSupplier supplier) {
+        isShooterRunning = supplier;
     }
 
     public int getIntakedFuel() {
@@ -201,6 +206,11 @@ public class Intake extends SubsystemBase {
         // Unit types)
         Logger.processInputs("Intake/Extender", extenderInputs);
         Logger.processInputs("Intake/Roller", rollerInputs);
+
+        // Force-stop rollers if the shooter is active to prevent interference
+        if (isShooterRunning.getAsBoolean()) {
+            roller.stop();
+        }
 
         Logger.recordOutput(
                 "Intake/CurrentCommand",
