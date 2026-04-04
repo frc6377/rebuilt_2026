@@ -430,7 +430,7 @@ public class RobotContainer {
         OIController.outtake()
                 .whileTrue(intake.outtakeRollerCommand().alongWith(indexer.indexReverse()))
                 .onFalse(indexer.stop());
-        OIController.xDrive().whileTrue(Commands.runOnce(drive::stopWithX));
+        OIController.xDrive().whileTrue(Commands.runOnce(drive::stopWithX, drive));
         // OIController.zeroIntake().whileTrue(superstructure.fireCommand()).onFalse(superstructure.stopUpgoerCommand());
         OIController.retractIntake().onTrue(intake.toggleIntake());
         OIController.intakeMiddle().onTrue(intake.goToCustomAngleOneCommand());
