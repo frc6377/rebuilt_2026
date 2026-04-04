@@ -52,7 +52,6 @@ public class ExtenderIOSim implements ExtenderIO {
                 "Intake/Extender/SiftAngleTwo", ExtenderConstants.kExtenderSiftAngleTwo.in(Degrees));
         new LoggedNetworkNumber("Intake/Extender/DownSpeed", ExtenderConstants.kDownSpeed);
 
-        // (old PIDController instantiation removed)
 
         armSim = new SingleJointedArmSim(
                 DCMotor.getKrakenX60(1),
