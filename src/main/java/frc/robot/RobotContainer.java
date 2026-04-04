@@ -427,6 +427,11 @@ public class RobotContainer {
         // OIController.zeroIntake().whileTrue(superstructure.fireCommand()).onFalse(superstructure.stopUpgoerCommand());
         OIController.retractIntake().onTrue(intake.toggleIntake());
         OIController.intakeMiddle().onTrue(intake.goToCustomAngleOneCommand());
+
+                // At the bottom of configureButtonBindings()
+        new Trigger(() -> vision.getTagCount() >= 2)
+        .onTrue(Commands.runOnce(() -> OIController.setRumble(0, 1)))
+        .onFalse(Commands.runOnce(() -> OIController.setRumble(0, 0)));
     }
 
     /**
