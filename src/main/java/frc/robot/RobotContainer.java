@@ -436,7 +436,8 @@ public class RobotContainer {
         Logger.recordOutput(
                 "Shooting/WhoWonAuton",
                 Objects.equals(DriverStation.getGameSpecificMessage(), "B") ? "363AF4" : "F44336");
-    }
+
+        }
 
     public Command getRobotStartPose(int cameraIndex) {
         return Commands.runOnce(() -> {
