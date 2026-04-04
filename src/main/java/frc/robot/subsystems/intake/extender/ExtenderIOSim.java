@@ -40,18 +40,17 @@ public class ExtenderIOSim implements ExtenderIO {
     public ExtenderIOSim() {
         setpoint = ExtenderConstants.kExtenderStowAngle;
 
-        extenderStowAngle = new LoggedNetworkNumber("Intake/Extender/StowAngle",
-                ExtenderConstants.kExtenderStowAngle.in(Degrees));
+        extenderStowAngle =
+                new LoggedNetworkNumber("Intake/Extender/StowAngle", ExtenderConstants.kExtenderStowAngle.in(Degrees));
         extenderIntakeAngle = new LoggedNetworkNumber(
                 "Intake/Extender/IntakeAngle", ExtenderConstants.kExtenderIntakeAngle.in(Degrees));
-        extenderTolerance = new LoggedNetworkNumber("Intake/Extender/Tolerance",
-                ExtenderConstants.kExtenderTolerance.in(Degrees));
+        extenderTolerance =
+                new LoggedNetworkNumber("Intake/Extender/Tolerance", ExtenderConstants.kExtenderTolerance.in(Degrees));
         extenderSiftAngleOne = new LoggedNetworkNumber(
                 "Intake/Extender/SiftAngleOne", ExtenderConstants.kExtenderSiftAngleOne.in(Degrees));
         extenderSiftAngleTwo = new LoggedNetworkNumber(
                 "Intake/Extender/SiftAngleTwo", ExtenderConstants.kExtenderSiftAngleTwo.in(Degrees));
         new LoggedNetworkNumber("Intake/Extender/DownSpeed", ExtenderConstants.kDownSpeed);
-
 
         armSim = new SingleJointedArmSim(
                 DCMotor.getKrakenX60(1),
@@ -75,8 +74,8 @@ public class ExtenderIOSim implements ExtenderIO {
         armMech = new LoggedMechanism2d(5, 5);
         armMechRoot = armMech.getRoot("IntakeSimulation", 3, 3);
         armLigament = new LoggedMechanismLigament2d("arm", 2, extenderStowAngle.get(), 2.0, new Color8Bit(Color.kBlue));
-        setpointArmLigament = new LoggedMechanismLigament2d("setpoint", 2, setpoint.in(Degrees), 1.0,
-                new Color8Bit(Color.kRed));
+        setpointArmLigament =
+                new LoggedMechanismLigament2d("setpoint", 2, setpoint.in(Degrees), 1.0, new Color8Bit(Color.kRed));
         armMechRoot.append(armLigament);
         armMechRoot.append(setpointArmLigament);
     }

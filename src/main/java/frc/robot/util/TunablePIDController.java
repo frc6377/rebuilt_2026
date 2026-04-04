@@ -26,24 +26,16 @@ import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 import org.littletonrobotics.junction.networktables.LoggedNetworkString;
 
 /**
- * A WPILib PIDController with tunable P, I, D gains via NetworkTables. Uses a
- * passed-in encoder (position supplier)
- * and applies the PID output to a motor via a consumer as duty cycle
- * (percentage, -1 to 1).
+ * A WPILib PIDController with tunable P, I, D gains via NetworkTables. Uses a passed-in encoder (position supplier) and
+ * applies the PID output to a motor via a consumer as duty cycle (percentage, -1 to 1).
  *
- * <p>
- * This class handles PID control only. Feedforward should be implemented
- * separately in the subsystem to allow
- * model-specific handling (e.g., ArmFeedforward with radian conversions,
- * ElevatorFeedforward without position).
+ * <p>This class handles PID control only. Feedforward should be implemented separately in the subsystem to allow
+ * model-specific handling (e.g., ArmFeedforward with radian conversions, ElevatorFeedforward without position).
  *
- * <p>
- * Initial gains are zero until you {@link #applyPreset}, tune the main
- * {@code tunableName/kP} (etc.) keys from
- * the dashboard, or call {@link #updateTunableGains} after those values change.
+ * <p>Initial gains are zero until you {@link #applyPreset}, tune the main {@code tunableName/kP} (etc.) keys from the
+ * dashboard, or call {@link #updateTunableGains} after those values change.
  *
- * <p>
- * Usage example:
+ * <p>Usage example:
  *
  * <pre>{@code
  * TunablePIDFController extenderPid = new TunablePIDFController(
@@ -64,8 +56,7 @@ import org.littletonrobotics.junction.networktables.LoggedNetworkString;
  */
 public class TunablePIDController {
     /** Compact holder for PID gains. */
-    public static record PIDConfig(double kP, double kI, double kD) {
-    }
+    public static record PIDConfig(double kP, double kI, double kD) {}
 
     public static final PIDConfig defaultConfig = new PIDConfig(0.0, 0.0, 0.0);
 
@@ -111,23 +102,14 @@ public class TunablePIDController {
     /**
      * Creates a new TunablePIDFController with the specified configuration.
      *
-     * @param tunableName     The name of this controller, used as the NetworkTables
-     *                        key prefix (e.g., "Extender").
-     *                        This name appears in the dashboard under LiveWindow
-     *                        and can be used to organize multiple controllers.
-     * @param encoderPosition A DoubleSupplier providing the current position from
-     *                        the encoder.
-     *                        Units depend on your mechanism (rotations, meters,
-     *                        radians, etc.).
-     * @param outputConsumer  A Consumer that receives the computed motor output as
-     *                        a duty cycle percentage
-     *                        in the range [-1.0, 1.0]. Typically this is
-     *                        {@code motorController::set}.
+     * @param tunableName The name of this controller, used as the NetworkTables key prefix (e.g., "Extender"). This
+     *     name appears in the dashboard under LiveWindow and can be used to organize multiple controllers.
+     * @param encoderPosition A DoubleSupplier providing the current position from the encoder. Units depend on your
+     *     mechanism (rotations, meters, radians, etc.).
+     * @param outputConsumer A Consumer that receives the computed motor output as a duty cycle percentage in the range
+     *     [-1.0, 1.0]. Typically this is {@code motorController::set}.
      */
-    public TunablePIDController(
-            String tunableName,
-            DoubleSupplier encoderPosition,
-            Consumer<Double> outputConsumer) {
+    public TunablePIDController(String tunableName, DoubleSupplier encoderPosition, Consumer<Double> outputConsumer) {
         this.tunableName = tunableName;
         this.encoderPosition = encoderPosition;
         this.outputConsumer = outputConsumer;
@@ -147,7 +129,7 @@ public class TunablePIDController {
     /**
      * Adds or replaces a named preset. Does not apply it automatically.
      *
-     * @param name   The name of the preset.
+     * @param name The name of the preset.
      * @param config The PID gains for this preset.
      */
     public void addPreset(String name, PIDConfig config) {
@@ -191,9 +173,8 @@ public class TunablePIDController {
     }
 
     /**
-     * Applies a preset by name. Immediately updates the PID controller with the
-     * preset's gains.
-     * NetworkTables entries for the preset are synchronized.
+     * Applies a preset by name. Immediately updates the PID controller with the preset's gains. NetworkTables entries
+     * for the preset are synchronized.
      *
      * @param name The name of the preset to apply.
      * @return true if the preset was found and applied, false otherwise.
@@ -228,9 +209,8 @@ public class TunablePIDController {
     }
 
     /**
-     * Call this periodically (e.g. in subsystem periodic()) to apply any PID gain
-     * changes from the dashboard
-     * to the internal PIDController.
+     * Call this periodically (e.g. in subsystem periodic()) to apply any PID gain changes from the dashboard to the
+     * internal PIDController.
      *
      * @return true if any gains were updated, false otherwise.
      */
@@ -272,10 +252,8 @@ public class TunablePIDController {
     }
 
     /**
-     * Calculates the PID output based on the current position and setpoint.
-     * Does not apply the output to the motor; the caller is responsible for
-     * combining
-     * with feedforward (if needed) and sending to the motor.
+     * Calculates the PID output based on the current position and setpoint. Does not apply the output to the motor; the
+     * caller is responsible for combining with feedforward (if needed) and sending to the motor.
      *
      * @return The PID output in the range [-1.0, 1.0].
      */
@@ -285,21 +263,16 @@ public class TunablePIDController {
     }
 
     /**
-     * Calculates the PID output and immediately applies it to the motor via the
-     * output consumer.
-     * Use this if you don't have feedforward. If you need feedforward, use
-     * {@link #calculate()} instead
-     * and combine with your feedforward calculation before sending to the motor.
+     * Calculates the PID output and immediately applies it to the motor via the output consumer. Use this if you don't
+     * have feedforward. If you need feedforward, use {@link #calculate()} instead and combine with your feedforward
+     * calculation before sending to the motor.
      */
     public void runPid() {
         double output = calculate();
         outputConsumer.accept(output);
     }
 
-    /**
-     * Returns the underlying WPILib PIDController (e.g. for atSetpoint(),
-     * getPositionError()).
-     */
+    /** Returns the underlying WPILib PIDController (e.g. for atSetpoint(), getPositionError()). */
     public PIDController getPIDController() {
         return pidController;
     }

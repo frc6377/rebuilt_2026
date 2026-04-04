@@ -9,9 +9,6 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import frc.robot.Constants;
 import frc.robot.subsystems.intake.IntakeConstants.RollerConstants;
-
-import static edu.wpi.first.units.Units.RPM;
-
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 public class RollerIOReal implements RollerIO {

@@ -56,9 +56,7 @@ public class ExtenderIOReal implements ExtenderIO {
         extenderEncoder.setInverted(true);
 
         extenderPid = new TunablePIDController(
-                "Intake/Extender/ExtenderPID",
-                () -> getPosition().in(Radians),
-                percent -> extenderMotor.set(-percent));
+                "Intake/Extender/ExtenderPID", () -> getPosition().in(Radians), percent -> extenderMotor.set(-percent));
 
         extenderPid.addPreset("default", ExtenderConstants.PIDF.normalPID);
         extenderPid.addPreset("float", ExtenderConstants.PIDF.floatPID);
