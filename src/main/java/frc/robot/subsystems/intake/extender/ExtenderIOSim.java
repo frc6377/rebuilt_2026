@@ -10,7 +10,7 @@ import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.util.Color8Bit;
 import frc.robot.subsystems.intake.IntakeConstants.ExtenderConstants;
-import frc.robot.util.TunablePIDFController;
+import frc.robot.util.TunablePIDController;
 import java.util.function.BooleanSupplier;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.mechanism.LoggedMechanism2d;
@@ -21,7 +21,7 @@ import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 public class ExtenderIOSim implements ExtenderIO {
 
     private final SingleJointedArmSim armSim;
-    private final TunablePIDFController pidController;
+    private final TunablePIDController pidController;
     private final LoggedMechanism2d armMech;
     private final LoggedMechanismRoot2d armMechRoot;
     private final LoggedMechanismLigament2d armLigament;
@@ -40,12 +40,12 @@ public class ExtenderIOSim implements ExtenderIO {
     public ExtenderIOSim() {
         setpoint = ExtenderConstants.kExtenderStowAngle;
 
-        extenderStowAngle =
-                new LoggedNetworkNumber("Intake/Extender/StowAngle", ExtenderConstants.kExtenderStowAngle.in(Degrees));
+        extenderStowAngle = new LoggedNetworkNumber("Intake/Extender/StowAngle",
+                ExtenderConstants.kExtenderStowAngle.in(Degrees));
         extenderIntakeAngle = new LoggedNetworkNumber(
                 "Intake/Extender/IntakeAngle", ExtenderConstants.kExtenderIntakeAngle.in(Degrees));
-        extenderTolerance =
-                new LoggedNetworkNumber("Intake/Extender/Tolerance", ExtenderConstants.kExtenderTolerance.in(Degrees));
+        extenderTolerance = new LoggedNetworkNumber("Intake/Extender/Tolerance",
+                ExtenderConstants.kExtenderTolerance.in(Degrees));
         extenderSiftAngleOne = new LoggedNetworkNumber(
                 "Intake/Extender/SiftAngleOne", ExtenderConstants.kExtenderSiftAngleOne.in(Degrees));
         extenderSiftAngleTwo = new LoggedNetworkNumber(
@@ -66,7 +66,7 @@ public class ExtenderIOSim implements ExtenderIO {
                 0.0,
                 0.0);
 
-        pidController = new TunablePIDFController(
+        pidController = new TunablePIDController(
                 "Intake/ExtenderPID",
                 () -> getPosition().in(Degrees),
                 percent -> appliedVolts = MathUtil.clamp(percent * 12.0, -12.0, 12.0));
@@ -76,8 +76,8 @@ public class ExtenderIOSim implements ExtenderIO {
         armMech = new LoggedMechanism2d(5, 5);
         armMechRoot = armMech.getRoot("IntakeSimulation", 3, 3);
         armLigament = new LoggedMechanismLigament2d("arm", 2, extenderStowAngle.get(), 2.0, new Color8Bit(Color.kBlue));
-        setpointArmLigament =
-                new LoggedMechanismLigament2d("setpoint", 2, setpoint.in(Degrees), 1.0, new Color8Bit(Color.kRed));
+        setpointArmLigament = new LoggedMechanismLigament2d("setpoint", 2, setpoint.in(Degrees), 1.0,
+                new Color8Bit(Color.kRed));
         armMechRoot.append(armLigament);
         armMechRoot.append(setpointArmLigament);
     }

@@ -26,22 +26,30 @@ import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 import org.littletonrobotics.junction.networktables.LoggedNetworkString;
 
 /**
- * A WPILib PIDController with tunable P, I, D gains via NetworkTables. Uses a passed-in encoder (position supplier)
- * and applies the PID output to a motor via a consumer as duty cycle (percentage, -1 to 1).
+ * A WPILib PIDController with tunable P, I, D gains via NetworkTables. Uses a
+ * passed-in encoder (position supplier)
+ * and applies the PID output to a motor via a consumer as duty cycle
+ * (percentage, -1 to 1).
  *
- * <p>This class handles PID control only. Feedforward should be implemented separately in the subsystem to allow
- * model-specific handling (e.g., ArmFeedforward with radian conversions, ElevatorFeedforward without position).
+ * <p>
+ * This class handles PID control only. Feedforward should be implemented
+ * separately in the subsystem to allow
+ * model-specific handling (e.g., ArmFeedforward with radian conversions,
+ * ElevatorFeedforward without position).
  *
- * <p>Initial gains are zero until you {@link #applyPreset}, tune the main {@code tunableName/kP} (etc.) keys from
+ * <p>
+ * Initial gains are zero until you {@link #applyPreset}, tune the main
+ * {@code tunableName/kP} (etc.) keys from
  * the dashboard, or call {@link #updateTunableGains} after those values change.
  *
- * <p>Usage example:
+ * <p>
+ * Usage example:
  *
  * <pre>{@code
  * TunablePIDFController extenderPid = new TunablePIDFController(
- *     "Extender",
- *     () -> extenderEncoder.getPosition(),
- *     percent -> extenderMotor.set(percent));
+ *         "Extender",
+ *         () -> extenderEncoder.getPosition(),
+ *         percent -> extenderMotor.set(percent));
  *
  * extenderPid.addPreset("default", new PIDConfig(0.01, 0, 0));
  * extenderPid.applyPreset("default");
@@ -54,9 +62,10 @@ import org.littletonrobotics.junction.networktables.LoggedNetworkString;
  * outputConsumer.accept(MathUtil.clamp(pidOut + ffOut / 12.0, -1, 1));
  * }</pre>
  */
-public class TunablePIDFController {
+public class TunablePIDController {
     /** Compact holder for PID gains. */
-    public static record PIDConfig(double kP, double kI, double kD) {}
+    public static record PIDConfig(double kP, double kI, double kD) {
+    }
 
     public static final PIDConfig defaultConfig = new PIDConfig(0.0, 0.0, 0.0);
 
@@ -67,7 +76,8 @@ public class TunablePIDFController {
     private final PIDController pidController;
     private double setpoint;
 
-    // Preset configs that can be swapped at runtime. Each preset is created on demand and its values are
+    // Preset configs that can be swapped at runtime. Each preset is created on
+    // demand and its values are
     // exposed via NetworkTables when added.
     private static class PresetHolder {
         final PIDConfig config;
@@ -83,7 +93,8 @@ public class TunablePIDFController {
         }
     }
 
-    // Map of preset name -> holder. Starts empty (no presets logged). When a preset is added we create its
+    // Map of preset name -> holder. Starts empty (no presets logged). When a preset
+    // is added we create its
     // LoggedNetworkNumber entries so it appears in NetworkTables.
     private final Map<String, PresetHolder> presets = new HashMap<>();
     private String activePresetName = null;
@@ -91,7 +102,8 @@ public class TunablePIDFController {
     // Logged index of the active preset (for dashboard visibility).
     private final LoggedNetworkString activePreset;
 
-    // Last-seen values for quick change detection when reading the active preset's NT entries
+    // Last-seen values for quick change detection when reading the active preset's
+    // NT entries
     private double lastKP;
     private double lastKI;
     private double lastKD;
@@ -99,14 +111,20 @@ public class TunablePIDFController {
     /**
      * Creates a new TunablePIDFController with the specified configuration.
      *
-     * @param tunableName The name of this controller, used as the NetworkTables key prefix (e.g., "Extender").
-     *        This name appears in the dashboard under LiveWindow and can be used to organize multiple controllers.
-     * @param encoderPosition A DoubleSupplier providing the current position from the encoder.
-     *        Units depend on your mechanism (rotations, meters, radians, etc.).
-     * @param outputConsumer A Consumer that receives the computed motor output as a duty cycle percentage
-     *        in the range [-1.0, 1.0]. Typically this is {@code motorController::set}.
+     * @param tunableName     The name of this controller, used as the NetworkTables
+     *                        key prefix (e.g., "Extender").
+     *                        This name appears in the dashboard under LiveWindow
+     *                        and can be used to organize multiple controllers.
+     * @param encoderPosition A DoubleSupplier providing the current position from
+     *                        the encoder.
+     *                        Units depend on your mechanism (rotations, meters,
+     *                        radians, etc.).
+     * @param outputConsumer  A Consumer that receives the computed motor output as
+     *                        a duty cycle percentage
+     *                        in the range [-1.0, 1.0]. Typically this is
+     *                        {@code motorController::set}.
      */
-    public TunablePIDFController(
+    public TunablePIDController(
             String tunableName,
             DoubleSupplier encoderPosition,
             Consumer<Double> outputConsumer) {
@@ -119,7 +137,8 @@ public class TunablePIDFController {
 
         this.activePreset = new LoggedNetworkString(tunableName + "/ActivePreset", "None");
 
-        // Initialize last-seen values to defaults so first read will be detected as a change
+        // Initialize last-seen values to defaults so first read will be detected as a
+        // change
         this.lastKP = defaultConfig.kP();
         this.lastKI = defaultConfig.kI();
         this.lastKD = defaultConfig.kD();
@@ -128,14 +147,15 @@ public class TunablePIDFController {
     /**
      * Adds or replaces a named preset. Does not apply it automatically.
      *
-     * @param name The name of the preset.
+     * @param name   The name of the preset.
      * @param config The PID gains for this preset.
      */
     public void addPreset(String name, PIDConfig config) {
         if (name == null || config == null) {
             return;
         }
-        // Create networktable-backed entries for this preset so it appears in the dashboard
+        // Create networktable-backed entries for this preset so it appears in the
+        // dashboard
         PresetHolder holder = new PresetHolder(tunableName + "/Presets/" + name, config);
         presets.put(name, holder);
     }
@@ -171,7 +191,8 @@ public class TunablePIDFController {
     }
 
     /**
-     * Applies a preset by name. Immediately updates the PID controller with the preset's gains.
+     * Applies a preset by name. Immediately updates the PID controller with the
+     * preset's gains.
      * NetworkTables entries for the preset are synchronized.
      *
      * @param name The name of the preset to apply.
@@ -207,7 +228,8 @@ public class TunablePIDFController {
     }
 
     /**
-     * Call this periodically (e.g. in subsystem periodic()) to apply any PID gain changes from the dashboard
+     * Call this periodically (e.g. in subsystem periodic()) to apply any PID gain
+     * changes from the dashboard
      * to the internal PIDController.
      *
      * @return true if any gains were updated, false otherwise.
@@ -251,7 +273,8 @@ public class TunablePIDFController {
 
     /**
      * Calculates the PID output based on the current position and setpoint.
-     * Does not apply the output to the motor; the caller is responsible for combining
+     * Does not apply the output to the motor; the caller is responsible for
+     * combining
      * with feedforward (if needed) and sending to the motor.
      *
      * @return The PID output in the range [-1.0, 1.0].
@@ -262,8 +285,10 @@ public class TunablePIDFController {
     }
 
     /**
-     * Calculates the PID output and immediately applies it to the motor via the output consumer.
-     * Use this if you don't have feedforward. If you need feedforward, use {@link #calculate()} instead
+     * Calculates the PID output and immediately applies it to the motor via the
+     * output consumer.
+     * Use this if you don't have feedforward. If you need feedforward, use
+     * {@link #calculate()} instead
      * and combine with your feedforward calculation before sending to the motor.
      */
     public void runPid() {
@@ -271,7 +296,10 @@ public class TunablePIDFController {
         outputConsumer.accept(output);
     }
 
-    /** Returns the underlying WPILib PIDController (e.g. for atSetpoint(), getPositionError()). */
+    /**
+     * Returns the underlying WPILib PIDController (e.g. for atSetpoint(),
+     * getPositionError()).
+     */
     public PIDController getPIDController() {
         return pidController;
     }

@@ -11,7 +11,7 @@ import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.MomentOfInertia;
 import edu.wpi.first.units.measure.Time;
-import frc.robot.util.TunablePIDFController.PIDConfig;
+import frc.robot.util.TunablePIDController.PIDConfig;
 import org.ironmaple.simulation.IntakeSimulation.IntakeSide;
 
 public class IntakeConstants {
