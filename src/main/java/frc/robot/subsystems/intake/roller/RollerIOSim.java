@@ -31,7 +31,7 @@ public class RollerIOSim implements RollerIO {
     public RollerIOSim(AbstractDriveTrainSimulation driveSim) {
         var config = new TalonFXConfiguration()
                 .withMotorOutput(new MotorOutputConfigs()
-                        .withInverted(RollerConstants.MotorConfig.kInvertedSim)
+                        .withInverted(RollerConstants.MotorConfig.kInverted)
                         .withNeutralMode(RollerConstants.MotorConfig.kNeutralMode))
                 .withClosedLoopRamps(new ClosedLoopRampsConfigs()
                         .withVoltageClosedLoopRampPeriod(RollerConstants.MotorConfig.kRampPeriod))
@@ -39,7 +39,7 @@ public class RollerIOSim implements RollerIO {
                         .withStatorCurrentLimitEnable(true)
                         .withStatorCurrentLimit(RollerConstants.MotorConfig.kStatorCurrentLimit));
 
-        rollerMotor = new TalonFX(Constants.CANIDs.MotorIDs.kRollerMotorID);
+        rollerMotor = new TalonFX(Constants.CANIDs.MotorIDs.kRollerLeaderMotorID);
         rollerMotor.getConfigurator().apply(config);
         intakeMotorSim = rollerMotor.getSimState();
         intakeMotorSim.setMotorType(MotorType.KrakenX60);
@@ -84,20 +84,20 @@ public class RollerIOSim implements RollerIO {
     }
 
     @Override
-    public void setMode(NeutralModeValue mode) {
-        rollerMotor.getConfigurator().apply(new MotorOutputConfigs().withNeutralMode(mode));
-    }
-
-    @Override
     public void setMotorPercentage(double percent) {
         rollerMotor.set(percent);
     }
 
     @Override
+    public void setMode(NeutralModeValue mode) {
+        rollerMotor.getConfigurator().apply(new MotorOutputConfigs().withNeutralMode(mode));
+    }
+
+    @Override
     public void updateInputs(RollerIO.RollerIOInputs inputs) {
-        inputs.rollerSpeedPercentile = intakeMotorSim.getMotorVoltage() / RobotController.getBatteryVoltage();
-        inputs.rollerAppliedVolts = intakeMotorSim.getMotorVoltageMeasure();
-        inputs.rollerVelocity = rollerMotor.getVelocity().getValue();
-        inputs.motorTemp = Celsius.of(25.0);
+        inputs.leaderSpeedPercentile = intakeMotorSim.getMotorVoltage() / RobotController.getBatteryVoltage();
+        inputs.leaderAppliedVolts = intakeMotorSim.getMotorVoltageMeasure();
+        inputs.leaderVelocity = rollerMotor.getVelocity().getValue();
+        inputs.leaderMotorTemp = Celsius.of(25.0);
     }
 }

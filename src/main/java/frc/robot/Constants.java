@@ -56,7 +56,8 @@ public final class Constants {
 
             public static final int kIndexerMotorID = 16;
             public static final int kExtenderMotorID = 17;
-            public static final int kRollerMotorID = 18;
+            public static final int kRollerLeaderMotorID = 18;
+            public static final int kRollerFollowerMotorID = 19;
         }
 
         public static final class SensorIDs {
