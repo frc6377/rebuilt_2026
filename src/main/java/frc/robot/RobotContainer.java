@@ -344,7 +344,10 @@ public class RobotContainer {
                 .and(OIController.manualHold().negate())
                 .whileTrue(Commands.parallel(
                                 superstructure.aimAtHubWhileDriving(
-                                        drive, OIController.driveTranslationX(), OIController.driveTranslationY(), OIController.xDrive()::getAsBoolean)),
+                                        drive,
+                                        OIController.driveTranslationX(),
+                                        OIController.driveTranslationY(),
+                                        OIController.xDrive()::getAsBoolean),
                                 Commands.parallel(
                                                 superstructure
                                                         .autoSpeedShooter(drive::getPose, drive::getChassisSpeeds)
