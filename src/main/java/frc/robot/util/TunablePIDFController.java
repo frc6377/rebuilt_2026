@@ -15,99 +15,71 @@ package frc.robot.util;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.math.controller.SimpleMotorFeedforward;
-import java.util.function.Consumer;
-import java.util.function.DoubleSupplier;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.DoubleSupplier;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
-
+import org.littletonrobotics.junction.networktables.LoggedNetworkString;
 
 /**
- * A WPILib PIDController with tunable P, I, D gains via NetworkTables. Uses a passed-in encoder (position supplier) and
- * applies the PID output to a motor via a consumer as duty cycle (percentage, -1 to 1).
+ * A WPILib PIDController with tunable P, I, D gains via NetworkTables. Uses a passed-in encoder (position supplier)
+ * and applies the PID output to a motor via a consumer as duty cycle (percentage, -1 to 1).
  *
- * <p>Initial gains are zero until you {@link #applyPreset}, tune the main {@code tunableName/kP} (etc.) keys from the
- * dashboard, or call {@link #updateTunableGains} after those values change.
+ * <p>This class handles PID control only. Feedforward should be implemented separately in the subsystem to allow
+ * model-specific handling (e.g., ArmFeedforward with radian conversions, ElevatorFeedforward without position).
+ *
+ * <p>Initial gains are zero until you {@link #applyPreset}, tune the main {@code tunableName/kP} (etc.) keys from
+ * the dashboard, or call {@link #updateTunableGains} after those values change.
  *
  * <p>Usage example:
  *
  * <pre>{@code
  * TunablePIDFController extenderPid = new TunablePIDFController(
  *     "Extender",
- *     0.1, 0.0, 0.01,
- *     () -> extenderEncoder.get(),
+ *     () -> extenderEncoder.getPosition(),
  *     percent -> extenderMotor.set(percent));
  *
- * extenderPid.addPreset("default", new PIDFConfig(0.01, 0, 0, 0, 0, 0));
+ * extenderPid.addPreset("default", new PIDConfig(0.01, 0, 0));
  * extenderPid.applyPreset("default");
  *
  * // In periodic():
  * extenderPid.updateTunableGains();
  * extenderPid.setSetpoint(targetPosition);
- * extenderPid.runPid();
+ * double pidOut = extenderPid.calculate();
+ * double ffOut = armFF.calculate(angleRadians, velocityRadPerSec);
+ * outputConsumer.accept(MathUtil.clamp(pidOut + ffOut / 12.0, -1, 1));
  * }</pre>
  */
 public class TunablePIDFController {
-    /**
-     * Compact holder for PID + feedforward gains.
-     */
-    public static record PIDFConfig(
-        double kP, double kI, double kD, double kS, double kV, double kA) {}
-        
-    public static final PIDFConfig defaultConfig = new PIDFConfig(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+    /** Compact holder for PID gains. */
+    public static record PIDConfig(double kP, double kI, double kD) {}
+
+    public static final PIDConfig defaultConfig = new PIDConfig(0.0, 0.0, 0.0);
 
     private final String tunableName;
     private final DoubleSupplier encoderPosition;
     private final Consumer<Double> outputConsumer;
 
-    private final LoggedNetworkNumber tunableKP;
-    private final LoggedNetworkNumber tunableKI;
-    private final LoggedNetworkNumber tunableKD;
-
-
-    // Optional feedforward tunables and state
-    private LoggedNetworkNumber tunableKS;
-    private LoggedNetworkNumber tunableKV;
-    private LoggedNetworkNumber tunableKA;
-
-    private double lastKP;
-    private double lastKI;
-    private double lastKD;
-
-    private double lastKS;
-    private double lastKV;
-    private double lastKA;
-
     private final PIDController pidController;
     private double setpoint;
-
-    // Optional feedforward and velocity supplier (null when not used)
-    private SimpleMotorFeedforward feedforward;
-    private DoubleSupplier velocitySupplier;
 
     // Preset configs that can be swapped at runtime. Each preset is created on demand and its values are
     // exposed via NetworkTables when added.
     private static class PresetHolder {
-        final PIDFConfig config;
+        final PIDConfig config;
         final LoggedNetworkNumber kp;
         final LoggedNetworkNumber ki;
         final LoggedNetworkNumber kd;
-        final LoggedNetworkNumber ks;
-        final LoggedNetworkNumber kv;
-        final LoggedNetworkNumber ka;
 
-        PresetHolder(String basePath, PIDFConfig cfg) {
+        PresetHolder(String basePath, PIDConfig cfg) {
             this.config = cfg;
             this.kp = new LoggedNetworkNumber(basePath + "/kP", cfg.kP());
             this.ki = new LoggedNetworkNumber(basePath + "/kI", cfg.kI());
             this.kd = new LoggedNetworkNumber(basePath + "/kD", cfg.kD());
-            this.ks = new LoggedNetworkNumber(basePath + "/kS", cfg.kS());
-            this.kv = new LoggedNetworkNumber(basePath + "/kV", cfg.kV());
-            this.ka = new LoggedNetworkNumber(basePath + "/kA", cfg.kA());
         }
     }
 
@@ -116,49 +88,50 @@ public class TunablePIDFController {
     private final Map<String, PresetHolder> presets = new HashMap<>();
     private String activePresetName = null;
 
-    
+    // Logged index of the active preset (for dashboard visibility).
+    private final LoggedNetworkString activePreset;
 
-    
+    // Last-seen values for quick change detection when reading the active preset's NT entries
+    private double lastKP;
+    private double lastKI;
+    private double lastKD;
 
     /**
-     * Constructor that accepts a combined PID + feedforward config. If you don't want feedforward, pass zeros
-     * for kS/kV/kA and a null velocitySupplier.
+     * Creates a new TunablePIDFController with the specified configuration.
+     *
+     * @param tunableName The name of this controller, used as the NetworkTables key prefix (e.g., "Extender").
+     *        This name appears in the dashboard under LiveWindow and can be used to organize multiple controllers.
+     * @param encoderPosition A DoubleSupplier providing the current position from the encoder.
+     *        Units depend on your mechanism (rotations, meters, radians, etc.).
+     * @param outputConsumer A Consumer that receives the computed motor output as a duty cycle percentage
+     *        in the range [-1.0, 1.0]. Typically this is {@code motorController::set}.
      */
     public TunablePIDFController(
             String tunableName,
             DoubleSupplier encoderPosition,
-            Consumer<Double> outputConsumer,
-            DoubleSupplier velocitySupplier) {
+            Consumer<Double> outputConsumer) {
         this.tunableName = tunableName;
         this.encoderPosition = encoderPosition;
         this.outputConsumer = outputConsumer;
 
-        this.tunableKP = new LoggedNetworkNumber(tunableName + "/kP", defaultConfig.kP());
-        this.tunableKI = new LoggedNetworkNumber(tunableName + "/kI", defaultConfig.kI());
-        this.tunableKD = new LoggedNetworkNumber(tunableName + "/kD", defaultConfig.kD());
-
-        this.lastKP = defaultConfig.kP();
-        this.lastKI = defaultConfig.kI();
-        this.lastKD = defaultConfig.kD();
-
-        // Feedforward tunables
-        this.tunableKS = new LoggedNetworkNumber(tunableName + "/kS", defaultConfig.kS());
-        this.tunableKV = new LoggedNetworkNumber(tunableName + "/kV", defaultConfig.kV());
-        this.tunableKA = new LoggedNetworkNumber(tunableName + "/kA", defaultConfig.kA());
-
-        this.lastKS = defaultConfig.kS();
-        this.lastKV = defaultConfig.kV();
-        this.lastKA = defaultConfig.kA();
-
         this.pidController = new PIDController(defaultConfig.kP(), defaultConfig.kI(), defaultConfig.kD());
         this.setpoint = 0.0;
 
-        this.feedforward = new SimpleMotorFeedforward(defaultConfig.kS(), defaultConfig.kV(), defaultConfig.kA());
-        this.velocitySupplier = velocitySupplier;
+        this.activePreset = new LoggedNetworkString(tunableName + "/ActivePreset", "None");
+
+        // Initialize last-seen values to defaults so first read will be detected as a change
+        this.lastKP = defaultConfig.kP();
+        this.lastKI = defaultConfig.kI();
+        this.lastKD = defaultConfig.kD();
     }
 
-    /** Adds or replaces a named preset. Does not apply it automatically. */
-    public void addPreset(String name, PIDFConfig config) {
+    /**
+     * Adds or replaces a named preset. Does not apply it automatically.
+     *
+     * @param name The name of the preset.
+     * @param config The PID gains for this preset.
+     */
+    public void addPreset(String name, PIDConfig config) {
         if (name == null || config == null) {
             return;
         }
@@ -167,7 +140,12 @@ public class TunablePIDFController {
         presets.put(name, holder);
     }
 
-    /** Removes a preset by name. Returns true if removed. */
+    /**
+     * Removes a preset by name.
+     *
+     * @param name The name of the preset to remove.
+     * @return true if the preset was found and removed, false otherwise.
+     */
     public boolean removePreset(String name) {
         if (name == null) {
             return false;
@@ -192,84 +170,61 @@ public class TunablePIDFController {
         return activePresetName;
     }
 
-    /** Applies a preset by name. Returns true if applied. */
+    /**
+     * Applies a preset by name. Immediately updates the PID controller with the preset's gains.
+     * NetworkTables entries for the preset are synchronized.
+     *
+     * @param name The name of the preset to apply.
+     * @return true if the preset was found and applied, false otherwise.
+     */
     public boolean applyPreset(String name) {
         PresetHolder holder = presets.get(name);
         if (holder == null) {
             return false;
         }
 
-        PIDFConfig cfg = holder.config;
+        PIDConfig cfg = holder.config;
 
-        // Update networktable-visible tunables
-        tunableKP.set(cfg.kP());
-        tunableKI.set(cfg.kI());
-        tunableKD.set(cfg.kD());
-
-        // Also update the preset's own LoggedNetworkNumber entries so they reflect any changes
+        // Ensure the preset's NT entries reflect the config we just applied
         holder.kp.set(cfg.kP());
         holder.ki.set(cfg.kI());
         holder.kd.set(cfg.kD());
 
-        if (tunableKS != null) {
-            tunableKS.set(cfg.kS());
-            tunableKV.set(cfg.kV());
-            tunableKA.set(cfg.kA());
-        }
-
-        holder.ks.set(cfg.kS());
-        holder.kv.set(cfg.kV());
-        holder.ka.set(cfg.kA());
-
-        // Update controller internals
+        // Update controller internals immediately
         pidController.setP(cfg.kP());
         pidController.setI(cfg.kI());
         pidController.setD(cfg.kD());
 
-        feedforward = new SimpleMotorFeedforward(cfg.kS(), cfg.kV(), cfg.kA());
-
+        // Update last-seen cache so subsequent updateTunableGains reads don't re-apply
         lastKP = cfg.kP();
         lastKI = cfg.kI();
         lastKD = cfg.kD();
-        lastKS = cfg.kS();
-        lastKV = cfg.kV();
-        lastKA = cfg.kA();
 
+        // Set active preset
         activePresetName = name;
+        activePreset.set(name);
         return true;
     }
 
-    /** Cycles to the next preset in alphabetical order and applies it. Returns the name applied or null if none. */
-    public String cyclePreset() {
-        List<String> names = getPresetNames();
-        if (names.isEmpty()) {
-            return null;
-        }
-        if (activePresetName == null) {
-            applyPreset(names.get(0));
-            return activePresetName;
-        }
-        int idx = names.indexOf(activePresetName);
-        int next = (idx + 1) % names.size();
-        applyPreset(names.get(next));
-        return activePresetName;
-    }
-
-    /** Set or update the velocity supplier used by feedforward. */
-    public void setVelocitySupplier(DoubleSupplier velocitySupplier) {
-        this.velocitySupplier = velocitySupplier;
-    }
-
     /**
-     * Call this periodically (e.g. in subsystem periodic()) to apply any PID gain changes from the dashboard to the
-     * internal PIDController.
+     * Call this periodically (e.g. in subsystem periodic()) to apply any PID gain changes from the dashboard
+     * to the internal PIDController.
      *
-     * @return true if gains were updated, false otherwise
+     * @return true if any gains were updated, false otherwise.
      */
     public boolean updateTunableGains() {
-        double currentKP = tunableKP.get();
-        double currentKI = tunableKI.get();
-        double currentKD = tunableKD.get();
+        if (activePresetName == null) {
+            return false;
+        }
+
+        PresetHolder holder = presets.get(activePresetName);
+        if (holder == null) {
+            return false;
+        }
+
+        double currentKP = holder.kp.get();
+        double currentKI = holder.ki.get();
+        double currentKD = holder.kd.get();
 
         boolean changed = currentKP != lastKP || currentKI != lastKI || currentKD != lastKD;
 
@@ -282,62 +237,51 @@ public class TunablePIDFController {
             pidController.setD(currentKD);
         }
 
-        // Update feedforward tunables if present
-        if (tunableKS != null) {
-            double currentKS = tunableKS.get();
-            double currentKV = tunableKV.get();
-            double currentKA = tunableKA.get();
-
-            boolean ffChanged = currentKS != lastKS || currentKV != lastKV || currentKA != lastKA;
-            if (ffChanged) {
-                lastKS = currentKS;
-                lastKV = currentKV;
-                lastKA = currentKA;
-                feedforward = new SimpleMotorFeedforward(currentKS, currentKV, currentKA);
-            }
-
-            changed = changed || ffChanged;
-        }
-
         return changed;
     }
 
-    /** Sets the PID setpoint (goal position). */
+    /**
+     * Sets the PID setpoint (goal position).
+     *
+     * @param setpoint The desired position.
+     */
     public void setSetpoint(double setpoint) {
         this.setpoint = setpoint;
     }
 
     /**
-     * Runs the PID loop: reads current position from the encoder, computes output, clamps to [-1, 1] (motor
-     * percentage), and passes the result to the output consumer. Call this periodically (e.g. in subsystem periodic()).
+     * Calculates the PID output based on the current position and setpoint.
+     * Does not apply the output to the motor; the caller is responsible for combining
+     * with feedforward (if needed) and sending to the motor.
+     *
+     * @return The PID output in the range [-1.0, 1.0].
+     */
+    public double calculate() {
+        double pidOut = pidController.calculate(encoderPosition.getAsDouble(), setpoint);
+        return MathUtil.clamp(pidOut, -1.0, 1.0);
+    }
+
+    /**
+     * Calculates the PID output and immediately applies it to the motor via the output consumer.
+     * Use this if you don't have feedforward. If you need feedforward, use {@link #calculate()} instead
+     * and combine with your feedforward calculation before sending to the motor.
      */
     public void runPid() {
-        double pidOut = pidController.calculate(encoderPosition.getAsDouble(), setpoint);
-
-        double ffPercent = 0.0;
-        if (feedforward != null && velocitySupplier != null) {
-            // feedforward returns volts; convert to motor percent by dividing by nominal 12V
-            double ffVolts = feedforward.calculate(velocitySupplier.getAsDouble());
-            ffPercent = ffVolts / 12.0;
-        }
-
-        double output = MathUtil.clamp(pidOut + ffPercent, -1.0, 1.0);
+        double output = calculate();
         outputConsumer.accept(output);
     }
 
     /** Returns the underlying WPILib PIDController (e.g. for atSetpoint(), getPositionError()). */
-    public PIDController getController() {
+    public PIDController getPIDController() {
         return pidController;
     }
 
-    public SimpleMotorFeedforward getFeedforward() {
-        return feedforward;
-    }
-
+    /** Returns the current PID setpoint. */
     public double getSetpoint() {
         return setpoint;
     }
 
+    /** Returns the tunable name of this controller. */
     public String getTunableName() {
         return tunableName;
     }

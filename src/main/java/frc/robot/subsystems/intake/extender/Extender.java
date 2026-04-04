@@ -1,13 +1,12 @@
 package frc.robot.subsystems.intake.extender;
 
+import static edu.wpi.first.units.Units.Seconds;
+
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.intake.IntakeConstants.ExtenderConstants;
-
-import static edu.wpi.first.units.Units.Seconds;
-
 import org.littletonrobotics.junction.Logger;
 
 public class Extender extends SubsystemBase {
@@ -86,7 +85,8 @@ public class Extender extends SubsystemBase {
     }
 
     public Command siftFuel() {
-        return Commands.repeatingSequence(run(io::toggleSift), Commands.waitSeconds(ExtenderConstants.kSiftTimeout.in(Seconds)))
+        return Commands.repeatingSequence(
+                        run(io::toggleSift), Commands.waitSeconds(ExtenderConstants.kSiftTimeout.in(Seconds)))
                 .withName("ExtenderSiftFuel");
     }
 }

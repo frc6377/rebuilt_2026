@@ -11,8 +11,7 @@ import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.MomentOfInertia;
 import edu.wpi.first.units.measure.Time;
-import frc.robot.util.TunablePIDFController.PIDFConfig;
-
+import frc.robot.util.TunablePIDFController.PIDConfig;
 import org.ironmaple.simulation.IntakeSimulation.IntakeSide;
 
 public class IntakeConstants {
@@ -77,21 +76,12 @@ public class IntakeConstants {
 
         public static final Time kSiftTimeout = Seconds.of(0.5);
 
-        public static class PIDF  {
+        public static class PIDF {
 
-            public static final PIDFConfig normalPID = new PIDFConfig(0.006,
-                0.0,
-                0.00001,
-                0.0,
-                0.0,
-                0.0);
+            public static final PIDConfig normalPID = new PIDConfig(0.006, 0.0, 0.00001);
 
-            public static final PIDFConfig floatPID = new PIDFConfig(0.01,
-                0.0,
-                0.00001,
-                0.0,
-                0.0,
-                0.0);
+            
+            public static final PIDConfig floatPID = new PIDConfig(0.01, 0.0, 0.00001);
         }
 
         public static class MotorConfig {

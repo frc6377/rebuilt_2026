@@ -1,6 +1,7 @@
 package frc.robot.subsystems.intake.extender;
 
 import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Volts;
 
@@ -16,7 +17,6 @@ import edu.wpi.first.wpilibj.DutyCycleEncoder;
 import frc.robot.Constants;
 import frc.robot.subsystems.intake.IntakeConstants.ExtenderConstants;
 import frc.robot.util.TunablePIDFController;
-
 import java.util.function.BooleanSupplier;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
@@ -25,7 +25,6 @@ public class ExtenderIOReal implements ExtenderIO {
     private final TalonFX extenderMotor;
     private final DutyCycleEncoder extenderEncoder;
     private final TunablePIDFController extenderPid;
-    private Angle setpoint;
     private boolean pidEnabled = true;
     private final LoggedNetworkNumber extenderStowAngle;
     private final LoggedNetworkNumber extenderIntakeAngle;
@@ -36,7 +35,6 @@ public class ExtenderIOReal implements ExtenderIO {
     private final LoggedNetworkNumber extenderCustomAngleTwo;
 
     public ExtenderIOReal() {
-        this.setpoint = Degrees.of(0.0);
 
         var config = new TalonFXConfiguration()
                 .withMotorOutput(new MotorOutputConfigs()
@@ -58,24 +56,21 @@ public class ExtenderIOReal implements ExtenderIO {
         extenderEncoder.setInverted(true);
 
         extenderPid = new TunablePIDFController(
-                "Intake/ExtenderPID",
-                () -> getPosition().in(Degrees),
-                percent -> extenderMotor.set(-percent),
-                () -> extenderMotor.getVelocity().getValueAsDouble());
+                "Intake/Extender/ExtenderPID",
+                () -> getPosition().in(Radians),
+                percent -> extenderMotor.set(-percent));
 
         extenderPid.addPreset("default", ExtenderConstants.PIDF.normalPID);
         extenderPid.addPreset("float", ExtenderConstants.PIDF.floatPID);
-        
-        extenderPid.applyPreset("default");
 
-        extenderPid.getController().enableContinuousInput(0, 360);
+        extenderPid.getPIDController().enableContinuousInput(0, 360);
 
-        extenderStowAngle = new LoggedNetworkNumber("Intake/Extender/StowAngle",
-                ExtenderConstants.kExtenderStowAngle.in(Degrees));
+        extenderStowAngle =
+                new LoggedNetworkNumber("Intake/Extender/StowAngle", ExtenderConstants.kExtenderStowAngle.in(Degrees));
         extenderIntakeAngle = new LoggedNetworkNumber(
                 "Intake/Extender/IntakingAngle", ExtenderConstants.kExtenderIntakeAngle.in(Degrees));
-        extenderTolerance = new LoggedNetworkNumber("Intake/Extender/Tolerance",
-                ExtenderConstants.kExtenderTolerance.in(Degrees));
+        extenderTolerance =
+                new LoggedNetworkNumber("Intake/Extender/Tolerance", ExtenderConstants.kExtenderTolerance.in(Degrees));
         extenderSiftAngleOne = new LoggedNetworkNumber(
                 "Intake/Extender/Sifting/SiftAngleOne", ExtenderConstants.kExtenderSiftAngleOne.in(Degrees));
         extenderSiftAngleTwo = new LoggedNetworkNumber(
@@ -95,16 +90,10 @@ public class ExtenderIOReal implements ExtenderIO {
     }
 
     public void setPosition(Angle position) {
-        this.setpoint = position;
         setPidEnabled(true);
-        if (ExtenderConstants.floatEnabled) {
-            if (position.gte(ExtenderConstants.kExtenderFloatLimit)) {
-                extenderPid.applyPreset("float");
-            } else {
-                extenderPid.applyPreset("default");
-            }
-        }
-        extenderPid.setSetpoint(position.in(Degrees));
+        setMode(NeutralModeValue.Brake);
+        extenderPid.applyPreset("default");
+        extenderPid.setSetpoint(position.in(Radians));
     }
 
     public Angle getPosition() {
@@ -142,7 +131,7 @@ public class ExtenderIOReal implements ExtenderIO {
 
     @Override
     public BooleanSupplier atTarget() {
-        return () -> isAtAngle(setpoint);
+        return () -> isAtAngle(Degrees.of(extenderPid.getSetpoint()));
     }
 
     @Override
@@ -167,7 +156,7 @@ public class ExtenderIOReal implements ExtenderIO {
 
     @Override
     public void toggleSift() {
-        if (this.setpoint.equals(Degrees.of(extenderSiftAngleOne.get()))) {
+        if (Degrees.of(extenderPid.getSetpoint()).equals(Degrees.of(extenderSiftAngleOne.get()))) {
             goToSiftAngleTwo();
         } else {
             goToSiftAngleOne();
@@ -199,7 +188,10 @@ public class ExtenderIOReal implements ExtenderIO {
     @Override
     public void toggle() {
         double stowDeg = extenderStowAngle.get();
-        if (Math.abs(setpoint.minus(Degrees.of(stowDeg)).in(Degrees)) < extenderTolerance.get()) {
+        if (Math.abs(Degrees.of(extenderPid.getSetpoint())
+                        .minus(Degrees.of(stowDeg))
+                        .in(Degrees))
+                < extenderTolerance.get()) {
             extend();
         } else {
             retract();
@@ -211,7 +203,7 @@ public class ExtenderIOReal implements ExtenderIO {
         inputs.isExtended = isExtended().getAsBoolean();
         inputs.isRetracted = isRetracted().getAsBoolean();
         inputs.position = getPosition();
-        inputs.setpoint = setpoint;
+        inputs.setpoint = Degrees.of(extenderPid.getSetpoint());
         inputs.velocity = extenderMotor.getVelocity().getValue();
         inputs.motorVoltage = Volts.of(extenderMotor.getMotorVoltage().getValueAsDouble());
         inputs.motorCurrent = extenderMotor.getStatorCurrent().getValue();
@@ -227,6 +219,13 @@ public class ExtenderIOReal implements ExtenderIO {
         extenderPid.updateTunableGains();
         if (pidEnabled) {
             extenderPid.runPid();
+        }
+        if (ExtenderConstants.floatEnabled) {
+            if (getPosition().gte(ExtenderConstants.kExtenderFloatLimit)
+                    && atTarget().getAsBoolean()) {
+                extenderPid.applyPreset("float");
+                setMode(NeutralModeValue.Coast);
+            }
         }
     }
 }
