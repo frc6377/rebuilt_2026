@@ -435,7 +435,7 @@ public class RobotContainer {
                 .onFalse(Commands.runOnce(() -> OIController.setRumble(0, 0)));
         
         while (DriverStation.getMatchTime() > 0) {
-                if (DriverStation.getMatchTime() == 130 - 5) {
+                if (DriverStation.getMatchTime() > 130 + 4.5 && DriverStation.getMatchTime() < 130 + 5.5) {
                 // Transition period after auto, hub is active.
                 OIController.setRumble(1, 0);
                 } else if (DriverStation.getMatchTime() > 105 + 4.5 && DriverStation.getMatchTime() < 105 + 5.5) {
