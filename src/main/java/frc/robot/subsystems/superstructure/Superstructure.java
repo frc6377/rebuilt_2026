@@ -411,7 +411,13 @@ public class Superstructure extends SubsystemBase {
     }
     /** Command that aims the robot at the hub while driving. */
     public Command aimAtHubWhileDriving(Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier) {
-        return DriveCommands.joystickDriveAtAngle(drive, xSupplier, ySupplier, () -> latestParameters.targetHeading())
+        return DriveCommands.joystickDriveAtAngle(
+                        drive,
+                        xSupplier,
+                        ySupplier,
+                        () -> latestParameters != null
+                                ? latestParameters.targetHeading()
+                                : getAngleToHub(drive.getPose()))
                 .withName("AimAtHub");
     }
 
@@ -472,7 +478,7 @@ public class Superstructure extends SubsystemBase {
     public boolean isReadyToShoot(Rotation2d currentHeading) {
         if (latestParameters == null) return atTargetVelocity();
 
-        boolean flywheelReady = true; // atTargetVelocity();
+        boolean flywheelReady = atTargetVelocity();
         boolean headingReady =
                 Math.abs(currentHeading.minus(latestParameters.targetHeading()).getDegrees())
                         < ShooterConstants.kHeadingTolerance.in(Degrees);

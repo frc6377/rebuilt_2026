@@ -35,12 +35,15 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
+import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 public class DriveCommands {
-    private static final double ANGLE_KP = 5.0;
-    private static final double ANGLE_KD = 0.4;
+    private static final LoggedNetworkNumber ANGLE_KP = new LoggedNetworkNumber("DriveCommands/AngleKP", 5.0);
+    private static final LoggedNetworkNumber ANGLE_KD = new LoggedNetworkNumber("DriveCommands/AngleKD", 0.4);
     private static final double ANGLE_MAX_VELOCITY = 8.0;
     private static final double ANGLE_MAX_ACCELERATION = 20.0;
+    private static final LoggedNetworkNumber AIM_DRIVE_SPEED_SCALE =
+            new LoggedNetworkNumber("DriveCommands/AimDriveSpeedScale", 0.7);
     private static final double FF_START_DELAY = 2.0; // Secs
     private static final double FF_RAMP_RATE = 0.1; // Volts/Sec
     private static final double WHEEL_RADIUS_MAX_VELOCITY = 0.25; // Rad/Sec
@@ -94,25 +97,34 @@ public class DriveCommands {
 
         // Create PID controller
         ProfiledPIDController angleController = new ProfiledPIDController(
-                ANGLE_KP, 0.0, ANGLE_KD, new TrapezoidProfile.Constraints(ANGLE_MAX_VELOCITY, ANGLE_MAX_ACCELERATION));
+                ANGLE_KP.get(),
+                0.0,
+                ANGLE_KD.get(),
+                new TrapezoidProfile.Constraints(ANGLE_MAX_VELOCITY, ANGLE_MAX_ACCELERATION));
         angleController.enableContinuousInput(-Math.PI, Math.PI);
 
         // Construct command
         return Commands.run(
                         () -> {
-                            // Get linear velocity
+                            // Update tunable gains
+                            angleController.setP(ANGLE_KP.get());
+                            angleController.setD(ANGLE_KD.get());
+
+                            // Get linear velocity, scaled down during aim
+                            double speedScale = AIM_DRIVE_SPEED_SCALE.get();
                             Translation2d linearVelocity =
                                     getLinearVelocityFromJoysticks(xSupplier.getAsDouble(), ySupplier.getAsDouble());
 
-                            // Calculate angular speed
+                            // Calculate angular speed with profile velocity feedforward
                             double omega = angleController.calculate(
-                                    drive.getRotation().getRadians(),
-                                    rotationSupplier.get().getRadians());
+                                            drive.getRotation().getRadians(),
+                                            rotationSupplier.get().getRadians())
+                                    + angleController.getSetpoint().velocity;
 
                             // Convert to field relative speeds & send command
                             ChassisSpeeds speeds = new ChassisSpeeds(
-                                    linearVelocity.getX() * drive.getMaxLinearSpeedMetersPerSec(),
-                                    linearVelocity.getY() * drive.getMaxLinearSpeedMetersPerSec(),
+                                    linearVelocity.getX() * drive.getMaxLinearSpeedMetersPerSec() * speedScale,
+                                    linearVelocity.getY() * drive.getMaxLinearSpeedMetersPerSec() * speedScale,
                                     omega);
                             boolean isFlipped = DriverStation.getAlliance().isPresent()
                                     && DriverStation.getAlliance().get() == Alliance.Red;
@@ -154,11 +166,18 @@ public class DriveCommands {
 
         // PID on robot-relative yaw error: setpoint = current heading + tx offset
         ProfiledPIDController aimController = new ProfiledPIDController(
-                ANGLE_KP, 0.0, ANGLE_KD, new TrapezoidProfile.Constraints(ANGLE_MAX_VELOCITY, ANGLE_MAX_ACCELERATION));
+                ANGLE_KP.get(),
+                0.0,
+                ANGLE_KD.get(),
+                new TrapezoidProfile.Constraints(ANGLE_MAX_VELOCITY, ANGLE_MAX_ACCELERATION));
         aimController.enableContinuousInput(-Math.PI, Math.PI);
 
         return Commands.run(
                         () -> {
+                            // Update tunable gains
+                            aimController.setP(ANGLE_KP.get());
+                            aimController.setD(ANGLE_KD.get());
+
                             Translation2d linearVelocity =
                                     getLinearVelocityFromJoysticks(xSupplier.getAsDouble(), ySupplier.getAsDouble());
 

@@ -336,7 +336,7 @@ public class RobotContainer {
                         .setFlywheelVelocityManual(RPM.of(1500))
                         .andThen(superstructure.runFlywheelVelocityManual()));
 
-        //Automatic
+        // Automatic
         shootingTrigger
                 .and(OIController.manualHold().negate())
                 .whileTrue(Commands.parallel(
