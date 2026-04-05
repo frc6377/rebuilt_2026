@@ -430,6 +430,20 @@ public class RobotContainer {
         // OIController.zeroIntake().whileTrue(superstructure.fireCommand()).onFalse(superstructure.stopUpgoerCommand());
         OIController.retractIntake().onTrue(intake.toggleIntake());
         OIController.intakeMiddle().onTrue(intake.goToCustomAngleOneCommand());
+
+        OIController.wallAlign90()
+                .whileTrue(DriveCommands.joystickDriveAtAngle(
+                        drive,
+                        () -> OIController.driveTranslationY().getAsDouble(),
+                        () -> OIController.driveTranslationX().getAsDouble(),
+                        () -> Rotation2d.fromDegrees(90)));
+
+        OIController.wallAlign180()
+                .whileTrue(DriveCommands.joystickDriveAtAngle(
+                        drive,
+                        () -> OIController.driveTranslationY().getAsDouble(),
+                        () -> OIController.driveTranslationX().getAsDouble(),
+                        () -> Rotation2d.fromDegrees(180)));
     }
 
     /**

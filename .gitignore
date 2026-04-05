@@ -185,11 +185,9 @@ compile_commands.json
 # Eclipse generated file for annotation processors
 .factorypath
 
-.claude/
-
 BuildConstants.java
 simgui-ds.json
 docs
 
 docs
-nul
+.claude

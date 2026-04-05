@@ -173,4 +173,12 @@ public interface OI {
     default Trigger manualHold() {
         return noButton;
     }
+
+    default Trigger wallAlign90() {
+        return noButton;
+    }
+
+    default Trigger wallAlign180() {
+        return noButton;
+    }
 }

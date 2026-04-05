@@ -126,7 +126,7 @@ public class OIXbox implements OI {
     }
 
     @Override
-    public Trigger shootDriver() {
+    public Trigger wallAlign90() {
         return a;
     }
 
@@ -135,8 +135,13 @@ public class OIXbox implements OI {
         return x;
     }
 
+    // @Override
+    // public Trigger intakeManualExtend() {
+    //     return b;
+    // }
+
     @Override
-    public Trigger intakeManualExtend() {
+    public Trigger wallAlign180() {
         return b;
     }
 
