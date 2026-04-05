@@ -101,12 +101,12 @@ public class ExtenderIOSim implements ExtenderIO {
 
     @Override
     public void extend() {
-        setPosition(Degrees.of(extenderStowAngle.get()));
+        setPosition(Degrees.of(extenderIntakeAngle.get()));
     }
 
     @Override
     public void retract() {
-        setPosition(Degrees.of(extenderIntakeAngle.get()));
+        setPosition(Degrees.of(extenderStowAngle.get()));
     }
 
     @Override

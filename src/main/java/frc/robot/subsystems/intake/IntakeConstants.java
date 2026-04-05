@@ -23,12 +23,10 @@ public class IntakeConstants {
 
     public static class RollerConstants {
 
-        // for normal roller io
-
+        // Normal roller IO (percent-based, non-PID)
         public static final boolean kfollowerEnabled = false;
         public static final boolean kIdleEnabled = false;
 
-        // for normal roller io
         public static final double kIntakePercent = 1;
         public static final double kOuttakePercent = -0.6;
         public static final double kIdlePercent = 0.1;
