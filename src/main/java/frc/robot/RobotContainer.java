@@ -49,9 +49,9 @@ import frc.robot.subsystems.intake.Intake;
 import frc.robot.subsystems.intake.extender.ExtenderIO;
 import frc.robot.subsystems.intake.extender.ExtenderIOReal;
 import frc.robot.subsystems.intake.extender.ExtenderIOSim;
+import frc.robot.subsystems.intake.roller.PIDRollerIOReal;
+import frc.robot.subsystems.intake.roller.PIDRollerIOSim;
 import frc.robot.subsystems.intake.roller.RollerIO;
-import frc.robot.subsystems.intake.roller.RollerIOReal;
-import frc.robot.subsystems.intake.roller.RollerIOSim;
 import frc.robot.subsystems.superstructure.RobotState;
 import frc.robot.subsystems.superstructure.Superstructure;
 import frc.robot.subsystems.vision.Vision;
@@ -128,7 +128,7 @@ public class RobotContainer {
                         drive, new QuestNavIO() {}, new VisionIOLimelight("limelight-shooter", drive::getRotation));
                 intake = new Intake(
                         Constants.EnabledSubsystems.kExtender ? new ExtenderIOReal() : new ExtenderIO() {},
-                        Constants.EnabledSubsystems.kRoller ? new RollerIOReal() : new RollerIO() {});
+                        Constants.EnabledSubsystems.kRoller ? new PIDRollerIOReal() : new RollerIO() {});
                 indexer = new Indexer(Constants.EnabledSubsystems.kIndexer ? new IndexerIOReal() : new IndexerIO() {});
                 driveSimulation = null;
                 break;
@@ -139,7 +139,7 @@ public class RobotContainer {
                 driveSimulation = new SwerveDriveSimulation(Drive.mapleSimConfig, new Pose2d(3, 3, new Rotation2d()));
                 intake = new Intake(
                         Constants.EnabledSubsystems.kExtender ? new ExtenderIOSim() : new ExtenderIO() {},
-                        Constants.EnabledSubsystems.kRoller ? new RollerIOSim(driveSimulation) : new RollerIO() {});
+                        Constants.EnabledSubsystems.kRoller ? new PIDRollerIOSim(driveSimulation) : new RollerIO() {});
                 SimulatedArena.getInstance().addDriveTrainSimulation(driveSimulation);
                 drive = new Drive(
                         new GyroIOSim(driveSimulation.getGyroSimulation()),

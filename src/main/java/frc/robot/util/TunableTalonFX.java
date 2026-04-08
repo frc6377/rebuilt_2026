@@ -22,9 +22,9 @@ import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 /**
  * Drop-in {@link TalonFX} subclass: Slot 0 gains (kP/kI/kD/kV/kS/kA/kG) are exposed via {@link LoggedNetworkNumber}
- * under a per-controller namespace (e.g. {@code Intake/RollerPID/kP}) for pit tuning without redeploy. {@link
- * #updateTunableGains()} applies dashboard changes only when values differ from a local cache, limiting CAN traffic.
- * {@link #applyConfiguration(TalonFXConfiguration)} keeps programmatic config and NetworkTables in sync.
+ * under a per-controller namespace (e.g. {@code Intake/RollerPID/kP}) for pit tuning without redeploy.
+ * {@link #updateTunableGains()} applies dashboard changes only when values differ from a local cache, limiting CAN
+ * traffic. {@link #applyConfiguration(TalonFXConfiguration)} keeps programmatic config and NetworkTables in sync.
  *
  * <p>Usage examples:
  *

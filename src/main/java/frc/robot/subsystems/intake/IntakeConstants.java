@@ -81,7 +81,7 @@ public class IntakeConstants {
 
         public static class PIDF {
 
-            public static final PIDConfig normalPID = new PIDConfig(0.006, 0.0, 0.00001);
+            public static final PIDConfig normalPID = new PIDConfig(0.05, 0.0, 0.00001);
 
             public static final PIDConfig floatPID = new PIDConfig(0.00, 0.0, 0.00000);
         }

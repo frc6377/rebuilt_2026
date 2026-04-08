@@ -68,10 +68,14 @@ public class ExtenderIOReal implements ExtenderIO {
         extenderStowAngle = tunableDegrees(NT_EXTENDER + "/StowAngle", ExtenderConstants.kExtenderStowAngle);
         extenderIntakeAngle = tunableDegrees(NT_EXTENDER + "/IntakingAngle", ExtenderConstants.kExtenderIntakeAngle);
         extenderTolerance = tunableDegrees(NT_EXTENDER + "/Tolerance", ExtenderConstants.kExtenderTolerance);
-        extenderSiftAngleOne = tunableDegrees(NT_EXTENDER + "/Sifting/SiftAngleOne", ExtenderConstants.kExtenderSiftAngleOne);
-        extenderSiftAngleTwo = tunableDegrees(NT_EXTENDER + "/Sifting/SiftAngleTwo", ExtenderConstants.kExtenderSiftAngleTwo);
-        extenderCustomAngleOne = tunableDegrees(NT_EXTENDER + "/CustomAngleOne", ExtenderConstants.kExtenderCustomAngleOne);
-        extenderCustomAngleTwo = tunableDegrees(NT_EXTENDER + "/CustomAngleTwo", ExtenderConstants.kExtenderCustomAngleTwo);
+        extenderSiftAngleOne =
+                tunableDegrees(NT_EXTENDER + "/Sifting/SiftAngleOne", ExtenderConstants.kExtenderSiftAngleOne);
+        extenderSiftAngleTwo =
+                tunableDegrees(NT_EXTENDER + "/Sifting/SiftAngleTwo", ExtenderConstants.kExtenderSiftAngleTwo);
+        extenderCustomAngleOne =
+                tunableDegrees(NT_EXTENDER + "/CustomAngleOne", ExtenderConstants.kExtenderCustomAngleOne);
+        extenderCustomAngleTwo =
+                tunableDegrees(NT_EXTENDER + "/CustomAngleTwo", ExtenderConstants.kExtenderCustomAngleTwo);
     }
 
     /** LoggedNetworkNumber for a degree tunable; initial value matches constants. */
@@ -204,9 +208,7 @@ public class ExtenderIOReal implements ExtenderIO {
         inputs.motorCurrent = extenderMotor.getStatorCurrent().getValue();
         inputs.motorTemp = extenderMotor.getDeviceTemp().getValue();
         inputs.atTarget = atTarget().getAsBoolean();
-        inputs.rawEncoderDegrees = Rotations.of(extenderEncoder.get())
-                .plus(ExtenderConstants.kExtenderZeroAngle)
-                .in(Degrees);
+        inputs.currentAppliedPercent = extenderPid.getCurrentCalculatedOutput();
     }
 
     @Override
@@ -215,15 +217,15 @@ public class ExtenderIOReal implements ExtenderIO {
         if (pidEnabled) {
             extenderPid.runPid();
         }
-        maybeApplyFloatMode();
+        applyFloatMode();
     }
 
-    /** When enabled, soften holding at high angle after the arm reaches setpoint. */
-    private void maybeApplyFloatMode() {
+    private void applyFloatMode() {
         if (!ExtenderConstants.floatEnabled) {
             return;
         }
-        if (getPosition().gte(ExtenderConstants.kExtenderFloatLimit) && atTarget().getAsBoolean()) {
+        if (getPosition().gte(ExtenderConstants.kExtenderFloatLimit)
+                && atTarget().getAsBoolean()) {
             extenderPid.applyPreset("float");
             setMode(NeutralModeValue.Coast);
         }

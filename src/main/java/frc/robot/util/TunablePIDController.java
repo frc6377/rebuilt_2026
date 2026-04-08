@@ -26,9 +26,9 @@ import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 import org.littletonrobotics.junction.networktables.LoggedNetworkString;
 
 /**
- * Wraps WPILib {@link PIDController} with composition: position from a {@link DoubleSupplier}, output via a {@link
- * Consumer} as duty cycle. Gains for the active preset live under {@code <tunableName>/Presets/<name>/kP} (etc.) using
- * {@link LoggedNetworkNumber} for AdvantageKit replay. {@link #updateTunableGains()} only pushes to the internal
+ * Wraps WPILib {@link PIDController} with composition: position from a {@link DoubleSupplier}, output via a
+ * {@link Consumer} as duty cycle. Gains for the active preset live under {@code <tunableName>/Presets/<name>/kP} (etc.)
+ * using {@link LoggedNetworkNumber} for AdvantageKit replay. {@link #updateTunableGains()} only pushes to the internal
  * controller when kP/kI/kD change. {@link #calculate()} clamps output to [-1.0, 1.0].
  *
  * <p>This class handles PID control only. Feedforward should be implemented separately in the subsystem to allow
@@ -68,6 +68,7 @@ public class TunablePIDController {
 
     private final PIDController pidController;
     private double setpoint;
+    private double currentCalculatedOutput;
 
     // Preset configs that can be swapped at runtime. Each preset is created on
     // demand and its values are
@@ -271,7 +272,12 @@ public class TunablePIDController {
      */
     public void runPid() {
         double output = calculate();
+        currentCalculatedOutput = output;
         outputConsumer.accept(output);
+    }
+
+    public double getCurrentCalculatedOutput() {
+        return currentCalculatedOutput;
     }
 
     /** Returns the underlying WPILib PIDController (e.g. for atSetpoint(), getPositionError()). */

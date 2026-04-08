@@ -30,6 +30,7 @@ public interface ExtenderIO {
         public boolean atTarget = false;
         public double rawEncoderDegrees = 0.0;
         public boolean atSiftCurrent = false;
+        public double currentAppliedPercent = 0.0;
     }
 
     default void updateInputs(ExtenderIOInputs inputs) {}

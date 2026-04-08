@@ -15,6 +15,7 @@ package frc.robot.subsystems.intake.roller;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Celsius;
+import static edu.wpi.first.units.Units.RPM;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Volts;
 
@@ -34,14 +35,18 @@ public interface RollerIO {
         public AngularVelocity leaderVelocity = RotationsPerSecond.zero();
         public Current leaderStatorCurrent = Amps.zero();
         public Temperature leaderMotorTemp = Celsius.zero();
+        public double leaderClosedLoopOutput = 0.0;
 
         public double followerSpeedPercentile = 0.0;
         public Voltage followerAppliedVolts = Volts.zero();
         public AngularVelocity followerVelocity = RotationsPerSecond.zero();
         public Current followerStatorCurrent = Amps.zero();
         public Temperature followerMotorTemp = Celsius.zero();
+        public double followerClosedLoopOutput = 0.0;
 
         public boolean isRunning = false;
+        public String currentControl = "None";
+        public AngularVelocity setpoint = RPM.zero();
     }
 
     default void updateInputs(RollerIOInputs inputs) {}

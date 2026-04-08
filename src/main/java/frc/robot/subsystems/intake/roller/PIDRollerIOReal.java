@@ -4,6 +4,7 @@ import static edu.wpi.first.units.Units.RPM;
 
 import com.ctre.phoenix6.configs.ClosedLoopRampsConfigs;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
+import com.ctre.phoenix6.configs.FeedbackConfigs;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
@@ -26,24 +27,38 @@ public class PIDRollerIOReal implements RollerIO {
     private final LoggedNetworkNumber intakeSpeed;
     private final LoggedNetworkNumber outtakeSpeed;
     private final LoggedNetworkNumber idleSpeed;
+    private AngularVelocity setpoint;
 
     public PIDRollerIOReal() {
-        Slot0Configs slot0 = new Slot0Configs()
+
+        setpoint = RPM.zero();
+        Slot0Configs pidConfig = new Slot0Configs()
                 .withKP(RollerConstants.PIDF.kP)
                 .withKI(RollerConstants.PIDF.kI)
                 .withKD(RollerConstants.PIDF.kD)
                 .withKS(RollerConstants.PIDF.kS)
                 .withKV(RollerConstants.PIDF.kV)
                 .withKA(RollerConstants.PIDF.kA);
+
         intakeSpeed = new LoggedNetworkNumber("Intake/Roller" + "/IntakeSpeed", RollerConstants.kIntakeSpeed.in(RPM));
         outtakeSpeed = new LoggedNetworkNumber("Intake/Roller" + "/OuttakeSpeed",
                 RollerConstants.kOuttakeSpeed.in(RPM));
         idleSpeed = new LoggedNetworkNumber("Intake/Roller" + "/IdleSpeed", RollerConstants.kIdleSpeed.in(RPM));
 
-        TalonFXConfiguration config = baseMotorConfig().withSlot0(slot0);
+        TalonFXConfiguration config = new TalonFXConfiguration()
+                .withMotorOutput(new MotorOutputConfigs()
+                        .withInverted(RollerConstants.MotorConfig.kInverted)
+                        .withNeutralMode(RollerConstants.MotorConfig.kNeutralMode))
+                .withClosedLoopRamps(new ClosedLoopRampsConfigs()
+                        .withVoltageClosedLoopRampPeriod(RollerConstants.MotorConfig.kRampPeriod))
+                .withCurrentLimits(new CurrentLimitsConfigs()
+                        .withStatorCurrentLimitEnable(true)
+                        .withStatorCurrentLimit(RollerConstants.MotorConfig.kStatorCurrentLimit))
+                .withFeedback(new FeedbackConfigs().withSensorToMechanismRatio(1 / RollerConstants.kGearRatio));
 
-        leaderMotor = new TunableTalonFX(Constants.CANIDs.MotorIDs.kRollerLeaderMotorID, "rio", "Intake/RollerPID",
-                slot0);
+        leaderMotor = new TunableTalonFX(
+                Constants.CANIDs.MotorIDs.kRollerLeaderMotorID, "rio", "Intake/RollerPID", pidConfig);
+
         leaderMotor.applyConfiguration(config);
 
         if (RollerConstants.kfollowerEnabled) {
@@ -54,21 +69,6 @@ public class PIDRollerIOReal implements RollerIO {
         }
     }
 
-    private static TalonFXConfiguration baseMotorConfig() {
-        TalonFXConfiguration config = new TalonFXConfiguration()
-                .withMotorOutput(new MotorOutputConfigs()
-                        .withInverted(RollerConstants.MotorConfig.kInverted)
-                        .withNeutralMode(RollerConstants.MotorConfig.kNeutralMode))
-                .withClosedLoopRamps(new ClosedLoopRampsConfigs()
-                        .withVoltageClosedLoopRampPeriod(RollerConstants.MotorConfig.kRampPeriod))
-                .withCurrentLimits(new CurrentLimitsConfigs()
-                        .withStatorCurrentLimitEnable(true)
-                        .withStatorCurrentLimit(RollerConstants.MotorConfig.kStatorCurrentLimit));
-
-        config.Feedback.SensorToMechanismRatio = RollerConstants.kGearRatio;
-        return config;
-    }
-
     private void setFollower() {
         if (followerMotor != null) {
             followerMotor.setControl(
@@ -77,6 +77,7 @@ public class PIDRollerIOReal implements RollerIO {
     }
 
     private void setRollerSpeed(AngularVelocity speed) {
+        setpoint = speed;
         leaderMotor.setControl(new VelocityVoltage(speed));
         setFollower();
     }
@@ -89,9 +90,7 @@ public class PIDRollerIOReal implements RollerIO {
 
     @Override
     public void idle() {
-        if (RollerConstants.kIdleEnabled) {
-            setRollerSpeed(RPM.of(idleSpeed.get()));
-        }
+        setRollerSpeed(RPM.of(idleSpeed.get()));
     }
 
     @Override
@@ -138,6 +137,7 @@ public class PIDRollerIOReal implements RollerIO {
             inputs.followerVelocity = followerMotor.getVelocity().getValue();
             inputs.followerStatorCurrent = followerMotor.getStatorCurrent().getValue();
             inputs.followerMotorTemp = followerMotor.getDeviceTemp().getValue();
+            inputs.followerClosedLoopOutput = followerMotor.getClosedLoopOutput().getValue();
         }
 
         inputs.isRunning = isRunning();
@@ -146,6 +146,10 @@ public class PIDRollerIOReal implements RollerIO {
         inputs.leaderVelocity = leaderMotor.getVelocity().getValue();
         inputs.leaderStatorCurrent = leaderMotor.getStatorCurrent().getValue();
         inputs.leaderMotorTemp = leaderMotor.getDeviceTemp().getValue();
+        inputs.leaderClosedLoopOutput = leaderMotor.getClosedLoopOutput().getValue();
+
+        inputs.setpoint = setpoint;
+        inputs.currentControl = leaderMotor.getAppliedControl().toString();
     }
 
     @Override
