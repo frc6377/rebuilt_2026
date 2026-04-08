@@ -59,11 +59,11 @@ public class PIDRollerIOReal implements RollerIO {
         leaderMotor = new TunableTalonFX(
                 Constants.CANIDs.MotorIDs.kRollerLeaderMotorID, "rio", "Intake/RollerPID", pidConfig);
 
-        leaderMotor.applyConfiguration(config);
+        leaderMotor.applyConfiguration(config.withSlot0(pidConfig));
 
         if (RollerConstants.kfollowerEnabled) {
             followerMotor = new TalonFX(Constants.CANIDs.MotorIDs.kRollerFollowerMotorID);
-            followerMotor.getConfigurator().apply(config);
+            followerMotor.getConfigurator().apply(config.withSlot0(pidConfig));
         } else {
             followerMotor = null;
         }
