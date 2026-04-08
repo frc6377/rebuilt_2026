@@ -32,9 +32,12 @@ public class IntakeConstants {
         public static final double kIdlePercent = 0.1;
 
         // for pid roller io
+        // oPtimal rpm 52rps
+
         public static final AngularVelocity kIntakeSpeed = RPM.of(400);
         public static final AngularVelocity kOuttakeSpeed = RPM.of(400);
         public static final AngularVelocity kIdleSpeed = RPM.of(100);
+        public static final double kGearRatio = 2.0;
 
         public static class PIDF {
             public static final double kP = 0.0;
@@ -80,7 +83,7 @@ public class IntakeConstants {
 
             public static final PIDConfig normalPID = new PIDConfig(0.006, 0.0, 0.00001);
 
-            public static final PIDConfig floatPID = new PIDConfig(0.01, 0.0, 0.00001);
+            public static final PIDConfig floatPID = new PIDConfig(0.00, 0.0, 0.00000);
         }
 
         public static class MotorConfig {

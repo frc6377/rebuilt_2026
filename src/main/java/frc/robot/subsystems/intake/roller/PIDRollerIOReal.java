@@ -15,7 +15,6 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Voltage;
 import frc.robot.Constants;
-import frc.robot.subsystems.intake.IntakeConstants;
 import frc.robot.subsystems.intake.IntakeConstants.RollerConstants;
 import frc.robot.util.TunableTalonFX;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
@@ -24,46 +23,27 @@ public class PIDRollerIOReal implements RollerIO {
 
     private final TunableTalonFX leaderMotor;
     private final TalonFX followerMotor;
-    private final Slot0Configs rollerPID;
     private final LoggedNetworkNumber intakeSpeed;
     private final LoggedNetworkNumber outtakeSpeed;
     private final LoggedNetworkNumber idleSpeed;
 
     public PIDRollerIOReal() {
-        rollerPID = new Slot0Configs();
-        rollerPID.kP = IntakeConstants.RollerConstants.PIDF.kP;
-        rollerPID.kI = IntakeConstants.RollerConstants.PIDF.kI;
-        rollerPID.kD = IntakeConstants.RollerConstants.PIDF.kD;
-        intakeSpeed = new LoggedNetworkNumber(
-                "Intake/Roller/IntakeSpeed", IntakeConstants.RollerConstants.kIntakeSpeed.in(RPM));
-        outtakeSpeed = new LoggedNetworkNumber(
-                "Intake/Roller/OuttakeSpeed", IntakeConstants.RollerConstants.kOuttakeSpeed.in(RPM));
-        idleSpeed =
-                new LoggedNetworkNumber("Intake/Roller/IdleSpeed", IntakeConstants.RollerConstants.kIdleSpeed.in(RPM));
+        Slot0Configs slot0 = new Slot0Configs()
+                .withKP(RollerConstants.PIDF.kP)
+                .withKI(RollerConstants.PIDF.kI)
+                .withKD(RollerConstants.PIDF.kD)
+                .withKS(RollerConstants.PIDF.kS)
+                .withKV(RollerConstants.PIDF.kV)
+                .withKA(RollerConstants.PIDF.kA);
+        intakeSpeed = new LoggedNetworkNumber("Intake/Roller" + "/IntakeSpeed", RollerConstants.kIntakeSpeed.in(RPM));
+        outtakeSpeed = new LoggedNetworkNumber("Intake/Roller" + "/OuttakeSpeed",
+                RollerConstants.kOuttakeSpeed.in(RPM));
+        idleSpeed = new LoggedNetworkNumber("Intake/Roller" + "/IdleSpeed", RollerConstants.kIdleSpeed.in(RPM));
 
-        var config = new TalonFXConfiguration()
-                .withMotorOutput(new MotorOutputConfigs()
-                        .withInverted(RollerConstants.MotorConfig.kInverted)
-                        .withNeutralMode(RollerConstants.MotorConfig.kNeutralMode))
-                .withClosedLoopRamps(new ClosedLoopRampsConfigs()
-                        .withVoltageClosedLoopRampPeriod(RollerConstants.MotorConfig.kRampPeriod))
-                .withCurrentLimits(new CurrentLimitsConfigs()
-                        .withStatorCurrentLimitEnable(true)
-                        .withStatorCurrentLimit(RollerConstants.MotorConfig.kStatorCurrentLimit))
-                .withSlot0(new Slot0Configs()
-                        .withKP(RollerConstants.PIDF.kP)
-                        .withKI(RollerConstants.PIDF.kI)
-                        .withKD(RollerConstants.PIDF.kD)
-                        .withKS(RollerConstants.PIDF.kS)
-                        .withKV(RollerConstants.PIDF.kV)
-                        .withKA(RollerConstants.PIDF.kA));
+        TalonFXConfiguration config = baseMotorConfig().withSlot0(slot0);
 
-        intakeSpeed.set(RollerConstants.kIntakeSpeed.in(RPM));
-        outtakeSpeed.set(RollerConstants.kOuttakeSpeed.in(RPM));
-        idleSpeed.set(RollerConstants.kIdleSpeed.in(RPM));
-
-        leaderMotor = new TunableTalonFX(
-                Constants.CANIDs.MotorIDs.kRollerLeaderMotorID, "rio", "Intake/RollerPID", rollerPID);
+        leaderMotor = new TunableTalonFX(Constants.CANIDs.MotorIDs.kRollerLeaderMotorID, "rio", "Intake/RollerPID",
+                slot0);
         leaderMotor.applyConfiguration(config);
 
         if (RollerConstants.kfollowerEnabled) {
@@ -74,14 +54,29 @@ public class PIDRollerIOReal implements RollerIO {
         }
     }
 
-    public void setFollower() {
+    private static TalonFXConfiguration baseMotorConfig() {
+        TalonFXConfiguration config = new TalonFXConfiguration()
+                .withMotorOutput(new MotorOutputConfigs()
+                        .withInverted(RollerConstants.MotorConfig.kInverted)
+                        .withNeutralMode(RollerConstants.MotorConfig.kNeutralMode))
+                .withClosedLoopRamps(new ClosedLoopRampsConfigs()
+                        .withVoltageClosedLoopRampPeriod(RollerConstants.MotorConfig.kRampPeriod))
+                .withCurrentLimits(new CurrentLimitsConfigs()
+                        .withStatorCurrentLimitEnable(true)
+                        .withStatorCurrentLimit(RollerConstants.MotorConfig.kStatorCurrentLimit));
+
+        config.Feedback.SensorToMechanismRatio = RollerConstants.kGearRatio;
+        return config;
+    }
+
+    private void setFollower() {
         if (followerMotor != null) {
             followerMotor.setControl(
                     new Follower(leaderMotor.getDeviceID(), RollerConstants.MotorConfig.kFollowerInverted));
         }
     }
 
-    public void setRollerSpeed(AngularVelocity speed) {
+    private void setRollerSpeed(AngularVelocity speed) {
         leaderMotor.setControl(new VelocityVoltage(speed));
         setFollower();
     }

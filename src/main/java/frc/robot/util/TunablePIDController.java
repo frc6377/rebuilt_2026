@@ -26,8 +26,10 @@ import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 import org.littletonrobotics.junction.networktables.LoggedNetworkString;
 
 /**
- * A WPILib PIDController with tunable P, I, D gains via NetworkTables. Uses a passed-in encoder (position supplier) and
- * applies the PID output to a motor via a consumer as duty cycle (percentage, -1 to 1).
+ * Wraps WPILib {@link PIDController} with composition: position from a {@link DoubleSupplier}, output via a {@link
+ * Consumer} as duty cycle. Gains for the active preset live under {@code <tunableName>/Presets/<name>/kP} (etc.) using
+ * {@link LoggedNetworkNumber} for AdvantageKit replay. {@link #updateTunableGains()} only pushes to the internal
+ * controller when kP/kI/kD change. {@link #calculate()} clamps output to [-1.0, 1.0].
  *
  * <p>This class handles PID control only. Feedforward should be implemented separately in the subsystem to allow
  * model-specific handling (e.g., ArmFeedforward with radian conversions, ElevatorFeedforward without position).

@@ -22,6 +22,8 @@ import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 public class ExtenderIOReal implements ExtenderIO {
 
+    private static final String NT_EXTENDER = "Intake/Extender";
+
     private final TalonFX extenderMotor;
     private final DutyCycleEncoder extenderEncoder;
     private final TunablePIDController extenderPid;
@@ -56,35 +58,34 @@ public class ExtenderIOReal implements ExtenderIO {
         extenderEncoder.setInverted(true);
 
         extenderPid = new TunablePIDController(
-                "Intake/Extender/ExtenderPID", () -> getPosition().in(Radians), percent -> extenderMotor.set(-percent));
+                NT_EXTENDER + "/ExtenderPID", () -> getPosition().in(Radians), percent -> extenderMotor.set(-percent));
 
         extenderPid.addPreset("default", ExtenderConstants.PIDF.normalPID);
         extenderPid.addPreset("float", ExtenderConstants.PIDF.floatPID);
 
         extenderPid.getPIDController().enableContinuousInput(0, 360);
 
-        extenderStowAngle =
-                new LoggedNetworkNumber("Intake/Extender/StowAngle", ExtenderConstants.kExtenderStowAngle.in(Degrees));
-        extenderIntakeAngle = new LoggedNetworkNumber(
-                "Intake/Extender/IntakingAngle", ExtenderConstants.kExtenderIntakeAngle.in(Degrees));
-        extenderTolerance =
-                new LoggedNetworkNumber("Intake/Extender/Tolerance", ExtenderConstants.kExtenderTolerance.in(Degrees));
-        extenderSiftAngleOne = new LoggedNetworkNumber(
-                "Intake/Extender/Sifting/SiftAngleOne", ExtenderConstants.kExtenderSiftAngleOne.in(Degrees));
-        extenderSiftAngleTwo = new LoggedNetworkNumber(
-                "Intake/Extender/Sifting/SiftAngleTwo", ExtenderConstants.kExtenderSiftAngleTwo.in(Degrees));
-        extenderCustomAngleOne = new LoggedNetworkNumber(
-                "Intake/Extender/CustomAngleOne", ExtenderConstants.kExtenderCustomAngleOne.in(Degrees));
-        extenderCustomAngleTwo = new LoggedNetworkNumber(
-                "Intake/Extender/CustomAngleTwo", ExtenderConstants.kExtenderCustomAngleTwo.in(Degrees));
+        extenderStowAngle = tunableDegrees(NT_EXTENDER + "/StowAngle", ExtenderConstants.kExtenderStowAngle);
+        extenderIntakeAngle = tunableDegrees(NT_EXTENDER + "/IntakingAngle", ExtenderConstants.kExtenderIntakeAngle);
+        extenderTolerance = tunableDegrees(NT_EXTENDER + "/Tolerance", ExtenderConstants.kExtenderTolerance);
+        extenderSiftAngleOne = tunableDegrees(NT_EXTENDER + "/Sifting/SiftAngleOne", ExtenderConstants.kExtenderSiftAngleOne);
+        extenderSiftAngleTwo = tunableDegrees(NT_EXTENDER + "/Sifting/SiftAngleTwo", ExtenderConstants.kExtenderSiftAngleTwo);
+        extenderCustomAngleOne = tunableDegrees(NT_EXTENDER + "/CustomAngleOne", ExtenderConstants.kExtenderCustomAngleOne);
+        extenderCustomAngleTwo = tunableDegrees(NT_EXTENDER + "/CustomAngleTwo", ExtenderConstants.kExtenderCustomAngleTwo);
+    }
 
-        extenderStowAngle.set(ExtenderConstants.kExtenderStowAngle.in(Degrees));
-        extenderIntakeAngle.set(ExtenderConstants.kExtenderIntakeAngle.in(Degrees));
-        extenderTolerance.set(ExtenderConstants.kExtenderTolerance.in(Degrees));
-        extenderSiftAngleOne.set(ExtenderConstants.kExtenderSiftAngleOne.in(Degrees));
-        extenderSiftAngleTwo.set(ExtenderConstants.kExtenderSiftAngleTwo.in(Degrees));
-        extenderCustomAngleOne.set(ExtenderConstants.kExtenderCustomAngleOne.in(Degrees));
-        extenderCustomAngleTwo.set(ExtenderConstants.kExtenderCustomAngleTwo.in(Degrees));
+    /** LoggedNetworkNumber for a degree tunable; initial value matches constants. */
+    private static LoggedNetworkNumber tunableDegrees(String tablePath, Angle degreesValue) {
+        return new LoggedNetworkNumber(tablePath, degreesValue.in(Degrees));
+    }
+
+    /** PID setpoint is stored in radians (see setPosition). */
+    private Angle getSetpointAngle() {
+        return Radians.of(extenderPid.getSetpoint());
+    }
+
+    private boolean setpointWithinTolerance(Angle target) {
+        return Math.abs(getSetpointAngle().minus(target).in(Degrees)) < extenderTolerance.get();
     }
 
     public void setPosition(Angle position) {
@@ -129,7 +130,7 @@ public class ExtenderIOReal implements ExtenderIO {
 
     @Override
     public BooleanSupplier atTarget() {
-        return () -> isAtAngle(Degrees.of(extenderPid.getSetpoint()));
+        return () -> isAtAngle(getSetpointAngle());
     }
 
     @Override
@@ -154,7 +155,7 @@ public class ExtenderIOReal implements ExtenderIO {
 
     @Override
     public void toggleSift() {
-        if (Degrees.of(extenderPid.getSetpoint()).equals(Degrees.of(extenderSiftAngleOne.get()))) {
+        if (setpointWithinTolerance(Degrees.of(extenderSiftAngleOne.get()))) {
             goToSiftAngleTwo();
         } else {
             goToSiftAngleOne();
@@ -185,11 +186,7 @@ public class ExtenderIOReal implements ExtenderIO {
 
     @Override
     public void toggle() {
-        double stowDeg = extenderStowAngle.get();
-        if (Math.abs(Degrees.of(extenderPid.getSetpoint())
-                        .minus(Degrees.of(stowDeg))
-                        .in(Degrees))
-                < extenderTolerance.get()) {
+        if (setpointWithinTolerance(Degrees.of(extenderStowAngle.get()))) {
             extend();
         } else {
             retract();
@@ -201,7 +198,7 @@ public class ExtenderIOReal implements ExtenderIO {
         inputs.isExtended = isExtended().getAsBoolean();
         inputs.isRetracted = isRetracted().getAsBoolean();
         inputs.position = getPosition();
-        inputs.setpoint = Degrees.of(extenderPid.getSetpoint());
+        inputs.setpoint = getSetpointAngle();
         inputs.velocity = extenderMotor.getVelocity().getValue();
         inputs.motorVoltage = Volts.of(extenderMotor.getMotorVoltage().getValueAsDouble());
         inputs.motorCurrent = extenderMotor.getStatorCurrent().getValue();
@@ -218,12 +215,17 @@ public class ExtenderIOReal implements ExtenderIO {
         if (pidEnabled) {
             extenderPid.runPid();
         }
-        if (ExtenderConstants.floatEnabled) {
-            if (getPosition().gte(ExtenderConstants.kExtenderFloatLimit)
-                    && atTarget().getAsBoolean()) {
-                extenderPid.applyPreset("float");
-                setMode(NeutralModeValue.Coast);
-            }
+        maybeApplyFloatMode();
+    }
+
+    /** When enabled, soften holding at high angle after the arm reaches setpoint. */
+    private void maybeApplyFloatMode() {
+        if (!ExtenderConstants.floatEnabled) {
+            return;
+        }
+        if (getPosition().gte(ExtenderConstants.kExtenderFloatLimit) && atTarget().getAsBoolean()) {
+            extenderPid.applyPreset("float");
+            setMode(NeutralModeValue.Coast);
         }
     }
 }
