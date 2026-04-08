@@ -347,7 +347,7 @@ public class RobotContainer {
                                         drive,
                                         OIController.driveTranslationX(),
                                         OIController.driveTranslationY(),
-                                        OIController.xDrive()::getAsBoolean),
+                                        OIController.xDrive()),
                                 Commands.parallel(
                                                 superstructure
                                                         .autoSpeedShooter(drive::getPose, drive::getChassisSpeeds)
