@@ -26,6 +26,7 @@ import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
@@ -151,16 +152,22 @@ public class Superstructure extends SubsystemBase {
         Logger.recordOutput("Shooting/TimeUntilHubStateChange", FieldConstants.getTimeUntilHubStateChange());
         Logger.recordOutput(
                 "Shooting/DistanceToHub", round(vision.getHubDistanceMeasure().in(Meters) * 100.0) / 100.0);
-        if (FieldConstants.getTimeUntilHubStateChange() > 0 && FieldConstants.getTimeUntilHubStateChange() < 1) {
-            oi.setRumble(1, 1);
+        if (FieldConstants.getTimeUntilHubStateChange() > 0 && FieldConstants.getTimeUntilHubStateChange() <= 1) {
+
+            CommandScheduler.getInstance().schedule(oi.setRumble(1, 1));
+
         } else if (FieldConstants.getTimeUntilHubStateChange() > 4.75
-                && FieldConstants.getTimeUntilHubStateChange() < 5) {
-            oi.setRumble(0.7, 0.7);
-        } else if (FieldConstants.getTimeUntilHubStateChange() > 4.25
+                && FieldConstants.getTimeUntilHubStateChange() < 5.25) {
+
+            CommandScheduler.getInstance().schedule(oi.setRumble(1, 1));
+
+        } else if (FieldConstants.getTimeUntilHubStateChange() > 4
                 && FieldConstants.getTimeUntilHubStateChange() < 4.5) {
-            oi.setRumble(0.75, 0.75);
+
+            CommandScheduler.getInstance().schedule(oi.setRumble(0.75, 0.75));
+
         } else {
-            oi.setRumble(0, 0);
+            CommandScheduler.getInstance().schedule(oi.setRumble(0, 0));
         }
 
         if (gamePieceTrajectorySimulation == null) {
