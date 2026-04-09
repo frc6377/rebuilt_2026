@@ -12,12 +12,20 @@ import java.util.function.BooleanSupplier;
 public class Intake {
     private final Extender extender;
     private final Roller roller;
+    private BooleanSupplier isShooterRunning = () -> false;
 
     public Intake(ExtenderIO extenderIO, RollerIO rollerIO) {
         this.extender = new Extender(extenderIO);
         this.roller = new Roller(rollerIO);
     }
 
+    public void setShooterRunningSupplier(BooleanSupplier supplier) {
+        isShooterRunning = supplier;
+    }
+
+    public int getIntakedFuel() {
+        return roller.getIntakedFuel();
+      
     public Extender getExtender() {
         return extender;
     }
@@ -118,6 +126,28 @@ public class Intake {
         return roller.stopCommand().andThen(extender.retractCommand());
     }
 
+    @Override
+    public void periodic() {
+        roller.updateInputs(rollerInputs);
+        extender.updateInputs(extenderInputs);
+        extender.periodic();
+        roller.periodic();
+
+        // Use processInputs to log IO structs efficiently (avoids per-cycle
+        // allocation/retention from recordOutput
+        // Unit types)
+        Logger.processInputs("Intake/Extender", extenderInputs);
+        Logger.processInputs("Intake/Roller", rollerInputs);
+
+        // Force-stop rollers if the shooter is active to prevent interference
+        if (isShooterRunning.getAsBoolean()) {
+            roller.stop();
+        }
+
+        Logger.recordOutput(
+                "Intake/CurrentCommand",
+                getCurrentCommand() != null ? getCurrentCommand().getName() : "None");
+      
     public Command outtakeCommand() {
         return extender.extendCommand().andThen(roller.outtakeCommand());
     }
