@@ -86,7 +86,7 @@ public class Extender extends SubsystemBase {
 
     public Command siftFuel() {
         return Commands.repeatingSequence(
-                        run(io::toggleSift), Commands.waitSeconds(ExtenderConstants.kSiftTimeout.in(Seconds)))
+                        run(io::toggle), Commands.waitSeconds(ExtenderConstants.kSiftTimeout.in(Seconds)))
                 .withName("ExtenderSiftFuel");
     }
 }

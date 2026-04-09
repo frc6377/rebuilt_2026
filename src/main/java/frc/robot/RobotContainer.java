@@ -49,9 +49,9 @@ import frc.robot.subsystems.intake.Intake;
 import frc.robot.subsystems.intake.extender.ExtenderIO;
 import frc.robot.subsystems.intake.extender.ExtenderIOReal;
 import frc.robot.subsystems.intake.extender.ExtenderIOSim;
-import frc.robot.subsystems.intake.roller.RollerIO;
-import frc.robot.subsystems.intake.roller.RollerIOReal;
-import frc.robot.subsystems.intake.roller.RollerIOSim;
+import frc.robot.subsystems.shooter.BaseShooterIO;
+import frc.robot.subsystems.shooter.BaseShooterIOKrakenX60;
+import frc.robot.subsystems.shooter.BaseShooterIOSim;
 import frc.robot.subsystems.superstructure.RobotState;
 import frc.robot.subsystems.superstructure.Superstructure;
 import frc.robot.subsystems.vision.Vision;
@@ -128,7 +128,10 @@ public class RobotContainer {
                         drive, new QuestNavIO() {}, new VisionIOLimelight("limelight-shooter", drive::getRotation));
                 intake = new Intake(
                         Constants.EnabledSubsystems.kExtender ? new ExtenderIOReal() : new ExtenderIO() {},
-                        Constants.EnabledSubsystems.kRoller ? new RollerIOReal() : new RollerIO() {});
+                        Constants.EnabledSubsystems.kRoller
+                                ? new BaseShooterIOKrakenX60(
+                                        frc.robot.subsystems.intake.IntakeConstants.RollerConstants.rollerConfig)
+                                : new BaseShooterIO() {});
                 indexer = new Indexer(Constants.EnabledSubsystems.kIndexer ? new IndexerIOReal() : new IndexerIO() {});
                 driveSimulation = null;
                 break;
@@ -139,7 +142,10 @@ public class RobotContainer {
                 driveSimulation = new SwerveDriveSimulation(Drive.mapleSimConfig, new Pose2d(3, 3, new Rotation2d()));
                 intake = new Intake(
                         Constants.EnabledSubsystems.kExtender ? new ExtenderIOSim() : new ExtenderIO() {},
-                        Constants.EnabledSubsystems.kRoller ? new RollerIOSim(driveSimulation) : new RollerIO() {});
+                        Constants.EnabledSubsystems.kRoller
+                                ? new BaseShooterIOSim(
+                                        frc.robot.subsystems.intake.IntakeConstants.RollerConstants.rollerConfig)
+                                : new BaseShooterIO() {});
                 SimulatedArena.getInstance().addDriveTrainSimulation(driveSimulation);
                 drive = new Drive(
                         new GyroIOSim(driveSimulation.getGyroSimulation()),
@@ -171,7 +177,7 @@ public class RobotContainer {
                         (pose) -> {});
                 driveSimulation = null;
                 vision = new Vision(drive, new QuestNavIO() {}, new VisionIO() {}, new VisionIO() {});
-                intake = new Intake(new ExtenderIO() {}, new RollerIO() {});
+                intake = new Intake(new ExtenderIO() {}, new BaseShooterIO() {});
                 indexer = new Indexer(new IndexerIO() {});
                 break;
         }
@@ -422,10 +428,10 @@ public class RobotContainer {
 
         OIController.intake()
                 .whileTrue(intake.intakeRollerCommand().alongWith(indexer.index()))
-                .onFalse(indexer.stop());
+                .onFalse(indexer.stop().alongWith(intake.idleRollerCommand()));
         OIController.outtake()
                 .whileTrue(intake.outtakeRollerCommand().alongWith(indexer.indexReverse()))
-                .onFalse(indexer.stop());
+                .onFalse(indexer.stop().alongWith(intake.idleRollerCommand()));
         OIController.zeroIntake().whileTrue(intake.siftFuelCommand()).onFalse(intake.stop());
 
         OIController.toggleIntake().onTrue(intake.toggleIntake());

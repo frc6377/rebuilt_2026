@@ -11,6 +11,8 @@ import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.MomentOfInertia;
 import edu.wpi.first.units.measure.Time;
+import frc.robot.Constants;
+import frc.robot.subsystems.shooter.ShooterConstants.ShooterConfig;
 import frc.robot.util.TunablePIDController.PIDConfig;
 import org.ironmaple.simulation.IntakeSimulation.IntakeSide;
 
@@ -25,7 +27,7 @@ public class IntakeConstants {
 
         // for normal roller io
 
-        public static final boolean kfollowerEnabled = false;
+        public static final boolean kfollowerEnabled = true;
         public static final boolean kIdleEnabled = false;
 
         // for normal roller io
@@ -39,7 +41,7 @@ public class IntakeConstants {
         public static final AngularVelocity kIdleSpeed = RPM.of(100);
 
         public static class PIDF {
-            public static final double kP = 0.0;
+            public static final double kP = 0.5;
             public static final double kI = 0.0;
             public static final double kD = 0.0;
             public static final double kS = 0.0;
@@ -55,6 +57,27 @@ public class IntakeConstants {
 
             public static final MotorAlignmentValue kFollowerInverted = MotorAlignmentValue.Opposed;
         }
+
+        public static final ShooterConfig rollerConfig = new ShooterConfig(
+                "Roller",
+                Constants.CANIDs.MotorIDs.kRollerLeaderMotorID,
+                Constants.CANIDs.MotorIDs.kRollerFollowerMotorID,
+                "rio",
+                Constants.EnabledSubsystems.kRoller,
+                kfollowerEnabled, // kfollowerEnabled is false below
+                MotorConfig.kInverted,
+                Seconds.of(MotorConfig.kRampPeriod),
+                Seconds.of(MotorConfig.kRampPeriod),
+                PIDF.kP,
+                PIDF.kI,
+                PIDF.kD,
+                PIDF.kV,
+                PIDF.kS,
+                PIDF.kA,
+                MotorConfig.kStatorCurrentLimit,
+                Amps.of(50), // default supply current limit
+                true,
+                true);
     }
 
     public static class ExtenderConstants {
