@@ -3,12 +3,12 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 4.135021929824561,
+        "x": 4.0,
         "y": 7.564155701754386
       },
       "prevControl": null,
       "nextControl": {
-        "x": 3.051285708385019,
+        "x": 2.9162637785604577,
         "y": 7.342907203234492
       },
       "isLocked": false,
@@ -17,18 +17,18 @@
     {
       "anchor": {
         "x": 0.5,
-        "y": 6.9
+        "y": 7.4
       },
       "prevControl": {
         "x": 0.5296148363305254,
-        "y": 7.148239725807769
+        "y": 7.648239725807769
       },
       "nextControl": {
         "x": 0.4565773329842595,
-        "y": 6.536019229229413
+        "y": 7.036019229229413
       },
       "isLocked": false,
-      "linkedName": null
+      "linkedName": "Left of Depot"
     },
     {
       "anchor": {
@@ -54,8 +54,8 @@
   "pointTowardsZones": [],
   "eventMarkers": [],
   "globalConstraints": {
-    "maxVelocity": 2.0,
-    "maxAcceleration": 2.0,
+    "maxVelocity": 4.0,
+    "maxAcceleration": 3.5,
     "maxAngularVelocity": 540.0,
     "maxAngularAcceleration": 720.0,
     "nominalVoltage": 12.0,

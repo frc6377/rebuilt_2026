@@ -1,12 +1,12 @@
 package frc.robot.subsystems.intake.roller;
 
-import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Celsius;
 
+import com.ctre.phoenix6.configs.ClosedLoopRampsConfigs;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
+import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.hardware.TalonFX;
-import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.sim.TalonFXSimState;
 import com.ctre.phoenix6.sim.TalonFXSimState.MotorType;
@@ -22,27 +22,25 @@ import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 public class RollerIOSim implements RollerIO {
 
     private final TalonFX rollerMotor;
-    private final TalonFXConfiguration rollerMotorConfig;
     private final TalonFXSimState intakeMotorSim;
     private final IntakeSimulation intakeSim;
-    private final CurrentLimitsConfigs currentConfig;
-    // dashboard-tunable roller speeds
+
     private final LoggedNetworkNumber kRollerIntakePercent;
     private final LoggedNetworkNumber kRollerOuttakePercent;
 
     public RollerIOSim(AbstractDriveTrainSimulation driveSim) {
-        currentConfig = new CurrentLimitsConfigs();
-        currentConfig.StatorCurrentLimitEnable = true;
-        currentConfig.StatorCurrentLimit = RollerConstants.MotorConfig.kStatorCurrentLimit.in(Amps);
+        var config = new TalonFXConfiguration()
+                .withMotorOutput(new MotorOutputConfigs()
+                        .withInverted(RollerConstants.MotorConfig.kInverted)
+                        .withNeutralMode(RollerConstants.MotorConfig.kNeutralMode))
+                .withClosedLoopRamps(new ClosedLoopRampsConfigs()
+                        .withVoltageClosedLoopRampPeriod(RollerConstants.MotorConfig.kRampPeriod))
+                .withCurrentLimits(new CurrentLimitsConfigs()
+                        .withStatorCurrentLimitEnable(true)
+                        .withStatorCurrentLimit(RollerConstants.MotorConfig.kStatorCurrentLimit));
 
-        rollerMotorConfig = new TalonFXConfiguration();
-        rollerMotorConfig.ClosedLoopRamps.VoltageClosedLoopRampPeriod = RollerConstants.MotorConfig.kRampPeriod;
-        rollerMotorConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
-        rollerMotorConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
-
-        rollerMotor = new TalonFX(Constants.CANIDs.MotorIDs.kRollerMotorID);
-        rollerMotor.getConfigurator().apply(rollerMotorConfig);
-        rollerMotor.getConfigurator().apply(currentConfig);
+        rollerMotor = new TalonFX(Constants.CANIDs.MotorIDs.kRollerLeaderMotorID);
+        rollerMotor.getConfigurator().apply(config);
         intakeMotorSim = rollerMotor.getSimState();
         intakeMotorSim.setMotorType(MotorType.KrakenX60);
         intakeSim = IntakeSimulation.OverTheBumperIntake(
@@ -86,10 +84,20 @@ public class RollerIOSim implements RollerIO {
     }
 
     @Override
+    public void setMotorPercentage(double percent) {
+        rollerMotor.set(percent);
+    }
+
+    @Override
+    public void setMode(NeutralModeValue mode) {
+        rollerMotor.getConfigurator().apply(new MotorOutputConfigs().withNeutralMode(mode));
+    }
+
+    @Override
     public void updateInputs(RollerIO.RollerIOInputs inputs) {
-        inputs.rollerSpeedPercentile = intakeMotorSim.getMotorVoltage() / RobotController.getBatteryVoltage();
-        inputs.rollerAppliedVolts = intakeMotorSim.getMotorVoltageMeasure();
-        inputs.rollerVelocity = rollerMotor.getVelocity().getValue();
-        inputs.motorTemp = Celsius.of(25.0);
+        inputs.leaderSpeedPercentile = intakeMotorSim.getMotorVoltage() / RobotController.getBatteryVoltage();
+        inputs.leaderAppliedVolts = intakeMotorSim.getMotorVoltageMeasure();
+        inputs.leaderVelocity = rollerMotor.getVelocity().getValue();
+        inputs.leaderMotorTemp = Celsius.of(25.0);
     }
 }

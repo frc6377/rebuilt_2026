@@ -25,6 +25,7 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.Timer;
+import frc.robot.subsystems.shooter.ShooterConstants;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
@@ -72,7 +73,6 @@ public class GamePieceTrajectorySimulation {
 
     // Shooter state suppliers
     private final Supplier<Double> flywheelVelocityRPMSupplier;
-    private final Supplier<Double> hoodAngleDegreesSupplier;
 
     // Indexer state for automatic firing
     private BooleanSupplier indexerRunningSupplier = () -> false;
@@ -101,13 +101,10 @@ public class GamePieceTrajectorySimulation {
      *
      * @param driveSimulation The swerve drive simulation for robot state
      * @param flywheelVelocityRPMSupplier Supplier for current flywheel velocity in RPM
-     * @param hoodAngleDegreesSupplier Supplier for current hood angle in degrees
      */
     public GamePieceTrajectorySimulation(
-            SwerveDriveSimulation driveSimulation,
-            Supplier<Double> flywheelVelocityRPMSupplier,
-            Supplier<Double> hoodAngleDegreesSupplier) {
-        this(FUEL_INFO, driveSimulation, flywheelVelocityRPMSupplier, hoodAngleDegreesSupplier);
+            SwerveDriveSimulation driveSimulation, Supplier<Double> flywheelVelocityRPMSupplier) {
+        this(FUEL_INFO, driveSimulation, flywheelVelocityRPMSupplier);
     }
 
     /**
@@ -116,20 +113,17 @@ public class GamePieceTrajectorySimulation {
      * @param gamePieceInfo Info about the game piece being launched (size, mass, etc.)
      * @param driveSimulation The swerve drive simulation for robot state
      * @param flywheelVelocityRPMSupplier Supplier for current flywheel velocity in RPM
-     * @param hoodAngleDegreesSupplier Supplier for current hood angle in degrees
      */
     public GamePieceTrajectorySimulation(
             GamePieceOnFieldSimulation.GamePieceInfo gamePieceInfo,
             SwerveDriveSimulation driveSimulation,
-            Supplier<Double> flywheelVelocityRPMSupplier,
-            Supplier<Double> hoodAngleDegreesSupplier) {
+            Supplier<Double> flywheelVelocityRPMSupplier) {
         this(
                 gamePieceInfo,
                 () -> driveSimulation.getSimulatedDriveTrainPose().getTranslation(),
                 () -> driveSimulation.getSimulatedDriveTrainPose().getRotation(),
                 driveSimulation::getDriveTrainSimulatedChassisSpeedsFieldRelative,
-                flywheelVelocityRPMSupplier,
-                hoodAngleDegreesSupplier);
+                flywheelVelocityRPMSupplier);
     }
 
     /**
@@ -139,21 +133,18 @@ public class GamePieceTrajectorySimulation {
      * @param robotRotationSupplier Supplier for robot rotation
      * @param chassisSpeedsSupplier Supplier for chassis speeds (field-relative)
      * @param flywheelVelocityRPMSupplier Supplier for flywheel velocity in RPM
-     * @param hoodAngleDegreesSupplier Supplier for hood angle in degrees
      */
     public GamePieceTrajectorySimulation(
             Supplier<Translation2d> robotPositionSupplier,
             Supplier<Rotation2d> robotRotationSupplier,
             Supplier<ChassisSpeeds> chassisSpeedsSupplier,
-            Supplier<Double> flywheelVelocityRPMSupplier,
-            Supplier<Double> hoodAngleDegreesSupplier) {
+            Supplier<Double> flywheelVelocityRPMSupplier) {
         this(
                 FUEL_INFO,
                 robotPositionSupplier,
                 robotRotationSupplier,
                 chassisSpeedsSupplier,
-                flywheelVelocityRPMSupplier,
-                hoodAngleDegreesSupplier);
+                flywheelVelocityRPMSupplier);
     }
 
     /**
@@ -164,21 +155,18 @@ public class GamePieceTrajectorySimulation {
      * @param robotRotationSupplier Supplier for robot rotation
      * @param chassisSpeedsSupplier Supplier for chassis speeds (field-relative)
      * @param flywheelVelocityRPMSupplier Supplier for flywheel velocity in RPM
-     * @param hoodAngleDegreesSupplier Supplier for hood angle in degrees
      */
     public GamePieceTrajectorySimulation(
             GamePieceOnFieldSimulation.GamePieceInfo gamePieceInfo,
             Supplier<Translation2d> robotPositionSupplier,
             Supplier<Rotation2d> robotRotationSupplier,
             Supplier<ChassisSpeeds> chassisSpeedsSupplier,
-            Supplier<Double> flywheelVelocityRPMSupplier,
-            Supplier<Double> hoodAngleDegreesSupplier) {
+            Supplier<Double> flywheelVelocityRPMSupplier) {
         this.gamePieceInfo = gamePieceInfo;
         this.robotPositionSupplier = robotPositionSupplier;
         this.robotRotationSupplier = robotRotationSupplier;
         this.chassisSpeedsSupplier = chassisSpeedsSupplier;
         this.flywheelVelocityRPMSupplier = flywheelVelocityRPMSupplier;
-        this.hoodAngleDegreesSupplier = hoodAngleDegreesSupplier;
 
         // Default shooter configuration (tunable via NetworkTables)
         this.shooterHeightMeters = new LoggedNetworkNumber("Shooter/Sim/HeightMeters", 0.5);
@@ -235,7 +223,7 @@ public class GamePieceTrajectorySimulation {
      * @return Hood angle
      */
     public Angle getHoodAngle() {
-        return Degrees.of(hoodAngleDegreesSupplier.get());
+        return ShooterConstants.kFixedHoodAngle;
     }
 
     /**

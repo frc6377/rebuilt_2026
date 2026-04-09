@@ -111,7 +111,12 @@ public class OIKeyboard implements OI {
     }
 
     @Override
-    public Trigger zeroIntake() {
+    public Trigger xDrive() {
+        return Home;
+    }
+
+    @Override
+    public Trigger retractIntake() {
         return Home;
     }
 
@@ -121,7 +126,7 @@ public class OIKeyboard implements OI {
     }
 
     @Override
-    public Trigger driveLockX() {
+    public Trigger manualHold() {
         return Slash;
     }
 }

@@ -7,15 +7,17 @@
   ],
   "autoFolders": [
     "Back up then shoot",
-    "Target practice",
+    "Double trouble",
     "Loop Left",
     "Meter tests",
+    "Test shoot",
     "Outpost to shoot",
     "Railway Heist",
-    "Shoot depot shoot"
+    "Shoot depot shoot",
+    "Target practice"
   ],
-  "defaultMaxVel": 2.0,
-  "defaultMaxAccel": 2.0,
+  "defaultMaxVel": 4.0,
+  "defaultMaxAccel": 3.5,
   "defaultMaxAngVel": 540.0,
   "defaultMaxAngAccel": 720.0,
   "defaultNominalVoltage": 12.0,

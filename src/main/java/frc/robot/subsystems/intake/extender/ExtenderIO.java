@@ -12,6 +12,9 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Temperature;
 import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import java.util.function.BooleanSupplier;
 import org.littletonrobotics.junction.AutoLog;
 
@@ -22,12 +25,14 @@ public interface ExtenderIO {
         public boolean isExtended = false;
         public boolean isRetracted = false;
         public Angle position = Degrees.zero();
-        public Angle setpoint = Degrees.of(0.0);
-        public AngularVelocity velocity = RotationsPerSecond.of(0.0);
-        public Voltage motorVoltage = Volts.of(0.0);
-        public Current motorCurrent = Amps.of(0.0);
-        public Temperature motorTemp = Celsius.of(0.0);
+        public Angle setpoint = Degrees.zero();
+        public AngularVelocity velocity = RotationsPerSecond.zero();
+        public Voltage motorVoltage = Volts.zero();
+        public Current motorCurrent = Amps.zero();
+        public Temperature motorTemp = Celsius.zero();
         public boolean atTarget = false;
+        public double rawEncoderDegrees = 0.0;
+        public boolean atSiftCurrent = false;
     }
 
     default void updateInputs(ExtenderIOInputs inputs) {}
@@ -43,6 +48,10 @@ public interface ExtenderIO {
     default void goToCustomAngleOne() {}
 
     default void goToCustomAngleTwo() {}
+
+    default Command siftPosition(SubsystemBase subsystem) {
+        return Commands.none();
+    }
 
     default BooleanSupplier isExtended() {
         return () -> false;
@@ -62,21 +71,15 @@ public interface ExtenderIO {
 
     default void stop() {}
 
+    default void setPidEnabled(boolean enabled) {}
+
+    default void setMode(NeutralModeValue mode) {}
+
+    default void setMotorPercentage(double percent) {}
+
     default void periodic() {}
-
-    default void autoZero() {}
-
-    default void setNeutralMode(NeutralModeValue mode) {}
-
-    default void currentRunShoot(double volts) {}
 
     default Current getCurrent() {
         return Amps.of(0.0);
     }
-
-    default AngularVelocity getVelocity() {
-        return RotationsPerSecond.of(0.0);
-    }
-
-    default void setEncoderPosition(Angle position) {}
 }
