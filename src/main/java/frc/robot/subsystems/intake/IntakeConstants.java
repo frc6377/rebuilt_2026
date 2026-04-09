@@ -90,14 +90,14 @@ public class IntakeConstants {
         public static final double kDownSpeed = 0.05;
 
         public static final Angle kExtenderStowAngle = Degrees.of(0);
-        public static final Angle kExtenderIntakeAngle = Degrees.of(97.0);
+        public static final Angle kExtenderIntakeAngle = Degrees.of(97);
         public static final Angle kExtenderTolerance = Degrees.of(2.5);
         public static final Angle kExtenderSiftAngleOne = Degrees.of(5.0);
         public static final Angle kExtenderSiftAngleTwo = Degrees.of(90.0);
         public static final Angle kExtenderCustomAngleOne = Degrees.of(45.0);
         public static final Angle kExtenderCustomAngleTwo = Degrees.of(60.0);
         public static final Angle kExtenderFloatLimit = Degrees.of(50);
-        public static final Angle kExtenderZeroAngle = Degrees.of(-169);
+        public static final Angle kExtenderZeroAngle = Radians.of(-0.85);
 
         public static final Time kSiftTimeout = Seconds.of(0.5);
 
@@ -109,7 +109,7 @@ public class IntakeConstants {
         }
 
         public static class MotorConfig {
-            public static final double kRampPeriod = 0.5;
+            public static final double kRampPeriod = 4;
             public static final Current kStatorCurrentLimitExtender = Amps.of(30);
             public static final InvertedValue kInverted = InvertedValue.Clockwise_Positive;
             public static final NeutralModeValue kNeutralMode = NeutralModeValue.Brake;
