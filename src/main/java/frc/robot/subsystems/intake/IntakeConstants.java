@@ -36,12 +36,12 @@ public class IntakeConstants {
         public static final double kIdlePercent = 0.1;
 
         // for pid roller io
-        public static final AngularVelocity kIntakeSpeed = RPM.of(400);
-        public static final AngularVelocity kOuttakeSpeed = RPM.of(400);
+        public static final AngularVelocity kIntakeSpeed = RPM.of(800);
+        public static final AngularVelocity kOuttakeSpeed = RPM.of(800);
         public static final AngularVelocity kIdleSpeed = RPM.of(100);
 
         public static class PIDF {
-            public static final double kP = 0.5;
+            public static final double kP = 0.03;
             public static final double kI = 0.0;
             public static final double kD = 0.0;
             public static final double kS = 0.0;
@@ -75,7 +75,7 @@ public class IntakeConstants {
                 PIDF.kS,
                 PIDF.kA,
                 MotorConfig.kStatorCurrentLimit,
-                Amps.of(50), // default supply current limit
+                Amps.of(90), // default supply current limit
                 true,
                 true);
     }
@@ -97,13 +97,13 @@ public class IntakeConstants {
         public static final Angle kExtenderCustomAngleOne = Degrees.of(45.0);
         public static final Angle kExtenderCustomAngleTwo = Degrees.of(60.0);
         public static final Angle kExtenderFloatLimit = Degrees.of(50);
-        public static final Angle kExtenderZeroAngle = Degrees.of(-290.0);
+        public static final Angle kExtenderZeroAngle = Degrees.of(-169);
 
         public static final Time kSiftTimeout = Seconds.of(0.5);
 
         public static class PIDF {
 
-            public static final PIDConfig normalPID = new PIDConfig(0.006, 0.0, 0.00001);
+            public static final PIDConfig normalPID = new PIDConfig(0.05, 0.0, 0.00001);
 
             public static final PIDConfig floatPID = new PIDConfig(0.01, 0.0, 0.00001);
         }

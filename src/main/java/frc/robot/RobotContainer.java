@@ -291,6 +291,17 @@ public class RobotContainer {
                         .andThen(Commands.waitSeconds(5))
                         .andThen(superstructure.getRightShooter().sysIdDynamic(SysIdRoutine.Direction.kReverse))
                         .andThen(SignalLogger::stop));
+        autoChooser.addOption(
+                "Intake Flywheel Char",
+                Commands.runOnce(SignalLogger::start)
+                        .andThen(intake.getRoller().sysIdQuasistatic(SysIdRoutine.Direction.kForward))
+                        .andThen(Commands.waitSeconds(5))
+                        .andThen(intake.getRoller().sysIdQuasistatic(SysIdRoutine.Direction.kReverse))
+                        .andThen(Commands.waitSeconds(5))
+                        .andThen(intake.getRoller().sysIdDynamic(SysIdRoutine.Direction.kForward))
+                        .andThen(Commands.waitSeconds(5))
+                        .andThen(intake.getRoller().sysIdDynamic(SysIdRoutine.Direction.kReverse))
+                        .andThen(SignalLogger::stop));
 
         // Configure the button bindings
         SignalLogger.setPath("Media/sda1/logs/one/");
