@@ -388,8 +388,9 @@ public class RobotContainer {
                         .withName("Shoot Manual Stop")
                         .andThen(superstructure.runFlywheelVelocityManual()));
         shootingTrigger
+                .and(OIController.manualHold())
                 .whileTrue(Commands.parallel(superstructure
-                        .runToggledSpeed(drive::getPose, drive::getChassisSpeeds)
+                        .runFlywheelVelocityManual()
                         // superstructure.aimAtHubWhileDriving(
                         // drive, OIController.driveTranslationX(),
                         // OIController.driveTranslationY()))
