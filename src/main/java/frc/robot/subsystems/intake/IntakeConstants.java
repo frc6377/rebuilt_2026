@@ -108,6 +108,12 @@ public class IntakeConstants {
             public static final PIDConfig floatPID = new PIDConfig(0.01, 0.0, 0.00001);
         }
 
+        public static class MotionMagic {
+            public static final double kCruiseVelocity = 10.0;
+            public static final double kAcceleration = 20.0;
+            public static final double kJerk = 0.0;
+        }
+
         public static class MotorConfig {
             public static final double kRampPeriod = 4;
             public static final Current kStatorCurrentLimitExtender = Amps.of(30);
