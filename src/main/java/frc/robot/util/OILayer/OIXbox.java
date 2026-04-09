@@ -171,7 +171,7 @@ public class OIXbox implements OI {
     }
 
     @Override
-    public Trigger zeroIntake() {
+    public Trigger xDrive() {
         return opX;
     }
 
