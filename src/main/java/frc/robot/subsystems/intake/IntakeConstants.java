@@ -36,17 +36,17 @@ public class IntakeConstants {
         public static final double kIdlePercent = 0.1;
 
         // for pid roller io
-        public static final AngularVelocity kIntakeSpeed = RPM.of(800);
-        public static final AngularVelocity kOuttakeSpeed = RPM.of(800);
+        public static final AngularVelocity kIntakeSpeed = RPM.of(1500);
+        public static final AngularVelocity kOuttakeSpeed = RPM.of(1500);
         public static final AngularVelocity kIdleSpeed = RPM.of(100);
 
         public static class PIDF {
-            public static final double kP = 0.03;
+            public static final double kP = 0.19188;
             public static final double kI = 0.0;
             public static final double kD = 0.0;
-            public static final double kS = 0.0;
-            public static final double kV = 0.0;
-            public static final double kA = 0.0;
+            public static final double kS = 0.122298;
+            public static final double kV = 0.11058;
+            public static final double kA = 0.087816;
         }
 
         public static class MotorConfig {
