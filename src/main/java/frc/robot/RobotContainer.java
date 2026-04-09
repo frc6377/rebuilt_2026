@@ -381,7 +381,7 @@ public class RobotContainer {
                         .until(superstructure::atTargetVelocity)
                         .andThen(Commands.runOnce(drive::stopWithX))
                         .andThen(Commands.parallel(
-                                superstructure.fireCommand(), indexer.index(), intake.siftFuelCommand()))))
+                                superstructure.fireCommand(), indexer.index(), intake.siftFuelCommand()))));
                 .onFalse(Commands.parallel(
                                 superstructure.stopUpgoerCommand(),
                                 indexer.stop(),
