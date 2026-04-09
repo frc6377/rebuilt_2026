@@ -35,7 +35,7 @@ public class ExtenderIOReal implements ExtenderIO {
 
     private final MotionMagicVoltage mmRequest = new MotionMagicVoltage(0).withSlot(0);
     private final MotionMagicVoltage mmFloatRequest = new MotionMagicVoltage(0).withSlot(1);
-    private double currentSetpointDegrees = ExtenderConstants.kExtenderStowAngle.in(Degrees);
+    private Angle currentSetpoint = ExtenderConstants.kExtenderStowAngle;
     private boolean useFloatSlot = false;
 
     public ExtenderIOReal() {
@@ -50,10 +50,12 @@ public class ExtenderIOReal implements ExtenderIO {
                         .withStatorCurrentLimitEnable(true)
                         .withStatorCurrentLimit(ExtenderConstants.MotorConfig.kStatorCurrentLimitExtender))
                 .withMotionMagic(new MotionMagicConfigs()
-                        .withMotionMagicCruiseVelocity(ExtenderConstants.MotionMagic.kCruiseVelocity)
-                        .withMotionMagicAcceleration(ExtenderConstants.MotionMagic.kAcceleration)
+                        .withMotionMagicCruiseVelocity(
+                                ExtenderConstants.MotionMagic.kCruiseVelocity.in(RotationsPerSecond))
+                        .withMotionMagicAcceleration(
+                                ExtenderConstants.MotionMagic.kAcceleration.in(RotationsPerSecondPerSecond))
                         .withMotionMagicJerk(ExtenderConstants.MotionMagic.kJerk))
-                .withFeedback(new FeedbackConfigs().withSensorToMechanismRatio(1.0));
+                .withFeedback(new FeedbackConfigs().withSensorToMechanismRatio(ExtenderConstants.kGearing));
 
         config.Slot1 = new Slot1Configs()
                 .withKP(ExtenderConstants.PIDF.floatPID.kP())
@@ -107,7 +109,7 @@ public class ExtenderIOReal implements ExtenderIO {
         setPidEnabled(true);
         setMode(NeutralModeValue.Brake);
         useFloatSlot = false;
-        currentSetpointDegrees = position.in(Degrees);
+        currentSetpoint = position;
     }
 
     public Angle getPosition() {
@@ -145,7 +147,7 @@ public class ExtenderIOReal implements ExtenderIO {
 
     @Override
     public BooleanSupplier atTarget() {
-        return () -> isAtAngle(Degrees.of(currentSetpointDegrees));
+        return () -> isAtAngle(currentSetpoint);
     }
 
     public void goToSiftAngleOne() {
@@ -165,7 +167,7 @@ public class ExtenderIOReal implements ExtenderIO {
     }
 
     public void toggleSift() {
-        if (Degrees.of(currentSetpointDegrees).equals(Degrees.of(extenderSiftAngleOne.get()))) {
+        if (Math.abs(currentSetpoint.in(Degrees) - extenderSiftAngleOne.get()) < 1e-6) {
             goToSiftAngleTwo();
         } else {
             goToSiftAngleOne();
@@ -197,10 +199,7 @@ public class ExtenderIOReal implements ExtenderIO {
     @Override
     public void toggle() {
         double stowDeg = extenderStowAngle.get();
-        if (Math.abs(Degrees.of(currentSetpointDegrees)
-                        .minus(Degrees.of(stowDeg))
-                        .in(Degrees))
-                < extenderTolerance.get()) {
+        if (Math.abs(currentSetpoint.minus(Degrees.of(stowDeg)).in(Degrees)) < extenderTolerance.get()) {
             extend();
         } else {
             retract();
@@ -212,7 +211,7 @@ public class ExtenderIOReal implements ExtenderIO {
         inputs.isExtended = isExtended().getAsBoolean();
         inputs.isRetracted = isRetracted().getAsBoolean();
         inputs.position = getPosition();
-        inputs.setpoint = Degrees.of(currentSetpointDegrees);
+        inputs.setpoint = currentSetpoint;
         inputs.velocity = extenderMotor.getVelocity().getValue();
         inputs.motorVoltage = Volts.of(extenderMotor.getMotorVoltage().getValueAsDouble());
         inputs.motorCurrent = extenderMotor.getStatorCurrent().getValue();
@@ -228,7 +227,7 @@ public class ExtenderIOReal implements ExtenderIO {
         extenderMotor.setPosition(Rotations.of(extenderEncoder.get()).in(Rotations));
 
         if (pidEnabled) {
-            double setpointRots = currentSetpointDegrees / 360.0;
+            double setpointRots = currentSetpoint.in(Rotations);
             if (useFloatSlot) {
                 extenderMotor.setControl(mmFloatRequest.withPosition(setpointRots));
             } else {

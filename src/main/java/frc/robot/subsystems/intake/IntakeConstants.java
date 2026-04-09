@@ -5,12 +5,7 @@ import static edu.wpi.first.units.Units.*;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.units.measure.AngularVelocity;
-import edu.wpi.first.units.measure.Current;
-import edu.wpi.first.units.measure.Distance;
-import edu.wpi.first.units.measure.MomentOfInertia;
-import edu.wpi.first.units.measure.Time;
+import edu.wpi.first.units.measure.*;
 import frc.robot.Constants;
 import frc.robot.subsystems.shooter.ShooterConstants.ShooterConfig;
 import frc.robot.util.TunablePIDController.PIDConfig;
@@ -109,8 +104,8 @@ public class IntakeConstants {
         }
 
         public static class MotionMagic {
-            public static final double kCruiseVelocity = 10.0;
-            public static final double kAcceleration = 20.0;
+            public static final AngularVelocity kCruiseVelocity = RotationsPerSecond.of(10.0);
+            public static final AngularAcceleration kAcceleration = RotationsPerSecondPerSecond.of(20.0);
             public static final double kJerk = 0.0;
         }
 
