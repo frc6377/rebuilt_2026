@@ -413,10 +413,11 @@ public class Superstructure extends SubsystemBase {
     /** Command that aims the robot at the hub while driving. */
     public Command aimAtHubWhileDriving(
             Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier, BooleanSupplier xModePressed) {
-        return Commands.either(Commands.none(),DriveCommands.joystickDriveAtAngle(
-                                drive, xSupplier, ySupplier, () -> latestParameters.targetHeading())
-                        .withName("AimAtHub"), xModePressed);
-                
+        return Commands.either(
+                Commands.none(),
+                DriveCommands.joystickDriveAtAngle(drive, xSupplier, ySupplier, () -> latestParameters.targetHeading())
+                        .withName("AimAtHub"),
+                xModePressed);
     }
 
     /** Command that fires the shooter (feeds both upgoers). */
