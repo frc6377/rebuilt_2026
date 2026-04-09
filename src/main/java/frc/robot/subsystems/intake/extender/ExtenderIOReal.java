@@ -169,15 +169,28 @@ public class ExtenderIOReal implements ExtenderIO {
 
     @Override
     public Command siftPosition(SubsystemBase subsystem) {
+        // return Commands.repeatingSequence(
+        //                 Commands.run(this::goToSiftAngleOne, subsystem)
+        //                         .until(() -> atTarget().getAsBoolean()
+        //                                 || getCurrent().gte(Amps.of(siftCurrentLimit.get())))
+        //                         .withTimeout(siftTimeout.get()),
+        //                 Commands.run(this::goToSiftAngleTwo, subsystem)
+        //                         .until(() -> atTarget().getAsBoolean()
+        //                                 || getCurrent().gte(Amps.of(siftCurrentLimit.get())))
+        //                         .withTimeout(siftTimeout.get()))
+        //         .withName("ExtenderSiftPositionFuel");
+
+        // return Commands.repeatingSequence(
+        //                 Commands.run(this::goToSiftAngleOne, subsystem).withTimeout(siftTimeout.get()),
+        //                 Commands.run(this::goToSiftAngleTwo, subsystem).withTimeout(siftTimeout.get()))
+        //         .withName("ExtenderSiftPositionFuel");
+
+        // return Commands.repeatingSequence(
+        //                 Commands.run(this::toggle, subsystem), Commands.waitSeconds(siftTimeout.get()))
+        //         .withName("ExtenderSiftPositionFuel");
+
         return Commands.repeatingSequence(
-                        Commands.run(this::goToSiftAngleOne, subsystem)
-                                .until(() -> atTarget().getAsBoolean()
-                                        || getCurrent().gte(Amps.of(siftCurrentLimit.get())))
-                                .withTimeout(siftTimeout.get()),
-                        Commands.run(this::goToSiftAngleTwo, subsystem)
-                                .until(() -> atTarget().getAsBoolean()
-                                        || getCurrent().gte(Amps.of(siftCurrentLimit.get())))
-                                .withTimeout(siftTimeout.get()))
+                        Commands.run(this::toggle, subsystem), Commands.waitSeconds(siftTimeout.get()))
                 .withName("ExtenderSiftPositionFuel");
     }
 

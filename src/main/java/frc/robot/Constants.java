@@ -27,15 +27,15 @@ public final class Constants {
     public static final double intakingDriveSpeedMultiplier = 0.6;
 
     public static final class EnabledSubsystems {
-        public static final boolean kShooterLeft = false;
-        public static final boolean kShooterRight = false;
-        public static final boolean kShooterUpgoerLeft = false;
-        public static final boolean kShooterUpgoerRight = false;
-        public static final boolean kRoller = false;
-        public static final boolean kExtender = false;
-        public static final boolean kDrive = false;
+        public static final boolean kShooterLeft = true;
+        public static final boolean kShooterRight = true;
+        public static final boolean kShooterUpgoerLeft = true;
+        public static final boolean kShooterUpgoerRight = true;
+        public static final boolean kRoller = true;
+        public static final boolean kExtender = true;
+        public static final boolean kDrive = true;
         public static final boolean kQuestNav = false;
-        public static final boolean kIndexer = false;
+        public static final boolean kIndexer = true;
     }
 
     public enum Mode {
@@ -56,7 +56,8 @@ public final class Constants {
 
             public static final int kIndexerMotorID = 16;
             public static final int kExtenderMotorID = 17;
-            public static final int kRollerMotorID = 18;
+            public static final int kRollerLeaderMotorID = 18;
+            public static final int kRollerFollowerMotorID = 19;
         }
 
         public static final class SensorIDs {

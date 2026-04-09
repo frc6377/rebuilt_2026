@@ -188,6 +188,10 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
 
     @Override
     public void periodic() {
+        Logger.recordOutput(
+                "Drive/CurrentCommand",
+                this.getCurrentCommand() != null ? this.getCurrentCommand().getName() : "None");
+
         odometryLock.lock(); // Prevents odometry updates while reading data
         gyroIO.updateInputs(gyroInputs);
         Logger.processInputs("Drive/Gyro", gyroInputs);
@@ -289,12 +293,18 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
      * normal orientations the next time a nonzero velocity is requested.
      */
     public void stopWithX() {
+        // Rotation2d[] headings = new Rotation2d[4];
+        // for (int i = 0; i < 4; i++) {
+        //     headings[i] = getModuleTranslations()[i].getAngle();
+        // }
+        // kinematics.resetHeadings(headings);
+        // stop();
         Rotation2d[] headings = new Rotation2d[4];
-        for (int i = 0; i < 4; i++) {
-            headings[i] = getModuleTranslations()[i].getAngle();
-        }
+        headings[0] = Rotation2d.fromDegrees(45);
+        headings[1] = Rotation2d.fromDegrees(-45);
+        headings[2] = Rotation2d.fromDegrees(-45);
+        headings[3] = Rotation2d.fromDegrees(45);
         kinematics.resetHeadings(headings);
-        stop();
     }
 
     /** Returns a command to run a quasistatic test in the specified direction. */
