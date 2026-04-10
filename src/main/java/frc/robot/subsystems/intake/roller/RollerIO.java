@@ -56,6 +56,8 @@ public interface RollerIO {
 
     default void outtake() {}
 
+    default void setRollerVoltage(Voltage volts) {}
+
     default int getIntakedFuel() {
         return 0;
     }

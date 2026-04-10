@@ -33,8 +33,8 @@ public class BaseShooter extends SubsystemBase {
         sysIdRoutine = new SysIdRoutine(
                 new SysIdRoutine.Config(
                         null, // Use default ramp rate (1 V/s)
-                        Volts.of(4), // Reduce dynamic step voltage to 4 to prevent brownout
-                        null, // Use default timeout (10 s)
+                        Volts.of(1), // Reduce dynamic step voltage to 4 to prevent brownout
+                        Seconds.of(4), // Use default timeout (10 s)
                         // Log state with Phoenix SignalLogger class
                         (state) -> SignalLogger.writeString("state", state.toString())),
                 new SysIdRoutine.Mechanism(io::setFlywheelVoltage, null, this));

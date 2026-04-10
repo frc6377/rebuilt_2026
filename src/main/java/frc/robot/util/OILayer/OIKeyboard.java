@@ -111,17 +111,17 @@ public class OIKeyboard implements OI {
     }
 
     @Override
-    public Trigger zeroIntake() {
+    public Trigger xDrive() {
         return Home;
     }
 
     @Override
-    public Trigger retractIntake() {
+    public Trigger toggleIntake() {
         return Home;
     }
 
     @Override
-    public Trigger downIntake() {
+    public Trigger testButton() {
         return End;
     }
 

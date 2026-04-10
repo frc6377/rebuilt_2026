@@ -9,9 +9,11 @@ import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.controls.VelocityVoltage;
+import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Voltage;
 import frc.robot.Constants;
 import frc.robot.subsystems.intake.IntakeConstants;
 import frc.robot.subsystems.intake.IntakeConstants.RollerConstants;
@@ -41,6 +43,7 @@ public class PIDRollerIOReal implements RollerIO {
 
         var config = new TalonFXConfiguration()
                 .withMotorOutput(new MotorOutputConfigs()
+                        .withInverted(RollerConstants.MotorConfig.kInverted)
                         .withInverted(RollerConstants.MotorConfig.kInverted)
                         .withNeutralMode(RollerConstants.MotorConfig.kNeutralMode))
                 .withClosedLoopRamps(new ClosedLoopRampsConfigs()
@@ -85,6 +88,12 @@ public class PIDRollerIOReal implements RollerIO {
     }
 
     @Override
+    public void setRollerVoltage(Voltage volts) {
+        leaderMotor.setControl(new VoltageOut(volts));
+        setFollower();
+    }
+
+    @Override
     public void idle() {
         if (RollerConstants.kIdleEnabled) {
             setRollerSpeed(RPM.of(idleSpeed.get()));
@@ -99,16 +108,19 @@ public class PIDRollerIOReal implements RollerIO {
     @Override
     public void stop() {
         setRollerSpeed(RPM.zero());
+        setRollerSpeed(RPM.zero());
     }
 
     @Override
     public void start() {
         setRollerSpeed(RPM.of(intakeSpeed.get()));
         setRollerSpeed(RPM.of(intakeSpeed.get()));
+        setRollerSpeed(RPM.of(intakeSpeed.get()));
     }
 
     @Override
     public void outtake() {
+        setRollerSpeed(RPM.of(outtakeSpeed.get()));
         setRollerSpeed(RPM.of(outtakeSpeed.get()));
         setRollerSpeed(RPM.of(outtakeSpeed.get()));
     }
@@ -121,10 +133,12 @@ public class PIDRollerIOReal implements RollerIO {
     @Override
     public void setMode(NeutralModeValue mode) {
         leaderMotor.getConfigurator().apply(new MotorOutputConfigs().withNeutralMode(mode));
+        leaderMotor.getConfigurator().apply(new MotorOutputConfigs().withNeutralMode(mode));
     }
 
     @Override
     public void setMotorPercentage(double percent) {
+        leaderMotor.set(percent);
         leaderMotor.set(percent);
     }
 
@@ -145,10 +159,26 @@ public class PIDRollerIOReal implements RollerIO {
         }
 
         inputs.isRunning = isRunning();
+        inputs.leaderSpeedPercentile = leaderMotor.get();
+        inputs.leaderAppliedVolts = leaderMotor.getMotorVoltage().getValue();
+        inputs.leaderVelocity = leaderMotor.getVelocity().getValue();
+        inputs.leaderStatorCurrent = leaderMotor.getStatorCurrent().getValue();
+        inputs.leaderMotorTemp = leaderMotor.getDeviceTemp().getValue();
+
+        if (followerMotor != null) {
+            inputs.followerSpeedPercentile = followerMotor.get();
+            inputs.followerAppliedVolts = followerMotor.getMotorVoltage().getValue();
+            inputs.followerVelocity = followerMotor.getVelocity().getValue();
+            inputs.followerStatorCurrent = followerMotor.getStatorCurrent().getValue();
+            inputs.followerMotorTemp = followerMotor.getDeviceTemp().getValue();
+        }
+
+        inputs.isRunning = isRunning();
     }
 
     @Override
     public void periodic() {
+        leaderMotor.updateTunableGains();
         leaderMotor.updateTunableGains();
     }
 }
