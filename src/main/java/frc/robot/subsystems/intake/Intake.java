@@ -14,7 +14,6 @@ import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 public class Intake {
     private final Extender extender;
     private final BaseShooter roller;
-    private BooleanSupplier isShooterRunning = () -> false;
     
     private final LoggedNetworkNumber tunableIntakeSpeed =
             new LoggedNetworkNumber("Intake/Roller/IntakeSpeed", IntakeConstants.RollerConstants.kIntakeSpeed.in(RPM));

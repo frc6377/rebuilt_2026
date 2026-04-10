@@ -345,7 +345,6 @@ public class RobotContainer {
         // .alongWith(Commands.runOnce(drive::stopWithX)))
         // .onFalse(superstructure.stopUpgoerCommand().alongWith(indexer.stop()));
         Trigger shootingTrigger = OIController.fireShooter().or(OIController.shootDriver());
-        intake.setShooterRunningSupplier(shootingTrigger::getAsBoolean);
         Trigger stopSuperTrigger = OIController.stopShooterDriver().or(OIController.stopSuperstructure());
         OIController.spinUpShooter()
                 .whileTrue(Commands.parallel(superstructure.runFlywheelVelocityManual())
@@ -448,15 +447,17 @@ public class RobotContainer {
         // drive).ignoringDisable(true));
 
         OIController.intake()
+                .and(shootingTrigger.negate())
                 .whileTrue(intake.intakeRollerCommand().alongWith(indexer.index()))
-                .onFalse(indexer.stop().alongWith(intake.idleRollerCommand()));
+                .onFalse(indexer.stop().alongWith(intake.idleRollerCommand()).unless(shootingTrigger::getAsBoolean));
         OIController.outtake()
+                .and(shootingTrigger.negate())
                 .whileTrue(intake.outtakeRollerCommand().alongWith(indexer.indexReverse()))
-                .onFalse(indexer.stop().alongWith(intake.idleRollerCommand()));
+                .onFalse(indexer.stop().alongWith(intake.idleRollerCommand()).unless(shootingTrigger::getAsBoolean));
         OIController.xDrive().whileTrue(Commands.runOnce(drive::stopWithX, drive));
 
-        OIController.toggleIntake().onTrue(intake.toggleIntake());
-        OIController.intakeMiddle().onTrue(intake.goToCustomAngleOneCommand());
+        OIController.toggleIntake().and(shootingTrigger.negate()).onTrue(intake.toggleIntake());
+        OIController.intakeMiddle().and(shootingTrigger.negate()).onTrue(intake.goToCustomAngleOneCommand());
     }
 
     /**
