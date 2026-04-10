@@ -176,12 +176,12 @@ public class OIXbox implements OI {
     }
 
     @Override
-    public Trigger downIntake() {
+    public Trigger testButton() {
         return opY;
     }
 
     @Override
-    public Trigger retractIntake() {
+    public Trigger toggleIntake() {
         return rightBumper;
     }
 
