@@ -1,12 +1,12 @@
 package frc.robot.subsystems.intake.extender;
 
-import static edu.wpi.first.units.Units.Amps;
+import static edu.wpi.first.units.Units.Seconds;
 
 import com.ctre.phoenix6.signals.NeutralModeValue;
-import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.subsystems.intake.IntakeConstants.ExtenderConstants;
 import org.littletonrobotics.junction.Logger;
 
 public class Extender extends SubsystemBase {
@@ -22,11 +22,6 @@ public class Extender extends SubsystemBase {
         io.updateInputs(inputs);
         io.periodic();
         Logger.processInputs("Intake/Extender", inputs);
-        // Logger.recordOutput(
-        //         "Intake/Extender/CurrentCommand",
-        //         this.getCurrentCommand().getName() != null
-        //                 ? "None"
-        //                 : this.getCurrentCommand().getName());
     }
 
     public boolean isExtended() {
@@ -89,30 +84,9 @@ public class Extender extends SubsystemBase {
         io.setMotorPercentage(percent);
     }
 
-    public Command siftFuelPositionCommand() {
-        // return Commands.repeatingSequence(
-        // Commands.run(io::goToSiftAngleOne, this)
-        // .until(() -> io.atTarget().getAsBoolean()
-        // || io.getCurrent().gte(Amps.of(6)))
-        // .withTimeout(1.5),
-        // Commands.run(io::goToSiftAngleTwo, this)
-        // .until(() -> io.atTarget().getAsBoolean()
-        // || io.getCurrent().gte(Amps.of(6)))
-        // .withTimeout(1.5))
-        // .withName("ExtenderSiftPositionFuel");
-        return io.siftPosition(this);
-    }
-
-    public Command siftFuelSpeedCommand() {
-        return runUntilCurrentCommand(-0.1, Amps.of(8))
-                .andThen(Commands.repeatingSequence(
-                        runUntilCurrentCommand(0.25, Amps.of(8)).withTimeout(1),
-                        runUntilCurrentCommand(-0.25, Amps.of(8)).withTimeout(1)));
-    }
-
-    public Command runUntilCurrentCommand(double percent, Current current) {
-        return Commands.run(() -> io.setMotorPercentage(percent))
-                .until(() -> io.getCurrent().gte(current))
-                .withName("ExtenderRunUntilCurrent");
+    public Command siftFuel() {
+        return Commands.repeatingSequence(
+                        run(io::toggle), Commands.waitSeconds(ExtenderConstants.kSiftTimeout.in(Seconds)))
+                .withName("ExtenderSiftFuel");
     }
 }
