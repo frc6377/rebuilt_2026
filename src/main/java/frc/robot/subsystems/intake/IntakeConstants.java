@@ -100,13 +100,13 @@ public class IntakeConstants {
         public static final Angle kExtenderFloatLimit = Degrees.of(50);
         public static final Angle kExtenderZeroAngle = Radians.of(-0.85).plus(Degrees.of(-8));
         public static final TrapezoidProfile.Constraints kExtenderConstraints =
-                new TrapezoidProfile.Constraints(360.0, 720.0);
+                new TrapezoidProfile.Constraints(1000, 550);
 
         public static final Time kSiftTimeout = Seconds.of(0.5);
 
         public static class PIDF {
 
-            public static final PIDConfig normalPID = new PIDConfig(0.05, 0.0, 0.00001);
+            public static final PIDConfig normalPID = new PIDConfig(0.005, 0.0, 0.00001);
 
             public static final PIDConfig floatPID = new PIDConfig(0.01, 0.0, 0.00001);
         }

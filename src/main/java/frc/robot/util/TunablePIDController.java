@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.DoubleSupplier;
+import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 import org.littletonrobotics.junction.networktables.LoggedNetworkString;
 
@@ -60,6 +61,8 @@ public class TunablePIDController {
     public static record PIDConfig(double kP, double kI, double kD) {}
 
     public static final PIDConfig defaultConfig = new PIDConfig(0.0, 0.0, 0.0);
+
+    private double calculatedOutput = 0.0;
 
     private final String tunableName;
     private final DoubleSupplier encoderPosition;
@@ -307,6 +310,7 @@ public class TunablePIDController {
      */
     public double calculate() {
         double pidOut = pidController.calculate(encoderPosition.getAsDouble(), setpoint);
+
         return MathUtil.clamp(pidOut, -1.0, 1.0);
     }
 
@@ -317,6 +321,7 @@ public class TunablePIDController {
      */
     public void runPid() {
         double output = calculate();
+        Logger.recordOutput(tunableName + "/appliedOutput", output);
         outputConsumer.accept(output);
     }
 

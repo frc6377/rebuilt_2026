@@ -86,6 +86,8 @@ public class ExtenderIOReal implements ExtenderIO {
         extenderCustomAngleOne.set(ExtenderConstants.kExtenderCustomAngleOne.in(Degrees));
         extenderCustomAngleTwo.set(ExtenderConstants.kExtenderCustomAngleTwo.in(Degrees));
         extenderPid.applyPreset("default");
+
+        setPidEnabled(false);
     }
 
     public void setPosition(Angle position) {

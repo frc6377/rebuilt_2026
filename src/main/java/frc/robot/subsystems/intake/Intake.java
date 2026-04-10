@@ -96,7 +96,7 @@ public class Intake {
     }
 
     public Command siftFuelCommand() {
-        return Commands.repeatingSequence(extender.toggleSiftCommand(), Commands.waitSeconds(0.5));
+        return Commands.repeatingSequence(extender.toggleSiftCommand(), Commands.waitSeconds(0.75));
     }
 
     public Command intakeRollerCommand() {
