@@ -31,10 +31,6 @@ public class BaseShooterIOKrakenX60 implements BaseShooterIO {
     private final StatusSignal<Voltage> flywheelAppliedVolts;
     private final StatusSignal<Current> flywheelCurrent;
     private final StatusSignal<Temperature> flywheelTemp;
-    private final StatusSignal<AngularVelocity> flywheelVelocity2;
-    private final StatusSignal<Voltage> flywheelAppliedVolts2;
-    private final StatusSignal<Current> flywheelCurrent2;
-    private final StatusSignal<Temperature> flywheelTemp2;
 
     public BaseShooterIOKrakenX60(ShooterConstants.ShooterConfig config) {
         this.config = config;
@@ -95,20 +91,12 @@ public class BaseShooterIOKrakenX60 implements BaseShooterIO {
         flywheelAppliedVolts = flywheelMotor.getMotorVoltage();
         flywheelCurrent = flywheelMotor.getStatorCurrent();
         flywheelTemp = flywheelMotor.getDeviceTemp();
-        flywheelVelocity2 = flywheelFollower.getVelocity();
-        flywheelAppliedVolts2 = flywheelFollower.getMotorVoltage();
-        flywheelCurrent2 = flywheelFollower.getStatorCurrent();
-        flywheelTemp2 = flywheelFollower.getDeviceTemp();
 
         List<BaseStatusSignal> signals = new ArrayList<>();
         signals.add(flywheelVelocity);
         signals.add(flywheelAppliedVolts);
         signals.add(flywheelCurrent);
         signals.add(flywheelTemp);
-        signals.add(flywheelVelocity2);
-        signals.add(flywheelAppliedVolts2);
-        signals.add(flywheelCurrent2);
-        signals.add(flywheelTemp2);
 
         BaseStatusSignal.setUpdateFrequencyForAll(50.0, signals.toArray(new BaseStatusSignal[0]));
 
@@ -132,10 +120,6 @@ public class BaseShooterIOKrakenX60 implements BaseShooterIO {
         signals.add(flywheelAppliedVolts);
         signals.add(flywheelCurrent);
         signals.add(flywheelTemp);
-        signals.add(flywheelVelocity2);
-        signals.add(flywheelAppliedVolts2);
-        signals.add(flywheelCurrent2);
-        signals.add(flywheelTemp2);
 
         BaseStatusSignal.refreshAll(signals.toArray(new BaseStatusSignal[0]));
 
@@ -143,10 +127,6 @@ public class BaseShooterIOKrakenX60 implements BaseShooterIO {
         inputs.flywheelAppliedVoltage = flywheelAppliedVolts.getValue();
         inputs.flywheelCurrent = flywheelCurrent.getValue();
         inputs.flywheelTemp = flywheelTemp.getValue();
-        inputs.flywheelVelocity2 = flywheelVelocity2.getValue();
-        inputs.flywheelAppliedVoltage2 = flywheelAppliedVolts2.getValue();
-        inputs.flywheelCurrent2 = flywheelCurrent2.getValue();
-        inputs.flywheelTemp2 = flywheelTemp2.getValue();
 
         Logger.recordOutput(
                 config.name() + "/FlywheelVelocity (RPM)",

@@ -12,9 +12,6 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Temperature;
 import edu.wpi.first.units.measure.Voltage;
-import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import java.util.function.BooleanSupplier;
 import org.littletonrobotics.junction.AutoLog;
 
@@ -25,11 +22,11 @@ public interface ExtenderIO {
         public boolean isExtended = false;
         public boolean isRetracted = false;
         public Angle position = Degrees.zero();
-        public Angle setpoint = Degrees.of(0.0);
-        public AngularVelocity velocity = RotationsPerSecond.of(0.0);
-        public Voltage motorVoltage = Volts.of(0.0);
-        public Current motorCurrent = Amps.of(0.0);
-        public Temperature motorTemp = Celsius.of(0.0);
+        public Angle setpoint = Degrees.zero();
+        public AngularVelocity velocity = RotationsPerSecond.zero();
+        public Voltage motorVoltage = Volts.zero();
+        public Current motorCurrent = Amps.zero();
+        public Temperature motorTemp = Celsius.zero();
         public boolean atTarget = false;
         public double rawEncoderDegrees = 0.0;
         public boolean atSiftCurrent = false;
@@ -49,9 +46,7 @@ public interface ExtenderIO {
 
     default void goToCustomAngleTwo() {}
 
-    default Command siftPosition(SubsystemBase subsystem) {
-        return Commands.none();
-    }
+    default void toggleSift() {}
 
     default BooleanSupplier isExtended() {
         return () -> false;

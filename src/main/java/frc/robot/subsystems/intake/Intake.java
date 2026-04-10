@@ -1,45 +1,55 @@
 package frc.robot.subsystems.intake;
 
+import static edu.wpi.first.units.Units.RPM;
+
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.intake.extender.Extender;
 import frc.robot.subsystems.intake.extender.ExtenderIO;
-import frc.robot.subsystems.intake.roller.Roller;
-import frc.robot.subsystems.intake.roller.RollerIO;
+import frc.robot.subsystems.shooter.BaseShooter;
+import frc.robot.subsystems.shooter.BaseShooterIO;
 import java.util.function.BooleanSupplier;
+import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 public class Intake {
     private final Extender extender;
-    private final Roller roller;
+    private final BaseShooter roller;
 
-    public Intake(ExtenderIO extenderIO, RollerIO rollerIO) {
+    private final LoggedNetworkNumber tunableIntakeSpeed =
+            new LoggedNetworkNumber("Intake/Roller/IntakeSpeed", IntakeConstants.RollerConstants.kIntakeSpeed.in(RPM));
+    private final LoggedNetworkNumber tunableOuttakeSpeed = new LoggedNetworkNumber(
+            "Intake/Roller/OuttakeSpeed", IntakeConstants.RollerConstants.kOuttakeSpeed.in(RPM));
+    private final LoggedNetworkNumber tunableIdleSpeed =
+            new LoggedNetworkNumber("Intake/Roller/IdleSpeed", IntakeConstants.RollerConstants.kIdleSpeed.in(RPM));
+
+    public Intake(ExtenderIO extenderIO, BaseShooterIO rollerIO) {
         this.extender = new Extender(extenderIO);
-        this.roller = new Roller(rollerIO);
+        this.roller = new BaseShooter(rollerIO, IntakeConstants.RollerConstants.rollerConfig);
+
+        //        this.roller.setDefaultCommand(this.roller
+        //                .spinUpFlywheels(() ->
+        //                        IntakeConstants.RollerConstants.kIdleEnabled ? RPM.of(tunableIdleSpeed.get()) :
+        // RPM.of(0.0))
+        //                .withName("RollerIdle"));
+
     }
 
     public Extender getExtender() {
         return extender;
     }
 
-    public Roller getRoller() {
+    public BaseShooter getRoller() {
         return roller;
     }
 
     public void setNeutralMode(NeutralModeValue mode) {
         extender.setMode(mode);
-        roller.setMode(mode);
+        // BaseShooter does not have setMode
     }
 
     public void setExtenderPidEnabled(boolean enabled) {
         extender.setPidEnabled(enabled);
     }
-
-    // @Override
-    // public void periodic() {
-    //     Logger.recordOutput(
-    //             "Intake/CurrentCommand",
-    //             getCurrentCommand() != null ? getCurrentCommand().getName() : "None");
-    // }
 
     public Command extendIntake() {
         return extender.extendCommand();
@@ -86,15 +96,19 @@ public class Intake {
     }
 
     public Command siftFuelCommand() {
-        return extender.siftFuelPositionCommand();
+        return extender.siftFuel();
     }
 
     public Command intakeRollerCommand() {
-        return roller.runCommand();
+        return roller.spinUpFlywheels(() -> RPM.of(tunableIntakeSpeed.get()));
     }
 
     public Command outtakeRollerCommand() {
-        return roller.outtakeCommand();
+        return roller.spinUpFlywheels(() -> RPM.of(tunableOuttakeSpeed.get()));
+    }
+
+    public Command idleRollerCommand() {
+        return roller.spinUpFlywheels(() -> RPM.of(tunableIdleSpeed.get()));
     }
 
     public Command stopRollerCommand() {
@@ -110,7 +124,7 @@ public class Intake {
     }
 
     public Command intakeCommand() {
-        return extender.extendCommand().andThen(roller.runCommand());
+        return extender.extendCommand().andThen(intakeRollerCommand());
     }
 
     public Command retractIntakeCommand() {
@@ -118,6 +132,6 @@ public class Intake {
     }
 
     public Command outtakeCommand() {
-        return extender.extendCommand().andThen(roller.outtakeCommand());
+        return extender.extendCommand().andThen(outtakeRollerCommand());
     }
 }
