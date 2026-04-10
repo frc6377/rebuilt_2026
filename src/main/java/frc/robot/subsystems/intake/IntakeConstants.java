@@ -9,9 +9,6 @@ import edu.wpi.first.units.measure.*;
 import frc.robot.Constants;
 import frc.robot.subsystems.shooter.ShooterConstants.ShooterConfig;
 import frc.robot.util.TunablePIDController.PIDConfig;
-import frc.robot.Constants;
-import frc.robot.subsystems.shooter.ShooterConstants.ShooterConfig;
-import frc.robot.util.TunablePIDController.PIDConfig;
 import org.ironmaple.simulation.IntakeSimulation.IntakeSide;
 
 public class IntakeConstants {
