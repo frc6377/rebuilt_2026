@@ -4,6 +4,7 @@ import static edu.wpi.first.units.Units.RPM;
 
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.subsystems.intake.extender.Extender;
 import frc.robot.subsystems.intake.extender.ExtenderIO;
 import frc.robot.subsystems.shooter.BaseShooter;
@@ -96,7 +97,7 @@ public class Intake {
     }
 
     public Command siftFuelCommand() {
-        return extender.siftFuel();
+        return Commands.repeatingSequence(extender.siftFuel(), Commands.waitSeconds(0.5));
     }
 
     public Command intakeRollerCommand() {
