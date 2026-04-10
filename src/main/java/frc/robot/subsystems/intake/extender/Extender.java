@@ -1,12 +1,9 @@
 package frc.robot.subsystems.intake.extender;
 
-import static edu.wpi.first.units.Units.Seconds;
-
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.subsystems.intake.IntakeConstants.ExtenderConstants;
 import org.littletonrobotics.junction.Logger;
 
 public class Extender extends SubsystemBase {
@@ -48,6 +45,10 @@ public class Extender extends SubsystemBase {
         return Commands.runOnce(io::toggle, this).withName("ExtenderToggle");
     }
 
+    public Command toggleSiftCommand() {
+        return Commands.runOnce(io::toggleSift, this).withName("ExtenderToggleSift");
+    }
+
     public Command goToSiftAngleOneCommand() {
         return Commands.runOnce(io::goToSiftAngleOne, this).withName("ExtenderSiftOne");
     }
@@ -84,9 +85,7 @@ public class Extender extends SubsystemBase {
         io.setMotorPercentage(percent);
     }
 
-    public Command siftFuel() {
-        return Commands.repeatingSequence(
-                        run(io::toggle), Commands.waitSeconds(ExtenderConstants.kSiftTimeout.in(Seconds)))
-                .withName("ExtenderSiftFuel");
+    public void siftFuel() {
+        io.toggleSift();
     }
 }

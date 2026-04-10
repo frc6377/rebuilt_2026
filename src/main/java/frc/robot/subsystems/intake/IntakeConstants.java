@@ -37,8 +37,8 @@ public class IntakeConstants {
         public static final double kIdlePercent = 0.1;
 
         // for pid roller io
-        public static final AngularVelocity kIntakeSpeed = RPM.of(1500);
-        public static final AngularVelocity kOuttakeSpeed = RPM.of(1500);
+        public static final AngularVelocity kIntakeSpeed = RPM.of(1800);
+        public static final AngularVelocity kOuttakeSpeed = RPM.of(1800);
         public static final AngularVelocity kIdleSpeed = RPM.of(100);
 
         public static class PIDF {
@@ -93,12 +93,12 @@ public class IntakeConstants {
         public static final Angle kExtenderStowAngle = Degrees.of(0);
         public static final Angle kExtenderIntakeAngle = Degrees.of(97);
         public static final Angle kExtenderTolerance = Degrees.of(2.5);
-        public static final Angle kExtenderSiftAngleOne = Degrees.of(5.0);
-        public static final Angle kExtenderSiftAngleTwo = Degrees.of(90.0);
+        public static final Angle kExtenderSiftAngleOne = Degrees.of(0.0);
+        public static final Angle kExtenderSiftAngleTwo = Degrees.of(97.0);
         public static final Angle kExtenderCustomAngleOne = Degrees.of(45.0);
         public static final Angle kExtenderCustomAngleTwo = Degrees.of(60.0);
         public static final Angle kExtenderFloatLimit = Degrees.of(50);
-        public static final Angle kExtenderZeroAngle = Radians.of(-0.85);
+        public static final Angle kExtenderZeroAngle = Radians.of(-0.85).plus(Degrees.of(-8));
         public static final TrapezoidProfile.Constraints kExtenderConstraints =
                 new TrapezoidProfile.Constraints(360.0, 720.0);
 

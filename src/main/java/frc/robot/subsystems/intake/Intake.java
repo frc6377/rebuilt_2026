@@ -4,6 +4,7 @@ import static edu.wpi.first.units.Units.RPM;
 
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.subsystems.intake.extender.Extender;
 import frc.robot.subsystems.intake.extender.ExtenderIO;
 import frc.robot.subsystems.shooter.BaseShooter;
@@ -14,7 +15,7 @@ import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 public class Intake {
     private final Extender extender;
     private final BaseShooter roller;
-
+    
     private final LoggedNetworkNumber tunableIntakeSpeed =
             new LoggedNetworkNumber("Intake/Roller/IntakeSpeed", IntakeConstants.RollerConstants.kIntakeSpeed.in(RPM));
     private final LoggedNetworkNumber tunableOuttakeSpeed = new LoggedNetworkNumber(
@@ -44,7 +45,6 @@ public class Intake {
 
     public void setNeutralMode(NeutralModeValue mode) {
         extender.setMode(mode);
-        // BaseShooter does not have setMode
     }
 
     public void setExtenderPidEnabled(boolean enabled) {
@@ -96,7 +96,7 @@ public class Intake {
     }
 
     public Command siftFuelCommand() {
-        return extender.siftFuel();
+        return Commands.repeatingSequence(extender.toggleSiftCommand(), Commands.waitSeconds(0.5));
     }
 
     public Command intakeRollerCommand() {
