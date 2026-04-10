@@ -447,15 +447,17 @@ public class RobotContainer {
         // drive).ignoringDisable(true));
 
         OIController.intake()
+                .and(shootingTrigger.negate())
                 .whileTrue(intake.intakeRollerCommand().alongWith(indexer.index()))
-                .onFalse(indexer.stop().alongWith(intake.idleRollerCommand()));
+                .onFalse(indexer.stop().alongWith(intake.idleRollerCommand()).unless(shootingTrigger::getAsBoolean));
         OIController.outtake()
+                .and(shootingTrigger.negate())
                 .whileTrue(intake.outtakeRollerCommand().alongWith(indexer.indexReverse()))
-                .onFalse(indexer.stop().alongWith(intake.idleRollerCommand()));
+                .onFalse(indexer.stop().alongWith(intake.idleRollerCommand()).unless(shootingTrigger::getAsBoolean));
         OIController.xDrive().whileTrue(Commands.runOnce(drive::stopWithX, drive));
 
-        OIController.toggleIntake().onTrue(intake.toggleIntake());
-        OIController.intakeMiddle().onTrue(intake.goToCustomAngleOneCommand());
+        OIController.toggleIntake().and(shootingTrigger.negate()).onTrue(intake.toggleIntake());
+        OIController.intakeMiddle().and(shootingTrigger.negate()).onTrue(intake.goToCustomAngleOneCommand());
     }
 
     /**
