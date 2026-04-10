@@ -5,6 +5,7 @@ import static edu.wpi.first.units.Units.*;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
@@ -98,6 +99,8 @@ public class IntakeConstants {
         public static final Angle kExtenderCustomAngleTwo = Degrees.of(60.0);
         public static final Angle kExtenderFloatLimit = Degrees.of(50);
         public static final Angle kExtenderZeroAngle = Radians.of(-0.85);
+        public static final TrapezoidProfile.Constraints kExtenderConstraints =
+                new TrapezoidProfile.Constraints(360.0, 720.0);
 
         public static final Time kSiftTimeout = Seconds.of(0.5);
 

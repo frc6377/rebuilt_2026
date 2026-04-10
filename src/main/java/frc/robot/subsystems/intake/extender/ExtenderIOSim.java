@@ -67,7 +67,8 @@ public class ExtenderIOSim implements ExtenderIO {
         pidController = new TunablePIDController(
                 "Intake/ExtenderPID",
                 () -> getPosition().in(Degrees),
-                percent -> appliedVolts = MathUtil.clamp(percent * 12.0, -12.0, 12.0));
+                percent -> appliedVolts = MathUtil.clamp(percent * 12.0, -12.0, 12.0),
+                ExtenderConstants.kExtenderConstraints);
 
         pidController.addPreset("default", ExtenderConstants.PIDF.normalPID);
 

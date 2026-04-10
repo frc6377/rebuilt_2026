@@ -14,7 +14,8 @@
 package frc.robot.util;
 
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.controller.ProfiledPIDController;
+import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -64,7 +65,7 @@ public class TunablePIDController {
     private final DoubleSupplier encoderPosition;
     private final Consumer<Double> outputConsumer;
 
-    private final PIDController pidController;
+    private final ProfiledPIDController pidController;
     private double setpoint;
 
     // Preset configs that can be swapped at runtime. Each preset is created on
@@ -100,7 +101,7 @@ public class TunablePIDController {
     private double lastKD;
 
     /**
-     * Creates a new TunablePIDFController with the specified configuration.
+     * Creates a new TunablePIDFController with the specified configuration, using unconstrained profiled PID control.
      *
      * @param tunableName The name of this controller, used as the NetworkTables key prefix (e.g., "Extender"). This
      *     name appears in the dashboard under LiveWindow and can be used to organize multiple controllers.
@@ -110,11 +111,35 @@ public class TunablePIDController {
      *     [-1.0, 1.0]. Typically this is {@code motorController::set}.
      */
     public TunablePIDController(String tunableName, DoubleSupplier encoderPosition, Consumer<Double> outputConsumer) {
+        this(
+                tunableName,
+                encoderPosition,
+                outputConsumer,
+                new TrapezoidProfile.Constraints(Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY));
+    }
+
+    /**
+     * Creates a new TunablePIDFController with the specified configuration.
+     *
+     * @param tunableName The name of this controller, used as the NetworkTables key prefix (e.g., "Extender"). This
+     *     name appears in the dashboard under LiveWindow and can be used to organize multiple controllers.
+     * @param encoderPosition A DoubleSupplier providing the current position from the encoder. Units depend on your
+     *     mechanism (rotations, meters, radians, etc.).
+     * @param outputConsumer A Consumer that receives the computed motor output as a duty cycle percentage in the range
+     *     [-1.0, 1.0]. Typically this is {@code motorController::set}.
+     * @param constraints The profile constraints.
+     */
+    public TunablePIDController(
+            String tunableName,
+            DoubleSupplier encoderPosition,
+            Consumer<Double> outputConsumer,
+            TrapezoidProfile.Constraints constraints) {
         this.tunableName = tunableName;
         this.encoderPosition = encoderPosition;
         this.outputConsumer = outputConsumer;
 
-        this.pidController = new PIDController(defaultConfig.kP(), defaultConfig.kI(), defaultConfig.kD());
+        this.pidController =
+                new ProfiledPIDController(defaultConfig.kP(), defaultConfig.kI(), defaultConfig.kD(), constraints);
         this.setpoint = 0.0;
 
         this.activePreset = new LoggedNetworkString(tunableName + "/ActivePreset", "None");
@@ -272,8 +297,8 @@ public class TunablePIDController {
         outputConsumer.accept(output);
     }
 
-    /** Returns the underlying WPILib PIDController (e.g. for atSetpoint(), getPositionError()). */
-    public PIDController getPIDController() {
+    /** Returns the underlying WPILib ProfiledPIDController (e.g. for atSetpoint(), getPositionError()). */
+    public ProfiledPIDController getPIDController() {
         return pidController;
     }
 
