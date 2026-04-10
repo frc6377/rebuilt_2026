@@ -477,7 +477,7 @@ public class Superstructure extends SubsystemBase {
     public boolean isReadyToShoot(Rotation2d currentHeading) {
         if (latestParameters == null) return atTargetVelocity();
 
-        boolean flywheelReady = true; // atTargetVelocity();
+        boolean flywheelReady = atTargetVelocity();
         boolean headingReady =
                 Math.abs(currentHeading.minus(latestParameters.targetHeading()).getDegrees())
                         < ShooterConstants.kHeadingTolerance.in(Degrees);

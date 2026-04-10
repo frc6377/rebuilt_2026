@@ -355,8 +355,7 @@ public class RobotContainer {
                         .setFlywheelVelocityManual(RPM.of(1500))
                         .andThen(superstructure.runFlywheelVelocityManual()));
 
-        // Commands.either(Manual(), Auto(), ismanual)
-        //
+        // Automatic
         shootingTrigger
                 .and(OIController.manualHold().negate())
                 .whileTrue(Commands.parallel(
@@ -387,6 +386,8 @@ public class RobotContainer {
                                 Commands.run(drive::stopWithX))
                         .withName("Shoot Manual Stop")
                         .andThen(superstructure.runFlywheelVelocityManual()));
+
+        // Manual
         shootingTrigger
                 .and(OIController.manualHold())
                 .whileTrue(Commands.parallel(superstructure
