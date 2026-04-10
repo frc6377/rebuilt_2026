@@ -5,6 +5,7 @@ import static edu.wpi.first.units.Units.*;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
@@ -36,8 +37,8 @@ public class IntakeConstants {
         public static final double kIdlePercent = 0.1;
 
         // for pid roller io
-        public static final AngularVelocity kIntakeSpeed = RPM.of(1500);
-        public static final AngularVelocity kOuttakeSpeed = RPM.of(1500);
+        public static final AngularVelocity kIntakeSpeed = RPM.of(1800);
+        public static final AngularVelocity kOuttakeSpeed = RPM.of(1800);
         public static final AngularVelocity kIdleSpeed = RPM.of(100);
 
         public static class PIDF {
@@ -92,18 +93,20 @@ public class IntakeConstants {
         public static final Angle kExtenderStowAngle = Degrees.of(0);
         public static final Angle kExtenderIntakeAngle = Degrees.of(97);
         public static final Angle kExtenderTolerance = Degrees.of(2.5);
-        public static final Angle kExtenderSiftAngleOne = Degrees.of(5.0);
-        public static final Angle kExtenderSiftAngleTwo = Degrees.of(90.0);
+        public static final Angle kExtenderSiftAngleOne = Degrees.of(0.0);
+        public static final Angle kExtenderSiftAngleTwo = Degrees.of(97.0);
         public static final Angle kExtenderCustomAngleOne = Degrees.of(45.0);
         public static final Angle kExtenderCustomAngleTwo = Degrees.of(60.0);
         public static final Angle kExtenderFloatLimit = Degrees.of(50);
-        public static final Angle kExtenderZeroAngle = Radians.of(-0.85);
+        public static final Angle kExtenderZeroAngle = Radians.of(-0.85).plus(Degrees.of(-8));
+        public static final TrapezoidProfile.Constraints kExtenderConstraints =
+                new TrapezoidProfile.Constraints(1000, 550);
 
         public static final Time kSiftTimeout = Seconds.of(0.5);
 
         public static class PIDF {
 
-            public static final PIDConfig normalPID = new PIDConfig(0.05, 0.0, 0.00001);
+            public static final PIDConfig normalPID = new PIDConfig(0.005, 0.0, 0.00001);
 
             public static final PIDConfig floatPID = new PIDConfig(0.01, 0.0, 0.00001);
         }

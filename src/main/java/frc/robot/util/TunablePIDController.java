@@ -14,7 +14,8 @@
 package frc.robot.util;
 
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.controller.ProfiledPIDController;
+import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -22,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.DoubleSupplier;
+import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 import org.littletonrobotics.junction.networktables.LoggedNetworkString;
 
@@ -60,11 +62,13 @@ public class TunablePIDController {
 
     public static final PIDConfig defaultConfig = new PIDConfig(0.0, 0.0, 0.0);
 
+    private double calculatedOutput = 0.0;
+
     private final String tunableName;
     private final DoubleSupplier encoderPosition;
     private final Consumer<Double> outputConsumer;
 
-    private final PIDController pidController;
+    private final ProfiledPIDController pidController;
     private double setpoint;
 
     // Preset configs that can be swapped at runtime. Each preset is created on
@@ -99,8 +103,13 @@ public class TunablePIDController {
     private double lastKI;
     private double lastKD;
 
+    private final LoggedNetworkNumber maxVelocityLog;
+    private final LoggedNetworkNumber maxAccelerationLog;
+    private double lastMaxVelocity;
+    private double lastMaxAcceleration;
+
     /**
-     * Creates a new TunablePIDFController with the specified configuration.
+     * Creates a new TunablePIDFController with the specified configuration, using unconstrained profiled PID control.
      *
      * @param tunableName The name of this controller, used as the NetworkTables key prefix (e.g., "Extender"). This
      *     name appears in the dashboard under LiveWindow and can be used to organize multiple controllers.
@@ -110,20 +119,50 @@ public class TunablePIDController {
      *     [-1.0, 1.0]. Typically this is {@code motorController::set}.
      */
     public TunablePIDController(String tunableName, DoubleSupplier encoderPosition, Consumer<Double> outputConsumer) {
+        this(
+                tunableName,
+                encoderPosition,
+                outputConsumer,
+                new TrapezoidProfile.Constraints(Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY));
+    }
+
+    /**
+     * Creates a new TunablePIDFController with the specified configuration.
+     *
+     * @param tunableName The name of this controller, used as the NetworkTables key prefix (e.g., "Extender"). This
+     *     name appears in the dashboard under LiveWindow and can be used to organize multiple controllers.
+     * @param encoderPosition A DoubleSupplier providing the current position from the encoder. Units depend on your
+     *     mechanism (rotations, meters, radians, etc.).
+     * @param outputConsumer A Consumer that receives the computed motor output as a duty cycle percentage in the range
+     *     [-1.0, 1.0]. Typically this is {@code motorController::set}.
+     * @param constraints The profile constraints.
+     */
+    public TunablePIDController(
+            String tunableName,
+            DoubleSupplier encoderPosition,
+            Consumer<Double> outputConsumer,
+            TrapezoidProfile.Constraints constraints) {
         this.tunableName = tunableName;
         this.encoderPosition = encoderPosition;
         this.outputConsumer = outputConsumer;
 
-        this.pidController = new PIDController(defaultConfig.kP(), defaultConfig.kI(), defaultConfig.kD());
+        this.pidController =
+                new ProfiledPIDController(defaultConfig.kP(), defaultConfig.kI(), defaultConfig.kD(), constraints);
         this.setpoint = 0.0;
 
         this.activePreset = new LoggedNetworkString(tunableName + "/ActivePreset", "None");
+
+        this.maxVelocityLog = new LoggedNetworkNumber(tunableName + "/MaxVelocity", constraints.maxVelocity);
+        this.maxAccelerationLog =
+                new LoggedNetworkNumber(tunableName + "/MaxAcceleration", constraints.maxAcceleration);
 
         // Initialize last-seen values to defaults so first read will be detected as a
         // change
         this.lastKP = defaultConfig.kP();
         this.lastKI = defaultConfig.kI();
         this.lastKD = defaultConfig.kD();
+        this.lastMaxVelocity = constraints.maxVelocity;
+        this.lastMaxAcceleration = constraints.maxAcceleration;
     }
 
     /**
@@ -215,22 +254,34 @@ public class TunablePIDController {
      * @return true if any gains were updated, false otherwise.
      */
     public boolean updateTunableGains() {
+        boolean changed = false;
+
+        double currentMaxV = maxVelocityLog.get();
+        double currentMaxA = maxAccelerationLog.get();
+
+        if (currentMaxV != lastMaxVelocity || currentMaxA != lastMaxAcceleration) {
+            lastMaxVelocity = currentMaxV;
+            lastMaxAcceleration = currentMaxA;
+            pidController.setConstraints(new TrapezoidProfile.Constraints(currentMaxV, currentMaxA));
+            changed = true;
+        }
+
         if (activePresetName == null) {
-            return false;
+            return changed;
         }
 
         PresetHolder holder = presets.get(activePresetName);
         if (holder == null) {
-            return false;
+            return changed;
         }
 
         double currentKP = holder.kp.get();
         double currentKI = holder.ki.get();
         double currentKD = holder.kd.get();
 
-        boolean changed = currentKP != lastKP || currentKI != lastKI || currentKD != lastKD;
+        boolean pidChanged = currentKP != lastKP || currentKI != lastKI || currentKD != lastKD;
 
-        if (changed) {
+        if (pidChanged) {
             lastKP = currentKP;
             lastKI = currentKI;
             lastKD = currentKD;
@@ -239,7 +290,7 @@ public class TunablePIDController {
             pidController.setD(currentKD);
         }
 
-        return changed;
+        return changed || pidChanged;
     }
 
     /**
@@ -259,6 +310,7 @@ public class TunablePIDController {
      */
     public double calculate() {
         double pidOut = pidController.calculate(encoderPosition.getAsDouble(), setpoint);
+
         return MathUtil.clamp(pidOut, -1.0, 1.0);
     }
 
@@ -269,11 +321,12 @@ public class TunablePIDController {
      */
     public void runPid() {
         double output = calculate();
+        Logger.recordOutput(tunableName + "/appliedOutput", output);
         outputConsumer.accept(output);
     }
 
-    /** Returns the underlying WPILib PIDController (e.g. for atSetpoint(), getPositionError()). */
-    public PIDController getPIDController() {
+    /** Returns the underlying WPILib ProfiledPIDController (e.g. for atSetpoint(), getPositionError()). */
+    public ProfiledPIDController getPIDController() {
         return pidController;
     }
 
