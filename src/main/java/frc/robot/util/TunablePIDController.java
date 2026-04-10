@@ -100,6 +100,11 @@ public class TunablePIDController {
     private double lastKI;
     private double lastKD;
 
+    private final LoggedNetworkNumber maxVelocityLog;
+    private final LoggedNetworkNumber maxAccelerationLog;
+    private double lastMaxVelocity;
+    private double lastMaxAcceleration;
+
     /**
      * Creates a new TunablePIDFController with the specified configuration, using unconstrained profiled PID control.
      *
@@ -144,11 +149,17 @@ public class TunablePIDController {
 
         this.activePreset = new LoggedNetworkString(tunableName + "/ActivePreset", "None");
 
+        this.maxVelocityLog = new LoggedNetworkNumber(tunableName + "/MaxVelocity", constraints.maxVelocity);
+        this.maxAccelerationLog =
+                new LoggedNetworkNumber(tunableName + "/MaxAcceleration", constraints.maxAcceleration);
+
         // Initialize last-seen values to defaults so first read will be detected as a
         // change
         this.lastKP = defaultConfig.kP();
         this.lastKI = defaultConfig.kI();
         this.lastKD = defaultConfig.kD();
+        this.lastMaxVelocity = constraints.maxVelocity;
+        this.lastMaxAcceleration = constraints.maxAcceleration;
     }
 
     /**
@@ -240,22 +251,34 @@ public class TunablePIDController {
      * @return true if any gains were updated, false otherwise.
      */
     public boolean updateTunableGains() {
+        boolean changed = false;
+
+        double currentMaxV = maxVelocityLog.get();
+        double currentMaxA = maxAccelerationLog.get();
+
+        if (currentMaxV != lastMaxVelocity || currentMaxA != lastMaxAcceleration) {
+            lastMaxVelocity = currentMaxV;
+            lastMaxAcceleration = currentMaxA;
+            pidController.setConstraints(new TrapezoidProfile.Constraints(currentMaxV, currentMaxA));
+            changed = true;
+        }
+
         if (activePresetName == null) {
-            return false;
+            return changed;
         }
 
         PresetHolder holder = presets.get(activePresetName);
         if (holder == null) {
-            return false;
+            return changed;
         }
 
         double currentKP = holder.kp.get();
         double currentKI = holder.ki.get();
         double currentKD = holder.kd.get();
 
-        boolean changed = currentKP != lastKP || currentKI != lastKI || currentKD != lastKD;
+        boolean pidChanged = currentKP != lastKP || currentKI != lastKI || currentKD != lastKD;
 
-        if (changed) {
+        if (pidChanged) {
             lastKP = currentKP;
             lastKI = currentKI;
             lastKD = currentKD;
@@ -264,7 +287,7 @@ public class TunablePIDController {
             pidController.setD(currentKD);
         }
 
-        return changed;
+        return changed || pidChanged;
     }
 
     /**
