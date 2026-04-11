@@ -88,7 +88,7 @@ public interface OI {
     /* be able to avoid damaging the robot if things are in the way.
     /* Subsystem: Intake
     */
-    default Trigger retractIntake() {
+    default Trigger toggleIntake() {
         return noButton;
     }
 
@@ -104,7 +104,7 @@ public interface OI {
         return noButton;
     }
 
-    default Trigger downIntake() {
+    default Trigger testButton() {
         return noButton;
     }
 

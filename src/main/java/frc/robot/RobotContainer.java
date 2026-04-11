@@ -49,9 +49,9 @@ import frc.robot.subsystems.intake.Intake;
 import frc.robot.subsystems.intake.extender.ExtenderIO;
 import frc.robot.subsystems.intake.extender.ExtenderIOReal;
 import frc.robot.subsystems.intake.extender.ExtenderIOSim;
-import frc.robot.subsystems.intake.roller.RollerIO;
-import frc.robot.subsystems.intake.roller.RollerIOReal;
-import frc.robot.subsystems.intake.roller.RollerIOSim;
+import frc.robot.subsystems.shooter.BaseShooterIO;
+import frc.robot.subsystems.shooter.BaseShooterIOKrakenX60;
+import frc.robot.subsystems.shooter.BaseShooterIOSim;
 import frc.robot.subsystems.superstructure.RobotState;
 import frc.robot.subsystems.superstructure.Superstructure;
 import frc.robot.subsystems.vision.Vision;
@@ -127,7 +127,10 @@ public class RobotContainer {
                         drive, new QuestNavIO() {}, new VisionIOLimelight("limelight-shooter", drive::getRotation));
                 intake = new Intake(
                         Constants.EnabledSubsystems.kExtender ? new ExtenderIOReal() : new ExtenderIO() {},
-                        Constants.EnabledSubsystems.kRoller ? new RollerIOReal() : new RollerIO() {});
+                        Constants.EnabledSubsystems.kRoller
+                                ? new BaseShooterIOKrakenX60(
+                                        frc.robot.subsystems.intake.IntakeConstants.RollerConstants.rollerConfig)
+                                : new BaseShooterIO() {});
                 indexer = new Indexer(Constants.EnabledSubsystems.kIndexer ? new IndexerIOReal() : new IndexerIO() {});
                 driveSimulation = null;
                 break;
@@ -138,7 +141,10 @@ public class RobotContainer {
                 driveSimulation = new SwerveDriveSimulation(Drive.mapleSimConfig, new Pose2d(3, 3, new Rotation2d()));
                 intake = new Intake(
                         Constants.EnabledSubsystems.kExtender ? new ExtenderIOSim() : new ExtenderIO() {},
-                        Constants.EnabledSubsystems.kRoller ? new RollerIOSim(driveSimulation) : new RollerIO() {});
+                        Constants.EnabledSubsystems.kRoller
+                                ? new BaseShooterIOSim(
+                                        frc.robot.subsystems.intake.IntakeConstants.RollerConstants.rollerConfig)
+                                : new BaseShooterIO() {});
                 SimulatedArena.getInstance().addDriveTrainSimulation(driveSimulation);
                 drive = new Drive(
                         new GyroIOSim(driveSimulation.getGyroSimulation()),
@@ -170,7 +176,7 @@ public class RobotContainer {
                         (pose) -> {});
                 driveSimulation = null;
                 vision = new Vision(drive, new QuestNavIO() {}, new VisionIO() {}, new VisionIO() {});
-                intake = new Intake(new ExtenderIO() {}, new RollerIO() {});
+                intake = new Intake(new ExtenderIO() {}, new BaseShooterIO() {});
                 indexer = new Indexer(new IndexerIO() {});
                 break;
         }
@@ -284,6 +290,17 @@ public class RobotContainer {
                         .andThen(Commands.waitSeconds(5))
                         .andThen(superstructure.getRightShooter().sysIdDynamic(SysIdRoutine.Direction.kReverse))
                         .andThen(SignalLogger::stop));
+        autoChooser.addOption(
+                "Intake Flywheel Char",
+                Commands.runOnce(SignalLogger::start)
+                        .andThen(intake.getRoller().sysIdQuasistatic(SysIdRoutine.Direction.kForward))
+                        .andThen(Commands.waitSeconds(5))
+                        .andThen(intake.getRoller().sysIdQuasistatic(SysIdRoutine.Direction.kReverse))
+                        .andThen(Commands.waitSeconds(5))
+                        .andThen(intake.getRoller().sysIdDynamic(SysIdRoutine.Direction.kForward))
+                        .andThen(Commands.waitSeconds(5))
+                        .andThen(intake.getRoller().sysIdDynamic(SysIdRoutine.Direction.kReverse))
+                        .andThen(SignalLogger::stop));
 
         // Configure the button bindings
         SignalLogger.setPath("Media/sda1/logs/one/");
@@ -370,8 +387,9 @@ public class RobotContainer {
                         .withName("Shoot Manual Stop")
                         .andThen(superstructure.runFlywheelVelocityManual()));
         shootingTrigger
+                .and(OIController.manualHold())
                 .whileTrue(Commands.parallel(superstructure
-                        .runToggledSpeed(drive::getPose, drive::getChassisSpeeds)
+                        .runFlywheelVelocityManual()
                         // superstructure.aimAtHubWhileDriving(
                         // drive, OIController.driveTranslationX(),
                         // OIController.driveTranslationY()))
@@ -428,15 +446,17 @@ public class RobotContainer {
         // drive).ignoringDisable(true));
 
         OIController.intake()
+                .and(shootingTrigger.negate())
                 .whileTrue(intake.intakeRollerCommand().alongWith(indexer.index()))
-                .onFalse(indexer.stop());
+                .onFalse(indexer.stop().alongWith(intake.idleRollerCommand()).unless(shootingTrigger::getAsBoolean));
         OIController.outtake()
+                .and(shootingTrigger.negate())
                 .whileTrue(intake.outtakeRollerCommand().alongWith(indexer.indexReverse()))
-                .onFalse(indexer.stop());
+                .onFalse(indexer.stop().alongWith(intake.idleRollerCommand()).unless(shootingTrigger::getAsBoolean));
         OIController.xDrive().whileTrue(Commands.runOnce(drive::stopWithX, drive));
-        // OIController.zeroIntake().whileTrue(superstructure.fireCommand()).onFalse(superstructure.stopUpgoerCommand());
-        OIController.retractIntake().onTrue(intake.toggleIntake());
-        OIController.intakeMiddle().onTrue(intake.goToCustomAngleOneCommand());
+
+        OIController.toggleIntake().and(shootingTrigger.negate()).onTrue(intake.toggleIntake());
+        OIController.intakeMiddle().and(shootingTrigger.negate()).onTrue(intake.goToCustomAngleOneCommand());
 
         new Trigger(() -> vision.getTagCount() >= 2)
                 .onTrue(Commands.runOnce(() -> OIController.setRumble(0, 1)))

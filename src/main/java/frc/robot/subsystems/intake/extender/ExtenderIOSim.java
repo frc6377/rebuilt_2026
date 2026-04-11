@@ -3,7 +3,6 @@ package frc.robot.subsystems.intake.extender;
 import static edu.wpi.first.units.Units.*;
 
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.TimedRobot;
@@ -11,6 +10,7 @@ import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.util.Color8Bit;
 import frc.robot.subsystems.intake.IntakeConstants.ExtenderConstants;
+import frc.robot.util.TunablePIDController;
 import java.util.function.BooleanSupplier;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.mechanism.LoggedMechanism2d;
@@ -21,7 +21,7 @@ import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 public class ExtenderIOSim implements ExtenderIO {
 
     private final SingleJointedArmSim armSim;
-    private final PIDController pidController;
+    private final TunablePIDController pidController;
     private final LoggedMechanism2d armMech;
     private final LoggedMechanismRoot2d armMechRoot;
     private final LoggedMechanismLigament2d armLigament;
@@ -52,9 +52,6 @@ public class ExtenderIOSim implements ExtenderIO {
                 "Intake/Extender/SiftAngleTwo", ExtenderConstants.kExtenderSiftAngleTwo.in(Degrees));
         new LoggedNetworkNumber("Intake/Extender/DownSpeed", ExtenderConstants.kDownSpeed);
 
-        pidController =
-                new PIDController(ExtenderConstants.PIDF.kP, ExtenderConstants.PIDF.kI, ExtenderConstants.PIDF.kD);
-
         armSim = new SingleJointedArmSim(
                 DCMotor.getKrakenX60(1),
                 ExtenderConstants.kGearing,
@@ -66,6 +63,14 @@ public class ExtenderIOSim implements ExtenderIO {
                 ExtenderConstants.kExtenderZeroAngle.in(Radians),
                 0.0,
                 0.0);
+
+        pidController = new TunablePIDController(
+                "Intake/ExtenderPID",
+                () -> getPosition().in(Degrees),
+                percent -> appliedVolts = MathUtil.clamp(percent * 12.0, -12.0, 12.0),
+                ExtenderConstants.kExtenderConstraints);
+
+        pidController.addPreset("default", ExtenderConstants.PIDF.normalPID);
 
         armMech = new LoggedMechanism2d(5, 5);
         armMechRoot = armMech.getRoot("IntakeSimulation", 3, 3);
@@ -165,10 +170,6 @@ public class ExtenderIOSim implements ExtenderIO {
     @Override
     public void updateInputs(ExtenderIOInputs inputs) {
 
-        if (pidEnabled) {
-            appliedVolts = MathUtil.clamp(pidController.calculate(getPosition().in(Degrees)), -12.0, 12.0);
-        }
-
         armSim.setInputVoltage(appliedVolts);
         armSim.update(TimedRobot.kDefaultPeriod);
 
@@ -194,6 +195,10 @@ public class ExtenderIOSim implements ExtenderIO {
 
     @Override
     public void periodic() {
-        // Nothing needed here — all sim logic runs in updateInputs
+
+        pidController.updateTunableGains();
+        if (pidEnabled) {
+            pidController.runPid();
+        }
     }
 }
