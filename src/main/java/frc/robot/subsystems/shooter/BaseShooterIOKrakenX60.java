@@ -114,6 +114,7 @@ public class BaseShooterIOKrakenX60 implements BaseShooterIO {
     @Override
     public void updateInputs(BaseShooterIOInputs inputs) {
         flywheelMotor.updateTunableGains();
+        flywheelFollower.updateTunableGains();
 
         List<BaseStatusSignal> signals = new ArrayList<>();
         signals.add(flywheelVelocity);
