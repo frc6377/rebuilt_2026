@@ -3,16 +3,16 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 4.0,
-        "y": 7.55
+        "x": 3.5,
+        "y": 7.53
       },
       "prevControl": null,
       "nextControl": {
-        "x": 5.79392386810335,
-        "y": 7.533472584923337
+        "x": 5.29392386810335,
+        "y": 7.5134725849233375
       },
       "isLocked": false,
-      "linkedName": "Trench Shot"
+      "linkedName": "close trench shot"
     },
     {
       "anchor": {
@@ -48,7 +48,7 @@
   "folder": null,
   "idealStartingState": {
     "velocity": 0,
-    "rotation": -80.16181489438202
+    "rotation": -72.5
   },
   "useDefaultConstraints": true
 }

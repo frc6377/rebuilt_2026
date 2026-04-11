@@ -30,7 +30,7 @@ public class Extender extends SubsystemBase {
     }
 
     public Command extendAndWaitCommand() {
-        return Commands.runOnce(io::extend, this).until(io.isExtended()).withName("ExtenderExtendAndWait");
+        return Commands.run(io::extend, this).until(io.isExtended()).withName("ExtenderExtendAndWait");
     }
 
     public Command retractCommand() {

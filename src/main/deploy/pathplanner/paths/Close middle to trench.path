@@ -16,16 +16,16 @@
     },
     {
       "anchor": {
-        "x": 4.0,
-        "y": 7.55
+        "x": 3.5,
+        "y": 7.53
       },
       "prevControl": {
-        "x": 5.820999999999996,
-        "y": 7.55
+        "x": 5.320999999999996,
+        "y": 7.53
       },
       "nextControl": null,
       "isLocked": false,
-      "linkedName": "Trench Shot"
+      "linkedName": "close trench shot"
     }
   ],
   "rotationTargets": [
@@ -51,7 +51,7 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": -80.16181489438202
+    "rotation": -72.5
   },
   "reversed": false,
   "folder": null,
