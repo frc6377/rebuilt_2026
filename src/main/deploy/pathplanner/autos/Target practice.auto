@@ -1,0 +1,62 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "named",
+          "data": {
+            "name": "Extend Intake"
+          }
+        },
+        {
+          "type": "wait",
+          "data": {
+            "waitTime": 0.5
+          }
+        },
+        {
+          "type": "parallel",
+          "data": {
+            "commands": [
+              {
+                "type": "wait",
+                "data": {
+                  "waitTime": 3.5
+                }
+              },
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "Depot"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "Intake"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Depot turn face hub"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "AutoShoot"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": "Target practice",
+  "choreoAuto": false
+}

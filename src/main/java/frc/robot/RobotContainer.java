@@ -188,7 +188,7 @@ public class RobotContainer {
             superstructure.configureGamePieceSimulation(driveSimulation);
         }
         NamedCommands.registerCommand(
-                "Stop", superstructure.stopShooterCommand().alongWith(superstructure.stopUpgoerCommand()));
+                "Stop shooter", superstructure.stopShooterCommand().alongWith(superstructure.stopUpgoerCommand()));
         NamedCommands.registerCommand(
                 "Unjam",
                 superstructure.unjamCommand().alongWith(superstructure.setFlywheelVelocityCommand(RPM.of(-1500))));
@@ -226,11 +226,9 @@ public class RobotContainer {
                 "Shoot", Commands.deadline(Commands.waitSeconds(5), superstructure.fireCommand()));
         // NamedCommands.registerCommand("Intake",
         // Commands.deadline(intake.intakeCommand(), Commands.waitSeconds(6)));
+        NamedCommands.registerCommand("Wait 5 seconds", Commands.waitSeconds(5));
         NamedCommands.registerCommand("Extend Intake", intake.extendIntake());
-        NamedCommands.registerCommand(
-                "Intake",
-                Commands.deadline(Commands.waitSeconds(7), Commands.parallel(intake.intakeCommand(), indexer.index()))
-                        .andThen(indexer.stop()));
+        NamedCommands.registerCommand("Intake", Commands.parallel(intake.intakeCommand(), indexer.index()));
         NamedCommands.registerCommand(
                 "Index",
                 Commands.runOnce(() -> indexer.setRunning(true)).withTimeout(3).andThen(indexer.stop()));
