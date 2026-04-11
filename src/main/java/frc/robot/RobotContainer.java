@@ -358,24 +358,23 @@ public class RobotContainer {
         shootingTrigger
                 .and(OIController.manualHold().negate())
                 .whileTrue(Commands.parallel(
-                                superstructure.aimAtHubWhileDriving(
-                                        drive,
-                                        OIController.driveTranslationX(),
-                                        OIController.driveTranslationY(),
-                                        OIController.xDrive()),
-                                Commands.parallel(
-                                                superstructure
-                                                        .autoSpeedShooter(drive::getPose, drive::getChassisSpeeds)
-                                                        .until(() ->
-                                                                superstructure.isReadyToShoot(drive.getRotation())),
-                                                Commands.waitSeconds(0.5))
-                                        .andThen(Commands.runOnce(drive::stopWithX))
-                                        .andThen(Commands.parallel(
+                                superstructure
+                                        .aimAtHubWhileDriving(
+                                                drive,
+                                                OIController.driveTranslationX(),
+                                                OIController.driveTranslationY(),
+                                                OIController.xDrive())
+                                        .repeatedly(),
+                                Commands.sequence(
+                                        superstructure
+                                                .autoSpeedShooter(drive::getPose, drive::getChassisSpeeds)
+                                                .until(() -> superstructure.isReadyToShoot(drive.getRotation()))
+                                                .withTimeout(0.7),
+                                        Commands.parallel(
                                                 superstructure.fireCommand(),
                                                 indexer.index(),
                                                 intake.siftFuelCommand(),
-                                                intake.intakeRollerCommand(),
-                                                Commands.run(drive::stopWithX))))
+                                                intake.intakeRollerCommand())))
                         .withName("ShootManual"))
                 .onFalse(Commands.parallel(
                                 superstructure.stopUpgoerCommand(),
@@ -453,10 +452,10 @@ public class RobotContainer {
                 .and(shootingTrigger.negate())
                 .whileTrue(intake.outtakeRollerCommand().alongWith(indexer.indexReverse()))
                 .onFalse(indexer.stop().alongWith(intake.idleRollerCommand()).unless(shootingTrigger::getAsBoolean));
-        OIController.xDrive().whileTrue(Commands.runOnce(drive::stopWithX, drive));
 
         OIController.toggleIntake().and(shootingTrigger.negate()).onTrue(intake.toggleIntake());
         OIController.intakeMiddle().and(shootingTrigger.negate()).onTrue(intake.goToCustomAngleOneCommand());
+        OIController.xDrive().onTrue(Commands.runOnce(drive::stopWithX, drive));
     }
 
     /**

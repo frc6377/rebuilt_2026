@@ -19,6 +19,9 @@ public class Extender extends SubsystemBase {
         io.updateInputs(inputs);
         io.periodic();
         Logger.processInputs("Intake/Extender", inputs);
+        Logger.recordOutput(
+                "Intake/Extender/CurrentCommand",
+                getCurrentCommand() == null ? "null" : getCurrentCommand().toString());
     }
 
     public boolean isExtended() {
