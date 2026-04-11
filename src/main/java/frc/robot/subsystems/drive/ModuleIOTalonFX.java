@@ -1,5 +1,6 @@
 package frc.robot.subsystems.drive;
 
+import static edu.wpi.first.units.Units.Fahrenheit;
 import static frc.robot.util.PhoenixUtil.tryUntilOk;
 
 import com.ctre.phoenix6.BaseStatusSignal;
@@ -23,6 +24,7 @@ import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.wpilibj.DriverStation;
 import frc.robot.Constants;
 import frc.robot.generated.TunerConstants;
 
@@ -157,6 +159,13 @@ public abstract class ModuleIOTalonFX implements ModuleIO {
         inputs.turnVelocityRadPerSec = Units.rotationsToRadians(turnVelocity.getValueAsDouble());
         inputs.turnAppliedVolts = turnAppliedVolts.getValueAsDouble();
         inputs.turnCurrentAmps = turnCurrent.getValueAsDouble();
+
+        if (driveTalon.getDeviceTemp().getValue().in(Fahrenheit) >= Constants.motorTempWarningThreshold) {
+            DriverStation.reportWarning("MOTOR OVERHEATING: Drive Motor (" + driveTalon.getDeviceID() + ")", null);
+        }
+        if (turnTalon.getDeviceTemp().getValue().in(Fahrenheit) >= Constants.motorTempWarningThreshold) {
+            DriverStation.reportWarning("MOTOR OVERHEATING: Turn Motor (" + turnTalon.getDeviceID() + ")", null);
+        }
     }
 
     @Override
