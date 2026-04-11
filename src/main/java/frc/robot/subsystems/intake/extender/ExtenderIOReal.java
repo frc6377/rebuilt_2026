@@ -14,12 +14,14 @@ import edu.wpi.first.wpilibj.DutyCycleEncoder;
 import frc.robot.Constants;
 import frc.robot.subsystems.intake.IntakeConstants.ExtenderConstants;
 import frc.robot.util.TunablePIDController;
+import frc.robot.util.TunableTalonFX;
+
 import java.util.function.BooleanSupplier;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 public class ExtenderIOReal implements ExtenderIO {
 
-    private final TalonFX extenderMotor;
+    private final TunableTalonFX extenderMotor;
     private final DutyCycleEncoder extenderEncoder;
     private final TunablePIDController extenderPid;
     private boolean pidEnabled = true;
@@ -43,7 +45,7 @@ public class ExtenderIOReal implements ExtenderIO {
                         .withStatorCurrentLimitEnable(true)
                         .withStatorCurrentLimit(ExtenderConstants.MotorConfig.kStatorCurrentLimitExtender));
 
-        extenderMotor = new TalonFX(Constants.CANIDs.MotorIDs.kExtenderMotorID);
+        extenderMotor = new TunableTalonFX(Constants.CANIDs.MotorIDs.kExtenderMotorID, "rio", "Extender");
         extenderMotor.getConfigurator().apply(config);
 
         extenderEncoder = new DutyCycleEncoder(
