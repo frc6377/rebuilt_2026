@@ -370,15 +370,6 @@ public class RobotContainer {
                                                 .autoSpeedShooter(drive::getPose, drive::getChassisSpeeds)
                                                 .until(() -> superstructure.isReadyToShoot(drive.getRotation()))
                                                 .withTimeout(0.7),
-                                        Commands.either(
-                                                Commands.runOnce(drive::stopWithX),
-                                                Commands.none(),
-                                                () -> !(OIController.driveTranslationX()
-                                                                        .getAsDouble()
-                                                                == 0
-                                                        && OIController.driveTranslationY()
-                                                                        .getAsDouble()
-                                                                == 0)),
                                         Commands.parallel(
                                                 superstructure.fireCommand(),
                                                 indexer.index(),
@@ -461,7 +452,6 @@ public class RobotContainer {
                 .and(shootingTrigger.negate())
                 .whileTrue(intake.outtakeRollerCommand().alongWith(indexer.indexReverse()))
                 .onFalse(indexer.stop().alongWith(intake.idleRollerCommand()).unless(shootingTrigger::getAsBoolean));
-        OIController.xDrive().whileTrue(Commands.runOnce(drive::stopWithX, drive));
 
         OIController.toggleIntake().and(shootingTrigger.negate()).onTrue(intake.toggleIntake());
         OIController.intakeMiddle().and(shootingTrigger.negate()).onTrue(intake.goToCustomAngleOneCommand());
