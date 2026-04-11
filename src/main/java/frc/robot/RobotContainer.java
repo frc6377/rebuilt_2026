@@ -386,7 +386,8 @@ public class RobotContainer {
                                 intake.extendIntake(),
                                 Commands.run(drive::stopWithX))
                         .withName("Shoot Manual Stop")
-                        .andThen(superstructure.runFlywheelVelocityManual()));
+                        .andThen(superstructure.runFlywheelVelocityManual())
+                        .andThen(intake.stopRollerCommand()));
         shootingTrigger
                 .and(OIController.manualHold())
                 .whileTrue(Commands.parallel(superstructure

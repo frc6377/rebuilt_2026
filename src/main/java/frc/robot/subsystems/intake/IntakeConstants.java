@@ -29,7 +29,7 @@ public class IntakeConstants {
         // for normal roller io
 
         public static final boolean kfollowerEnabled = true;
-        public static final boolean kIdleEnabled = false;
+        public static final boolean kIdleEnabled = true;
 
         // for normal roller io
         public static final double kIntakePercent = 1;
@@ -37,8 +37,8 @@ public class IntakeConstants {
         public static final double kIdlePercent = 0.1;
 
         // for pid roller io
-        public static final AngularVelocity kIntakeSpeed = RPM.of(1800);
-        public static final AngularVelocity kOuttakeSpeed = RPM.of(1800);
+        public static final AngularVelocity kIntakeSpeed = RPM.of(3500);
+        public static final AngularVelocity kOuttakeSpeed = RPM.of(-1800);
         public static final AngularVelocity kIdleSpeed = RPM.of(100);
 
         public static class PIDF {
@@ -100,7 +100,7 @@ public class IntakeConstants {
         public static final Angle kExtenderFloatLimit = Degrees.of(50);
         public static final Angle kExtenderZeroAngle = Radians.of(-0.85).plus(Degrees.of(-8));
         public static final TrapezoidProfile.Constraints kExtenderConstraints =
-                new TrapezoidProfile.Constraints(1000, 550);
+                new TrapezoidProfile.Constraints(1000, 1000);
 
         public static final Time kSiftTimeout = Seconds.of(0.5);
 
