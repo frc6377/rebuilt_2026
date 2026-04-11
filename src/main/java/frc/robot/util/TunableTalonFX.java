@@ -115,7 +115,8 @@ public class TunableTalonFX extends TalonFX {
         Logger.recordOutput(motorName, getDeviceTemp().getValue().in(Units.Fahrenheit));
 
         if (getDeviceTemp().getValue().in(Units.Fahrenheit) > Constants.motorTempWarningThreshold) {
-            DriverStation.reportWarning("MOTOR OVERHEATING: " + motorName, null);
+            DriverStation.reportWarning(
+                    "MOTOR OVERHEATING: " + motorName, Thread.currentThread().getStackTrace());
         }
 
         if (!TUNING_ENABLED) return false;
