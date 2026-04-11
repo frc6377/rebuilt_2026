@@ -233,8 +233,7 @@ public class RobotContainer {
                 "Index",
                 Commands.runOnce(() -> indexer.setRunning(true)).withTimeout(3).andThen(indexer.stop()));
         NamedCommands.registerCommand(
-                "Auto Aim", superstructure.aimAtHubWhileDriving(drive, () -> 0, () -> 0, () -> OIController.xDrive()
-                        .getAsBoolean()));
+                "Auto Aim", superstructure.aimAtHubWhileDriving(drive, () -> 0, () -> 0, () -> false));
         NamedCommands.registerCommand("Stop intake", intake.stopRollerCommand());
 
         // Set up auto routines
