@@ -19,6 +19,8 @@ import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.hardware.TalonFX;
 import edu.wpi.first.units.Units;
+import edu.wpi.first.wpilibj.DriverStation;
+import frc.robot.Constants;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
@@ -44,7 +46,7 @@ public class TunableTalonFX extends TalonFX {
 
     private final int deviceId;
 
-    private final boolean TUNING_ENABLED = false;
+    private final boolean TUNING_ENABLED = true;
 
     // Tunable PID gains
     private final LoggedNetworkNumber tunableKP;
@@ -109,6 +111,15 @@ public class TunableTalonFX extends TalonFX {
      */
     public boolean updateTunableGains() {
 
+        String motorName = "Temp/" + tunableName + "/" + deviceId;
+        Logger.recordOutput(
+                motorName,
+                getDeviceTemp().getValue().in(Units.Fahrenheit));
+
+        if (getDeviceTemp().getValue().in(Units.Fahrenheit) > Constants.motorTempWarningThreshold) {
+            DriverStation.reportWarning("MOTOR OVERHEATING: " + motorName, null);
+        }
+
         if (!TUNING_ENABLED) return false;
         // Check if any values changed
         double currentKP = tunableKP.get();
@@ -140,10 +151,6 @@ public class TunableTalonFX extends TalonFX {
             // Apply new gains
             applyTunableGains();
         }
-
-        Logger.recordOutput(
-                "Temp/" + tunableName + "/" + deviceId,
-                getDeviceTemp().getValue().in(Units.Fahrenheit));
 
         return changed;
     }

@@ -26,6 +26,8 @@ public final class Constants {
 
     public static final double intakingDriveSpeedMultiplier = 0.6;
 
+    public static final double motorTempWarningThreshold = 185.0;
+
     public static final class EnabledSubsystems {
         public static final boolean kShooterLeft = true;
         public static final boolean kShooterRight = true;
