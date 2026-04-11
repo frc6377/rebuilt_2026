@@ -18,6 +18,10 @@ import com.ctre.phoenix6.StatusCode;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.hardware.TalonFX;
+import edu.wpi.first.units.Units;
+import edu.wpi.first.wpilibj.DriverStation;
+import frc.robot.Constants;
+import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 /**
@@ -40,7 +44,9 @@ import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 public class TunableTalonFX extends TalonFX {
     private final String tunableName;
 
-    private final boolean TUNING_ENABLED = false;
+    private final int deviceId;
+
+    private final boolean TUNING_ENABLED = true;
 
     // Tunable PID gains
     private final LoggedNetworkNumber tunableKP;
@@ -71,6 +77,7 @@ public class TunableTalonFX extends TalonFX {
     public TunableTalonFX(int deviceId, String canbus, String tunableName, Slot0Configs initialGains) {
         super(deviceId, new CANBus(canbus));
         this.tunableName = tunableName;
+        this.deviceId = deviceId;
 
         // Create tunable values from Slot0Configs
         this.tunableKP = new LoggedNetworkNumber(tunableName + "/kP", initialGains.kP);
@@ -103,6 +110,14 @@ public class TunableTalonFX extends TalonFX {
      * @return true if gains were updated, false otherwise
      */
     public boolean updateTunableGains() {
+
+        String motorName = "Temp/" + tunableName + "/" + deviceId;
+        Logger.recordOutput(motorName, getDeviceTemp().getValue().in(Units.Fahrenheit));
+
+        if (getDeviceTemp().getValue().in(Units.Fahrenheit) > Constants.motorTempWarningThreshold) {
+            DriverStation.reportWarning(
+                    "MOTOR OVERHEATING: " + motorName, Thread.currentThread().getStackTrace());
+        }
 
         if (!TUNING_ENABLED) return false;
         // Check if any values changed
