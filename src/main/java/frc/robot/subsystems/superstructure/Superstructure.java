@@ -415,7 +415,7 @@ public class Superstructure extends SubsystemBase {
     public Command aimAtHubWhileDriving(
             Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier, BooleanSupplier xModePressed) {
         return Commands.either(
-                Commands.runOnce(drive::stopWithX),
+                Commands.none(),
                 DriveCommands.joystickDriveAtAngle(drive, xSupplier, ySupplier, () -> latestParameters.targetHeading())
                         .withName("AimAtHub"),
                 xModePressed);

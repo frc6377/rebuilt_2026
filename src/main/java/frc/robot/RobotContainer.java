@@ -358,11 +358,13 @@ public class RobotContainer {
         shootingTrigger
                 .and(OIController.manualHold().negate())
                 .whileTrue(Commands.parallel(
-                                superstructure.aimAtHubWhileDriving(
-                                        drive,
-                                        OIController.driveTranslationX(),
-                                        OIController.driveTranslationY(),
-                                        OIController.xDrive()),
+                                superstructure
+                                        .aimAtHubWhileDriving(
+                                                drive,
+                                                OIController.driveTranslationX(),
+                                                OIController.driveTranslationY(),
+                                                OIController.xDrive())
+                                        .repeatedly(),
                                 Commands.sequence(
                                         superstructure
                                                 .autoSpeedShooter(drive::getPose, drive::getChassisSpeeds)
@@ -372,8 +374,7 @@ public class RobotContainer {
                                                 superstructure.fireCommand(),
                                                 indexer.index(),
                                                 intake.siftFuelCommand(),
-                                                intake.intakeRollerCommand()
-                                                )))
+                                                intake.intakeRollerCommand())))
                         .withName("ShootManual"))
                 .onFalse(Commands.parallel(
                                 superstructure.stopUpgoerCommand(),
@@ -454,6 +455,7 @@ public class RobotContainer {
 
         OIController.toggleIntake().and(shootingTrigger.negate()).onTrue(intake.toggleIntake());
         OIController.intakeMiddle().and(shootingTrigger.negate()).onTrue(intake.goToCustomAngleOneCommand());
+        OIController.xDrive().onTrue(Commands.runOnce(drive::stopWithX, drive));
     }
 
     /**

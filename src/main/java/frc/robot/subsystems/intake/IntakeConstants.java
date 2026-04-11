@@ -37,7 +37,7 @@ public class IntakeConstants {
         public static final double kIdlePercent = 0.1;
 
         // for pid roller io
-        public static final AngularVelocity kIntakeSpeed = RPM.of(2000); // NEVER GO HIGHER THAN THIS - JOSH
+        public static final AngularVelocity kIntakeSpeed = RPM.of(2200); // NEVER GO HIGHER THAN THIS - JOSH
         public static final AngularVelocity kOuttakeSpeed = RPM.of(-1800);
         public static final AngularVelocity kIdleSpeed = RPM.of(100);
 
