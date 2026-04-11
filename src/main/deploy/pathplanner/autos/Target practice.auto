@@ -21,6 +21,12 @@
           "data": {
             "commands": [
               {
+                "type": "wait",
+                "data": {
+                  "waitTime": 3.2
+                }
+              },
+              {
                 "type": "path",
                 "data": {
                   "pathName": "Depot"
