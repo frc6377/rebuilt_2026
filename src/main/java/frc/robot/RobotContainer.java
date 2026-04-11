@@ -365,19 +365,26 @@ public class RobotContainer {
                                         OIController.driveTranslationX(),
                                         OIController.driveTranslationY(),
                                         OIController.xDrive()),
-                                Commands.parallel(
-                                                superstructure
-                                                        .autoSpeedShooter(drive::getPose, drive::getChassisSpeeds)
-                                                        .until(() ->
-                                                                superstructure.isReadyToShoot(drive.getRotation())),
-                                                Commands.waitSeconds(0.5))
-                                        .andThen(Commands.runOnce(drive::stopWithX))
-                                        .andThen(Commands.parallel(
+                                Commands.sequence(
+                                        superstructure
+                                                .autoSpeedShooter(drive::getPose, drive::getChassisSpeeds)
+                                                .until(() -> superstructure.isReadyToShoot(drive.getRotation()))
+                                                .withTimeout(0.7),
+                                        Commands.either(
+                                                Commands.runOnce(drive::stopWithX),
+                                                Commands.none(),
+                                                () -> !(OIController.driveTranslationX()
+                                                                        .getAsDouble()
+                                                                == 0
+                                                        && OIController.driveTranslationY()
+                                                                        .getAsDouble()
+                                                                == 0)),
+                                        Commands.parallel(
                                                 superstructure.fireCommand(),
                                                 indexer.index(),
                                                 intake.siftFuelCommand(),
-                                                intake.intakeRollerCommand(),
-                                                Commands.run(drive::stopWithX))))
+                                                intake.intakeRollerCommand()
+                                                )))
                         .withName("ShootManual"))
                 .onFalse(Commands.parallel(
                                 superstructure.stopUpgoerCommand(),
