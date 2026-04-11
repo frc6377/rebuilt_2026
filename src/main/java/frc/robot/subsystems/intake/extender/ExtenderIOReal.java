@@ -53,7 +53,10 @@ public class ExtenderIOReal implements ExtenderIO {
         extenderEncoder.setInverted(true);
 
         extenderPid = new TunablePIDController(
-                "Intake/Extender/ExtenderPID", () -> getPosition().in(Degrees), percent -> extenderMotor.set(-percent));
+                "Intake/Extender/ExtenderPID",
+                () -> getPosition().in(Degrees),
+                percent -> extenderMotor.set(-percent),
+                ExtenderConstants.kExtenderConstraints);
 
         extenderPid.addPreset("default", ExtenderConstants.PIDF.normalPID);
         extenderPid.addPreset("float", ExtenderConstants.PIDF.floatPID);
@@ -83,6 +86,8 @@ public class ExtenderIOReal implements ExtenderIO {
         extenderCustomAngleOne.set(ExtenderConstants.kExtenderCustomAngleOne.in(Degrees));
         extenderCustomAngleTwo.set(ExtenderConstants.kExtenderCustomAngleTwo.in(Degrees));
         extenderPid.applyPreset("default");
+
+        setPidEnabled(false);
     }
 
     public void setPosition(Angle position) {
