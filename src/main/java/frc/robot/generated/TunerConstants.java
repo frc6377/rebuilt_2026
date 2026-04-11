@@ -212,7 +212,7 @@ public class TunerConstants {
                                 m.encoderOffset(),
                                 xPos,
                                 yPos,
-                                m.driveMotorInverted(),
+                                modulePosition.isOnLeftSide() ? kInvertLeftSide : kInvertRightSide,
                                 m.steerMotorInverted(),
                                 m.encoderInverted());
         }
