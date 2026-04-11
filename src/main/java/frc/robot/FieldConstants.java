@@ -509,7 +509,7 @@ public class FieldConstants {
             }
         } else {
             // Endgame. Always Active. No change.
-            return 0.0;
+            return matchTime;
         }
     }
 
