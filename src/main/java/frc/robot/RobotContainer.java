@@ -318,7 +318,8 @@ public class RobotContainer {
                 // The lambda () -> ensures this check happens every loop
                 () -> OIController.driveTranslationY().getAsDouble(),
                 () -> OIController.driveTranslationX().getAsDouble(),
-                () -> OIController.driveRotation().getAsDouble()));
+                () -> OIController.driveRotation().getAsDouble(),
+                () -> OIController.xDrive().getAsBoolean()));
         // // Lock to 0° when butn is
         // OIController.driveLock0()
         // .whileTrue(DriveCommands.joystickDriveAtAngle(
@@ -375,13 +376,12 @@ public class RobotContainer {
                                                 indexer.index(),
                                                 intake.siftFuelCommand(),
                                                 intake.intakeRollerCommand())))
-                        .withName("ShootManual"))
+                        .withName("ShootAuto"))
                 .onFalse(Commands.parallel(
                                 superstructure.stopUpgoerCommand(),
                                 indexer.stop(),
                                 superstructure.setFlywheelVelocityManual(RPM.of(1500)),
-                                intake.extendIntake(),
-                                Commands.run(drive::stopWithX))
+                                intake.extendIntake())
                         .withName("Shoot Manual Stop")
                         .andThen(superstructure.runFlywheelVelocityManual())
                         .andThen(intake.stopRollerCommand()));
@@ -455,7 +455,6 @@ public class RobotContainer {
 
         OIController.toggleIntake().and(shootingTrigger.negate()).onTrue(intake.toggleIntake());
         OIController.intakeMiddle().and(shootingTrigger.negate()).onTrue(intake.goToCustomAngleOneCommand());
-        OIController.xDrive().onTrue(Commands.runOnce(drive::stopWithX, drive));
     }
 
     /**

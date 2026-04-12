@@ -62,8 +62,23 @@ public class DriveCommands {
     /** Field relative drive command using two joysticks (controlling linear and angular velocities). */
     public static Command joystickDrive(
             Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier, DoubleSupplier omegaSupplier) {
+        return joystickDrive(drive, xSupplier, ySupplier, omegaSupplier, () -> false);
+    }
+
+    /** Field relative drive command using two joysticks with X mode support. */
+    public static Command joystickDrive(
+            Drive drive,
+            DoubleSupplier xSupplier,
+            DoubleSupplier ySupplier,
+            DoubleSupplier omegaSupplier,
+            java.util.function.BooleanSupplier xModeSupplier) {
         return Commands.run(
                 () -> {
+                    if (xModeSupplier.getAsBoolean()) {
+                        drive.stopWithX();
+                        return;
+                    }
+
                     // Get linear velocity
                     Translation2d linearVelocity =
                             getLinearVelocityFromJoysticks(xSupplier.getAsDouble(), ySupplier.getAsDouble());
@@ -91,6 +106,15 @@ public class DriveCommands {
      */
     public static Command joystickDriveAtAngle(
             Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier, Supplier<Rotation2d> rotationSupplier) {
+        return joystickDriveAtAngle(drive, xSupplier, ySupplier, rotationSupplier, () -> false);
+    }
+
+    public static Command joystickDriveAtAngle(
+            Drive drive,
+            DoubleSupplier xSupplier,
+            DoubleSupplier ySupplier,
+            Supplier<Rotation2d> rotationSupplier,
+            java.util.function.BooleanSupplier xModeSupplier) {
 
         // Create PID controller
         ProfiledPIDController angleController = new ProfiledPIDController(
@@ -100,6 +124,12 @@ public class DriveCommands {
         // Construct command
         return Commands.run(
                         () -> {
+                            if (xModeSupplier.getAsBoolean()) {
+                                drive.stopWithX();
+                                drive.stop();
+                                return;
+                            }
+
                             // Get linear velocity
                             Translation2d linearVelocity =
                                     getLinearVelocityFromJoysticks(xSupplier.getAsDouble(), ySupplier.getAsDouble());
