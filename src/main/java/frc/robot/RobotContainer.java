@@ -455,6 +455,7 @@ public class RobotContainer {
 
         OIController.toggleIntake().and(shootingTrigger.negate()).onTrue(intake.toggleIntake());
         OIController.intakeMiddle().and(shootingTrigger.negate()).onTrue(intake.goToCustomAngleOneCommand());
+        OIController.xDrive().onTrue(Commands.runOnce(drive::stopWithX, drive));
     }
 
     /**
