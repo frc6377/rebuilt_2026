@@ -61,7 +61,7 @@ public class ExtenderIOReal implements ExtenderIO {
         extenderPid.addPreset("default", ExtenderConstants.PIDF.normalPID);
         extenderPid.addPreset("float", ExtenderConstants.PIDF.floatPID);
 
-        extenderPid.getPIDController().enableContinuousInput(0, 360);
+        extenderPid.getPIDController().enableContinuousInput(0, 359);
 
         extenderStowAngle =
                 new LoggedNetworkNumber("Intake/Extender/StowAngle", ExtenderConstants.kExtenderStowAngle.in(Degrees));
