@@ -154,14 +154,10 @@ public class Superstructure extends SubsystemBase {
                 "Shooting/DistanceToHub", round(vision.getHubDistanceMeasure().in(Meters) * 100.0) / 100.0);
         if (FieldConstants.getTimeUntilHubStateChange() > 0 && FieldConstants.getTimeUntilHubStateChange() < 1) {
             CommandScheduler.getInstance().schedule(oi.setRumble(0, 0));
-        } else if (FieldConstants.getTimeUntilHubStateChange() > 4.75
-                && FieldConstants.getTimeUntilHubStateChange() < 5) {
-            CommandScheduler.getInstance().schedule(oi.setRumble(0.7, 0.7));
-        } else if (FieldConstants.getTimeUntilHubStateChange() > 4.25
-                && FieldConstants.getTimeUntilHubStateChange() < 4.5) {
-            CommandScheduler.getInstance().schedule(oi.setRumble(0.75, 0.75));
+        } else if (FieldConstants.getTimeUntilHubStateChange() > 4 && FieldConstants.getTimeUntilHubStateChange() < 5) {
+            CommandScheduler.getInstance().schedule(oi.setRumble(1, 1));
         } else {
-            oi.setRumble(0, 0);
+            CommandScheduler.getInstance().schedule(oi.setRumble(0, 0));
         }
 
         if (gamePieceTrajectorySimulation == null) {
