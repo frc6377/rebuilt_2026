@@ -1,6 +1,6 @@
 {
-  "robotWidth": 0.91948,
-  "robotLength": 0.79248,
+  "robotWidth": 0.919,
+  "robotLength": 0.792,
   "holonomicMode": true,
   "pathFolders": [
     "Straight Line"
@@ -17,7 +17,7 @@
     "Target practice"
   ],
   "defaultMaxVel": 4.0,
-  "defaultMaxAccel": 4.5,
+  "defaultMaxAccel": 4.0,
   "defaultMaxAngVel": 540.0,
   "defaultMaxAngAccel": 720.0,
   "defaultNominalVoltage": 12.0,
