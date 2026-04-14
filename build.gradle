@@ -3,6 +3,8 @@ plugins {
     id "edu.wpi.first.GradleRIO" version "2026.2.1"
     id "com.peterabeles.gversion" version "1.10"
     id("com.diffplug.spotless") version "7.0.0.BETA4"
+    id "net.ltgt.errorprone" version "5.1.0"
+    id "info.solidsoft.pitest" version "1.19.0"
 }
 
 java {
@@ -108,6 +110,8 @@ dependencies {
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'net.jqwik:jqwik:1.9.3'
+    errorprone 'com.google.errorprone:error_prone_core:2.42.0'
 
     def akitJson = new groovy.json.JsonSlurper().parseText(new File(projectDir.getAbsolutePath() + "/vendordeps/AdvantageKit.json").text)
     annotationProcessor "org.littletonrobotics.akit:akit-autolog:$akitJson.version"
@@ -146,6 +150,14 @@ wpi.java.configureTestTasks(test)
 // Configure string concat to always inline compile
 tasks.withType(JavaCompile) {
     options.compilerArgs.add '-XDstringConcat=inline'
+}
+
+// Error Prone static analysis (Layer 1: Linting)
+tasks.withType(JavaCompile).configureEach {
+    options.errorprone {
+        // Treat all default checks as errors (high-confidence checks only)
+        allErrorsAsWarnings = false
+    }
 }
 
 
@@ -288,4 +300,26 @@ spotless {
         indentWithSpaces(2)
         endWithNewline()
     }
+}
+
+// PITest mutation testing (Layer 4)
+// Scoped to pure-Java classes only (no WPILib native deps) to avoid
+// classpath issues in PITest's forked JVM. TrajectoryBall tests still
+// run in the regular 'test' task but are excluded from mutation analysis.
+pitest {
+    junit5PluginVersion = '1.2.3'
+    targetClasses = [
+        'frc.robot.util.OILayer.ControlCurve'
+    ]
+    targetTests = ['frc.robot.util.OILayer.*']
+    threads = 4
+    outputFormats = ['HTML']
+    timestampedReports = false
+}
+
+// Umbrella task: runs all 4 bug-finding layers
+task audit {
+    group = "Verification"
+    description = "Runs all 4 layers: Error Prone (compile), unit tests, property tests, mutation tests"
+    dependsOn 'test', 'pitest'
 }

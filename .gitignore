@@ -186,6 +186,7 @@ compile_commands.json
 .factorypath
 
 .claude/
+.jqwik-database
 
 BuildConstants.java
 simgui-ds.json
