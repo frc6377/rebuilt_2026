@@ -61,7 +61,7 @@ public class ExtenderIOReal implements ExtenderIO {
         extenderPid.addPreset("default", ExtenderConstants.PIDF.normalPID);
         extenderPid.addPreset("float", ExtenderConstants.PIDF.floatPID);
 
-        extenderPid.getPIDController().enableContinuousInput(0, 360);
+        extenderPid.getPIDController().enableContinuousInput(0, 359);
 
         extenderStowAngle =
                 new LoggedNetworkNumber("Intake/Extender/StowAngle", ExtenderConstants.kExtenderStowAngle.in(Degrees));
@@ -132,7 +132,10 @@ public class ExtenderIOReal implements ExtenderIO {
 
     @Override
     public BooleanSupplier atTarget() {
-        return () -> isAtAngle(Degrees.of(extenderPid.getSetpoint()));
+        return () -> isAtAngle(Degrees.of(extenderPid.getSetpoint()))
+                || isAtAngle(Degrees.of(Degrees.of(extenderPid.getSetpoint())
+                        .minus(Degrees.of(360))
+                        .abs(Degree)));
     }
 
     @Override

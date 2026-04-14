@@ -4,9 +4,7 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-
 import java.util.function.BooleanSupplier;
-
 import org.littletonrobotics.junction.Logger;
 
 public class Extender extends SubsystemBase {
@@ -25,6 +23,10 @@ public class Extender extends SubsystemBase {
         Logger.recordOutput(
                 "Intake/Extender/CurrentCommand",
                 getCurrentCommand() == null ? "null" : getCurrentCommand().toString());
+    }
+
+    public BooleanSupplier isAtTarget() {
+        return io.atTarget();
     }
 
     public BooleanSupplier isExtended() {
