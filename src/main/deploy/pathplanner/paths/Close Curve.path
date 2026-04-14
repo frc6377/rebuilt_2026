@@ -37,7 +37,7 @@
       },
       "prevControl": {
         "x": 5.85,
-        "y": 5.75
+        "y": 6.0
       },
       "nextControl": null,
       "isLocked": false,
@@ -57,10 +57,10 @@
   "constraintZones": [
     {
       "name": "Constraints Zone",
-      "minWaypointRelativePos": 1.4275618374558348,
+      "minWaypointRelativePos": 1.560424028268563,
       "maxWaypointRelativePos": 2.0,
       "constraints": {
-        "maxVelocity": 1.5,
+        "maxVelocity": 1.4,
         "maxAcceleration": 4.5,
         "maxAngularVelocity": 540.0,
         "maxAngularAcceleration": 720.0,

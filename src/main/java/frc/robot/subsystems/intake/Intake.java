@@ -100,7 +100,7 @@ public class Intake {
     }
 
     public Command intakeRollerCommand() {
-        return roller.spinUpFlywheels(() -> RPM.of(tunableIntakeSpeed.get()));
+        return roller.spinUpFlywheels(() -> RPM.of(tunableIntakeSpeed.get())).finallyDo(() -> roller.stop());
     }
 
     public Command outtakeRollerCommand() {

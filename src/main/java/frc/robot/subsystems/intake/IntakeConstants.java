@@ -76,7 +76,7 @@ public class IntakeConstants {
                 PIDF.kS,
                 PIDF.kA,
                 MotorConfig.kStatorCurrentLimit,
-                Amps.of(90), // default supply current limit
+                Amps.of(60), // default supply current limit
                 true,
                 true);
     }
