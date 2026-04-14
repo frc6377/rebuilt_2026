@@ -16,15 +16,15 @@
     },
     {
       "anchor": {
-        "x": 8.1,
+        "x": 7.8999999999999995,
         "y": 7.199999999999999
       },
       "prevControl": {
-        "x": 7.980085957198355,
+        "x": 7.780085957198355,
         "y": 8.345845297882372
       },
       "nextControl": {
-        "x": 8.186546052631579,
+        "x": 7.986546052631579,
         "y": 6.373004385964912
       },
       "isLocked": false,
@@ -33,15 +33,15 @@
     {
       "anchor": {
         "x": 8.1,
-        "y": 4.716
+        "y": 4.5
       },
       "prevControl": {
         "x": 8.176908175750926,
-        "y": 7.341864857781621
+        "y": 7.125864857781621
       },
       "nextControl": {
         "x": 8.032686403508771,
-        "y": 2.4177214912280705
+        "y": 2.2017214912280703
       },
       "isLocked": false,
       "linkedName": "Middle Down end"
@@ -91,7 +91,7 @@
   "eventMarkers": [],
   "globalConstraints": {
     "maxVelocity": 4.0,
-    "maxAcceleration": 4.0,
+    "maxAcceleration": 4.5,
     "maxAngularVelocity": 540.0,
     "maxAngularAcceleration": 720.0,
     "nominalVoltage": 12.0,

@@ -12,6 +12,10 @@ public interface BaseShooterIO {
         public Voltage flywheelAppliedVoltage = Volts.of(0.0);
         public Current flywheelCurrent = Amps.of(0.0);
         public Temperature flywheelTemp = Celsius.of(0.0);
+        public AngularVelocity followerFlywheelVelocity = RPM.of(0.0);
+        public Voltage followerFlywheelAppliedVoltage = Volts.of(0.0);
+        public Current followerFlywheelCurrent = Amps.of(0.0);
+        public Temperature followerFlywheelTemp = Celsius.of(0.0);
     }
 
     /** Updates the set of loggable inputs. */

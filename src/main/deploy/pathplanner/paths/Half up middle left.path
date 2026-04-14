@@ -4,12 +4,12 @@
     {
       "anchor": {
         "x": 8.1,
-        "y": 4.716
+        "y": 4.5
       },
       "prevControl": null,
       "nextControl": {
         "x": 8.043483011285389,
-        "y": 4.959527883386343
+        "y": 4.743527883386344
       },
       "isLocked": false,
       "linkedName": "Middle Down end"
@@ -34,7 +34,7 @@
   "eventMarkers": [],
   "globalConstraints": {
     "maxVelocity": 4.0,
-    "maxAcceleration": 4.0,
+    "maxAcceleration": 4.5,
     "maxAngularVelocity": 540.0,
     "maxAngularAcceleration": 720.0,
     "nominalVoltage": 12.0,
