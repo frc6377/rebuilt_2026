@@ -96,10 +96,8 @@ public class Intake {
     }
 
     public Command siftFuelCommand() {
-        return extender.toggleSiftCommand()
-                .andThen(Commands.none())
-                .until(extender.isAtTarget())
-                .withTimeout(0.75);
+        return Commands.repeatingSequence(
+                extender.toggleSiftCommand(), Commands.waitSeconds(0.75).until(extender.isAtTarget()));
         // return Commands.sequence(extender.toggleSiftCommand(),
         // Commands.waitSeconds(0.75)).until(extender.isExtended());
         // return Commands.repeatingSequence(extender.toggleSiftCommand(), Commands.waitSeconds(0.75));

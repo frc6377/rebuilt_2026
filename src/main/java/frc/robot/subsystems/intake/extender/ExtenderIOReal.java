@@ -132,10 +132,7 @@ public class ExtenderIOReal implements ExtenderIO {
 
     @Override
     public BooleanSupplier atTarget() {
-        return () -> isAtAngle(Degrees.of(extenderPid.getSetpoint()))
-                || isAtAngle(Degrees.of(Degrees.of(extenderPid.getSetpoint())
-                        .minus(Degrees.of(360))
-                        .abs(Degree)));
+        return () -> isAtAngle(Degrees.of(extenderPid.getSetpoint()));
     }
 
     @Override

@@ -92,7 +92,7 @@ public class IntakeConstants {
 
         public static final Angle kExtenderStowAngle = Degrees.of(0).plus(Degrees.of(180));
         public static final Angle kExtenderIntakeAngle = Degrees.of(97).plus(Degrees.of(180));
-        public static final Angle kExtenderTolerance = Degrees.of(2.5).plus(Degrees.of(180));
+        public static final Angle kExtenderTolerance = Degrees.of(2.5);
         public static final Angle kExtenderSiftAngleOne = Degrees.of(0.0).plus(Degrees.of(180));
         public static final Angle kExtenderSiftAngleTwo = Degrees.of(97.0).plus(Degrees.of(180));
         public static final Angle kExtenderCustomAngleOne = Degrees.of(45.0).plus(Degrees.of(180));
