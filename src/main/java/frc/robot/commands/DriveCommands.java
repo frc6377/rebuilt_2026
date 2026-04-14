@@ -62,25 +62,42 @@ public class DriveCommands {
     /** Field relative drive command using two joysticks (controlling linear and angular velocities). */
     public static Command joystickDrive(
             Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier, DoubleSupplier omegaSupplier) {
+        return joystickDrive(drive, xSupplier, ySupplier, omegaSupplier, () -> false);
+    }
+
+    /** Field relative drive command using two joysticks with X mode support. */
+    public static Command joystickDrive(
+            Drive drive,
+            DoubleSupplier xSupplier,
+            DoubleSupplier ySupplier,
+            DoubleSupplier omegaSupplier,
+            java.util.function.BooleanSupplier xModeSupplier) {
         return Commands.run(
                 () -> {
-                    // Get linear velocity
-                    Translation2d linearVelocity =
-                            getLinearVelocityFromJoysticks(xSupplier.getAsDouble(), ySupplier.getAsDouble());
+                    if (xModeSupplier.getAsBoolean()
+                            && Math.hypot(xSupplier.getAsDouble(), ySupplier.getAsDouble()) < 0.2) {
+                        drive.stop();
+                        drive.stopWithX();
+                    } else {
 
-                    // Apply rotation deadband
-                    double omega = omegaSupplier.getAsDouble();
+                        // Get linear velocity
+                        Translation2d linearVelocity =
+                                getLinearVelocityFromJoysticks(xSupplier.getAsDouble(), ySupplier.getAsDouble());
 
-                    // Convert to field relative speeds & send command
-                    ChassisSpeeds speeds = new ChassisSpeeds(
-                            linearVelocity.getX() * drive.getMaxLinearSpeedMetersPerSec(),
-                            linearVelocity.getY() * drive.getMaxLinearSpeedMetersPerSec(),
-                            omega * drive.getMaxAngularSpeedRadPerSec());
-                    boolean isFlipped = DriverStation.getAlliance().isPresent()
-                            && DriverStation.getAlliance().get() == Alliance.Red;
-                    drive.runVelocity(ChassisSpeeds.fromFieldRelativeSpeeds(
-                            speeds,
-                            isFlipped ? drive.getRotation().plus(new Rotation2d(Math.PI)) : drive.getRotation()));
+                        // Apply rotation deadband
+                        double omega = omegaSupplier.getAsDouble();
+
+                        // Convert to field relative speeds & send command
+                        ChassisSpeeds speeds = new ChassisSpeeds(
+                                linearVelocity.getX() * drive.getMaxLinearSpeedMetersPerSec(),
+                                linearVelocity.getY() * drive.getMaxLinearSpeedMetersPerSec(),
+                                omega * drive.getMaxAngularSpeedRadPerSec());
+                        boolean isFlipped = DriverStation.getAlliance().isPresent()
+                                && DriverStation.getAlliance().get() == Alliance.Red;
+                        drive.runVelocity(ChassisSpeeds.fromFieldRelativeSpeeds(
+                                speeds,
+                                isFlipped ? drive.getRotation().plus(new Rotation2d(Math.PI)) : drive.getRotation()));
+                    }
                 },
                 drive);
     }
@@ -91,6 +108,15 @@ public class DriveCommands {
      */
     public static Command joystickDriveAtAngle(
             Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier, Supplier<Rotation2d> rotationSupplier) {
+        return joystickDriveAtAngle(drive, xSupplier, ySupplier, rotationSupplier, () -> false);
+    }
+
+    public static Command joystickDriveAtAngle(
+            Drive drive,
+            DoubleSupplier xSupplier,
+            DoubleSupplier ySupplier,
+            Supplier<Rotation2d> rotationSupplier,
+            java.util.function.BooleanSupplier xModeSupplier) {
 
         // Create PID controller
         ProfiledPIDController angleController = new ProfiledPIDController(
@@ -100,6 +126,12 @@ public class DriveCommands {
         // Construct command
         return Commands.run(
                         () -> {
+                            if (xModeSupplier.getAsBoolean()) {
+                                drive.stopWithX();
+                                drive.stop();
+                                return;
+                            }
+
                             // Get linear velocity
                             Translation2d linearVelocity =
                                     getLinearVelocityFromJoysticks(xSupplier.getAsDouble(), ySupplier.getAsDouble());
