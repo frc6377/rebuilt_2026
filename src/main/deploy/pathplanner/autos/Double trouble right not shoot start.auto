@@ -11,7 +11,7 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": "Face trench middle right"
+                  "pathName": "Curve Right"
                 }
               },
               {
@@ -21,7 +21,7 @@
                     {
                       "type": "wait",
                       "data": {
-                        "waitTime": 1.4
+                        "waitTime": 0.35
                       }
                     },
                     {
@@ -29,27 +29,14 @@
                       "data": {
                         "name": "Extend Intake"
                       }
+                    },
+                    {
+                      "type": "named",
+                      "data": {
+                        "name": "Intake"
+                      }
                     }
                   ]
-                }
-              }
-            ]
-          }
-        },
-        {
-          "type": "deadline",
-          "data": {
-            "commands": [
-              {
-                "type": "path",
-                "data": {
-                  "pathName": "half up middle right"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "Intake"
                 }
               }
             ]
@@ -125,19 +112,19 @@
           }
         },
         {
-          "type": "path",
-          "data": {
-            "pathName": "Close Face trench middle right"
-          }
-        },
-        {
           "type": "deadline",
           "data": {
             "commands": [
               {
                 "type": "path",
                 "data": {
-                  "pathName": "Close half up middle right"
+                  "pathName": "Close Curve Right"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "Stop shooter"
                 }
               },
               {

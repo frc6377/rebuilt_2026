@@ -8,8 +8,8 @@
       },
       "prevControl": null,
       "nextControl": {
-        "x": 5.2,
-        "y": 0.55
+        "x": 4.436637412395631,
+        "y": 0.5239355088133841
       },
       "isLocked": false,
       "linkedName": "Trench end right"
@@ -20,15 +20,40 @@
         "y": 0.8200000000000001
       },
       "prevControl": {
-        "x": 4.913567880791072,
-        "y": 0.41297185430826755
+        "x": 6.110404370475525,
+        "y": 0.4930540974868886
+      },
+      "nextControl": {
+        "x": 6.273473702087918,
+        "y": 1.0881149289045575
+      },
+      "isLocked": false,
+      "linkedName": "Close middle up bottom"
+    },
+    {
+      "anchor": {
+        "x": 5.85,
+        "y": 4.0
+      },
+      "prevControl": {
+        "x": 5.85,
+        "y": 2.0
       },
       "nextControl": null,
       "isLocked": false,
-      "linkedName": "Close middle up bottom"
+      "linkedName": "close middle up end"
     }
   ],
-  "rotationTargets": [],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.5,
+      "rotationDegrees": 90.0
+    },
+    {
+      "waypointRelativePos": 1.0,
+      "rotationDegrees": 100.0
+    }
+  ],
   "constraintZones": [],
   "pointTowardsZones": [],
   "eventMarkers": [],
@@ -41,8 +66,8 @@
     "unlimited": false
   },
   "goalEndState": {
-    "velocity": 0.2,
-    "rotation": 100.0
+    "velocity": 0,
+    "rotation": 115.0
   },
   "reversed": false,
   "folder": null,

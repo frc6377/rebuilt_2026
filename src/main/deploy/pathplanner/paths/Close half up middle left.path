@@ -8,8 +8,8 @@
       },
       "prevControl": null,
       "nextControl": {
-        "x": 5.793027682456764,
-        "y": 4.268438753538951
+        "x": 5.7930296305887135,
+        "y": 4.268439166994935
       },
       "isLocked": false,
       "linkedName": "Middle down end close"
@@ -20,8 +20,8 @@
         "y": 6.8
       },
       "prevControl": {
-        "x": 6.05804098284056,
-        "y": 6.555229328247931
+        "x": 6.058041752562877,
+        "y": 6.555229510768788
       },
       "nextControl": null,
       "isLocked": false,
