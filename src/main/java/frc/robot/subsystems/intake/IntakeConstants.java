@@ -100,7 +100,7 @@ public class IntakeConstants {
         public static final Angle kExtenderFloatLimit = Degrees.of(50).plus(Degrees.of(180));
         public static final Angle kExtenderZeroAngle = Degrees.of(-56.70141).plus(Degrees.of(180));
         public static final TrapezoidProfile.Constraints kExtenderConstraints =
-                new TrapezoidProfile.Constraints(1600, 1600);
+                new TrapezoidProfile.Constraints(1300, 1300);
 
         public static final Time kSiftTimeout = Seconds.of(0.5);
 
