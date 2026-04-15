@@ -93,6 +93,7 @@ public class ExtenderIOReal implements ExtenderIO {
     public void setPosition(Angle position) {
         setPidEnabled(true);
         setMode(NeutralModeValue.Brake);
+
         extenderPid.applyPreset("default");
         extenderPid.setSetpoint(position.in(Degrees));
     }

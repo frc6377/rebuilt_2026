@@ -166,6 +166,37 @@ public class TunablePIDController {
     }
 
     /**
+     * Updates the profiled PID speed constraints at runtime.
+     *
+     * @param maxVelocity Maximum profile velocity.
+     * @param maxAcceleration Maximum profile acceleration.
+     */
+    public void setSpeedConstraints(double maxVelocity, double maxAcceleration) {
+        setSpeedConstraints(new TrapezoidProfile.Constraints(maxVelocity, maxAcceleration));
+    }
+
+    /**
+     * Updates the profiled PID speed constraints at runtime.
+     *
+     * @param constraints New trapezoid profile constraints.
+     */
+    public void setSpeedConstraints(TrapezoidProfile.Constraints constraints) {
+        if (constraints == null) {
+            return;
+        }
+        pidController.setConstraints(constraints);
+        maxVelocityLog.set(constraints.maxVelocity);
+        maxAccelerationLog.set(constraints.maxAcceleration);
+        lastMaxVelocity = constraints.maxVelocity;
+        lastMaxAcceleration = constraints.maxAcceleration;
+    }
+
+    /** Backward-compatible typo alias. Prefer {@link #setSpeedConstraints(double, double)}. */
+    public void setSpeedConstrants(double maxVelocity, double maxAcceleration) {
+        setSpeedConstraints(maxVelocity, maxAcceleration);
+    }
+
+    /**
      * Adds or replaces a named preset. Does not apply it automatically.
      *
      * @param name The name of the preset.
