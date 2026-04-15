@@ -29,7 +29,7 @@ public class IntakeConstants {
         // for normal roller io
 
         public static final boolean kfollowerEnabled = true;
-        public static final boolean kIdleEnabled = false;
+        public static final boolean kIdleEnabled = true;
 
         // for normal roller io
         public static final double kIntakePercent = 1;
@@ -37,8 +37,8 @@ public class IntakeConstants {
         public static final double kIdlePercent = 0.1;
 
         // for pid roller io
-        public static final AngularVelocity kIntakeSpeed = RPM.of(1800);
-        public static final AngularVelocity kOuttakeSpeed = RPM.of(1800);
+        public static final AngularVelocity kIntakeSpeed = RPM.of(2500); // NEVER GO HIGHER THAN THIS - JOSH
+        public static final AngularVelocity kOuttakeSpeed = RPM.of(-1800);
         public static final AngularVelocity kIdleSpeed = RPM.of(100);
 
         public static class PIDF {
@@ -76,31 +76,31 @@ public class IntakeConstants {
                 PIDF.kS,
                 PIDF.kA,
                 MotorConfig.kStatorCurrentLimit,
-                Amps.of(90), // default supply current limit
+                Amps.of(60), // default supply current limit
                 true,
                 true);
     }
 
     public static class ExtenderConstants {
 
-        public static final boolean floatEnabled = false;
+        public static final boolean floatEnabled = true;
 
         public static final double kGearing = 1;
         public static final MomentOfInertia kMOI = KilogramSquareMeters.of(1.5);
         public static final Distance kExtenderArmLength = Inches.of(12.0);
         public static final double kDownSpeed = 0.05;
 
-        public static final Angle kExtenderStowAngle = Degrees.of(0);
-        public static final Angle kExtenderIntakeAngle = Degrees.of(97);
-        public static final Angle kExtenderTolerance = Degrees.of(2.5);
-        public static final Angle kExtenderSiftAngleOne = Degrees.of(0.0);
-        public static final Angle kExtenderSiftAngleTwo = Degrees.of(97.0);
-        public static final Angle kExtenderCustomAngleOne = Degrees.of(45.0);
-        public static final Angle kExtenderCustomAngleTwo = Degrees.of(60.0);
-        public static final Angle kExtenderFloatLimit = Degrees.of(50);
-        public static final Angle kExtenderZeroAngle = Radians.of(-0.85).plus(Degrees.of(-8));
+        public static final Angle kExtenderStowAngle = Degrees.of(0).plus(Degrees.of(180));
+        public static final Angle kExtenderIntakeAngle = Degrees.of(97).plus(Degrees.of(180));
+        public static final Angle kExtenderTolerance = Degrees.of(5.0);
+        public static final Angle kExtenderSiftAngleOne = Degrees.of(0.0).plus(Degrees.of(180));
+        public static final Angle kExtenderSiftAngleTwo = Degrees.of(97.0).plus(Degrees.of(180));
+        public static final Angle kExtenderCustomAngleOne = Degrees.of(45.0).plus(Degrees.of(180));
+        public static final Angle kExtenderCustomAngleTwo = Degrees.of(60.0).plus(Degrees.of(180));
+        public static final Angle kExtenderFloatLimit = Degrees.of(50).plus(Degrees.of(180));
+        public static final Angle kExtenderZeroAngle = Degrees.of(-56.70141).plus(Degrees.of(180));
         public static final TrapezoidProfile.Constraints kExtenderConstraints =
-                new TrapezoidProfile.Constraints(1000, 550);
+                new TrapezoidProfile.Constraints(1300, 1300);
 
         public static final Time kSiftTimeout = Seconds.of(0.5);
 
@@ -108,7 +108,7 @@ public class IntakeConstants {
 
             public static final PIDConfig normalPID = new PIDConfig(0.005, 0.0, 0.00001);
 
-            public static final PIDConfig floatPID = new PIDConfig(0.01, 0.0, 0.00001);
+            public static final PIDConfig floatPID = new PIDConfig(0.00, 0.0, 0.00001);
         }
 
         public static class MotorConfig {

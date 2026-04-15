@@ -4,6 +4,7 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import java.util.function.BooleanSupplier;
 import org.littletonrobotics.junction.Logger;
 
 public class Extender extends SubsystemBase {
@@ -19,10 +20,17 @@ public class Extender extends SubsystemBase {
         io.updateInputs(inputs);
         io.periodic();
         Logger.processInputs("Intake/Extender", inputs);
+        Logger.recordOutput(
+                "Intake/Extender/CurrentCommand",
+                getCurrentCommand() == null ? "null" : getCurrentCommand().toString());
     }
 
-    public boolean isExtended() {
-        return io.isExtended().getAsBoolean();
+    public BooleanSupplier isAtTarget() {
+        return io.atTarget();
+    }
+
+    public BooleanSupplier isExtended() {
+        return io.isExtended();
     }
 
     public Command extendCommand() {
@@ -30,7 +38,7 @@ public class Extender extends SubsystemBase {
     }
 
     public Command extendAndWaitCommand() {
-        return Commands.runOnce(io::extend, this).until(io.isExtended()).withName("ExtenderExtendAndWait");
+        return Commands.run(io::extend, this).until(io.isExtended()).withName("ExtenderExtendAndWait");
     }
 
     public Command retractCommand() {

@@ -3,29 +3,29 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 8.1,
-        "y": 3.5
+        "x": 0.53,
+        "y": 5.95
       },
       "prevControl": null,
       "nextControl": {
-        "x": 7.811532359997541,
-        "y": 2.3149389268142624
+        "x": 0.7227605078292809,
+        "y": 5.7908039365392545
       },
       "isLocked": false,
-      "linkedName": "middle up end"
+      "linkedName": "in front of depot"
     },
     {
       "anchor": {
-        "x": 7.6,
-        "y": 1.2499999999999996
+        "x": 1.3149834437125167,
+        "y": 5.95
       },
       "prevControl": {
-        "x": 7.824641375138713,
-        "y": 2.1816142298634364
+        "x": 0.7318932483960012,
+        "y": 5.784949025674649
       },
       "nextControl": null,
       "isLocked": false,
-      "linkedName": "half down end right"
+      "linkedName": "jay's crying spot"
     }
   ],
   "rotationTargets": [],
@@ -41,14 +41,14 @@
     "unlimited": false
   },
   "goalEndState": {
-    "velocity": 1.4,
-    "rotation": 100.0
+    "velocity": 0,
+    "rotation": -29.999999999999996
   },
   "reversed": false,
   "folder": null,
   "idealStartingState": {
     "velocity": 0,
-    "rotation": 100.0
+    "rotation": 180.0
   },
   "useDefaultConstraints": true
 }

@@ -3,12 +3,12 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 6.3,
+        "x": 7.6,
         "y": 6.8
       },
       "prevControl": null,
       "nextControl": {
-        "x": 6.3,
+        "x": 7.6,
         "y": 7.7669999999999995
       },
       "isLocked": false,
@@ -16,16 +16,16 @@
     },
     {
       "anchor": {
-        "x": 3.9,
-        "y": 7.6
+        "x": 3.5,
+        "y": 7.53
       },
       "prevControl": {
-        "x": 5.721,
-        "y": 7.6
+        "x": 5.320999999999996,
+        "y": 7.53
       },
       "nextControl": null,
       "isLocked": false,
-      "linkedName": "Trench end left"
+      "linkedName": "close trench shot"
     }
   ],
   "rotationTargets": [
@@ -38,7 +38,7 @@
   "pointTowardsZones": [],
   "eventMarkers": [],
   "globalConstraints": {
-    "maxVelocity": 4.0,
+    "maxVelocity": 3.0,
     "maxAcceleration": 3.5,
     "maxAngularVelocity": 540.0,
     "maxAngularAcceleration": 720.0,
@@ -47,13 +47,13 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": -90.0
+    "rotation": -76.077
   },
   "reversed": false,
   "folder": null,
   "idealStartingState": {
-    "velocity": 0.2,
+    "velocity": 3.0,
     "rotation": -100.0
   },
-  "useDefaultConstraints": true
+  "useDefaultConstraints": false
 }

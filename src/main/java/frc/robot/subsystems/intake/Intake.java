@@ -96,11 +96,12 @@ public class Intake {
     }
 
     public Command siftFuelCommand() {
-        return Commands.repeatingSequence(extender.toggleSiftCommand(), Commands.waitSeconds(0.75));
+        return Commands.repeatingSequence(
+                extender.toggleSiftCommand(), Commands.waitSeconds(0.75).until(extender.isAtTarget()));
     }
 
     public Command intakeRollerCommand() {
-        return roller.spinUpFlywheels(() -> RPM.of(tunableIntakeSpeed.get()));
+        return roller.spinUpFlywheels(() -> RPM.of(tunableIntakeSpeed.get())).finallyDo(() -> roller.stop());
     }
 
     public Command outtakeRollerCommand() {

@@ -21,9 +21,11 @@ public class Indexer extends SubsystemBase {
 
     public Command index() {
         return run(() -> {
-            indexerIO.setCustomSpeed(IndexerConstants.kCollectorSpeed
-                    + IndexerConstants.kCollectorVariableSpeed * Math.sin(Timer.getFPGATimestamp() * Math.PI / 8));
-        });
+                    indexerIO.setCustomSpeed(IndexerConstants.kCollectorSpeed
+                            + IndexerConstants.kCollectorVariableSpeed
+                                    * Math.sin(Timer.getFPGATimestamp() * Math.PI / 8));
+                })
+                .finallyDo(() -> indexerIO.stop());
     }
 
     public Command setCustomSpeed(double speed) {
