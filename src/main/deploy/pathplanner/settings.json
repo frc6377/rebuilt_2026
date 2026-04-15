@@ -1,6 +1,6 @@
 {
-  "robotWidth": 0.91948,
-  "robotLength": 0.79248,
+  "robotWidth": 0.919,
+  "robotLength": 0.792,
   "holonomicMode": true,
   "pathFolders": [
     "Straight Line"
@@ -17,7 +17,7 @@
     "Target practice"
   ],
   "defaultMaxVel": 4.0,
-  "defaultMaxAccel": 4.0,
+  "defaultMaxAccel": 3.75,
   "defaultMaxAngVel": 540.0,
   "defaultMaxAngAccel": 720.0,
   "defaultNominalVoltage": 12.0,
@@ -41,8 +41,8 @@
   "bumperOffsetX": 0.0,
   "bumperOffsetY": 0.0,
   "robotFeatures": [
-    "{\"name\":\"Rectangle\",\"type\":\"rounded_rect\",\"data\":{\"center\":{\"x\":0.5,\"y\":0.0},\"size\":{\"width\":0.5969,\"length\":0.1783842},\"borderRadius\":0.05,\"strokeWidth\":0.02,\"filled\":false}}",
-    "{\"name\":\"Rectangle\",\"type\":\"rounded_rect\",\"data\":{\"center\":{\"x\":-0.2,\"y\":-0.3},\"size\":{\"width\":0.3,\"length\":0.3},\"borderRadius\":0.05,\"strokeWidth\":0.02,\"filled\":false}}",
-    "{\"name\":\"Rectangle\",\"type\":\"rounded_rect\",\"data\":{\"center\":{\"x\":-0.2,\"y\":0.3},\"size\":{\"width\":0.3,\"length\":0.3},\"borderRadius\":0.05,\"strokeWidth\":0.02,\"filled\":false}}"
+    "{\"name\":\"Intake\",\"type\":\"rounded_rect\",\"data\":{\"center\":{\"x\":0.5,\"y\":0.0},\"size\":{\"width\":0.5969,\"length\":0.2032},\"borderRadius\":0.05,\"strokeWidth\":0.02,\"filled\":false}}",
+    "{\"name\":\"shooter1\",\"type\":\"rounded_rect\",\"data\":{\"center\":{\"x\":-0.2,\"y\":-0.3},\"size\":{\"width\":0.3,\"length\":0.3},\"borderRadius\":0.05,\"strokeWidth\":0.02,\"filled\":false}}",
+    "{\"name\":\"shooter2\",\"type\":\"rounded_rect\",\"data\":{\"center\":{\"x\":-0.2,\"y\":0.3},\"size\":{\"width\":0.3,\"length\":0.3},\"borderRadius\":0.05,\"strokeWidth\":0.02,\"filled\":false}}"
   ]
 }

@@ -80,6 +80,7 @@ public class RobotContainer {
     private final Drive drive;
 
     // Jay was here and basiclly is the reason that this code works <3
+    // Good job Jay! -Jackson A.
 
     private final Vision vision;
     protected final Intake intake;
@@ -302,7 +303,6 @@ public class RobotContainer {
                         .andThen(SignalLogger::stop));
 
         // Configure the button bindings
-        SignalLogger.setPath("Media/sda1/logs/one/");
         configureButtonBindings();
     }
 

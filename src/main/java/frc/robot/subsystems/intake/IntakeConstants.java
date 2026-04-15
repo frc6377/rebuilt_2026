@@ -37,7 +37,7 @@ public class IntakeConstants {
         public static final double kIdlePercent = 0.1;
 
         // for pid roller io
-        public static final AngularVelocity kIntakeSpeed = RPM.of(2200); // NEVER GO HIGHER THAN THIS - JOSH
+        public static final AngularVelocity kIntakeSpeed = RPM.of(2500); // NEVER GO HIGHER THAN THIS - JOSH
         public static final AngularVelocity kOuttakeSpeed = RPM.of(-1800);
         public static final AngularVelocity kIdleSpeed = RPM.of(100);
 
@@ -76,7 +76,7 @@ public class IntakeConstants {
                 PIDF.kS,
                 PIDF.kA,
                 MotorConfig.kStatorCurrentLimit,
-                Amps.of(90), // default supply current limit
+                Amps.of(60), // default supply current limit
                 true,
                 true);
     }
@@ -100,7 +100,7 @@ public class IntakeConstants {
         public static final Angle kExtenderFloatLimit = Degrees.of(50).plus(Degrees.of(180));
         public static final Angle kExtenderZeroAngle = Degrees.of(-56.70141).plus(Degrees.of(180));
         public static final TrapezoidProfile.Constraints kExtenderConstraints =
-                new TrapezoidProfile.Constraints(1200, 1000);
+                new TrapezoidProfile.Constraints(1300, 1300);
 
         public static final Time kSiftTimeout = Seconds.of(0.5);
 

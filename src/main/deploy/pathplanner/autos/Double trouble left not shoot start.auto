@@ -11,7 +11,7 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": "Face trench to middle"
+                  "pathName": "Curve"
                 }
               },
               {
@@ -21,7 +21,7 @@
                     {
                       "type": "wait",
                       "data": {
-                        "waitTime": 1.4
+                        "waitTime": 0.35
                       }
                     },
                     {
@@ -29,27 +29,14 @@
                       "data": {
                         "name": "Extend Intake"
                       }
+                    },
+                    {
+                      "type": "named",
+                      "data": {
+                        "name": "Intake"
+                      }
                     }
                   ]
-                }
-              }
-            ]
-          }
-        },
-        {
-          "type": "deadline",
-          "data": {
-            "commands": [
-              {
-                "type": "path",
-                "data": {
-                  "pathName": "Half down middle left"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "Intake"
                 }
               }
             ]
@@ -131,26 +118,13 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": "Close face trench to middle"
+                  "pathName": "Close Curve"
                 }
               },
               {
                 "type": "named",
                 "data": {
                   "name": "Stop shooter"
-                }
-              }
-            ]
-          }
-        },
-        {
-          "type": "deadline",
-          "data": {
-            "commands": [
-              {
-                "type": "path",
-                "data": {
-                  "pathName": "Close half down middle left"
                 }
               },
               {
