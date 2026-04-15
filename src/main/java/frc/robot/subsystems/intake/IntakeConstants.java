@@ -92,7 +92,7 @@ public class IntakeConstants {
 
         public static final Angle kExtenderStowAngle = Degrees.of(0).plus(Degrees.of(180));
         public static final Angle kExtenderIntakeAngle = Degrees.of(97).plus(Degrees.of(180));
-        public static final Angle kExtenderTolerance = Degrees.of(7.5);
+        public static final Angle kExtenderTolerance = Degrees.of(5.0);
         public static final Angle kExtenderSiftAngleOne = Degrees.of(0.0).plus(Degrees.of(180));
         public static final Angle kExtenderSiftAngleTwo = Degrees.of(97.0).plus(Degrees.of(180));
         public static final Angle kExtenderCustomAngleOne = Degrees.of(45.0).plus(Degrees.of(180));
@@ -108,7 +108,7 @@ public class IntakeConstants {
 
             public static final PIDConfig normalPID = new PIDConfig(0.005, 0.0, 0.00001);
 
-            public static final PIDConfig floatPID = new PIDConfig(0.00, 0.0, 0.00000);
+            public static final PIDConfig floatPID = new PIDConfig(0.00, 0.0, 0.00001);
         }
 
         public static class MotorConfig {
