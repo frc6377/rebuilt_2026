@@ -83,24 +83,24 @@ public class IntakeConstants {
 
     public static class ExtenderConstants {
 
-        public static final boolean floatEnabled = false;
+        public static final boolean floatEnabled = true;
 
         public static final double kGearing = 1;
         public static final MomentOfInertia kMOI = KilogramSquareMeters.of(1.5);
         public static final Distance kExtenderArmLength = Inches.of(12.0);
         public static final double kDownSpeed = 0.05;
 
-        public static final Angle kExtenderStowAngle = Degrees.of(0);
-        public static final Angle kExtenderIntakeAngle = Degrees.of(97);
-        public static final Angle kExtenderTolerance = Degrees.of(2.5);
-        public static final Angle kExtenderSiftAngleOne = Degrees.of(0.0);
-        public static final Angle kExtenderSiftAngleTwo = Degrees.of(97.0);
-        public static final Angle kExtenderCustomAngleOne = Degrees.of(45.0);
-        public static final Angle kExtenderCustomAngleTwo = Degrees.of(60.0);
-        public static final Angle kExtenderFloatLimit = Degrees.of(50);
-        public static final Angle kExtenderZeroAngle = Radians.of(-0.85).plus(Degrees.of(-8));
+        public static final Angle kExtenderStowAngle = Degrees.of(0).plus(Degrees.of(180));
+        public static final Angle kExtenderIntakeAngle = Degrees.of(97).plus(Degrees.of(180));
+        public static final Angle kExtenderTolerance = Degrees.of(5.0);
+        public static final Angle kExtenderSiftAngleOne = Degrees.of(0.0).plus(Degrees.of(180));
+        public static final Angle kExtenderSiftAngleTwo = Degrees.of(97.0).plus(Degrees.of(180));
+        public static final Angle kExtenderCustomAngleOne = Degrees.of(45.0).plus(Degrees.of(180));
+        public static final Angle kExtenderCustomAngleTwo = Degrees.of(60.0).plus(Degrees.of(180));
+        public static final Angle kExtenderFloatLimit = Degrees.of(50).plus(Degrees.of(180));
+        public static final Angle kExtenderZeroAngle = Degrees.of(-56.70141).plus(Degrees.of(180));
         public static final TrapezoidProfile.Constraints kExtenderConstraints =
-                new TrapezoidProfile.Constraints(1000, 1000);
+                new TrapezoidProfile.Constraints(1200, 1000);
 
         public static final Time kSiftTimeout = Seconds.of(0.5);
 
@@ -108,7 +108,7 @@ public class IntakeConstants {
 
             public static final PIDConfig normalPID = new PIDConfig(0.005, 0.0, 0.00001);
 
-            public static final PIDConfig floatPID = new PIDConfig(0.01, 0.0, 0.00001);
+            public static final PIDConfig floatPID = new PIDConfig(0.00, 0.0, 0.00001);
         }
 
         public static class MotorConfig {
