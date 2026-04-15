@@ -4,12 +4,12 @@
     {
       "anchor": {
         "x": 4.0,
-        "y": 7.55
+        "y": 7.2
       },
       "prevControl": null,
       "nextControl": {
-        "x": 5.29945073458757,
-        "y": 7.414637408884627
+        "x": 5.0393242316375275,
+        "y": 7.5868929329040045
       },
       "isLocked": false,
       "linkedName": "Trench Shot"
@@ -56,7 +56,7 @@
       "minWaypointRelativePos": 1.0883392226148567,
       "maxWaypointRelativePos": 1.8233215547703248,
       "constraints": {
-        "maxVelocity": 1.4,
+        "maxVelocity": 1.3,
         "maxAcceleration": 4.5,
         "maxAngularVelocity": 540.0,
         "maxAngularAcceleration": 720.0,
@@ -83,7 +83,7 @@
   "folder": null,
   "idealStartingState": {
     "velocity": 0,
-    "rotation": -80.16181489438202
+    "rotation": -90.0
   },
   "useDefaultConstraints": false
 }

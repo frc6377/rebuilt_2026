@@ -361,12 +361,12 @@ public class Vision extends SubsystemBase {
                 }
 
                 // Send vision observation
-                // if (!DriverStation.isAutonomousEnabled()) {
-                consumer.accept(
-                        observation.pose().toPose2d(),
-                        observation.timestamp(),
-                        VecBuilder.fill(linearStdDev, linearStdDev, angularStdDev));
-                // }
+                if (!DriverStation.isAutonomousEnabled()) {
+                    consumer.accept(
+                            observation.pose().toPose2d(),
+                            observation.timestamp(),
+                            VecBuilder.fill(linearStdDev, linearStdDev, angularStdDev));
+                }
             }
 
             // Log camera data

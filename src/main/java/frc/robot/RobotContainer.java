@@ -302,7 +302,6 @@ public class RobotContainer {
                         .andThen(SignalLogger::stop));
 
         // Configure the button bindings
-        SignalLogger.setPath("Media/sda1/logs/one/");
         configureButtonBindings();
     }
 
