@@ -100,7 +100,9 @@ public class IntakeConstants {
         public static final Angle kExtenderFloatLimit = Degrees.of(50).plus(Degrees.of(180));
         public static final Angle kExtenderZeroAngle = Degrees.of(-56.70141).plus(Degrees.of(180));
         public static final TrapezoidProfile.Constraints kExtenderConstraints =
-                new TrapezoidProfile.Constraints(1300, 1300);
+                new TrapezoidProfile.Constraints(100000, 15000);
+        public static final TrapezoidProfile.Constraints SIFT_CONSTRAINTS =
+                new TrapezoidProfile.Constraints(100000, 17000);
 
         public static final Time kSiftTimeout = Seconds.of(0.5);
 
@@ -109,6 +111,8 @@ public class IntakeConstants {
             public static final PIDConfig normalPID = new PIDConfig(0.005, 0.0, 0.00001);
 
             public static final PIDConfig floatPID = new PIDConfig(0.00, 0.0, 0.00001);
+
+            public static final PIDConfig babyPID = new PIDConfig(0.01, 0.0, 0.0);
         }
 
         public static class MotorConfig {

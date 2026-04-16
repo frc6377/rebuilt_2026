@@ -1,4 +1,3 @@
-
 package frc.robot.util.OILayer;
 
 public class ControlCurve {
