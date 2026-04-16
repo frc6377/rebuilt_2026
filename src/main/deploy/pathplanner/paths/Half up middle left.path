@@ -3,13 +3,13 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 8.1,
-        "y": 4.5
+        "x": 7.877657894736844,
+        "y": 4.5119649122807015
       },
       "prevControl": null,
       "nextControl": {
-        "x": 8.043483011285389,
-        "y": 4.743527883386344
+        "x": 7.821140906022233,
+        "y": 4.755492795667045
       },
       "isLocked": false,
       "linkedName": "Middle Down end"
