@@ -52,7 +52,7 @@ public class IntakeConstants {
 
         public static class MotorConfig {
             public static final double kRampPeriod = 0.02;
-            public static final Current kStatorCurrentLimit = Amps.of(70);
+            public static final Current kStatorCurrentLimit = Amps.of(65);
             public static final InvertedValue kInverted = InvertedValue.CounterClockwise_Positive;
             public static final NeutralModeValue kNeutralMode = NeutralModeValue.Coast;
 
@@ -76,7 +76,7 @@ public class IntakeConstants {
                 PIDF.kS,
                 PIDF.kA,
                 MotorConfig.kStatorCurrentLimit,
-                Amps.of(60), // default supply current limit
+                Amps.of(55), // default supply current limit
                 true,
                 true);
     }
@@ -117,7 +117,7 @@ public class IntakeConstants {
 
         public static class MotorConfig {
             public static final double kRampPeriod = 4;
-            public static final Current kStatorCurrentLimitExtender = Amps.of(30);
+            public static final Current kStatorCurrentLimitExtender = Amps.of(25);
             public static final InvertedValue kInverted = InvertedValue.Clockwise_Positive;
             public static final NeutralModeValue kNeutralMode = NeutralModeValue.Brake;
         }
