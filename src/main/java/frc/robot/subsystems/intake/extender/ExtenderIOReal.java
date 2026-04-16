@@ -140,13 +140,13 @@ public class ExtenderIOReal implements ExtenderIO {
 
     @Override
     public void goToSiftAngleOne() {
-        extenderPid.applyPreset("default");
+        
         setPosition(Degrees.of(extenderSiftAngleOne.get()));
     }
 
     @Override
     public void goToSiftAngleTwo() {
-        extenderPid.applyPreset("default");
+        
         setPosition(Degrees.of(extenderSiftAngleTwo.get()));
     }
 
