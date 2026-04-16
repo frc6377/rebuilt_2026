@@ -72,9 +72,9 @@ public class ShooterConstants {
     public static final HashMap<Distance, AngularVelocity> distanceToAngularVelocity = new HashMap<>();
 
     static {
-        distanceToAngularVelocity.put(Meters.of(0.0), RPM.of(1500));
+        distanceToAngularVelocity.put(Meters.of(0.0), RPM.of(1700));
         distanceToAngularVelocity.put(Meters.of(3.18), RPM.of(3600));
-        distanceToAngularVelocity.put(Meters.of(1), RPM.of(2400));
+        distanceToAngularVelocity.put(Meters.of(1), RPM.of(2550));
         distanceToAngularVelocity.put(Meters.of(6), RPM.of(4000));
     }
 
