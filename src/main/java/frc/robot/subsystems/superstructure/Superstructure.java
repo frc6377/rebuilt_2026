@@ -153,7 +153,7 @@ public class Superstructure extends SubsystemBase {
                 "Shooting/DistanceToHub", round(vision.getHubDistanceMeasure().in(Meters) * 100.0) / 100.0);
         if (FieldConstants.getTimeUntilHubStateChange() > 4
                 && FieldConstants.getTimeUntilHubStateChange() <= 7
-                && DriverStation.isEnabled()) {
+                && DriverStation.isTeleopEnabled()) {
             oi.setRumble(1, 1);
         } else {
             oi.setRumble(0, 0);
