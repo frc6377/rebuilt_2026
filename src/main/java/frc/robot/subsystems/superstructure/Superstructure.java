@@ -152,7 +152,7 @@ public class Superstructure extends SubsystemBase {
         Logger.recordOutput(
                 "Shooting/DistanceToHub", round(vision.getHubDistanceMeasure().in(Meters) * 100.0) / 100.0);
         if (FieldConstants.getTimeUntilHubStateChange() > 4
-                && FieldConstants.getTimeUntilHubStateChange() <= 5
+                && FieldConstants.getTimeUntilHubStateChange() <= 7
                 && DriverStation.isEnabled()) {
             oi.setRumble(1, 1);
         } else {
