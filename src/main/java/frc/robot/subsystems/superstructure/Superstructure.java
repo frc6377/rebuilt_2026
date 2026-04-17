@@ -158,7 +158,7 @@ public class Superstructure extends SubsystemBase {
         } else {
             oi.setRumble(0, 0);
         }
-
+        
         if (gamePieceTrajectorySimulation == null) {
             return;
         }
