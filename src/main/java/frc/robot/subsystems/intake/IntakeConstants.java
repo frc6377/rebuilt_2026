@@ -2,6 +2,7 @@ package frc.robot.subsystems.intake;
 
 import static edu.wpi.first.units.Units.*;
 
+import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
@@ -78,7 +79,8 @@ public class IntakeConstants {
                 MotorConfig.kStatorCurrentLimit,
                 Amps.of(50), // default supply current limit
                 true,
-                true);
+                true,
+                new MotorOutputConfigs().withPeakForwardDutyCycle(1).withPeakReverseDutyCycle(-1));
     }
 
     public static class ExtenderConstants {

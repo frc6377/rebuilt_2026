@@ -2,6 +2,7 @@ package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.*;
 
+import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.signals.InvertedValue;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.units.measure.*;
@@ -111,7 +112,8 @@ public class ShooterConstants {
             Current flywheelCurrentLimitStator,
             Current flywheelCurrentLimitSupply,
             boolean flywheelCurrentLimitStatorEnable,
-            boolean flywheelCurrentLimitSupplyEnable) {}
+            boolean flywheelCurrentLimitSupplyEnable,
+            MotorOutputConfigs outputConfigs) {}
 
     public static final ShooterConfig leftConfig = new ShooterConfig(
             "LeftShooter",
@@ -132,7 +134,8 @@ public class ShooterConstants {
             Amps.of(70),
             Amps.of(50),
             true,
-            true);
+            true,
+            new MotorOutputConfigs().withPeakForwardDutyCycle(1).withPeakReverseDutyCycle(-0.05));
 
     public static final ShooterConfig rightConfig = new ShooterConfig(
             "RightShooter",
@@ -153,5 +156,6 @@ public class ShooterConstants {
             Amps.of(70),
             Amps.of(50.0),
             true,
-            true);
+            true,
+            new MotorOutputConfigs().withPeakForwardDutyCycle(1).withPeakReverseDutyCycle(-0.05));
 }
