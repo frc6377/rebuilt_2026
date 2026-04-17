@@ -90,7 +90,8 @@ public class Superstructure extends SubsystemBase {
     private GamePieceTrajectorySimulation gamePieceTrajectorySimulation;
     private AngularVelocity manualShootingVelocity = RPM.of(ShooterConstants.kManualShootingSpeedRPM);
     private Command currentShootingCommand;
-    private TrajectoryBall.ShootingParameters latestParameters = null;
+    private TrajectoryBall.ShootingParameters latestParameters =
+            new TrajectoryBall.ShootingParameters(Degrees.zero(), RPM.of(0), new Rotation2d());
 
     /** Creates the superstructure and selects IO implementations by mode. */
     public Superstructure(BooleanSupplier isIntaking, Vision vision, OI oi) {
@@ -414,12 +415,30 @@ public class Superstructure extends SubsystemBase {
     /** Command that aims the robot at the hub while driving. */
     public Command aimAtHubWhileDriving(
             Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier, BooleanSupplier xModePressed) {
-        return Commands.either(
-                Commands.none(),
-                DriveCommands.joystickDriveAtAngle(drive, xSupplier, ySupplier, () -> latestParameters.targetHeading())
-                        .withName("AimAtHub"),
-                xModePressed);
+        // DriveCommands.joystickDriveAtAngle(drive, xSupplier, ySupplier, () -> latestParameters.targetHeading());
+        Runnable point = DriveCommands.joystickDriveAtAngleRunnable(
+                drive, xSupplier, ySupplier, () -> latestParameters.targetHeading());
+        return Commands.run(
+                () -> {
+                    if (xModePressed.getAsBoolean()) {
+                        
+                        drive.stopWithX();
+                    } else {
+                        point.run();
+                    }
+                },
+                drive);
     }
+
+    // public Command aimAtHub(boolean xModePressed){
+    //     if (xModePressed){
+    //         return DriveCommands.joystickDriveAtAngle(drive, xSupplier, ySupplier, () ->
+    // latestParameters.targetHeading())
+    //                     .withName("AimAtHub");
+    //     }else{
+    //         return Commands.none();
+    //     }
+    // }
 
     /** Command that fires the shooter (feeds both upgoers). */
     public Command fireCommand() {

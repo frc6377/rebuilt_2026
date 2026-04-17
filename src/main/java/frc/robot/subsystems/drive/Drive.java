@@ -304,7 +304,7 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
         headings[1] = Rotation2d.fromDegrees(-45);
         headings[2] = Rotation2d.fromDegrees(-45);
         headings[3] = Rotation2d.fromDegrees(45);
-        kinematics.resetHeadings(headings);
+        runVelocity(new ChassisSpeeds());
     }
 
     /** Returns a command to run a quasistatic test in the specified direction. */
