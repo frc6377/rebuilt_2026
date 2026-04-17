@@ -4,12 +4,12 @@
     {
       "anchor": {
         "x": 3.5,
-        "y": 7.53
+        "y": 7.5
       },
       "prevControl": null,
       "nextControl": {
         "x": 4.436754970177832,
-        "y": 7.556067762552608
+        "y": 7.526067762552608
       },
       "isLocked": false,
       "linkedName": "close trench shot"
