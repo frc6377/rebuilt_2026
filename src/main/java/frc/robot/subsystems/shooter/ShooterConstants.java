@@ -73,7 +73,8 @@ public class ShooterConstants {
 
     static {
         distanceToAngularVelocity.put(Meters.of(0.0), RPM.of(1700));
-        distanceToAngularVelocity.put(Meters.of(3.18), RPM.of(4000));
+        distanceToAngularVelocity.put(Meters.of(3.18), RPM.of(3600));
+        distanceToAngularVelocity.put(Meters.of(4.6), RPM.of(4230));
         distanceToAngularVelocity.put(Meters.of(1), RPM.of(2550));
         distanceToAngularVelocity.put(Meters.of(6), RPM.of(4500));
     }
