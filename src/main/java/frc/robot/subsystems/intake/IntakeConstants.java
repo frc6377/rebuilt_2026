@@ -54,6 +54,7 @@ public class IntakeConstants {
         public static class MotorConfig {
             public static final double kRampPeriod = 0.02;
             public static final Current kStatorCurrentLimit = Amps.of(60);
+            public static final Current kSupplyCurrentLimit = Amps.of(50);
             public static final InvertedValue kInverted = InvertedValue.CounterClockwise_Positive;
             public static final NeutralModeValue kNeutralMode = NeutralModeValue.Coast;
 
@@ -77,7 +78,7 @@ public class IntakeConstants {
                 PIDF.kS,
                 PIDF.kA,
                 MotorConfig.kStatorCurrentLimit,
-                Amps.of(50), // default supply current limit
+                MotorConfig.kSupplyCurrentLimit,
                 true,
                 true,
                 new MotorOutputConfigs().withPeakForwardDutyCycle(1).withPeakReverseDutyCycle(-1));
@@ -104,7 +105,7 @@ public class IntakeConstants {
         public static final TrapezoidProfile.Constraints kExtenderConstraints =
                 new TrapezoidProfile.Constraints(100000, 7500);
         public static final TrapezoidProfile.Constraints SIFT_CONSTRAINTS =
-                new TrapezoidProfile.Constraints(100000, 3000);
+                new TrapezoidProfile.Constraints(100000, 5000);
 
         public static final Time kSiftTimeout = Seconds.of(0.5);
 
