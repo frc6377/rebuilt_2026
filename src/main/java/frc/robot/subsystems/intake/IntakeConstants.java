@@ -105,7 +105,7 @@ public class IntakeConstants {
         public static final TrapezoidProfile.Constraints kExtenderConstraints =
                 new TrapezoidProfile.Constraints(100000, 7500);
         public static final TrapezoidProfile.Constraints SIFT_CONSTRAINTS =
-                new TrapezoidProfile.Constraints(100000, 5000);
+                new TrapezoidProfile.Constraints(100000, 7500);
 
         public static final Time kSiftTimeout = Seconds.of(0.5);
 
@@ -115,7 +115,7 @@ public class IntakeConstants {
 
             public static final PIDConfig floatPID = new PIDConfig(0.00, 0.0, 0.00001);
 
-            public static final PIDConfig babyPID = new PIDConfig(0.004, 0.0, 0.00001);
+            public static final PIDConfig babyPID = new PIDConfig(0.006, 0.0, 0.00001);
         }
 
         public static class MotorConfig {
