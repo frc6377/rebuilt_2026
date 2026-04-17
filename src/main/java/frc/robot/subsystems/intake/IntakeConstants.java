@@ -102,7 +102,7 @@ public class IntakeConstants {
         public static final TrapezoidProfile.Constraints kExtenderConstraints =
                 new TrapezoidProfile.Constraints(100000, 7500);
         public static final TrapezoidProfile.Constraints SIFT_CONSTRAINTS =
-                new TrapezoidProfile.Constraints(100000, 4000);
+                new TrapezoidProfile.Constraints(100000, 3000);
 
         public static final Time kSiftTimeout = Seconds.of(0.5);
 

@@ -154,7 +154,7 @@ public class Superstructure extends SubsystemBase {
         if (FieldConstants.getTimeUntilHubStateChange() > 4
                 && FieldConstants.getTimeUntilHubStateChange() <= 5
                 && DriverStation.isEnabled()) {
-            oi.setRumble(0.75, 0.75);
+            oi.setRumble(1, 1);
         } else {
             oi.setRumble(0, 0);
         }
