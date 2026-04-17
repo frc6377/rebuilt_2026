@@ -112,7 +112,7 @@ public class IntakeConstants {
 
             public static final PIDConfig floatPID = new PIDConfig(0.00, 0.0, 0.00001);
 
-            public static final PIDConfig babyPID = new PIDConfig(0.005, 0.0, 0.00001);
+            public static final PIDConfig babyPID = new PIDConfig(0.004, 0.0, 0.00001);
         }
 
         public static class MotorConfig {
