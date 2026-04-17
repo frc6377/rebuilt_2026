@@ -5,6 +5,7 @@ import static frc.robot.util.PhoenixUtil.tryUntilOk;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
+import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.Follower;
@@ -69,8 +70,6 @@ public class BaseShooterIOKrakenX60 implements BaseShooterIO {
 
         // Configure flywheel motor
         var flywheelConfig = new TalonFXConfiguration();
-        flywheelConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
-        flywheelConfig.MotorOutput.Inverted = config.flywheelInverted();
         flywheelConfig.Slot0 = flywheelLeaderConfigs();
         flywheelConfig.CurrentLimits.StatorCurrentLimit =
                 config.flywheelCurrentLimitStator().in(Amps);
@@ -82,6 +81,7 @@ public class BaseShooterIOKrakenX60 implements BaseShooterIO {
                 config.flywheelClosedLoopRamp().in(Seconds));
         flywheelConfig.OpenLoopRamps.withDutyCycleOpenLoopRampPeriod(
                 config.flywheelOpenLoopRamp().in(Seconds));
+        flywheelConfig.withMotorOutput(config.outputConfigs().withInverted(config.flywheelInverted()).withNeutralMode(NeutralModeValue.Coast));
 
         tryUntilOk(5, () -> flywheelMotor.applyConfiguration(flywheelConfig, 0.25));
 
@@ -122,7 +122,6 @@ public class BaseShooterIOKrakenX60 implements BaseShooterIO {
     private Slot0Configs flywheelLeaderConfigs() {
         return flywheelMotor.getTunableSlot0Configs();
     }
-
     @Override
     public void updateInputs(BaseShooterIOInputs inputs) {
         flywheelMotor.updateTunableGains();
