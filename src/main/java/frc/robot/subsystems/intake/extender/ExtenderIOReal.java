@@ -41,7 +41,8 @@ public class ExtenderIOReal implements ExtenderIO {
                         .withVoltageClosedLoopRampPeriod(ExtenderConstants.MotorConfig.kRampPeriod))
                 .withCurrentLimits(new CurrentLimitsConfigs()
                         .withStatorCurrentLimitEnable(true)
-                        .withStatorCurrentLimit(ExtenderConstants.MotorConfig.kStatorCurrentLimitExtender));
+                        .withStatorCurrentLimit(ExtenderConstants.MotorConfig.kStatorCurrentLimitExtender)
+                        .withSupplyCurrentLimit(ExtenderConstants.MotorConfig.kSupplyCurrentLimitExtender));
 
         extenderMotor = new TunableTalonFX(Constants.CANIDs.MotorIDs.kExtenderMotorID, "rio", "Extender");
         extenderMotor.getConfigurator().apply(config);

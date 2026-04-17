@@ -108,11 +108,9 @@ public class OIXbox implements OI {
     }
 
     @Override
-    public Command setRumble(double driverRumble, double operatorRumble) {
-        return runOnce(() -> {
-            driverController.setRumble(GenericHID.RumbleType.kBothRumble, driverRumble);
-            operatorController.setRumble(GenericHID.RumbleType.kBothRumble, operatorRumble);
-        });
+    public void setRumble(double driverRumble, double operatorRumble) {
+        driverController.setRumble(GenericHID.RumbleType.kBothRumble, driverRumble);
+        operatorController.setRumble(GenericHID.RumbleType.kBothRumble, operatorRumble);
     }
 
     @Override

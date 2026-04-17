@@ -52,7 +52,7 @@ public class IntakeConstants {
 
         public static class MotorConfig {
             public static final double kRampPeriod = 0.02;
-            public static final Current kStatorCurrentLimit = Amps.of(65);
+            public static final Current kStatorCurrentLimit = Amps.of(60);
             public static final InvertedValue kInverted = InvertedValue.CounterClockwise_Positive;
             public static final NeutralModeValue kNeutralMode = NeutralModeValue.Coast;
 
@@ -76,7 +76,7 @@ public class IntakeConstants {
                 PIDF.kS,
                 PIDF.kA,
                 MotorConfig.kStatorCurrentLimit,
-                Amps.of(55), // default supply current limit
+                Amps.of(50), // default supply current limit
                 true,
                 true);
     }
@@ -100,9 +100,9 @@ public class IntakeConstants {
         public static final Angle kExtenderFloatLimit = Degrees.of(50).plus(Degrees.of(180));
         public static final Angle kExtenderZeroAngle = Degrees.of(-56.70141).plus(Degrees.of(180));
         public static final TrapezoidProfile.Constraints kExtenderConstraints =
-                new TrapezoidProfile.Constraints(100000, 15000);
+                new TrapezoidProfile.Constraints(100000, 7500);
         public static final TrapezoidProfile.Constraints SIFT_CONSTRAINTS =
-                new TrapezoidProfile.Constraints(100000, 17000);
+                new TrapezoidProfile.Constraints(100000, 7500);
 
         public static final Time kSiftTimeout = Seconds.of(0.5);
 
@@ -112,12 +112,13 @@ public class IntakeConstants {
 
             public static final PIDConfig floatPID = new PIDConfig(0.00, 0.0, 0.00001);
 
-            public static final PIDConfig babyPID = new PIDConfig(0.01, 0.0, 0.0);
+            public static final PIDConfig babyPID = new PIDConfig(0.005, 0.0, 0.00001);
         }
 
         public static class MotorConfig {
             public static final double kRampPeriod = 4;
-            public static final Current kStatorCurrentLimitExtender = Amps.of(25);
+            public static final Current kStatorCurrentLimitExtender = Amps.of(30);
+            public static final Current kSupplyCurrentLimitExtender = Amps.of(25);
             public static final InvertedValue kInverted = InvertedValue.Clockwise_Positive;
             public static final NeutralModeValue kNeutralMode = NeutralModeValue.Brake;
         }

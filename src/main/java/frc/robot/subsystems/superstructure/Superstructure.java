@@ -152,14 +152,12 @@ public class Superstructure extends SubsystemBase {
         Logger.recordOutput("Shooting/TimeUntilHubStateChange", FieldConstants.getTimeUntilHubStateChange());
         Logger.recordOutput(
                 "Shooting/DistanceToHub", round(vision.getHubDistanceMeasure().in(Meters) * 100.0) / 100.0);
-        if (FieldConstants.getTimeUntilHubStateChange() > 0
-                && FieldConstants.getTimeUntilHubStateChange() < 1
+        if (FieldConstants.getTimeUntilHubStateChange() > 4
+                && FieldConstants.getTimeUntilHubStateChange() <= 5
                 && DriverStation.isEnabled()) {
-            CommandScheduler.getInstance().schedule(oi.setRumble(0, 0));
-        } else if (FieldConstants.getTimeUntilHubStateChange() > 4 && FieldConstants.getTimeUntilHubStateChange() < 5) {
-            CommandScheduler.getInstance().schedule(oi.setRumble(1, 1));
+            oi.setRumble(0.75, 0.75);
         } else {
-            CommandScheduler.getInstance().schedule(oi.setRumble(0, 0));
+            oi.setRumble(0, 0);
         }
 
         if (gamePieceTrajectorySimulation == null) {

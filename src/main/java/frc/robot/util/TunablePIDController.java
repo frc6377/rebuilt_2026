@@ -63,6 +63,7 @@ public class TunablePIDController {
     public static final PIDConfig defaultConfig = new PIDConfig(0.0, 0.0, 0.0);
 
     private double calculatedOutput = 0.0;
+    private LoggedNetworkNumber loggedOutput;
 
     private final String tunableName;
     private final DoubleSupplier encoderPosition;
@@ -155,6 +156,7 @@ public class TunablePIDController {
         this.maxVelocityLog = new LoggedNetworkNumber(tunableName + "/MaxVelocity", constraints.maxVelocity);
         this.maxAccelerationLog =
                 new LoggedNetworkNumber(tunableName + "/MaxAcceleration", constraints.maxAcceleration);
+        this.loggedOutput = new LoggedNetworkNumber(tunableName + "AppliedOutput", 0.0);
 
         // Initialize last-seen values to defaults so first read will be detected as a
         // change
@@ -352,7 +354,8 @@ public class TunablePIDController {
      */
     public void runPid() {
         double output = calculate();
-        Logger.recordOutput(tunableName + "/appliedOutput", output);
+        this.calculatedOutput = output;
+        loggedOutput.set(output);
         outputConsumer.accept(output);
     }
 

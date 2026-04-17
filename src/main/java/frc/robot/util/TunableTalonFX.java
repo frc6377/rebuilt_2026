@@ -46,7 +46,7 @@ public class TunableTalonFX extends TalonFX {
 
     private final int deviceId;
 
-    private final boolean TUNING_ENABLED = true;
+    private final boolean TUNING_ENABLED = false;
 
     // Tunable PID gains
     private final LoggedNetworkNumber tunableKP;

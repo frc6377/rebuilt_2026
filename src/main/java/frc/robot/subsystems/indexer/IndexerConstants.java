@@ -24,7 +24,7 @@ public class IndexerConstants {
         public static final double PeakReverseTorqueCurrent = 40;
         public static final InvertedValue MotorInverted = InvertedValue.Clockwise_Positive;
         public static final NeutralModeValue MotorNeutralMode = NeutralModeValue.Brake;
-        public static final Current kStatorCurrentLimit = Amps.of(30);
+        public static final Current kStatorCurrentLimit = Amps.of(25);
     }
 
     public final class PID {
