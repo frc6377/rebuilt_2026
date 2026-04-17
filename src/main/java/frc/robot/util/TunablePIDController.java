@@ -182,7 +182,7 @@ public class TunablePIDController {
      * @param constraints New trapezoid profile constraints.
      */
     public void setSpeedConstraints(TrapezoidProfile.Constraints constraints) {
-        if (constraints == null) {
+        if (constraints == null || constraints == this.pidController.getConstraints()) {
             return;
         }
         pidController.setConstraints(constraints);
@@ -252,7 +252,7 @@ public class TunablePIDController {
      */
     public boolean applyPreset(String name) {
         PresetHolder holder = presets.get(name);
-        if (holder == null) {
+        if (holder == null || name == activePresetName) {
             return false;
         }
 
@@ -324,7 +324,7 @@ public class TunablePIDController {
 
         return changed || pidChanged;
     }
-
+    
     /**
      * Sets the PID setpoint (goal position).
      *
