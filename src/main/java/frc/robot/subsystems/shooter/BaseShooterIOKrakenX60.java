@@ -93,11 +93,11 @@ public class BaseShooterIOKrakenX60 implements BaseShooterIO {
         // Get status signals
         flywheelVelocity = flywheelMotor.getVelocity();
         flywheelAppliedVolts = flywheelMotor.getMotorVoltage();
-        flywheelCurrent = flywheelMotor.getStatorCurrent();
+        flywheelCurrent = flywheelMotor.getSupplyCurrent();
         flywheelTemp = flywheelMotor.getDeviceTemp();
         followerFlywheelVelocity = flywheelFollower.getVelocity();
         followerFlywheelAppliedVolts = flywheelFollower.getMotorVoltage();
-        followerFlywheelCurrent = flywheelFollower.getStatorCurrent();
+        followerFlywheelCurrent = flywheelFollower.getSupplyCurrent();
         followerFlywheelTemp = flywheelFollower.getDeviceTemp();
 
         List<BaseStatusSignal> signals = new ArrayList<>();
