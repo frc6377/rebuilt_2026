@@ -21,6 +21,9 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.FieldConstants;
 import java.util.function.Supplier;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
@@ -50,9 +53,9 @@ public class RobotState extends SubsystemBase {
     private int simGamePieceCount = 0;
 
     @AutoLogOutput
-    private Zone fieldZone = Zone.PROTECTED;
+    private @NotNull Zone fieldZone = Zone.PROTECTED;
 
-    private Supplier<Pose2d> poseSupplier = Pose2d::new;
+    private @NotNull Supplier<Pose2d> poseSupplier = Pose2d::new;
 
     private final LoggedNetworkNumber simMaxGamePieces = new LoggedNetworkNumber("RobotState/Sim/MaxGamePieces", 5.0);
     private final LoggedNetworkNumber protectedZoneFraction =
@@ -62,8 +65,8 @@ public class RobotState extends SubsystemBase {
 
     private RobotState() {}
 
-    public static RobotState create() {
-        if (instance == null) {
+    public static @NotNull RobotState create() {
+        if (null == instance) {
             instance = new RobotState();
         }
         return instance;
@@ -74,52 +77,52 @@ public class RobotState extends SubsystemBase {
     }
 
     public void setMode(Mode newMode) {
-        mode = newMode;
+        this.mode = newMode;
     }
 
     public Mode getMode() {
-        return mode;
+        return this.mode;
     }
 
     public Zone getFieldZone() {
-        return fieldZone;
+        return this.fieldZone;
     }
 
     public boolean isClimbing() {
-        return mode == Mode.CLIMBING;
+        return Mode.CLIMBING == mode;
     }
 
     public boolean isShooting() {
-        return mode == Mode.SHOOTING;
+        return Mode.SHOOTING == mode;
     }
 
     public boolean isShuttling() {
-        return mode == Mode.SHUTTLING;
+        return Mode.SHUTTLING == mode;
     }
 
     public boolean isDefense() {
-        return mode == Mode.DEFENSE;
+        return Mode.DEFENSE == mode;
     }
 
     public int getSimGamePieceCount() {
-        return simGamePieceCount;
+        return this.simGamePieceCount;
     }
 
     public void setSimGamePieceCount(int count) {
-        simGamePieceCount = clamp(count);
+        this.simGamePieceCount = this.clamp(count);
     }
 
     public void incrementSimGamePieceCount() {
-        simGamePieceCount = clamp(simGamePieceCount + 1);
+        this.simGamePieceCount = this.clamp(this.simGamePieceCount + 1);
     }
 
     public void decrementSimGamePieceCount() {
-        simGamePieceCount = clamp(simGamePieceCount - 1);
+        this.simGamePieceCount = this.clamp(this.simGamePieceCount - 1);
     }
 
     private int clamp(int value) {
-        int max = (int) Math.round(simMaxGamePieces.get());
-        if (value < 0) {
+        int max = (int) Math.round(this.simMaxGamePieces.get());
+        if (0 > value) {
             return 0;
         }
         if (value > max) {
@@ -129,7 +132,7 @@ public class RobotState extends SubsystemBase {
     }
 
     public Command setModeCommand(Mode newMode) {
-        return Commands.runOnce(() -> setMode(newMode), this).withName("SetRobotMode:" + newMode);
+        return Commands.runOnce(() -> this.setMode(newMode), this).withName("SetRobotMode:" + newMode);
     }
 
     public Command incrementSimGamePieces() {
@@ -141,44 +144,44 @@ public class RobotState extends SubsystemBase {
     }
 
     public Command setSimGamePieces(int count) {
-        return Commands.runOnce(() -> setSimGamePieceCount(count), this).withName("SetSimGamePieces:" + count);
+        return Commands.runOnce(() -> this.setSimGamePieceCount(count), this).withName("SetSimGamePieces:" + count);
     }
 
-    public void setPoseSupplier(Supplier<Pose2d> supplier) {
-        poseSupplier = supplier != null ? supplier : Pose2d::new;
+    public void setPoseSupplier(@Nullable Supplier<Pose2d> supplier) {
+        this.poseSupplier = null != supplier ? supplier : Pose2d::new;
     }
 
     @Override
     public void periodic() {
-        updateZoneMode();
+        this.updateZoneMode();
     }
 
     private void updateZoneMode() {
-        if (mode == Mode.CLIMBING) {
+        if (Mode.CLIMBING == mode) {
             return; // Do not override climb mode
         }
 
-        Pose2d pose = poseSupplier.get();
+        Pose2d pose = this.poseSupplier.get();
         double fieldLengthMeters = FieldConstants.fieldLength;
         double xMeters = pose.getTranslation().getX();
 
-        boolean isRed = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
+        boolean isRed = Alliance.Red == DriverStation.getAlliance().orElse(Alliance.Blue);
         double distanceFromOwnWall = isRed ? fieldLengthMeters - xMeters : xMeters;
 
-        double protectedFraction = Math.max(0.0, Math.min(1.0, protectedZoneFraction.get()));
-        double middleFraction = Math.max(0.0, Math.min(1.0, middleZoneFraction.get()));
+        double protectedFraction = Math.max(0.0, Math.min(1.0, this.protectedZoneFraction.get()));
+        double middleFraction = Math.max(0.0, Math.min(1.0, this.middleZoneFraction.get()));
         double protectedMeters = fieldLengthMeters * protectedFraction;
         double middleMeters = fieldLengthMeters * middleFraction;
 
         if (distanceFromOwnWall <= protectedMeters) {
-            mode = Mode.SHOOTING;
-            fieldZone = Zone.PROTECTED;
+            this.mode = Mode.SHOOTING;
+            this.fieldZone = Zone.PROTECTED;
         } else if (distanceFromOwnWall <= protectedMeters + middleMeters) {
-            mode = Mode.SHUTTLING;
-            fieldZone = Zone.MIDDLE;
+            this.mode = Mode.SHUTTLING;
+            this.fieldZone = Zone.MIDDLE;
         } else {
-            mode = Mode.DEFENSE;
-            fieldZone = Zone.OPPONENT;
+            this.mode = Mode.DEFENSE;
+            this.fieldZone = Zone.OPPONENT;
         }
     }
 }

@@ -15,21 +15,23 @@ import frc.robot.subsystems.intake.IntakeConstants.ExtenderConstants;
 import frc.robot.util.TunablePIDController;
 import frc.robot.util.TunableTalonFX;
 import java.util.function.BooleanSupplier;
+
+import org.jetbrains.annotations.NotNull;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 public class ExtenderIOReal implements ExtenderIO {
 
-    private final TunableTalonFX extenderMotor;
-    private final DutyCycleEncoder extenderEncoder;
-    private final TunablePIDController extenderPid;
+    private final @NotNull TunableTalonFX extenderMotor;
+    private final @NotNull DutyCycleEncoder extenderEncoder;
+    private final @NotNull TunablePIDController extenderPid;
     private boolean pidEnabled = true;
-    private final LoggedNetworkNumber extenderStowAngle;
-    private final LoggedNetworkNumber extenderIntakeAngle;
-    private final LoggedNetworkNumber extenderTolerance;
-    private final LoggedNetworkNumber extenderSiftAngleOne;
-    private final LoggedNetworkNumber extenderSiftAngleTwo;
-    private final LoggedNetworkNumber extenderCustomAngleOne;
-    private final LoggedNetworkNumber extenderCustomAngleTwo;
+    private final @NotNull LoggedNetworkNumber extenderStowAngle;
+    private final @NotNull LoggedNetworkNumber extenderIntakeAngle;
+    private final @NotNull LoggedNetworkNumber extenderTolerance;
+    private final @NotNull LoggedNetworkNumber extenderSiftAngleOne;
+    private final @NotNull LoggedNetworkNumber extenderSiftAngleTwo;
+    private final @NotNull LoggedNetworkNumber extenderCustomAngleOne;
+    private final @NotNull LoggedNetworkNumber extenderCustomAngleTwo;
 
     public ExtenderIOReal() {
 
@@ -44,198 +46,198 @@ public class ExtenderIOReal implements ExtenderIO {
                         .withStatorCurrentLimit(ExtenderConstants.MotorConfig.kStatorCurrentLimitExtender)
                         .withSupplyCurrentLimit(ExtenderConstants.MotorConfig.kSupplyCurrentLimitExtender));
 
-        extenderMotor = new TunableTalonFX(Constants.CANIDs.MotorIDs.kExtenderMotorID, "rio", "Extender");
-        extenderMotor.getConfigurator().apply(config);
+        this.extenderMotor = new TunableTalonFX(Constants.CANIDs.MotorIDs.kExtenderMotorID, "rio", "Extender");
+        this.extenderMotor.getConfigurator().apply(config);
 
-        extenderEncoder = new DutyCycleEncoder(
+        this.extenderEncoder = new DutyCycleEncoder(
                 Constants.CANIDs.SensorIDs.kExtenderEncoderCANID,
                 1.0,
                 ExtenderConstants.kExtenderZeroAngle.in(Rotations));
-        extenderEncoder.setInverted(true);
+        this.extenderEncoder.setInverted(true);
 
-        extenderPid = new TunablePIDController(
+        this.extenderPid = new TunablePIDController(
                 "Intake/Extender/ExtenderPID",
-                () -> getPosition().in(Degrees),
-                percent -> extenderMotor.set(-percent),
+                () -> this.getPosition().in(Degrees),
+                percent -> this.extenderMotor.set(-percent),
                 ExtenderConstants.kExtenderConstraints);
 
-        extenderPid.addPreset("default", ExtenderConstants.PIDF.normalPID);
-        extenderPid.addPreset("float", ExtenderConstants.PIDF.floatPID);
-        extenderPid.addPreset("sift", ExtenderConstants.PIDF.babyPID);
+        this.extenderPid.addPreset("default", ExtenderConstants.PIDF.normalPID);
+        this.extenderPid.addPreset("float", ExtenderConstants.PIDF.floatPID);
+        this.extenderPid.addPreset("sift", ExtenderConstants.PIDF.babyPID);
 
-        extenderPid.getPIDController().enableContinuousInput(0, 359);
+        this.extenderPid.getPIDController().enableContinuousInput(0, 359);
 
-        extenderStowAngle =
+        this.extenderStowAngle =
                 new LoggedNetworkNumber("Intake/Extender/StowAngle", ExtenderConstants.kExtenderStowAngle.in(Degrees));
-        extenderIntakeAngle = new LoggedNetworkNumber(
+        this.extenderIntakeAngle = new LoggedNetworkNumber(
                 "Intake/Extender/IntakingAngle", ExtenderConstants.kExtenderIntakeAngle.in(Degrees));
-        extenderTolerance =
+        this.extenderTolerance =
                 new LoggedNetworkNumber("Intake/Extender/Tolerance", ExtenderConstants.kExtenderTolerance.in(Degrees));
-        extenderSiftAngleOne = new LoggedNetworkNumber(
+        this.extenderSiftAngleOne = new LoggedNetworkNumber(
                 "Intake/Extender/Sifting/SiftAngleOne", ExtenderConstants.kExtenderSiftAngleOne.in(Degrees));
-        extenderSiftAngleTwo = new LoggedNetworkNumber(
+        this.extenderSiftAngleTwo = new LoggedNetworkNumber(
                 "Intake/Extender/Sifting/SiftAngleTwo", ExtenderConstants.kExtenderSiftAngleTwo.in(Degrees));
-        extenderCustomAngleOne = new LoggedNetworkNumber(
+        this.extenderCustomAngleOne = new LoggedNetworkNumber(
                 "Intake/Extender/CustomAngleOne", ExtenderConstants.kExtenderCustomAngleOne.in(Degrees));
-        extenderCustomAngleTwo = new LoggedNetworkNumber(
+        this.extenderCustomAngleTwo = new LoggedNetworkNumber(
                 "Intake/Extender/CustomAngleTwo", ExtenderConstants.kExtenderCustomAngleTwo.in(Degrees));
 
-        extenderStowAngle.set(ExtenderConstants.kExtenderStowAngle.in(Degrees));
-        extenderIntakeAngle.set(ExtenderConstants.kExtenderIntakeAngle.in(Degrees));
-        extenderTolerance.set(ExtenderConstants.kExtenderTolerance.in(Degrees));
-        extenderSiftAngleOne.set(ExtenderConstants.kExtenderSiftAngleOne.in(Degrees));
-        extenderSiftAngleTwo.set(ExtenderConstants.kExtenderSiftAngleTwo.in(Degrees));
-        extenderCustomAngleOne.set(ExtenderConstants.kExtenderCustomAngleOne.in(Degrees));
-        extenderCustomAngleTwo.set(ExtenderConstants.kExtenderCustomAngleTwo.in(Degrees));
-        extenderPid.applyPreset("default");
+        this.extenderStowAngle.set(ExtenderConstants.kExtenderStowAngle.in(Degrees));
+        this.extenderIntakeAngle.set(ExtenderConstants.kExtenderIntakeAngle.in(Degrees));
+        this.extenderTolerance.set(ExtenderConstants.kExtenderTolerance.in(Degrees));
+        this.extenderSiftAngleOne.set(ExtenderConstants.kExtenderSiftAngleOne.in(Degrees));
+        this.extenderSiftAngleTwo.set(ExtenderConstants.kExtenderSiftAngleTwo.in(Degrees));
+        this.extenderCustomAngleOne.set(ExtenderConstants.kExtenderCustomAngleOne.in(Degrees));
+        this.extenderCustomAngleTwo.set(ExtenderConstants.kExtenderCustomAngleTwo.in(Degrees));
+        this.extenderPid.applyPreset("default");
 
-        setPidEnabled(false);
+        this.setPidEnabled(false);
     }
 
-    public void setPosition(Angle position) {
-        setPidEnabled(true);
-        setMode(NeutralModeValue.Brake);
+    public void setPosition(@NotNull Angle position) {
+        this.setPidEnabled(true);
+        this.setMode(NeutralModeValue.Brake);
 
-        extenderPid.setSetpoint(position.in(Degrees));
+        this.extenderPid.setSetpoint(position.in(Degrees));
     }
 
-    public Angle getPosition() {
-        return Degrees.of(Rotations.of(extenderEncoder.get()).in(Degrees));
+    public @NotNull Angle getPosition() {
+        return Degrees.of(Rotations.of(this.extenderEncoder.get()).in(Degrees));
     }
 
     public boolean isAtAngle(Angle angle) {
-        return Math.abs((getPosition().minus(angle)).in(Degrees)) < extenderTolerance.get();
+        return Math.abs((this.getPosition().minus(angle)).in(Degrees)) < this.extenderTolerance.get();
     }
 
     @Override
     public Current getCurrent() {
-        return extenderMotor.getStatorCurrent().getValue();
+        return this.extenderMotor.getStatorCurrent().getValue();
     }
 
     @Override
     public void extend() {
-        extenderPid.applyPreset("default");
-        setPosition(Degrees.of(extenderIntakeAngle.get()));
+        this.extenderPid.applyPreset("default");
+        this.setPosition(Degrees.of(this.extenderIntakeAngle.get()));
     }
 
     @Override
     public void retract() {
-        extenderPid.applyPreset("default");
-        setPosition(Degrees.of(extenderStowAngle.get()));
+        this.extenderPid.applyPreset("default");
+        this.setPosition(Degrees.of(this.extenderStowAngle.get()));
     }
 
     @Override
-    public BooleanSupplier isExtended() {
-        return () -> isAtAngle(Degrees.of(extenderIntakeAngle.get()));
+    public @NotNull BooleanSupplier isExtended() {
+        return () -> this.isAtAngle(Degrees.of(this.extenderIntakeAngle.get()));
     }
 
     @Override
-    public BooleanSupplier isRetracted() {
-        return () -> isAtAngle(Degrees.of(extenderStowAngle.get()));
+    public @NotNull BooleanSupplier isRetracted() {
+        return () -> this.isAtAngle(Degrees.of(this.extenderStowAngle.get()));
     }
 
     @Override
-    public BooleanSupplier atTarget() {
-        return () -> isAtAngle(Degrees.of(extenderPid.getSetpoint()));
+    public @NotNull BooleanSupplier atTarget() {
+        return () -> this.isAtAngle(Degrees.of(this.extenderPid.getSetpoint()));
     }
 
     @Override
     public void goToSiftAngleOne() {
 
-        setPosition(Degrees.of(extenderSiftAngleOne.get()));
+        this.setPosition(Degrees.of(this.extenderSiftAngleOne.get()));
     }
 
     @Override
     public void goToSiftAngleTwo() {
 
-        setPosition(Degrees.of(extenderSiftAngleTwo.get()));
+        this.setPosition(Degrees.of(this.extenderSiftAngleTwo.get()));
     }
 
     @Override
     public void goToCustomAngleOne() {
-        extenderPid.applyPreset("default");
-        setPosition(Degrees.of(extenderCustomAngleOne.get()));
+        this.extenderPid.applyPreset("default");
+        this.setPosition(Degrees.of(this.extenderCustomAngleOne.get()));
     }
 
     @Override
     public void goToCustomAngleTwo() {
-        extenderPid.applyPreset("default");
-        setPosition(Degrees.of(extenderCustomAngleTwo.get()));
+        this.extenderPid.applyPreset("default");
+        this.setPosition(Degrees.of(this.extenderCustomAngleTwo.get()));
     }
 
     @Override
     public void toggleSift() {
-        extenderPid.applyPreset("sift");
-        extenderPid.setSpeedConstraints(ExtenderConstants.SIFT_CONSTRAINTS);
-        if (Degrees.of(extenderPid.getSetpoint()).equals(Degrees.of(extenderSiftAngleOne.get()))) {
-            goToSiftAngleTwo();
+        this.extenderPid.applyPreset("sift");
+        this.extenderPid.setSpeedConstraints(ExtenderConstants.SIFT_CONSTRAINTS);
+        if (Degrees.of(this.extenderPid.getSetpoint()).equals(Degrees.of(this.extenderSiftAngleOne.get()))) {
+            this.goToSiftAngleTwo();
         } else {
-            goToSiftAngleOne();
+            this.goToSiftAngleOne();
         }
     }
 
     @Override
     public void stop() {
-        pidEnabled = false;
-        extenderMotor.stopMotor();
+        this.pidEnabled = false;
+        this.extenderMotor.stopMotor();
     }
 
     @Override
     public void setPidEnabled(boolean enabled) {
-        pidEnabled = enabled;
+        this.pidEnabled = enabled;
     }
 
     @Override
     public void setMode(NeutralModeValue mode) {
-        extenderMotor.getConfigurator().apply(new MotorOutputConfigs().withNeutralMode(mode));
+        this.extenderMotor.getConfigurator().apply(new MotorOutputConfigs().withNeutralMode(mode));
     }
 
     @Override
     public void setMotorPercentage(double percent) {
-        setPidEnabled(false);
-        extenderMotor.set(percent);
+        this.setPidEnabled(false);
+        this.extenderMotor.set(percent);
     }
 
     @Override
     public void toggle() {
-        extenderPid.applyPreset("default");
-        extenderPid.setSpeedConstraints(ExtenderConstants.kExtenderConstraints);
-        double stowDeg = extenderStowAngle.get();
-        if (Math.abs(Degrees.of(extenderPid.getSetpoint())
+        this.extenderPid.applyPreset("default");
+        this.extenderPid.setSpeedConstraints(ExtenderConstants.kExtenderConstraints);
+        double stowDeg = this.extenderStowAngle.get();
+        if (Math.abs(Degrees.of(this.extenderPid.getSetpoint())
                         .minus(Degrees.of(stowDeg))
                         .in(Degrees))
-                < extenderTolerance.get()) {
-            extend();
+                < this.extenderTolerance.get()) {
+            this.extend();
         } else {
-            retract();
+            this.retract();
         }
     }
 
     @Override
-    public void updateInputs(ExtenderIOInputs inputs) {
-        inputs.isExtended = isExtended().getAsBoolean();
-        inputs.isRetracted = isRetracted().getAsBoolean();
-        inputs.position = getPosition();
-        inputs.setpoint = Degrees.of(extenderPid.getSetpoint());
-        inputs.velocity = extenderMotor.getVelocity().getValue();
-        inputs.motorVoltage = Volts.of(extenderMotor.getMotorVoltage().getValueAsDouble());
-        inputs.motorCurrent = extenderMotor.getStatorCurrent().getValue();
-        inputs.motorTemp = extenderMotor.getDeviceTemp().getValue();
-        inputs.atTarget = atTarget().getAsBoolean();
-        inputs.rawEncoderDegrees = Rotations.of(extenderEncoder.get()).in(Degrees);
+    public void updateInputs(@NotNull ExtenderIOInputs inputs) {
+        inputs.isExtended = this.isExtended().getAsBoolean();
+        inputs.isRetracted = this.isRetracted().getAsBoolean();
+        inputs.position = this.getPosition();
+        inputs.setpoint = Degrees.of(this.extenderPid.getSetpoint());
+        inputs.velocity = this.extenderMotor.getVelocity().getValue();
+        inputs.motorVoltage = Volts.of(this.extenderMotor.getMotorVoltage().getValueAsDouble());
+        inputs.motorCurrent = this.extenderMotor.getStatorCurrent().getValue();
+        inputs.motorTemp = this.extenderMotor.getDeviceTemp().getValue();
+        inputs.atTarget = this.atTarget().getAsBoolean();
+        inputs.rawEncoderDegrees = Rotations.of(this.extenderEncoder.get()).in(Degrees);
     }
 
     @Override
     public void periodic() {
-        extenderPid.updateTunableGains();
-        if (pidEnabled) {
-            extenderPid.runPid();
+        this.extenderPid.updateTunableGains();
+        if (this.pidEnabled) {
+            this.extenderPid.runPid();
         }
         if (ExtenderConstants.floatEnabled) {
-            if (getPosition().gte(ExtenderConstants.kExtenderFloatLimit)
-                    && atTarget().getAsBoolean()) {
-                extenderPid.applyPreset("float");
-                setMode(NeutralModeValue.Coast);
+            if (this.getPosition().gte(ExtenderConstants.kExtenderFloatLimit)
+                    && this.atTarget().getAsBoolean()) {
+                this.extenderPid.applyPreset("float");
+                this.setMode(NeutralModeValue.Coast);
             }
         }
     }

@@ -5,6 +5,8 @@ import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.POVButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import org.jetbrains.annotations.NotNull;
+
 import java.util.function.DoubleSupplier;
 
 public class OIXbox implements OI {
@@ -80,27 +82,27 @@ public class OIXbox implements OI {
     public static final Trigger back = new JoystickButton(driverController, XboxController.Button.kBack.value);
 
     @Override
-    public DoubleSupplier driveTranslationX() {
+    public @NotNull DoubleSupplier driveTranslationX() {
         return leftX;
     }
 
     @Override
-    public DoubleSupplier driveTranslationY() {
+    public @NotNull DoubleSupplier driveTranslationY() {
         return leftY;
     }
 
     @Override
-    public DoubleSupplier driveRotation() {
+    public @NotNull DoubleSupplier driveRotation() {
         return () -> driveRotationCurve.calculate(rightX.getAsDouble());
     }
 
     @Override
-    public DoubleSupplier driveTranslationXIntakeRunning() {
+    public @NotNull DoubleSupplier driveTranslationXIntakeRunning() {
         return () -> driveTranslationCurveIntakeRunning.calculate(leftX.getAsDouble());
     }
 
     @Override
-    public DoubleSupplier driveTranslationYIntakeRunning() {
+    public @NotNull DoubleSupplier driveTranslationYIntakeRunning() {
         return () -> driveTranslationCurveIntakeRunning.calculate(leftY.getAsDouble());
     }
 
@@ -111,122 +113,122 @@ public class OIXbox implements OI {
     }
 
     @Override
-    public Trigger zeroDrivebase() {
+    public @NotNull Trigger zeroDrivebase() {
         return start;
     }
 
     @Override
-    public Trigger intakeMiddle() {
+    public @NotNull Trigger intakeMiddle() {
         return y;
     }
 
     @Override
-    public Trigger shootDriver() {
+    public @NotNull Trigger shootDriver() {
         return a;
     }
 
     @Override
-    public Trigger stopShooterDriver() {
+    public @NotNull Trigger stopShooterDriver() {
         return x;
     }
 
     @Override
-    public Trigger intakeManualExtend() {
+    public @NotNull Trigger intakeManualExtend() {
         return b;
     }
 
     @Override
-    public Trigger spinUpShooter() {
+    public @NotNull Trigger spinUpShooter() {
         return operatorRightBumper;
     }
 
     @Override
-    public Trigger fireShooter() {
+    public @NotNull Trigger fireShooter() {
         return operatorRightTriggerAsButton;
     }
 
     @Override
-    public Trigger unjamShooter() {
+    public @NotNull Trigger unjamShooter() {
         return operatorLeftTriggerAsButton;
     }
 
     @Override
-    public Trigger stopSuperstructure() {
+    public @NotNull Trigger stopSuperstructure() {
         return operatorLeftBumper;
     }
 
     @Override
-    public Trigger intake() {
+    public @NotNull Trigger intake() {
         return rightTriggerAsButton;
     }
 
     @Override
-    public Trigger outtake() {
+    public @NotNull Trigger outtake() {
         return leftTriggerAsButton;
     }
 
     @Override
-    public Trigger xDrive() {
+    public @NotNull Trigger xDrive() {
         return opX;
     }
 
     @Override
-    public Trigger testButton() {
+    public @NotNull Trigger testButton() {
         return opY;
     }
 
     @Override
-    public Trigger toggleIntake() {
+    public @NotNull Trigger toggleIntake() {
         return rightBumper;
     }
 
     @Override
-    public Trigger lockOnTarget() {
+    public @NotNull Trigger lockOnTarget() {
         return back;
     }
 
     @Override
-    public Trigger declimb() {
+    public @NotNull Trigger declimb() {
         return dPadDown;
     }
 
     @Override
-    public Trigger climb_l1() {
+    public @NotNull Trigger climb_l1() {
         return dPadUp;
     }
 
     @Override
-    public Trigger climb_l2() {
+    public @NotNull Trigger climb_l2() {
         return dPadRight;
     }
 
     @Override
-    public Trigger climb_l3() {
+    public @NotNull Trigger climb_l3() {
         return dPadLeft;
     }
 
     @Override
-    public Trigger autoSpeedMode() {
+    public @NotNull Trigger autoSpeedMode() {
         return operatorDPadDown;
     }
 
     @Override
-    public Trigger hubShootSpeed() {
+    public @NotNull Trigger hubShootSpeed() {
         return operatorDPadLeft;
     }
 
     @Override
-    public Trigger towerShootSpeed() {
+    public @NotNull Trigger towerShootSpeed() {
         return operatorDPadUp;
     }
 
     @Override
-    public Trigger cornerShootSpeed() {
+    public @NotNull Trigger cornerShootSpeed() {
         return operatorDPadRight;
     }
 
     @Override
-    public Trigger manualHold() {
+    public @NotNull Trigger manualHold() {
         return opA;
     }
 }

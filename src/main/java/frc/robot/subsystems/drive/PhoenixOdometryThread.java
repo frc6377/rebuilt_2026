@@ -20,6 +20,9 @@ import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.RobotController;
 import frc.robot.generated.TunerConstants;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
@@ -37,73 +40,73 @@ import java.util.function.DoubleSupplier;
  */
 public class PhoenixOdometryThread extends Thread {
     private final Lock signalsLock = new ReentrantLock(); // Prevents conflicts when registering signals
-    private BaseStatusSignal[] phoenixSignals = new BaseStatusSignal[0];
+    private BaseStatusSignal @NotNull [] phoenixSignals = new BaseStatusSignal[0];
     private final List<DoubleSupplier> genericSignals = new ArrayList<>();
     private final List<Queue<Double>> phoenixQueues = new ArrayList<>();
     private final List<Queue<Double>> genericQueues = new ArrayList<>();
     private final List<Queue<Double>> timestampQueues = new ArrayList<>();
 
     private static final boolean isCANFD = new CANBus(TunerConstants.DrivetrainConstants.CANBusName).isNetworkFD();
-    private static PhoenixOdometryThread instance = null;
+    private static @Nullable PhoenixOdometryThread instance = null;
 
-    public static PhoenixOdometryThread getInstance() {
-        if (instance == null) {
+    public static @NotNull PhoenixOdometryThread getInstance() {
+        if (null == instance) {
             instance = new PhoenixOdometryThread();
         }
         return instance;
     }
 
     private PhoenixOdometryThread() {
-        setName("PhoenixOdometryThread");
-        setDaemon(true);
+        this.setName("PhoenixOdometryThread");
+        this.setDaemon(true);
     }
 
     @Override
     public void start() {
-        if (!timestampQueues.isEmpty() && RobotBase.isReal()) {
+        if (!this.timestampQueues.isEmpty() && RobotBase.isReal()) {
             super.start();
         }
     }
 
     /** Registers a Phoenix signal to be read from the thread. */
-    public Queue<Double> registerSignal(StatusSignal<Angle> signal) {
+    public @NotNull Queue<Double> registerSignal(StatusSignal<Angle> signal) {
         Queue<Double> queue = new ArrayBlockingQueue<>(20);
-        signalsLock.lock();
+        this.signalsLock.lock();
         Drive.odometryLock.lock();
         try {
-            BaseStatusSignal[] newSignals = new BaseStatusSignal[phoenixSignals.length + 1];
-            System.arraycopy(phoenixSignals, 0, newSignals, 0, phoenixSignals.length);
-            newSignals[phoenixSignals.length] = signal;
-            phoenixSignals = newSignals;
-            phoenixQueues.add(queue);
+            BaseStatusSignal[] newSignals = new BaseStatusSignal[this.phoenixSignals.length + 1];
+            System.arraycopy(this.phoenixSignals, 0, newSignals, 0, this.phoenixSignals.length);
+            newSignals[this.phoenixSignals.length] = signal;
+            this.phoenixSignals = newSignals;
+            this.phoenixQueues.add(queue);
         } finally {
-            signalsLock.unlock();
+            this.signalsLock.unlock();
             Drive.odometryLock.unlock();
         }
         return queue;
     }
 
     /** Registers a generic signal to be read from the thread. */
-    public Queue<Double> registerSignal(DoubleSupplier signal) {
+    public @NotNull Queue<Double> registerSignal(DoubleSupplier signal) {
         Queue<Double> queue = new ArrayBlockingQueue<>(20);
-        signalsLock.lock();
+        this.signalsLock.lock();
         Drive.odometryLock.lock();
         try {
-            genericSignals.add(signal);
-            genericQueues.add(queue);
+            this.genericSignals.add(signal);
+            this.genericQueues.add(queue);
         } finally {
-            signalsLock.unlock();
+            this.signalsLock.unlock();
             Drive.odometryLock.unlock();
         }
         return queue;
     }
 
     /** Returns a new queue that returns timestamp values for each sample. */
-    public Queue<Double> makeTimestampQueue() {
+    public @NotNull Queue<Double> makeTimestampQueue() {
         Queue<Double> queue = new ArrayBlockingQueue<>(20);
         Drive.odometryLock.lock();
         try {
-            timestampQueues.add(queue);
+            this.timestampQueues.add(queue);
         } finally {
             Drive.odometryLock.unlock();
         }
@@ -114,21 +117,21 @@ public class PhoenixOdometryThread extends Thread {
     public void run() {
         while (true) {
             // Wait for updates from all signals
-            signalsLock.lock();
+            this.signalsLock.lock();
             try {
-                if (isCANFD && phoenixSignals.length > 0) {
-                    BaseStatusSignal.waitForAll(2.0 / Drive.ODOMETRY_FREQUENCY, phoenixSignals);
+                if (isCANFD && 0 < phoenixSignals.length) {
+                    BaseStatusSignal.waitForAll(2.0 / Drive.ODOMETRY_FREQUENCY, this.phoenixSignals);
                 } else {
                     // "waitForAll" does not support blocking on multiple signals with a bus
                     // that is not CAN FD, regardless of Pro licensing. No reasoning for this
                     // behavior is provided by the documentation.
                     Thread.sleep((long) (1000.0 / Drive.ODOMETRY_FREQUENCY));
-                    if (phoenixSignals.length > 0) BaseStatusSignal.refreshAll(phoenixSignals);
+                    if (0 < phoenixSignals.length) BaseStatusSignal.refreshAll(this.phoenixSignals);
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } finally {
-                signalsLock.unlock();
+                this.signalsLock.unlock();
             }
 
             // Save new data to queues
@@ -139,22 +142,22 @@ public class PhoenixOdometryThread extends Thread {
                 //     FPGA timestamps, this solution is imperfect but close
                 double timestamp = RobotController.getFPGATime() / 1e6;
                 double totalLatency = 0.0;
-                for (BaseStatusSignal signal : phoenixSignals) {
+                for (BaseStatusSignal signal : this.phoenixSignals) {
                     totalLatency += signal.getTimestamp().getLatency();
                 }
-                if (phoenixSignals.length > 0) {
-                    timestamp -= totalLatency / phoenixSignals.length;
+                if (0 < phoenixSignals.length) {
+                    timestamp -= totalLatency / this.phoenixSignals.length;
                 }
 
                 // Add new samples to queues
-                for (int i = 0; i < phoenixSignals.length; i++) {
-                    phoenixQueues.get(i).offer(phoenixSignals[i].getValueAsDouble());
+                for (int i = 0; i < this.phoenixSignals.length; i++) {
+                    this.phoenixQueues.get(i).offer(this.phoenixSignals[i].getValueAsDouble());
                 }
-                for (int i = 0; i < genericSignals.size(); i++) {
-                    genericQueues.get(i).offer(genericSignals.get(i).getAsDouble());
+                for (int i = 0; i < this.genericSignals.size(); i++) {
+                    this.genericQueues.get(i).offer(this.genericSignals.get(i).getAsDouble());
                 }
-                for (int i = 0; i < timestampQueues.size(); i++) {
-                    timestampQueues.get(i).offer(timestamp);
+                for (int i = 0; i < this.timestampQueues.size(); i++) {
+                    this.timestampQueues.get(i).offer(timestamp);
                 }
             } finally {
                 Drive.odometryLock.unlock();

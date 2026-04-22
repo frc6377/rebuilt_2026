@@ -4,17 +4,19 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import frc.robot.subsystems.vision.VisionConstants;
 import gg.questnav.questnav.*;
+import org.jetbrains.annotations.NotNull;
+
 import java.util.function.Supplier;
 
 public class QuestNavIOReal implements QuestNavIO {
-    private final QuestNav questNav;
+    private final @NotNull QuestNav questNav;
     private Pose3d questPose = new Pose3d();
 
     public QuestNavIOReal() {
 
-        questNav = new QuestNav();
-        questPose = new Pose3d();
-        questNav.setPose(questPose);
+        this.questNav = new QuestNav();
+        this.questPose = new Pose3d();
+        this.questNav.setPose(this.questPose);
     }
 
     /**
@@ -22,24 +24,24 @@ public class QuestNavIOReal implements QuestNavIO {
      *
      * @param robotPose The robot pose to set.
      */
-    public void resetQuestNavPose(Pose3d robotPose) {
+    public void resetQuestNavPose(@NotNull Pose3d robotPose) {
         Pose3d newQuestPose = robotPose.transformBy(VisionConstants.QuestNavConstants.ROBOT_TO_QUEST);
-        questNav.setPose(newQuestPose);
+        this.questNav.setPose(newQuestPose);
     }
 
     public void zeroQuestNav() {
-        questNav.setPose(
-                new Pose3d(questPose.getTranslation(), VisionConstants.QuestNavConstants.ROBOT_TO_QUEST.getRotation()));
+        this.questNav.setPose(
+                new Pose3d(this.questPose.getTranslation(), VisionConstants.QuestNavConstants.ROBOT_TO_QUEST.getRotation()));
     }
 
     public void periodic() {
-        questNav.commandPeriodic();
-        PoseFrame[] questFrames = questNav.getAllUnreadPoseFrames();
+        this.questNav.commandPeriodic();
+        PoseFrame[] questFrames = this.questNav.getAllUnreadPoseFrames();
         for (PoseFrame questFrame : questFrames) {
             if (questFrame.isTracking()) {
-                questPose = questFrame.questPose3d();
+                this.questPose = questFrame.questPose3d();
                 double timestamp = questFrame.dataTimestamp();
-                Pose3d robotPose = questPose.transformBy(VisionConstants.QuestNavConstants.ROBOT_TO_QUEST.inverse());
+                Pose3d robotPose = this.questPose.transformBy(VisionConstants.QuestNavConstants.ROBOT_TO_QUEST.inverse());
                 // consumer.accept(robotPose.toPose2d(), timestamp, VisionConstants.QUESTNAV_STD_DEVS);
             }
         }
@@ -51,7 +53,7 @@ public class QuestNavIOReal implements QuestNavIO {
      * @param pose The starting robot pose as a Pose3d.
      */
     public void setQuestNavStartPose(Pose3d pose) {
-        questNav.setPose(pose);
+        this.questNav.setPose(pose);
     }
 
     /**
@@ -59,8 +61,8 @@ public class QuestNavIOReal implements QuestNavIO {
      *
      * @return A supplier that provides the current robot pose in 3D field coordinates.
      */
-    public Supplier<Pose2d> getQuestNavPoseSupplier() {
-        return () -> questPose
+    public @NotNull Supplier<Pose2d> getQuestNavPoseSupplier() {
+        return () -> this.questPose
                 .transformBy(VisionConstants.QuestNavConstants.ROBOT_TO_QUEST.inverse())
                 .toPose2d();
     }

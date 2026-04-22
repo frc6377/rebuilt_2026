@@ -9,16 +9,17 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import frc.robot.Constants;
 import frc.robot.subsystems.intake.IntakeConstants.RollerConstants;
+import org.jetbrains.annotations.NotNull;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 public class RollerIOReal implements RollerIO {
 
-    private final TalonFX leaderMotor;
-    private final TalonFX followerMotor;
+    private final @NotNull TalonFX leaderMotor;
+    private final @NotNull TalonFX followerMotor;
 
-    private final LoggedNetworkNumber kRollerIntakePercent;
-    private final LoggedNetworkNumber kRollerOuttakePercent;
-    private final LoggedNetworkNumber kRollerIdlePercent;
+    private final @NotNull LoggedNetworkNumber kRollerIntakePercent;
+    private final @NotNull LoggedNetworkNumber kRollerOuttakePercent;
+    private final @NotNull LoggedNetworkNumber kRollerIdlePercent;
 
     public RollerIOReal() {
         var config = new TalonFXConfiguration()
@@ -32,55 +33,55 @@ public class RollerIOReal implements RollerIO {
                         .withStatorCurrentLimitEnable(true)
                         .withStatorCurrentLimit(RollerConstants.MotorConfig.kStatorCurrentLimit));
 
-        leaderMotor = new TalonFX(Constants.CANIDs.MotorIDs.kRollerLeaderMotorID);
-        leaderMotor.getConfigurator().apply(config);
+        this.leaderMotor = new TalonFX(Constants.CANIDs.MotorIDs.kRollerLeaderMotorID);
+        this.leaderMotor.getConfigurator().apply(config);
 
-        followerMotor = new TalonFX(Constants.CANIDs.MotorIDs.kRollerFollowerMotorID);
-        followerMotor.getConfigurator().apply(config);
+        this.followerMotor = new TalonFX(Constants.CANIDs.MotorIDs.kRollerFollowerMotorID);
+        this.followerMotor.getConfigurator().apply(config);
 
-        kRollerIntakePercent = new LoggedNetworkNumber("Intake/Roller/IntakePercent", RollerConstants.kIntakePercent);
-        kRollerOuttakePercent =
+        this.kRollerIntakePercent = new LoggedNetworkNumber("Intake/Roller/IntakePercent", RollerConstants.kIntakePercent);
+        this.kRollerOuttakePercent =
                 new LoggedNetworkNumber("Intake/Roller/OuttakePercent", RollerConstants.kOuttakePercent);
-        kRollerIdlePercent = new LoggedNetworkNumber("Intake/Roller/IdlePercent", RollerConstants.kIdlePercent);
+        this.kRollerIdlePercent = new LoggedNetworkNumber("Intake/Roller/IdlePercent", RollerConstants.kIdlePercent);
     }
 
     public void setRollerSpeed(double speed) {
-        leaderMotor.set(speed);
-        setFollower();
+        this.leaderMotor.set(speed);
+        this.setFollower();
     }
 
     public void setFollower() {
-        if (followerMotor != null) {
-            followerMotor.setControl(
-                    new Follower(leaderMotor.getDeviceID(), RollerConstants.MotorConfig.kFollowerInverted));
+        if (null != followerMotor) {
+            this.followerMotor.setControl(
+                    new Follower(this.leaderMotor.getDeviceID(), RollerConstants.MotorConfig.kFollowerInverted));
         }
     }
 
     @Override
     public void idle() {
         if (RollerConstants.kIdleEnabled) {
-            setRollerSpeed(kRollerIdlePercent.get());
+            this.setRollerSpeed(this.kRollerIdlePercent.get());
         }
     }
 
     @Override
     public boolean isRunning() {
-        return Math.abs(leaderMotor.get()) > 0.1;
+        return 0.1 < Math.abs(leaderMotor.get());
     }
 
     @Override
     public void stop() {
-        setRollerSpeed(0.0);
+        this.setRollerSpeed(0.0);
     }
 
     @Override
     public void start() {
-        setRollerSpeed(kRollerIntakePercent.get());
+        this.setRollerSpeed(this.kRollerIntakePercent.get());
     }
 
     @Override
     public void outtake() {
-        setRollerSpeed(kRollerOuttakePercent.get());
+        this.setRollerSpeed(this.kRollerOuttakePercent.get());
     }
 
     @Override
@@ -90,47 +91,47 @@ public class RollerIOReal implements RollerIO {
 
     @Override
     public void setMode(NeutralModeValue mode) {
-        leaderMotor.getConfigurator().apply(new MotorOutputConfigs().withNeutralMode(mode));
-        leaderMotor.getConfigurator().apply(new MotorOutputConfigs().withNeutralMode(mode));
+        this.leaderMotor.getConfigurator().apply(new MotorOutputConfigs().withNeutralMode(mode));
+        this.leaderMotor.getConfigurator().apply(new MotorOutputConfigs().withNeutralMode(mode));
     }
 
     @Override
     public void setMotorPercentage(double percent) {
-        leaderMotor.set(percent);
-        leaderMotor.set(percent);
+        this.leaderMotor.set(percent);
+        this.leaderMotor.set(percent);
     }
 
     @Override
-    public void updateInputs(RollerIO.RollerIOInputs inputs) {
-        inputs.leaderSpeedPercentile = leaderMotor.get();
-        inputs.leaderAppliedVolts = leaderMotor.getMotorVoltage().getValue();
-        inputs.leaderVelocity = leaderMotor.getVelocity().getValue();
-        inputs.leaderStatorCurrent = leaderMotor.getStatorCurrent().getValue();
-        inputs.leaderMotorTemp = leaderMotor.getDeviceTemp().getValue();
+    public void updateInputs(RollerIO.@NotNull RollerIOInputs inputs) {
+        inputs.leaderSpeedPercentile = this.leaderMotor.get();
+        inputs.leaderAppliedVolts = this.leaderMotor.getMotorVoltage().getValue();
+        inputs.leaderVelocity = this.leaderMotor.getVelocity().getValue();
+        inputs.leaderStatorCurrent = this.leaderMotor.getStatorCurrent().getValue();
+        inputs.leaderMotorTemp = this.leaderMotor.getDeviceTemp().getValue();
 
-        if (followerMotor != null) {
-            inputs.followerSpeedPercentile = followerMotor.get();
-            inputs.followerAppliedVolts = followerMotor.getMotorVoltage().getValue();
-            inputs.followerVelocity = followerMotor.getVelocity().getValue();
-            inputs.followerStatorCurrent = followerMotor.getStatorCurrent().getValue();
-            inputs.followerMotorTemp = followerMotor.getDeviceTemp().getValue();
+        if (null != followerMotor) {
+            inputs.followerSpeedPercentile = this.followerMotor.get();
+            inputs.followerAppliedVolts = this.followerMotor.getMotorVoltage().getValue();
+            inputs.followerVelocity = this.followerMotor.getVelocity().getValue();
+            inputs.followerStatorCurrent = this.followerMotor.getStatorCurrent().getValue();
+            inputs.followerMotorTemp = this.followerMotor.getDeviceTemp().getValue();
         }
 
-        inputs.isRunning = isRunning();
-        inputs.leaderSpeedPercentile = leaderMotor.get();
-        inputs.leaderAppliedVolts = leaderMotor.getMotorVoltage().getValue();
-        inputs.leaderVelocity = leaderMotor.getVelocity().getValue();
-        inputs.leaderStatorCurrent = leaderMotor.getStatorCurrent().getValue();
-        inputs.leaderMotorTemp = leaderMotor.getDeviceTemp().getValue();
+        inputs.isRunning = this.isRunning();
+        inputs.leaderSpeedPercentile = this.leaderMotor.get();
+        inputs.leaderAppliedVolts = this.leaderMotor.getMotorVoltage().getValue();
+        inputs.leaderVelocity = this.leaderMotor.getVelocity().getValue();
+        inputs.leaderStatorCurrent = this.leaderMotor.getStatorCurrent().getValue();
+        inputs.leaderMotorTemp = this.leaderMotor.getDeviceTemp().getValue();
 
-        if (followerMotor != null) {
-            inputs.followerSpeedPercentile = followerMotor.get();
-            inputs.followerAppliedVolts = followerMotor.getMotorVoltage().getValue();
-            inputs.followerVelocity = followerMotor.getVelocity().getValue();
-            inputs.followerStatorCurrent = followerMotor.getStatorCurrent().getValue();
-            inputs.followerMotorTemp = followerMotor.getDeviceTemp().getValue();
+        if (null != followerMotor) {
+            inputs.followerSpeedPercentile = this.followerMotor.get();
+            inputs.followerAppliedVolts = this.followerMotor.getMotorVoltage().getValue();
+            inputs.followerVelocity = this.followerMotor.getVelocity().getValue();
+            inputs.followerStatorCurrent = this.followerMotor.getStatorCurrent().getValue();
+            inputs.followerMotorTemp = this.followerMotor.getDeviceTemp().getValue();
         }
 
-        inputs.isRunning = isRunning();
+        inputs.isRunning = this.isRunning();
     }
 }

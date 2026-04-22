@@ -19,6 +19,7 @@ import com.ctre.phoenix6.swerve.SwerveModuleConstants;
 import frc.robot.util.PhoenixUtil;
 import java.util.Arrays;
 import org.ironmaple.simulation.drivesims.SwerveModuleSimulation;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Physics sim implementation of module IO. The sim models are configured using a set of module constants from Phoenix.
@@ -27,27 +28,27 @@ import org.ironmaple.simulation.drivesims.SwerveModuleSimulation;
 public class ModuleIOTalonFXSim extends ModuleIOTalonFX {
     private final SwerveModuleSimulation simulation;
 
-    public ModuleIOTalonFXSim(SwerveModuleConstants constants, SwerveModuleSimulation simulation) {
+    public ModuleIOTalonFXSim(@NotNull SwerveModuleConstants constants, @NotNull SwerveModuleSimulation simulation) {
         super(PhoenixUtil.regulateModuleConstantForSimulation(constants));
 
         this.simulation = simulation;
-        simulation.useDriveMotorController(new PhoenixUtil.TalonFXMotorControllerSim(driveTalon));
+        simulation.useDriveMotorController(new PhoenixUtil.TalonFXMotorControllerSim(this.driveTalon));
 
         simulation.useSteerMotorController(
-                new PhoenixUtil.TalonFXMotorControllerWithRemoteCancoderSim(turnTalon, cancoder));
+                new PhoenixUtil.TalonFXMotorControllerWithRemoteCancoderSim(this.turnTalon, this.cancoder));
     }
 
     @Override
-    public void updateInputs(ModuleIOInputs inputs) {
+    public void updateInputs(@NotNull ModuleIOInputs inputs) {
         super.updateInputs(inputs);
 
         // Update odometry inputs
         inputs.odometryTimestamps = PhoenixUtil.getSimulationOdometryTimeStamps();
 
-        inputs.odometryDrivePositionsRad = Arrays.stream(simulation.getCachedDriveWheelFinalPositions())
+        inputs.odometryDrivePositionsRad = Arrays.stream(this.simulation.getCachedDriveWheelFinalPositions())
                 .mapToDouble(angle -> angle.in(Radians))
                 .toArray();
 
-        inputs.odometryTurnPositions = simulation.getCachedSteerAbsolutePositions();
+        inputs.odometryTurnPositions = this.simulation.getCachedSteerAbsolutePositions();
     }
 }

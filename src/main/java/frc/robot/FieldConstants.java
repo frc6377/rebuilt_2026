@@ -332,31 +332,31 @@ public class FieldConstants {
         }
 
         public AprilTagFieldLayout getLayout() {
-            if (layout == null) {
+            if (null == layout) {
                 synchronized (this) {
-                    if (layout == null) {
+                    if (null == layout) {
                         try {
                             Path p = Path.of(
                                     Filesystem.getDeployDirectory().getPath(),
                                     "apriltags",
                                     fieldType.getJsonFolder(),
-                                    name + ".json");
-                            layout = new AprilTagFieldLayout(p);
-                            layoutString = new ObjectMapper().writeValueAsString(layout);
+                                    this.name + ".json");
+                            this.layout = new AprilTagFieldLayout(p);
+                            this.layoutString = new ObjectMapper().writeValueAsString(this.layout);
                         } catch (IOException e) {
                             throw new RuntimeException(e);
                         }
                     }
                 }
             }
-            return layout;
+            return this.layout;
         }
 
         public String getLayoutString() {
-            if (layoutString == null) {
-                getLayout();
+            if (null == layoutString) {
+                this.getLayout();
             }
-            return layoutString;
+            return this.layoutString;
         }
     }
 
@@ -416,19 +416,19 @@ public class FieldConstants {
                     case Blue -> redInactiveFirst;
                 };
 
-        if (matchTime > 130) {
+        if (130 < matchTime) {
             // Transition period after auto, hub is active.
             return true;
-        } else if (matchTime > 105) {
+        } else if (105 < matchTime) {
             // Shift 1
             return shift1Active;
-        } else if (matchTime > 80) {
+        } else if (80 < matchTime) {
             // Shift 2
             return !shift1Active;
-        } else if (matchTime > 55) {
+        } else if (55 < matchTime) {
             // Shift 3
             return shift1Active;
-        } else if (matchTime > 30) {
+        } else if (30 < matchTime) {
             // Shift 4
             return !shift1Active;
         } else {
@@ -452,7 +452,7 @@ public class FieldConstants {
         String gameData = DriverStation.getGameSpecificMessage();
         if (gameData.isEmpty()) return 0.0; // Assume stable active if no data
 
-        boolean redInactiveFirst = gameData.charAt(0) == 'R';
+        boolean redInactiveFirst = 'R' == gameData.charAt(0);
         boolean shift1Active =
                 switch (alliance.get()) {
                     case Red -> !redInactiveFirst;
@@ -518,7 +518,7 @@ public class FieldConstants {
      * seconds. Flashes at 4 Hz (125 ms on / 125 ms off).
      */
     public static boolean isHubFlashing() {
-        return getTimeUntilHubStateChange() > 0.0 && getTimeUntilHubStateChange() <= 3.0;
+        return 0.0 < getTimeUntilHubStateChange() && 3.0 >= getTimeUntilHubStateChange();
     }
 
     /**
@@ -535,7 +535,7 @@ public class FieldConstants {
         if (isHubFlashing()) {
             // Blink at 4 Hz: 250 ms period, 125 ms on
             double t = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
-            return (t % 0.25) < 0.125;
+            return 0.125 > (t % 0.25);
         }
         return active;
     }
@@ -543,7 +543,7 @@ public class FieldConstants {
     /** Get the hub position for the current alliance */
     public static Translation2d getHubPosition() {
         // Logic to determine alliance and return appropriate hub center
-        boolean isRed = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
+        boolean isRed = Alliance.Red == DriverStation.getAlliance().orElse(Alliance.Blue);
         if (isRed) {
             // If we are Red, the target hub is the one on the Blue side (the "far" one relative to Blue driver
             // station?)

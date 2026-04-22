@@ -33,10 +33,11 @@ import java.util.function.Supplier;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.motorsims.SimulatedBattery;
 import org.ironmaple.simulation.motorsims.SimulatedMotorController;
+import org.jetbrains.annotations.NotNull;
 
 public final class PhoenixUtil {
     /** Attempts to run the command until no error is produced. */
-    public static void tryUntilOk(int maxAttempts, Supplier<StatusCode> command) {
+    public static void tryUntilOk(int maxAttempts, @NotNull Supplier<StatusCode> command) {
         for (int i = 0; i < maxAttempts; i++) {
             var error = command.get();
             if (error.isOK()) break;
@@ -49,7 +50,7 @@ public final class PhoenixUtil {
 
         private final TalonFXSimState talonFXSimState;
 
-        public TalonFXMotorControllerSim(TalonFX talonFX) {
+        public TalonFXMotorControllerSim(@NotNull TalonFX talonFX) {
             this.id = instances++;
 
             this.talonFXSimState = talonFX.getSimState();
@@ -59,31 +60,31 @@ public final class PhoenixUtil {
         public Voltage updateControlSignal(
                 Angle mechanismAngle,
                 AngularVelocity mechanismVelocity,
-                Angle encoderAngle,
-                AngularVelocity encoderVelocity) {
-            talonFXSimState.setRawRotorPosition(encoderAngle);
-            talonFXSimState.setRotorVelocity(encoderVelocity);
-            talonFXSimState.setSupplyVoltage(SimulatedBattery.getBatteryVoltage());
-            return talonFXSimState.getMotorVoltageMeasure();
+                @NotNull Angle encoderAngle,
+                @NotNull AngularVelocity encoderVelocity) {
+            this.talonFXSimState.setRawRotorPosition(encoderAngle);
+            this.talonFXSimState.setRotorVelocity(encoderVelocity);
+            this.talonFXSimState.setSupplyVoltage(SimulatedBattery.getBatteryVoltage());
+            return this.talonFXSimState.getMotorVoltageMeasure();
         }
     }
 
     public static class TalonFXMotorControllerWithRemoteCancoderSim extends TalonFXMotorControllerSim {
         private final CANcoderSimState remoteCancoderSimState;
 
-        public TalonFXMotorControllerWithRemoteCancoderSim(TalonFX talonFX, CANcoder cancoder) {
+        public TalonFXMotorControllerWithRemoteCancoderSim(@NotNull TalonFX talonFX, @NotNull CANcoder cancoder) {
             super(talonFX);
             this.remoteCancoderSimState = cancoder.getSimState();
         }
 
         @Override
         public Voltage updateControlSignal(
-                Angle mechanismAngle,
-                AngularVelocity mechanismVelocity,
-                Angle encoderAngle,
-                AngularVelocity encoderVelocity) {
-            remoteCancoderSimState.setRawPosition(mechanismAngle);
-            remoteCancoderSimState.setVelocity(mechanismVelocity);
+                @NotNull Angle mechanismAngle,
+                @NotNull AngularVelocity mechanismVelocity,
+                @NotNull Angle encoderAngle,
+                @NotNull AngularVelocity encoderVelocity) {
+            this.remoteCancoderSimState.setRawPosition(mechanismAngle);
+            this.remoteCancoderSimState.setVelocity(mechanismVelocity);
 
             return super.updateControlSignal(mechanismAngle, mechanismVelocity, encoderAngle, encoderVelocity);
         }
@@ -119,7 +120,7 @@ public final class PhoenixUtil {
      * robot hardware.</h4>
      */
     public static SwerveModuleConstants regulateModuleConstantForSimulation(
-            SwerveModuleConstants<?, ?, ?> moduleConstants) {
+            @NotNull SwerveModuleConstants<?, ?, ?> moduleConstants) {
         // Skip regulation if running on a real robot
         if (RobotBase.isReal()) return moduleConstants;
 

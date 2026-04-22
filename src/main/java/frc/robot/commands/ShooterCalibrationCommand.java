@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
 import org.ironmaple.simulation.gamepieces.GamePieceProjectile;
+import org.jetbrains.annotations.NotNull;
 import org.littletonrobotics.junction.Logger;
 
 /**
@@ -60,10 +61,10 @@ public class ShooterCalibrationCommand extends Command {
     public record ShotConfiguration(
             Distance distance, Angle hoodAngle, AngularVelocity flywheelVelocity, boolean scored) {
         @Override
-        public String toString() {
+        public @NotNull String toString() {
             return String.format(
                     "%.2fm -> Hood: %.1f°, RPM: %.0f %s",
-                    distance.in(Meters), hoodAngle.in(Degrees), flywheelVelocity.in(RPM), scored ? "✓" : "✗");
+                    this.distance.in(Meters), this.hoodAngle.in(Degrees), this.flywheelVelocity.in(RPM), this.scored ? "✓" : "✗");
         }
     }
 
@@ -82,7 +83,7 @@ public class ShooterCalibrationCommand extends Command {
     // State tracking
     private int currentDistanceIndex = 0;
     private int currentRPMIndex = 0;
-    private CalibrationState state = CalibrationState.SETUP_POSITION;
+    private @NotNull CalibrationState state = CalibrationState.SETUP_POSITION;
     private final Timer stateTimer = new Timer();
     private GamePieceProjectile currentShot; // Track the current shot for trajectory analysis
     // Results
@@ -156,7 +157,7 @@ public class ShooterCalibrationCommand extends Command {
                 RPM.of(6000));
     }
 
-    public ShooterCalibrationCommand(Superstructure superstructure, SwerveDriveSimulation drive) {
+    public ShooterCalibrationCommand(@NotNull Superstructure superstructure, @NotNull SwerveDriveSimulation drive) {
         this(
                 superstructure.getLeftShooter(),
                 superstructure.getGamePieceTrajectorySimulation(),
@@ -193,140 +194,139 @@ public class ShooterCalibrationCommand extends Command {
         this.tempLowerBound = lowerBound;
         this.tempUpperBound = upperBound;
 
-        addRequirements(shooter);
+        this.addRequirements(shooter);
     }
 
     @Override
     public void initialize() {
-        hubPosition = FieldConstants.getHubPosition();
-        currentDistanceIndex = 0;
-        currentRPMIndex = 0;
-        state = CalibrationState.SETUP_POSITION;
-        results.clear();
-        successfulShots.clear();
-        stateTimer.restart();
+        this.hubPosition = FieldConstants.getHubPosition();
+        this.currentDistanceIndex = 0;
+        this.currentRPMIndex = 0;
+        this.state = CalibrationState.SETUP_POSITION;
+        this.results.clear();
+        this.successfulShots.clear();
+        this.stateTimer.restart();
 
         // Ensure we have balls to shoot
-        trajectorySim.setBallsInHopper(1000); // Lots of balls for testing
+        this.trajectorySim.setBallsInHopper(1000); // Lots of balls for testing
 
         Logger.recordOutput("Calibration/Status", "Starting calibration...");
-        Logger.recordOutput("Calibration/TotalTests", testDistances.length * speedInterations);
+        Logger.recordOutput("Calibration/TotalTests", this.testDistances.length * this.speedInterations);
     }
 
     @Override
     public void execute() {
         // Log current state
-        Logger.recordOutput("Calibration/State", state.toString());
-        Logger.recordOutput("Calibration/DistanceIndex", currentDistanceIndex);
-        Logger.recordOutput("Calibration/RPMIndex", currentRPMIndex);
-        Logger.recordOutput("Calibration/SuccessfulShots", successfulShots.size());
+        Logger.recordOutput("Calibration/State", this.state.toString());
+        Logger.recordOutput("Calibration/DistanceIndex", this.currentDistanceIndex);
+        Logger.recordOutput("Calibration/RPMIndex", this.currentRPMIndex);
+        Logger.recordOutput("Calibration/SuccessfulShots", this.successfulShots.size());
 
-        switch (state) {
+        switch (this.state) {
             case SETUP_POSITION -> {
 
                 // Teleport robot to test position facing the hub
-                Distance currentDistance = testDistances[currentDistanceIndex];
-                Pose2d testPose = calculateTestPose(currentDistance);
-                lastShotResult = getShotResult();
+                Distance currentDistance = this.testDistances[this.currentDistanceIndex];
+                Pose2d testPose = this.calculateTestPose(currentDistance);
+                this.lastShotResult = this.getShotResult();
                 // Teleport the simulated robot
-                driveSim.setSimulationWorldPose(testPose);
-                poseResetter.accept(testPose);
+                this.driveSim.setSimulationWorldPose(testPose);
+                this.poseResetter.accept(testPose);
 
                 // Set flywheel speed
-                if (lastShotResult == ShotResult.SCORED) {
+                if (ShotResult.SCORED == lastShotResult) {
                     // If the last shot scored, we can try a slightly higher velocity
-                    currentRPMIndex = 100;
-                } else if (lastShotResult == ShotResult.MISSED_SHORT || lastShotResult == ShotResult.MISSED_LOW) {
+                    this.currentRPMIndex = 100;
+                } else if (ShotResult.MISSED_SHORT == lastShotResult || ShotResult.MISSED_LOW == lastShotResult) {
                     // If the last shot was short or low, we need to increase velocity
-                    tempLowerBound = currentVelocity;
-                    currentVelocity = tempLowerBound.plus(tempUpperBound).times(0.5);
-                } else if (lastShotResult == ShotResult.MISSED_FAR) {
+                    this.tempLowerBound = this.currentVelocity;
+                    this.currentVelocity = this.tempLowerBound.plus(this.tempUpperBound).times(0.5);
+                } else if (ShotResult.MISSED_FAR == lastShotResult) {
                     // If the last shot was far, we need to decrease velocity
-                    tempUpperBound = currentVelocity;
-                    currentVelocity = tempLowerBound.plus(tempUpperBound).times(0.5);
+                    this.tempUpperBound = this.currentVelocity;
+                    this.currentVelocity = this.tempLowerBound.plus(this.tempUpperBound).times(0.5);
                 } else {
                     // If we don't have a result yet, just try the midpoint
-                    currentVelocity = tempLowerBound.plus(tempUpperBound).times(0.5);
+                    this.currentVelocity = this.tempLowerBound.plus(this.tempUpperBound).times(0.5);
                 }
-                shooter.setFlywheelVelocity(currentVelocity);
+                this.shooter.setFlywheelVelocity(this.currentVelocity);
 
                 Logger.recordOutput("Calibration/TestDistance", currentDistance.in(Meters));
-                Logger.recordOutput("Calibration/TestRPM", currentVelocity.in(RPM));
-                Logger.recordOutput("Calibration/LowerBoundRPM", lowerBound.in(RPM));
-                Logger.recordOutput("Calibration/UpperBoundRPM", upperBound.in(RPM));
-                stateTimer.restart();
-                state = CalibrationState.WAIT_FOR_SETTLE;
+                Logger.recordOutput("Calibration/TestRPM", this.currentVelocity.in(RPM));
+                Logger.recordOutput("Calibration/LowerBoundRPM", this.lowerBound.in(RPM));
+                Logger.recordOutput("Calibration/UpperBoundRPM", this.upperBound.in(RPM));
+                this.stateTimer.restart();
+                this.state = CalibrationState.WAIT_FOR_SETTLE;
             }
 
             case WAIT_FOR_SETTLE -> {
                 // Wait for flywheel to reach setpoint
-                if (stateTimer.hasElapsed(SETTLE_TIME)) {
-                    double actualRPM = shooter.getFlywheelVelocity().in(RPM);
-                    if (Math.abs(actualRPM - currentVelocity.in(RotationsPerSecond))
-                                    / currentVelocity.in(RotationsPerSecond)
-                            < 0.05) {
-                        state = CalibrationState.FIRE_SHOT;
-                    } else if (stateTimer.hasElapsed(SETTLE_TIME * 3)) {
+                if (this.stateTimer.hasElapsed(SETTLE_TIME)) {
+                    double actualRPM = this.shooter.getFlywheelVelocity().in(RPM);
+                    if (0.05 > Math.abs(actualRPM - currentVelocity.in(RotationsPerSecond))
+                            / currentVelocity.in(RotationsPerSecond)) {
+                        this.state = CalibrationState.FIRE_SHOT;
+                    } else if (this.stateTimer.hasElapsed(SETTLE_TIME * 3)) {
                         // Timeout - proceed anyway
-                        state = CalibrationState.FIRE_SHOT;
+                        this.state = CalibrationState.FIRE_SHOT;
                     }
                 }
             }
 
             case FIRE_SHOT -> {
                 // Fire a single shot
-                currentShot = trajectorySim.launchGamePiece();
+                this.currentShot = this.trajectorySim.launchGamePiece();
 
-                stateTimer.restart();
-                state = CalibrationState.WAIT_FOR_RESULT;
+                this.stateTimer.restart();
+                this.state = CalibrationState.WAIT_FOR_RESULT;
             }
 
             case WAIT_FOR_RESULT -> {
                 // Wait for ball to travel and check if it scored
-                Logger.recordOutput("Calibration/Current Position", currentShot.getPose3d());
-                if (stateTimer.hasElapsed(SHOT_TRAVEL_TIME)) {
+                Logger.recordOutput("Calibration/Current Position", this.currentShot.getPose3d());
+                if (this.stateTimer.hasElapsed(SHOT_TRAVEL_TIME)) {
                     // Determine if shot was successful by checking trajectory endpoint
-                    boolean scored = checkIfScored();
+                    boolean scored = this.checkIfScored();
 
                     // Record result
                     ShotConfiguration config = new ShotConfiguration(
-                            testDistances[currentDistanceIndex],
+                            this.testDistances[this.currentDistanceIndex],
                             ShooterConstants.kFixedHoodAngle,
-                            currentVelocity,
+                            this.currentVelocity,
                             scored);
-                    results.add(config);
+                    this.results.add(config);
 
                     if (scored) {
-                        tempLowerBound = lowerBound;
-                        tempUpperBound = upperBound;
-                        successfulShots.add(config);
-                        Logger.recordOutput("Calibration/LastResult", "SUCCESS: " + config + lastShotResult);
+                        this.tempLowerBound = this.lowerBound;
+                        this.tempUpperBound = this.upperBound;
+                        this.successfulShots.add(config);
+                        Logger.recordOutput("Calibration/LastResult", "SUCCESS: " + config + this.lastShotResult);
                     } else {
-                        Logger.recordOutput("Calibration/LastResult", "MISS: " + config + lastShotResult);
+                        Logger.recordOutput("Calibration/LastResult", "MISS: " + config + this.lastShotResult);
                     }
 
-                    state = CalibrationState.NEXT_CONFIGURATION;
+                    this.state = CalibrationState.NEXT_CONFIGURATION;
                 }
             }
 
             case NEXT_CONFIGURATION -> {
                 // Move to next configuration
-                currentRPMIndex++;
-                if (currentRPMIndex >= speedInterations) {
-                    currentRPMIndex = 0;
-                    currentDistanceIndex++;
-                    if (currentDistanceIndex >= testDistances.length) {
+                this.currentRPMIndex++;
+                if (this.speedInterations <= currentRPMIndex) {
+                    this.currentRPMIndex = 0;
+                    this.currentDistanceIndex++;
+                    if (this.currentDistanceIndex >= this.testDistances.length) {
                         // All tests complete
-                        state = CalibrationState.COMPLETE;
+                        this.state = CalibrationState.COMPLETE;
                         return;
                     }
                 }
-                state = CalibrationState.SETUP_POSITION;
+                this.state = CalibrationState.SETUP_POSITION;
             }
 
             case COMPLETE -> {
                 // Log final results
-                logResults();
+                this.logResults();
             }
         }
     }
@@ -337,10 +337,10 @@ public class ShooterCalibrationCommand extends Command {
      * @param distance Distance from hub
      * @return Pose2d positioned that distance from hub, facing the hub
      */
-    private Pose2d calculateTestPose(Distance distance) {
+    private @NotNull Pose2d calculateTestPose(@NotNull Distance distance) {
         // Position robot directly in front of hub (towards blue alliance wall)
-        double x = hubPosition.getX() - distance.in(Meters);
-        double y = hubPosition.getY();
+        double x = this.hubPosition.getX() - distance.in(Meters);
+        double y = this.hubPosition.getY();
 
         // Face towards the hub
         Rotation2d rotation = new Rotation2d(0); // Facing positive X (towards hub)
@@ -356,8 +356,8 @@ public class ShooterCalibrationCommand extends Command {
      */
     private boolean checkIfScored() {
         // Get the last trajectory from the simulation
-        Pose3d[] trajectory = trajectorySim.getLastTrajectory();
-        if (trajectory == null || trajectory.length < 2) {
+        Pose3d[] trajectory = this.trajectorySim.getLastTrajectory();
+        if (null == trajectory || 2 > trajectory.length) {
             return false;
         }
 
@@ -366,8 +366,8 @@ public class ShooterCalibrationCommand extends Command {
             Pose3d prevPoint = trajectory[i - 1];
             Pose3d point = trajectory[i];
 
-            double dx = point.getX() - hubPosition.getX();
-            double dy = point.getY() - hubPosition.getY();
+            double dx = point.getX() - this.hubPosition.getX();
+            double dy = point.getY() - this.hubPosition.getY();
             double horizontalDistance = Math.sqrt(dx * dx + dy * dy);
             double height = point.getZ();
             double prevHeight = prevPoint.getZ();
@@ -392,8 +392,8 @@ public class ShooterCalibrationCommand extends Command {
     }
 
     private ShotResult getShotResult() {
-        Pose3d[] trajectory = trajectorySim.getLastTrajectory();
-        if (trajectory == null || trajectory.length < 2) {
+        Pose3d[] trajectory = this.trajectorySim.getLastTrajectory();
+        if (null == trajectory || 2 > trajectory.length) {
             return ShotResult.TIMEOUT;
         }
 
@@ -401,8 +401,8 @@ public class ShooterCalibrationCommand extends Command {
             Pose3d prevPoint = trajectory[i - 1];
             Pose3d point = trajectory[i];
 
-            double dx = point.getX() - hubPosition.getX();
-            double dy = point.getY() - hubPosition.getY();
+            double dx = point.getX() - this.hubPosition.getX();
+            double dy = point.getY() - this.hubPosition.getY();
             double horizontalDistance = Math.sqrt(dx * dx + dy * dy);
             double height = point.getZ();
             double prevHeight = prevPoint.getZ();
@@ -417,12 +417,12 @@ public class ShooterCalibrationCommand extends Command {
             }
 
             // Check if ball has passed the hub horizontally
-            if (point.getX() > hubPosition.getX() + HUB_RADIUS) {
+            if (point.getX() > this.hubPosition.getX() + HUB_RADIUS) {
                 return ShotResult.MISSED_FAR;
             }
 
             // Check if ball has landed before reaching the hub
-            if (height < 0.1 && point.getX() < hubPosition.getX() - HUB_RADIUS) {
+            if (0.1 > height && point.getX() < this.hubPosition.getX() - HUB_RADIUS) {
                 return ShotResult.MISSED_SHORT;
             }
 
@@ -432,30 +432,30 @@ public class ShooterCalibrationCommand extends Command {
             }
         }
         Timer.delay(1);
-        return getShotResult();
+        return this.getShotResult();
     }
     /** Log the calibration results. */
     private void logResults() {
         Logger.recordOutput("Calibration/Status", "COMPLETE");
-        Logger.recordOutput("Calibration/TotalTests", results.size());
-        Logger.recordOutput("Calibration/SuccessfulShots", successfulShots.size());
+        Logger.recordOutput("Calibration/TotalTests", this.results.size());
+        Logger.recordOutput("Calibration/SuccessfulShots", this.successfulShots.size());
 
         // Build results summary
         StringBuilder summary = new StringBuilder();
         summary.append("=== CALIBRATION RESULTS ===\n");
-        summary.append(String.format("Total tests: %d\n", results.size()));
-        summary.append(String.format("Successful: %d\n", successfulShots.size()));
+        summary.append(String.format("Total tests: %d\n", this.results.size()));
+        summary.append(String.format("Successful: %d\n", this.successfulShots.size()));
         summary.append("\n--- Successful Configurations ---\n");
 
-        for (ShotConfiguration config : successfulShots) {
+        for (ShotConfiguration config : this.successfulShots) {
             summary.append(config.toString()).append("\n");
         }
 
         Logger.recordOutput("Calibration/Summary", summary.toString());
 
         // Also log as individual entries for easy filtering
-        for (int i = 0; i < successfulShots.size(); i++) {
-            ShotConfiguration config = successfulShots.get(i);
+        for (int i = 0; i < this.successfulShots.size(); i++) {
+            ShotConfiguration config = this.successfulShots.get(i);
             Logger.recordOutput(
                     "Calibration/Success/" + i + "/Distance", config.distance().in(Meters));
             Logger.recordOutput(
@@ -471,16 +471,16 @@ public class ShooterCalibrationCommand extends Command {
 
     @Override
     public boolean isFinished() {
-        return state == CalibrationState.COMPLETE;
+        return CalibrationState.COMPLETE == state;
     }
 
     @Override
     public void end(boolean interrupted) {
-        shooter.stop();
+        this.shooter.stop();
         if (interrupted) {
             Logger.recordOutput("Calibration/Status", "INTERRUPTED");
         } else {
-            logResults();
+            this.logResults();
         }
     }
 
@@ -489,8 +489,8 @@ public class ShooterCalibrationCommand extends Command {
      *
      * @return List of successful configurations
      */
-    public List<ShotConfiguration> getSuccessfulShots() {
-        return new ArrayList<>(successfulShots);
+    public @NotNull List<ShotConfiguration> getSuccessfulShots() {
+        return new ArrayList<>(this.successfulShots);
     }
 
     /**
@@ -498,7 +498,7 @@ public class ShooterCalibrationCommand extends Command {
      *
      * @return List of all configurations tested
      */
-    public List<ShotConfiguration> getAllResults() {
-        return new ArrayList<>(results);
+    public @NotNull List<ShotConfiguration> getAllResults() {
+        return new ArrayList<>(this.results);
     }
 }

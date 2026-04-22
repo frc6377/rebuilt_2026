@@ -20,12 +20,15 @@ import edu.wpi.first.units.measure.Voltage;
 import frc.robot.util.TunableTalonFX;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.littletonrobotics.junction.Logger;
 
 public class BaseShooterIOKrakenX60 implements BaseShooterIO {
     private final ShooterConstants.ShooterConfig config;
-    private final TunableTalonFX flywheelMotor;
-    private final TunableTalonFX flywheelFollower;
+    private final @NotNull TunableTalonFX flywheelMotor;
+    private final @Nullable TunableTalonFX flywheelFollower;
 
     private final StatusSignal<AngularVelocity> flywheelVelocity;
     private final StatusSignal<Voltage> flywheelAppliedVolts;
@@ -36,10 +39,10 @@ public class BaseShooterIOKrakenX60 implements BaseShooterIO {
     private final StatusSignal<Current> followerFlywheelCurrent;
     private final StatusSignal<Temperature> followerFlywheelTemp;
 
-    public BaseShooterIOKrakenX60(ShooterConstants.ShooterConfig config) {
+    public BaseShooterIOKrakenX60(ShooterConstants.@NotNull ShooterConfig config) {
         this.config = config;
 
-        flywheelMotor = new TunableTalonFX(
+        this.flywheelMotor = new TunableTalonFX(
                 config.flywheelLeaderId(),
                 config.canBusName(),
                 config.name() + "/Flywheel",
@@ -52,7 +55,7 @@ public class BaseShooterIOKrakenX60 implements BaseShooterIO {
                         .withKA(config.flywheelKA()));
 
         if (config.followerEnabled()) {
-            flywheelFollower = new TunableTalonFX(
+            this.flywheelFollower = new TunableTalonFX(
                     config.flywheelFollowerId(),
                     config.canBusName(),
                     config.name() + "/FlywheelFollower",
@@ -64,12 +67,12 @@ public class BaseShooterIOKrakenX60 implements BaseShooterIO {
                             .withKS(config.flywheelKS())
                             .withKA(config.flywheelKA()));
         } else {
-            flywheelFollower = null;
+            this.flywheelFollower = null;
         }
 
         // Configure flywheel motor
         var flywheelConfig = new TalonFXConfiguration();
-        flywheelConfig.Slot0 = flywheelLeaderConfigs();
+        flywheelConfig.Slot0 = this.flywheelLeaderConfigs();
         flywheelConfig.CurrentLimits.StatorCurrentLimit =
                 config.flywheelCurrentLimitStator().in(Amps);
         flywheelConfig.CurrentLimits.StatorCurrentLimitEnable = config.flywheelCurrentLimitStatorEnable();
@@ -83,99 +86,99 @@ public class BaseShooterIOKrakenX60 implements BaseShooterIO {
         flywheelConfig.withMotorOutput(
                 config.outputConfigs().withInverted(config.flywheelInverted()).withNeutralMode(NeutralModeValue.Coast));
 
-        tryUntilOk(5, () -> flywheelMotor.applyConfiguration(flywheelConfig, 0.25));
+        tryUntilOk(5, () -> this.flywheelMotor.applyConfiguration(flywheelConfig, 0.25));
 
-        if (flywheelFollower != null) {
-            tryUntilOk(5, () -> flywheelFollower.applyConfiguration(flywheelConfig, 0.25));
-            flywheelFollower.setControl(new Follower(flywheelMotor.getDeviceID(), MotorAlignmentValue.Opposed));
+        if (null != flywheelFollower) {
+            tryUntilOk(5, () -> this.flywheelFollower.applyConfiguration(flywheelConfig, 0.25));
+            this.flywheelFollower.setControl(new Follower(this.flywheelMotor.getDeviceID(), MotorAlignmentValue.Opposed));
         }
 
         // Get status signals
-        flywheelVelocity = flywheelMotor.getVelocity();
-        flywheelAppliedVolts = flywheelMotor.getMotorVoltage();
-        flywheelCurrent = flywheelMotor.getStatorCurrent();
-        flywheelTemp = flywheelMotor.getDeviceTemp();
-        followerFlywheelVelocity = flywheelFollower.getVelocity();
-        followerFlywheelAppliedVolts = flywheelFollower.getMotorVoltage();
-        followerFlywheelCurrent = flywheelFollower.getStatorCurrent();
-        followerFlywheelTemp = flywheelFollower.getDeviceTemp();
+        this.flywheelVelocity = this.flywheelMotor.getVelocity();
+        this.flywheelAppliedVolts = this.flywheelMotor.getMotorVoltage();
+        this.flywheelCurrent = this.flywheelMotor.getStatorCurrent();
+        this.flywheelTemp = this.flywheelMotor.getDeviceTemp();
+        this.followerFlywheelVelocity = this.flywheelFollower.getVelocity();
+        this.followerFlywheelAppliedVolts = this.flywheelFollower.getMotorVoltage();
+        this.followerFlywheelCurrent = this.flywheelFollower.getStatorCurrent();
+        this.followerFlywheelTemp = this.flywheelFollower.getDeviceTemp();
 
         List<BaseStatusSignal> signals = new ArrayList<>();
-        signals.add(flywheelVelocity);
-        signals.add(flywheelAppliedVolts);
-        signals.add(flywheelCurrent);
-        signals.add(flywheelTemp);
-        signals.add(followerFlywheelVelocity);
-        signals.add(followerFlywheelAppliedVolts);
-        signals.add(followerFlywheelCurrent);
-        signals.add(followerFlywheelTemp);
+        signals.add(this.flywheelVelocity);
+        signals.add(this.flywheelAppliedVolts);
+        signals.add(this.flywheelCurrent);
+        signals.add(this.flywheelTemp);
+        signals.add(this.followerFlywheelVelocity);
+        signals.add(this.followerFlywheelAppliedVolts);
+        signals.add(this.followerFlywheelCurrent);
+        signals.add(this.followerFlywheelTemp);
 
         BaseStatusSignal.setUpdateFrequencyForAll(50.0, signals.toArray(new BaseStatusSignal[0]));
 
-        if (flywheelFollower != null) {
-            ParentDevice.optimizeBusUtilizationForAll(flywheelMotor, flywheelFollower);
+        if (null != flywheelFollower) {
+            ParentDevice.optimizeBusUtilizationForAll(this.flywheelMotor, this.flywheelFollower);
         } else {
-            ParentDevice.optimizeBusUtilizationForAll(flywheelMotor);
+            ParentDevice.optimizeBusUtilizationForAll(this.flywheelMotor);
         }
     }
 
     private Slot0Configs flywheelLeaderConfigs() {
-        return flywheelMotor.getTunableSlot0Configs();
+        return this.flywheelMotor.getTunableSlot0Configs();
     }
 
     @Override
-    public void updateInputs(BaseShooterIOInputs inputs) {
-        flywheelMotor.updateTunableGains();
-        flywheelFollower.updateTunableGains();
+    public void updateInputs(@NotNull BaseShooterIOInputs inputs) {
+        this.flywheelMotor.updateTunableGains();
+        this.flywheelFollower.updateTunableGains();
 
         List<BaseStatusSignal> signals = new ArrayList<>();
-        signals.add(flywheelVelocity);
-        signals.add(flywheelAppliedVolts);
-        signals.add(flywheelCurrent);
-        signals.add(flywheelTemp);
-        signals.add(followerFlywheelVelocity);
-        signals.add(followerFlywheelAppliedVolts);
-        signals.add(followerFlywheelCurrent);
-        signals.add(followerFlywheelTemp);
+        signals.add(this.flywheelVelocity);
+        signals.add(this.flywheelAppliedVolts);
+        signals.add(this.flywheelCurrent);
+        signals.add(this.flywheelTemp);
+        signals.add(this.followerFlywheelVelocity);
+        signals.add(this.followerFlywheelAppliedVolts);
+        signals.add(this.followerFlywheelCurrent);
+        signals.add(this.followerFlywheelTemp);
 
         BaseStatusSignal.refreshAll(signals.toArray(new BaseStatusSignal[0]));
 
-        inputs.flywheelVelocity = flywheelVelocity.getValue();
-        inputs.flywheelAppliedVoltage = flywheelAppliedVolts.getValue();
-        inputs.flywheelCurrent = flywheelCurrent.getValue();
-        inputs.flywheelTemp = flywheelTemp.getValue();
-        inputs.followerFlywheelVelocity = followerFlywheelVelocity.getValue();
-        inputs.followerFlywheelAppliedVoltage = followerFlywheelAppliedVolts.getValue();
-        inputs.followerFlywheelCurrent = followerFlywheelCurrent.getValue();
-        inputs.followerFlywheelTemp = followerFlywheelTemp.getValue();
+        inputs.flywheelVelocity = this.flywheelVelocity.getValue();
+        inputs.flywheelAppliedVoltage = this.flywheelAppliedVolts.getValue();
+        inputs.flywheelCurrent = this.flywheelCurrent.getValue();
+        inputs.flywheelTemp = this.flywheelTemp.getValue();
+        inputs.followerFlywheelVelocity = this.followerFlywheelVelocity.getValue();
+        inputs.followerFlywheelAppliedVoltage = this.followerFlywheelAppliedVolts.getValue();
+        inputs.followerFlywheelCurrent = this.followerFlywheelCurrent.getValue();
+        inputs.followerFlywheelTemp = this.followerFlywheelTemp.getValue();
 
         Logger.recordOutput(
-                config.name() + "/FlywheelVelocity (RPM)",
-                flywheelMotor.getVelocity().getValue().in(RPM));
+                this.config.name() + "/FlywheelVelocity (RPM)",
+                this.flywheelMotor.getVelocity().getValue().in(RPM));
     }
 
     @Override
-    public void setFlywheelVelocity(AngularVelocity velocity) {
-        flywheelMotor.setControl(new VelocityVoltage(velocity));
+    public void setFlywheelVelocity(@NotNull AngularVelocity velocity) {
+        this.flywheelMotor.setControl(new VelocityVoltage(velocity));
 
-        if (flywheelFollower != null) {
-            flywheelFollower.setControl(new Follower(flywheelMotor.getDeviceID(), MotorAlignmentValue.Opposed));
+        if (null != flywheelFollower) {
+            this.flywheelFollower.setControl(new Follower(this.flywheelMotor.getDeviceID(), MotorAlignmentValue.Opposed));
         }
     }
 
     @Override
-    public void setFlywheelVoltage(Voltage voltage) {
-        flywheelMotor.setControl(new VoltageOut(voltage));
-        if (flywheelFollower != null) {
-            flywheelFollower.setControl(new Follower(flywheelMotor.getDeviceID(), MotorAlignmentValue.Opposed));
+    public void setFlywheelVoltage(@NotNull Voltage voltage) {
+        this.flywheelMotor.setControl(new VoltageOut(voltage));
+        if (null != flywheelFollower) {
+            this.flywheelFollower.setControl(new Follower(this.flywheelMotor.getDeviceID(), MotorAlignmentValue.Opposed));
         }
     }
 
     @Override
     public void stop() {
-        flywheelMotor.stopMotor();
-        if (flywheelFollower != null) {
-            flywheelFollower.stopMotor();
+        this.flywheelMotor.stopMotor();
+        if (null != flywheelFollower) {
+            this.flywheelFollower.stopMotor();
         }
     }
 }

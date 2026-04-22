@@ -34,6 +34,8 @@ import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
 import org.ironmaple.simulation.gamepieces.GamePieceOnFieldSimulation;
 import org.ironmaple.simulation.gamepieces.GamePieceProjectile;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
@@ -87,14 +89,14 @@ public class GamePieceTrajectorySimulation {
     private boolean hopperEmptyStopsIndexer = true; // Whether to stop indexer when hopper is empty
 
     // Shooter configuration (tunable)
-    private final LoggedNetworkNumber shooterHeightMeters;
-    private final LoggedNetworkNumber shooterOffsetXMeters;
-    private final LoggedNetworkNumber shooterOffsetYMeters;
-    private final LoggedNetworkNumber flywheelRadiusMeters;
-    private final LoggedNetworkNumber launchEfficiency; // Account for energy loss (0.0 - 1.0)
+    private final @NotNull LoggedNetworkNumber shooterHeightMeters;
+    private final @NotNull LoggedNetworkNumber shooterOffsetXMeters;
+    private final @NotNull LoggedNetworkNumber shooterOffsetYMeters;
+    private final @NotNull LoggedNetworkNumber flywheelRadiusMeters;
+    private final @NotNull LoggedNetworkNumber launchEfficiency; // Account for energy loss (0.0 - 1.0)
 
     // Trajectory visualization
-    private Pose3d[] lastTrajectory = new Pose3d[0];
+    private Pose3d @NotNull [] lastTrajectory = new Pose3d[0];
 
     /**
      * Creates a new GamePieceTrajectorySimulation using 2017 FUEL game pieces.
@@ -103,7 +105,7 @@ public class GamePieceTrajectorySimulation {
      * @param flywheelVelocityRPMSupplier Supplier for current flywheel velocity in RPM
      */
     public GamePieceTrajectorySimulation(
-            SwerveDriveSimulation driveSimulation, Supplier<Double> flywheelVelocityRPMSupplier) {
+            @NotNull SwerveDriveSimulation driveSimulation, Supplier<Double> flywheelVelocityRPMSupplier) {
         this(FUEL_INFO, driveSimulation, flywheelVelocityRPMSupplier);
     }
 
@@ -116,7 +118,7 @@ public class GamePieceTrajectorySimulation {
      */
     public GamePieceTrajectorySimulation(
             GamePieceOnFieldSimulation.GamePieceInfo gamePieceInfo,
-            SwerveDriveSimulation driveSimulation,
+            @NotNull SwerveDriveSimulation driveSimulation,
             Supplier<Double> flywheelVelocityRPMSupplier) {
         this(
                 gamePieceInfo,
@@ -187,7 +189,7 @@ public class GamePieceTrajectorySimulation {
         double angularVelocityRadPerSec = flywheelRPM * 2.0 * Math.PI / 60.0;
 
         // Linear velocity = angular velocity * radius * efficiency
-        return angularVelocityRadPerSec * flywheelRadiusMeters.get() * launchEfficiency.get();
+        return angularVelocityRadPerSec * this.flywheelRadiusMeters.get() * this.launchEfficiency.get();
     }
 
     /**
@@ -196,7 +198,7 @@ public class GamePieceTrajectorySimulation {
      * @return Launch velocity in meters per second
      */
     public double getCurrentLaunchVelocityMPS() {
-        return calculateLaunchVelocityMPS(flywheelVelocityRPMSupplier.get());
+        return this.calculateLaunchVelocityMPS(this.flywheelVelocityRPMSupplier.get());
     }
 
     /**
@@ -204,8 +206,8 @@ public class GamePieceTrajectorySimulation {
      *
      * @return Translation2d representing shooter offset
      */
-    public Translation2d getShooterOffset() {
-        return new Translation2d(shooterOffsetXMeters.get(), shooterOffsetYMeters.get());
+    public @NotNull Translation2d getShooterOffset() {
+        return new Translation2d(this.shooterOffsetXMeters.get(), this.shooterOffsetYMeters.get());
     }
 
     /**
@@ -213,8 +215,8 @@ public class GamePieceTrajectorySimulation {
      *
      * @return Shooter height in meters
      */
-    public Distance getShooterHeight() {
-        return Meters.of(shooterHeightMeters.get());
+    public @NotNull Distance getShooterHeight() {
+        return Meters.of(this.shooterHeightMeters.get());
     }
 
     /**
@@ -222,7 +224,7 @@ public class GamePieceTrajectorySimulation {
      *
      * @return Hood angle
      */
-    public Angle getHoodAngle() {
+    public @NotNull Angle getHoodAngle() {
         return ShooterConstants.kFixedHoodAngle;
     }
 
@@ -231,19 +233,19 @@ public class GamePieceTrajectorySimulation {
      *
      * @return The launched GamePieceProjectile
      */
-    public GamePieceProjectile launchGamePiece() {
-        Translation2d robotPosition = robotPositionSupplier.get();
-        Rotation2d robotRotation = robotRotationSupplier.get();
-        ChassisSpeeds chassisSpeeds = chassisSpeedsSupplier.get();
+    public @NotNull GamePieceProjectile launchGamePiece() {
+        Translation2d robotPosition = this.robotPositionSupplier.get();
+        Rotation2d robotRotation = this.robotRotationSupplier.get();
+        ChassisSpeeds chassisSpeeds = this.chassisSpeedsSupplier.get();
 
-        double launchVelocityMPS = getCurrentLaunchVelocityMPS();
-        Distance height = getShooterHeight();
-        Angle hoodAngle = getHoodAngle();
+        double launchVelocityMPS = this.getCurrentLaunchVelocityMPS();
+        Distance height = this.getShooterHeight();
+        Angle hoodAngle = this.getHoodAngle();
 
         GamePieceProjectile projectile = new GamePieceProjectile(
-                gamePieceInfo,
+                this.gamePieceInfo,
                 robotPosition,
-                getShooterOffset(),
+                this.getShooterOffset(),
                 chassisSpeeds,
                 robotRotation,
                 height,
@@ -252,8 +254,8 @@ public class GamePieceTrajectorySimulation {
 
         // Configure trajectory callback for visualization
         projectile.withProjectileTrajectoryDisplayCallBack(trajectory -> {
-            lastTrajectory = trajectory.toArray(new Pose3d[0]);
-            Logger.recordOutput("Shooter/Sim/Trajectory", lastTrajectory);
+            this.lastTrajectory = trajectory.toArray(new Pose3d[0]);
+            Logger.recordOutput("Shooter/Sim/Trajectory", this.lastTrajectory);
         });
 
         // Configure to become game piece on field after touching ground
@@ -268,7 +270,7 @@ public class GamePieceTrajectorySimulation {
         Logger.recordOutput("Shooter/Sim/LaunchHeightMeters", height.in(Meters));
         Logger.recordOutput(
                 "Shooter/Sim/LaunchPosition",
-                new Pose2d(robotPosition.plus(getShooterOffset().rotateBy(robotRotation)), robotRotation));
+                new Pose2d(robotPosition.plus(this.getShooterOffset().rotateBy(robotRotation)), robotRotation));
 
         return projectile;
     }
@@ -279,18 +281,18 @@ public class GamePieceTrajectorySimulation {
      * @param launchVelocityMPS Launch velocity in meters per second
      * @return The launched GamePieceProjectile
      */
-    public GamePieceProjectile launchGamePiece(double launchVelocityMPS) {
-        Translation2d robotPosition = robotPositionSupplier.get();
-        Rotation2d robotRotation = robotRotationSupplier.get();
-        ChassisSpeeds chassisSpeeds = chassisSpeedsSupplier.get();
+    public @NotNull GamePieceProjectile launchGamePiece(double launchVelocityMPS) {
+        Translation2d robotPosition = this.robotPositionSupplier.get();
+        Rotation2d robotRotation = this.robotRotationSupplier.get();
+        ChassisSpeeds chassisSpeeds = this.chassisSpeedsSupplier.get();
 
-        Distance height = getShooterHeight();
-        Angle hoodAngle = getHoodAngle();
+        Distance height = this.getShooterHeight();
+        Angle hoodAngle = this.getHoodAngle();
 
         GamePieceProjectile projectile = new GamePieceProjectile(
-                gamePieceInfo,
+                this.gamePieceInfo,
                 robotPosition,
-                getShooterOffset(),
+                this.getShooterOffset(),
                 chassisSpeeds,
                 robotRotation,
                 height,
@@ -299,8 +301,8 @@ public class GamePieceTrajectorySimulation {
 
         projectile
                 .withProjectileTrajectoryDisplayCallBack(trajectory -> {
-                    lastTrajectory = trajectory.toArray(new Pose3d[0]);
-                    Logger.recordOutput("Shooter/Sim/Trajectory", lastTrajectory);
+                    this.lastTrajectory = trajectory.toArray(new Pose3d[0]);
+                    Logger.recordOutput("Shooter/Sim/Trajectory", this.lastTrajectory);
                 })
                 .enableBecomesGamePieceOnFieldAfterTouchGround();
 
@@ -319,17 +321,17 @@ public class GamePieceTrajectorySimulation {
      * @param launchAngleDegrees Launch angle in degrees
      * @return The launched GamePieceProjectile
      */
-    public GamePieceProjectile launchGamePiece(double launchVelocityMPS, double launchAngleDegrees) {
-        Translation2d robotPosition = robotPositionSupplier.get();
-        Rotation2d robotRotation = robotRotationSupplier.get();
-        ChassisSpeeds chassisSpeeds = chassisSpeedsSupplier.get();
+    public @NotNull GamePieceProjectile launchGamePiece(double launchVelocityMPS, double launchAngleDegrees) {
+        Translation2d robotPosition = this.robotPositionSupplier.get();
+        Rotation2d robotRotation = this.robotRotationSupplier.get();
+        ChassisSpeeds chassisSpeeds = this.chassisSpeedsSupplier.get();
 
-        Distance height = getShooterHeight();
+        Distance height = this.getShooterHeight();
 
         GamePieceProjectile projectile = new GamePieceProjectile(
-                gamePieceInfo,
+                this.gamePieceInfo,
                 robotPosition,
-                getShooterOffset(),
+                this.getShooterOffset(),
                 chassisSpeeds,
                 robotRotation,
                 height,
@@ -338,8 +340,8 @@ public class GamePieceTrajectorySimulation {
 
         projectile
                 .withProjectileTrajectoryDisplayCallBack(trajectory -> {
-                    lastTrajectory = trajectory.toArray(new Pose3d[0]);
-                    Logger.recordOutput("Shooter/Sim/Trajectory", lastTrajectory);
+                    this.lastTrajectory = trajectory.toArray(new Pose3d[0]);
+                    Logger.recordOutput("Shooter/Sim/Trajectory", this.lastTrajectory);
                 })
                 .enableBecomesGamePieceOnFieldAfterTouchGround();
 
@@ -368,25 +370,25 @@ public class GamePieceTrajectorySimulation {
      */
     public Pose3d[] previewTrajectory() {
         // Get current state
-        TrajectoryState state = calculateTrajectoryState();
+        TrajectoryState state = this.calculateTrajectoryState();
 
         // Calculate time of flight using quadratic formula: z = h + v_z*t - 0.5*g*t^2 = 0
         // 0.5*g*t^2 - v_z*t - h = 0
         // t = (v_z + sqrt(v_z^2 + 2*g*h)) / g
-        Optional<Double> flightTime = calculateTimeOfFlight(state.initialHeight, state.verticalVelocity);
+        Optional<Double> flightTime = this.calculateTimeOfFlight(state.initialHeight, state.verticalVelocity);
 
         if (flightTime.isEmpty()) {
-            lastTrajectory = new Pose3d[0];
-            Logger.recordOutput("Shooter/Sim/PreviewTrajectory", lastTrajectory);
-            return lastTrajectory;
+            this.lastTrajectory = new Pose3d[0];
+            Logger.recordOutput("Shooter/Sim/PreviewTrajectory", this.lastTrajectory);
+            return this.lastTrajectory;
         }
 
         double totalTime = Math.min(flightTime.get(), MAX_TRAJECTORY_TIME);
 
         // Generate trajectory points at uniform time intervals
-        lastTrajectory = generateTrajectoryPoints(state, totalTime, DEFAULT_TRAJECTORY_POINTS);
-        Logger.recordOutput("Shooter/Sim/PreviewTrajectory", lastTrajectory);
-        return lastTrajectory;
+        this.lastTrajectory = this.generateTrajectoryPoints(state, totalTime, DEFAULT_TRAJECTORY_POINTS);
+        Logger.recordOutput("Shooter/Sim/PreviewTrajectory", this.lastTrajectory);
+        return this.lastTrajectory;
     }
 
     /**
@@ -397,19 +399,19 @@ public class GamePieceTrajectorySimulation {
      * @return Array of Pose3d representing predicted trajectory
      */
     public Pose3d[] previewTrajectory(int numPoints) {
-        TrajectoryState state = calculateTrajectoryState();
-        Optional<Double> flightTime = calculateTimeOfFlight(state.initialHeight, state.verticalVelocity);
+        TrajectoryState state = this.calculateTrajectoryState();
+        Optional<Double> flightTime = this.calculateTimeOfFlight(state.initialHeight, state.verticalVelocity);
 
         if (flightTime.isEmpty()) {
-            lastTrajectory = new Pose3d[0];
-            Logger.recordOutput("Shooter/Sim/PreviewTrajectory", lastTrajectory);
-            return lastTrajectory;
+            this.lastTrajectory = new Pose3d[0];
+            Logger.recordOutput("Shooter/Sim/PreviewTrajectory", this.lastTrajectory);
+            return this.lastTrajectory;
         }
 
         double totalTime = Math.min(flightTime.get(), MAX_TRAJECTORY_TIME);
-        lastTrajectory = generateTrajectoryPoints(state, totalTime, numPoints);
-        Logger.recordOutput("Shooter/Sim/PreviewTrajectory", lastTrajectory);
-        return lastTrajectory;
+        this.lastTrajectory = this.generateTrajectoryPoints(state, totalTime, numPoints);
+        Logger.recordOutput("Shooter/Sim/PreviewTrajectory", this.lastTrajectory);
+        return this.lastTrajectory;
     }
 
     /**
@@ -418,21 +420,21 @@ public class GamePieceTrajectorySimulation {
      *
      * @return TrajectoryState containing all initial conditions
      */
-    private TrajectoryState calculateTrajectoryState() {
-        Translation2d robotPosition = robotPositionSupplier.get();
-        Rotation2d robotRotation = robotRotationSupplier.get();
-        ChassisSpeeds chassisSpeeds = chassisSpeedsSupplier.get();
+    private @NotNull TrajectoryState calculateTrajectoryState() {
+        Translation2d robotPosition = this.robotPositionSupplier.get();
+        Rotation2d robotRotation = this.robotRotationSupplier.get();
+        ChassisSpeeds chassisSpeeds = this.chassisSpeedsSupplier.get();
 
-        double launchVelocityMPS = getCurrentLaunchVelocityMPS();
-        double hoodAngleRad = getHoodAngle().in(Radians);
-        double heightM = shooterHeightMeters.get();
+        double launchVelocityMPS = this.getCurrentLaunchVelocityMPS();
+        double hoodAngleRad = this.getHoodAngle().in(Radians);
+        double heightM = this.shooterHeightMeters.get();
 
         // Calculate initial velocity components from launch
         double launchHorizontalVelocity = launchVelocityMPS * Math.cos(hoodAngleRad);
         double launchVerticalVelocity = launchVelocityMPS * Math.sin(hoodAngleRad);
 
         // Calculate chassis velocity contribution
-        Translation2d shooterOffset = getShooterOffset();
+        Translation2d shooterOffset = this.getShooterOffset();
         Translation2d chassisVelocity =
                 new Translation2d(chassisSpeeds.vxMetersPerSecond, chassisSpeeds.vyMetersPerSecond);
 
@@ -466,7 +468,7 @@ public class GamePieceTrajectorySimulation {
      * @param verticalVelocity Initial vertical velocity (vᵤ)
      * @return Optional containing time of flight, empty if no valid solution
      */
-    private Optional<Double> calculateTimeOfFlight(double initialHeight, double verticalVelocity) {
+    private @NotNull Optional<Double> calculateTimeOfFlight(double initialHeight, double verticalVelocity) {
         // Quadratic equation: -0.5*g*t^2 + v_z*t + h = 0
         // Rearranged: 0.5*g*t^2 - v_z*t - h = 0
         // a = 0.5*g, b = -v_z, c = -h
@@ -476,7 +478,7 @@ public class GamePieceTrajectorySimulation {
 
         double discriminant = b * b - 4 * a * c;
 
-        if (discriminant < 0) {
+        if (0 > discriminant) {
             return Optional.empty(); // No real solution (shouldn't happen with valid inputs)
         }
 
@@ -486,11 +488,11 @@ public class GamePieceTrajectorySimulation {
         double t2 = (-b - sqrtDiscriminant) / (2 * a);
 
         // Return the positive root (time must be positive)
-        if (t1 > 0 && t2 > 0) {
+        if (0 < t1 && 0 < t2) {
             return Optional.of(Math.min(t1, t2)); // Both positive, take smaller
-        } else if (t1 > 0) {
+        } else if (0 < t1) {
             return Optional.of(t1);
-        } else if (t2 > 0) {
+        } else if (0 < t2) {
             return Optional.of(t2);
         }
 
@@ -505,7 +507,7 @@ public class GamePieceTrajectorySimulation {
      * @param numPoints Number of points to generate
      * @return Array of Pose3d representing the trajectory
      */
-    private Pose3d[] generateTrajectoryPoints(TrajectoryState state, double totalTime, int numPoints) {
+    private Pose3d @NotNull [] generateTrajectoryPoints(@NotNull TrajectoryState state, double totalTime, int numPoints) {
         Pose3d[] trajectory = new Pose3d[numPoints];
         double dt = totalTime / (numPoints - 1);
 
@@ -540,10 +542,10 @@ public class GamePieceTrajectorySimulation {
          * @param gravity Gravitational acceleration (m/s²)
          * @return Position as Translation3d
          */
-        Translation3d getPositionAtTime(double t, double gravity) {
-            double x = initialX + horizontalVelocityX * t;
-            double y = initialY + horizontalVelocityY * t;
-            double z = initialHeight + verticalVelocity * t - 0.5 * gravity * t * t;
+        @NotNull Translation3d getPositionAtTime(double t, double gravity) {
+            double x = this.initialX + this.horizontalVelocityX * t;
+            double y = this.initialY + this.horizontalVelocityY * t;
+            double z = this.initialHeight + this.verticalVelocity * t - 0.5 * gravity * t * t;
             return new Translation3d(x, y, z);
         }
     }
@@ -554,7 +556,7 @@ public class GamePieceTrajectorySimulation {
      * @return Array of Pose3d representing trajectory
      */
     public Pose3d[] getLastTrajectory() {
-        return lastTrajectory;
+        return this.lastTrajectory;
     }
 
     /**
@@ -564,9 +566,9 @@ public class GamePieceTrajectorySimulation {
      *
      * @return Translation3d of predicted landing position (z will be 0), or null if trajectory is invalid
      */
-    public Translation3d getPredictedLandingPosition() {
-        TrajectoryState state = calculateTrajectoryState();
-        Optional<Double> flightTime = calculateTimeOfFlight(state.initialHeight, state.verticalVelocity);
+    public @Nullable Translation3d getPredictedLandingPosition() {
+        TrajectoryState state = this.calculateTrajectoryState();
+        Optional<Double> flightTime = this.calculateTimeOfFlight(state.initialHeight, state.verticalVelocity);
 
         if (flightTime.isEmpty()) {
             return null;
@@ -587,13 +589,13 @@ public class GamePieceTrajectorySimulation {
      * @param timeSeconds Time after launch in seconds
      * @return Position as Translation3d, or null if time is negative or beyond landing
      */
-    public Translation3d getPositionAtTime(double timeSeconds) {
-        if (timeSeconds < 0) {
+    public @Nullable Translation3d getPositionAtTime(double timeSeconds) {
+        if (0 > timeSeconds) {
             return null;
         }
 
-        TrajectoryState state = calculateTrajectoryState();
-        Optional<Double> flightTime = calculateTimeOfFlight(state.initialHeight, state.verticalVelocity);
+        TrajectoryState state = this.calculateTrajectoryState();
+        Optional<Double> flightTime = this.calculateTimeOfFlight(state.initialHeight, state.verticalVelocity);
 
         if (flightTime.isEmpty() || timeSeconds > flightTime.get()) {
             return null;
@@ -609,12 +611,12 @@ public class GamePieceTrajectorySimulation {
      * @return Horizontal distance in meters, or -1 if trajectory is invalid
      */
     public double getHorizontalRange() {
-        Translation3d landingPosition = getPredictedLandingPosition();
-        if (landingPosition == null) {
+        Translation3d landingPosition = this.getPredictedLandingPosition();
+        if (null == landingPosition) {
             return -1;
         }
 
-        TrajectoryState state = calculateTrajectoryState();
+        TrajectoryState state = this.calculateTrajectoryState();
         double dx = landingPosition.getX() - state.initialX();
         double dy = landingPosition.getY() - state.initialY();
 
@@ -627,12 +629,12 @@ public class GamePieceTrajectorySimulation {
      * @return Maximum height in meters
      */
     public double getMaxHeight() {
-        TrajectoryState state = calculateTrajectoryState();
+        TrajectoryState state = this.calculateTrajectoryState();
 
         // Time of max height: dz/dt = v_z - g*t = 0 => t = v_z / g
         double timeAtMaxHeight = state.verticalVelocity() / GRAVITY;
 
-        if (timeAtMaxHeight <= 0) {
+        if (0 >= timeAtMaxHeight) {
             // Projectile is going down from the start, max height is initial height
             return state.initialHeight();
         }
@@ -653,9 +655,9 @@ public class GamePieceTrajectorySimulation {
      * @param targetSize Half-size of the target volume in each axis
      * @return true if the trajectory passes through the target volume
      */
-    public boolean willHitTarget(Translation3d targetCenter, Translation3d targetSize) {
-        TrajectoryState state = calculateTrajectoryState();
-        Optional<Double> flightTime = calculateTimeOfFlight(state.initialHeight, state.verticalVelocity);
+    public boolean willHitTarget(@NotNull Translation3d targetCenter, @NotNull Translation3d targetSize) {
+        TrajectoryState state = this.calculateTrajectoryState();
+        Optional<Double> flightTime = this.calculateTimeOfFlight(state.initialHeight, state.verticalVelocity);
 
         if (flightTime.isEmpty()) {
             return false;
@@ -689,21 +691,21 @@ public class GamePieceTrajectorySimulation {
      * @param onHit Callback when target is hit
      * @return A configured projectile (not launched)
      */
-    public GamePieceProjectile createTargetedProjectile(
+    public @NotNull GamePieceProjectile createTargetedProjectile(
             Supplier<Translation3d> targetPosition, Translation3d tolerance, Runnable onHit) {
-        Translation2d robotPosition = robotPositionSupplier.get();
-        Rotation2d robotRotation = robotRotationSupplier.get();
-        ChassisSpeeds chassisSpeeds = chassisSpeedsSupplier.get();
+        Translation2d robotPosition = this.robotPositionSupplier.get();
+        Rotation2d robotRotation = this.robotRotationSupplier.get();
+        ChassisSpeeds chassisSpeeds = this.chassisSpeedsSupplier.get();
 
         GamePieceProjectile projectile = new GamePieceProjectile(
-                gamePieceInfo,
+                this.gamePieceInfo,
                 robotPosition,
-                getShooterOffset(),
+                this.getShooterOffset(),
                 chassisSpeeds,
                 robotRotation,
-                getShooterHeight(),
-                MetersPerSecond.of(getCurrentLaunchVelocityMPS()),
-                getHoodAngle());
+                this.getShooterHeight(),
+                MetersPerSecond.of(this.getCurrentLaunchVelocityMPS()),
+                this.getHoodAngle());
 
         projectile
                 .withTargetPosition(targetPosition)
@@ -711,12 +713,12 @@ public class GamePieceTrajectorySimulation {
                 .withHitTargetCallBack(onHit)
                 .withProjectileTrajectoryDisplayCallBack(
                         trajectoryHit -> {
-                            lastTrajectory = trajectoryHit.toArray(new Pose3d[0]);
-                            Logger.recordOutput("Shooter/Sim/Trajectory", lastTrajectory);
+                            this.lastTrajectory = trajectoryHit.toArray(new Pose3d[0]);
+                            Logger.recordOutput("Shooter/Sim/Trajectory", this.lastTrajectory);
                         },
                         trajectoryMiss -> {
-                            lastTrajectory = trajectoryMiss.toArray(new Pose3d[0]);
-                            Logger.recordOutput("Shooter/Sim/TrajectoryMiss", lastTrajectory);
+                            this.lastTrajectory = trajectoryMiss.toArray(new Pose3d[0]);
+                            Logger.recordOutput("Shooter/Sim/TrajectoryMiss", this.lastTrajectory);
                         });
 
         return projectile;
@@ -751,9 +753,9 @@ public class GamePieceTrajectorySimulation {
     public void setAutoFireEnabled(boolean enabled) {
         this.autoFireEnabled = enabled;
         if (enabled) {
-            autoFireTimer.restart();
+            this.autoFireTimer.restart();
         } else {
-            autoFireTimer.stop();
+            this.autoFireTimer.stop();
         }
     }
 
@@ -763,7 +765,7 @@ public class GamePieceTrajectorySimulation {
      * @return True if auto-fire is enabled
      */
     public boolean isAutoFireEnabled() {
-        return autoFireEnabled;
+        return this.autoFireEnabled;
     }
 
     /**
@@ -772,12 +774,12 @@ public class GamePieceTrajectorySimulation {
      * @return Number of game pieces launched
      */
     public int getGamePiecesLaunched() {
-        return gamePiecesLaunched;
+        return this.gamePiecesLaunched;
     }
 
     /** Resets the game pieces launched counter. */
     public void resetGamePiecesLaunched() {
-        gamePiecesLaunched = 0;
+        this.gamePiecesLaunched = 0;
     }
 
     /**
@@ -786,7 +788,7 @@ public class GamePieceTrajectorySimulation {
      * @return Number of balls remaining
      */
     public int getBallsInHopper() {
-        return (int) ballsInHopper.get();
+        return (int) this.ballsInHopper.get();
     }
 
     /**
@@ -795,7 +797,7 @@ public class GamePieceTrajectorySimulation {
      * @param count Number of balls
      */
     public void setBallsInHopper(int count) {
-        ballsInHopper.set(Math.max(0, count));
+        this.ballsInHopper.set(Math.max(0, count));
     }
 
     /**
@@ -804,7 +806,7 @@ public class GamePieceTrajectorySimulation {
      * @param count Number of balls to add
      */
     public void addBalls(int count) {
-        setBallsInHopper(getBallsInHopper() + count);
+        this.setBallsInHopper(this.getBallsInHopper() + count);
     }
 
     /**
@@ -813,7 +815,7 @@ public class GamePieceTrajectorySimulation {
      * @return true if there is at least one ball in the hopper
      */
     public boolean hasBalls() {
-        return getBallsInHopper() > 0;
+        return 0 < getBallsInHopper();
     }
 
     /**
@@ -822,7 +824,7 @@ public class GamePieceTrajectorySimulation {
      * @return true if the hopper is empty
      */
     public boolean isEmpty() {
-        return getBallsInHopper() <= 0;
+        return 0 >= getBallsInHopper();
     }
 
     /**
@@ -841,10 +843,10 @@ public class GamePieceTrajectorySimulation {
      * @return true if indexer should be allowed to run (hopper has balls or feature disabled)
      */
     public boolean shouldIndexerRun() {
-        if (!hopperEmptyStopsIndexer) {
+        if (!this.hopperEmptyStopsIndexer) {
             return true; // Feature disabled, always allow
         }
-        return hasBalls();
+        return this.hasBalls();
     }
 
     /**
@@ -853,42 +855,42 @@ public class GamePieceTrajectorySimulation {
      * interval. Will not fire if hopper is empty and hopperEmptyStopsIndexer is enabled.
      */
     public void updateAutoFire() {
-        int currentBalls = getBallsInHopper();
+        int currentBalls = this.getBallsInHopper();
 
-        Logger.recordOutput("Shooter/Sim/AutoFireEnabled", autoFireEnabled);
-        Logger.recordOutput("Shooter/Sim/IndexerRunning", indexerRunningSupplier.getAsBoolean());
-        Logger.recordOutput("Shooter/Sim/GamePiecesLaunched", gamePiecesLaunched);
+        Logger.recordOutput("Shooter/Sim/AutoFireEnabled", this.autoFireEnabled);
+        Logger.recordOutput("Shooter/Sim/IndexerRunning", this.indexerRunningSupplier.getAsBoolean());
+        Logger.recordOutput("Shooter/Sim/GamePiecesLaunched", this.gamePiecesLaunched);
         Logger.recordOutput("Shooter/Sim/BallsRemaining", currentBalls);
-        Logger.recordOutput("Shooter/Sim/HopperEmpty", currentBalls <= 0);
-        Logger.recordOutput("Shooter/Sim/IndexerAllowed", shouldIndexerRun());
+        Logger.recordOutput("Shooter/Sim/HopperEmpty", 0 >= currentBalls);
+        Logger.recordOutput("Shooter/Sim/IndexerAllowed", this.shouldIndexerRun());
 
-        if (!autoFireEnabled) {
+        if (!this.autoFireEnabled) {
             return;
         }
 
         // Check if we should allow firing based on hopper state
-        if (hopperEmptyStopsIndexer && currentBalls <= 0) {
+        if (this.hopperEmptyStopsIndexer && 0 >= currentBalls) {
             // Hopper is empty and we're configured to stop - don't fire
-            autoFireTimer.restart(); // Keep timer fresh for when balls are added
+            this.autoFireTimer.restart(); // Keep timer fresh for when balls are added
             return;
         }
 
-        boolean indexerRunning = indexerRunningSupplier.getAsBoolean();
+        boolean indexerRunning = this.indexerRunningSupplier.getAsBoolean();
 
         if (indexerRunning) {
             // Check if enough time has passed since last launch
-            if (autoFireTimer.hasElapsed(autoFireIntervalSeconds)) {
+            if (this.autoFireTimer.hasElapsed(this.autoFireIntervalSeconds)) {
                 // Launch a game piece and decrement ball count
-                launchGamePiece();
-                gamePiecesLaunched++;
-                setBallsInHopper(currentBalls - 1);
-                autoFireTimer.restart();
+                this.launchGamePiece();
+                this.gamePiecesLaunched++;
+                this.setBallsInHopper(currentBalls - 1);
+                this.autoFireTimer.restart();
 
                 Logger.recordOutput("Shooter/Sim/LastLaunchTime", Timer.getFPGATimestamp());
             }
         } else {
             // Reset timer when indexer stops so next ball fires immediately when indexer starts again
-            autoFireTimer.restart();
+            this.autoFireTimer.restart();
         }
     }
 
@@ -899,8 +901,8 @@ public class GamePieceTrajectorySimulation {
      * @param indexerRunningSupplier Supplier that returns true when indexer is feeding balls
      */
     public void enableAutoFire(BooleanSupplier indexerRunningSupplier) {
-        setIndexerRunningSupplier(indexerRunningSupplier);
-        setAutoFireEnabled(true);
+        this.setIndexerRunningSupplier(indexerRunningSupplier);
+        this.setAutoFireEnabled(true);
     }
 
     /**
@@ -910,8 +912,8 @@ public class GamePieceTrajectorySimulation {
      * @param intervalSeconds Time between launches in seconds
      */
     public void enableAutoFire(BooleanSupplier indexerRunningSupplier, double intervalSeconds) {
-        setIndexerRunningSupplier(indexerRunningSupplier);
-        setAutoFireInterval(intervalSeconds);
-        setAutoFireEnabled(true);
+        this.setIndexerRunningSupplier(indexerRunningSupplier);
+        this.setAutoFireInterval(intervalSeconds);
+        this.setAutoFireEnabled(true);
     }
 }

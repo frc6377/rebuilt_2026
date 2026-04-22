@@ -23,6 +23,7 @@ import edu.wpi.first.units.measure.*;
 import frc.robot.FieldConstants;
 import frc.robot.subsystems.shooter.ShooterConstants;
 import frc.robot.subsystems.shooter.ShooterConstants.CalculationMode;
+import org.jetbrains.annotations.NotNull;
 
 /** Utility class for calculating shooter trajectories, including Shooting on the Fly (SotF). */
 public class TrajectoryBall {
@@ -45,12 +46,12 @@ public class TrajectoryBall {
      * @param isSotfEnabled Whether to apply movement compensation
      * @return Calculated setpoints
      */
-    public static ShootingParameters calculate(
+    public static @NotNull ShootingParameters calculate(
             CalculationMode mode,
-            Pose2d robotPose,
-            ChassisSpeeds robotSpeeds,
+            @NotNull Pose2d robotPose,
+            @NotNull ChassisSpeeds robotSpeeds,
             Distance maxHeight,
-            Distance targetHeight,
+            @NotNull Distance targetHeight,
             double rpmMultiplier,
             boolean isSotfEnabled) {
         Translation2d hubPosition = FieldConstants.getHubPosition();
@@ -64,13 +65,13 @@ public class TrajectoryBall {
 
         // 1. Initial stationary trajectory
         TrajectoryResult stationary;
-        if (mode == CalculationMode.DOU_INTERPOLATION) {
+        if (CalculationMode.DOU_INTERPOLATION == mode) {
             stationary = calculateStationaryMap(staticDistance);
         } else {
             stationary = calculateFixedAngle(staticDistance, targetHeight, ShooterConstants.kFixedHoodAngle);
         }
 
-        if (!isSotfEnabled || robotSpeeds == null || stationary.totalTime() <= 0) {
+        if (!isSotfEnabled || null == robotSpeeds || 0 >= stationary.totalTime()) {
             return finalizeParameters(stationary.launchAngle, stationary.launchSpeed, staticAngle, rpmMultiplier);
         }
 
@@ -84,7 +85,7 @@ public class TrajectoryBall {
     }
 
     /** Calculates trajectory based on a lookup table (map) of RPM vs Distance. Assumes a fixed hood angle. */
-    public static TrajectoryResult calculateStationaryMap(Distance distance) {
+    public static @NotNull TrajectoryResult calculateStationaryMap(@NotNull Distance distance) {
         // 1. Get base RPM from interpolation map
         double rpm = ShooterConstants.distanceToAngularVelocityDouMapRPM.get(distance.in(Meters));
         AngularVelocity flywheelVelocity = RPM.of(rpm);
@@ -107,7 +108,7 @@ public class TrajectoryBall {
         return new TrajectoryResult(angle, launchSpeed, totalTime);
     }
 
-    public static AngularVelocity getFlywheelVelocityForDistance(Distance distance) {
+    public static @NotNull AngularVelocity getFlywheelVelocityForDistance(@NotNull Distance distance) {
         double rpm = ShooterConstants.distanceToAngularVelocityDouMapRPM.get(distance.in(Meters));
         return RPM.of(rpm);
     }
@@ -116,7 +117,7 @@ public class TrajectoryBall {
      * Calculates required velocity for a fixed launch angle to hit a target. Uses the projectile motion equation: y =
      * x*tan(theta) - (g*x^2) / (2*v^2*cos^2(theta))
      */
-    private static TrajectoryResult calculateFixedAngle(Distance distance, Distance targetHeight, Angle fixedAngle) {
+    private static @NotNull TrajectoryResult calculateFixedAngle(@NotNull Distance distance, @NotNull Distance targetHeight, @NotNull Angle fixedAngle) {
         double d = distance.in(Meters);
         double theta = fixedAngle.in(Radians);
         double gravity = ShooterConstants.gravity.in(MetersPerSecondPerSecond);
@@ -126,7 +127,7 @@ public class TrajectoryBall {
         double cosTheta = Math.cos(theta);
         double denominator = 2 * cosTheta * cosTheta * (d * Math.tan(theta) - deltaH);
 
-        if (denominator <= 0) {
+        if (0 >= denominator) {
             return new TrajectoryResult(fixedAngle, MetersPerSecond.of(0.0), 1.0);
         }
 
@@ -137,7 +138,7 @@ public class TrajectoryBall {
     }
 
     /** Converts robot-relative speeds and pose into field-relative velocity. */
-    private static Translation2d getRobotVelocity(Pose2d robotPose, ChassisSpeeds robotSpeeds) {
+    private static @NotNull Translation2d getRobotVelocity(@NotNull Pose2d robotPose, @NotNull ChassisSpeeds robotSpeeds) {
         Rotation2d heading = robotPose.getRotation();
         double fieldVx =
                 robotSpeeds.vxMetersPerSecond * heading.getCos() - robotSpeeds.vyMetersPerSecond * heading.getSin();
@@ -154,11 +155,11 @@ public class TrajectoryBall {
      *
      * <p>v_ball_field = v_ball_robot + v_robot_field Therefore: v_ball_robot = v_ball_field - v_robot_field
      */
-    private static TrajectoryResult calculateSotf(
-            Translation2d hubPosition,
-            Translation2d robotPosition,
-            Translation2d robotVelocity,
-            TrajectoryResult stationary,
+    private static @NotNull TrajectoryResult calculateSotf(
+            @NotNull Translation2d hubPosition,
+            @NotNull Translation2d robotPosition,
+            @NotNull Translation2d robotVelocity,
+            @NotNull TrajectoryResult stationary,
             CalculationMode mode,
             Distance maxHeight) {
 
@@ -191,8 +192,8 @@ public class TrajectoryBall {
     }
 
     /** Calculates the field-relative heading the robot should face to lead the shot. */
-    private static Rotation2d calculateTargetHeading(
-            Translation2d hubPosition, Translation2d robotPosition, Translation2d robotVelocity, double totalTime) {
+    private static @NotNull Rotation2d calculateTargetHeading(
+            @NotNull Translation2d hubPosition, @NotNull Translation2d robotPosition, @NotNull Translation2d robotVelocity, double totalTime) {
 
         double fieldVx = robotVelocity.getX();
         double fieldVy = robotVelocity.getY();
@@ -208,8 +209,8 @@ public class TrajectoryBall {
     }
 
     /** Applies multipliers, clamps, and converts linear speed back to flywheel RPM. */
-    private static ShootingParameters finalizeParameters(
-            Angle launchAngle, LinearVelocity launchSpeed, Rotation2d heading, double rpmMult) {
+    private static @NotNull ShootingParameters finalizeParameters(
+            Angle launchAngle, @NotNull LinearVelocity launchSpeed, Rotation2d heading, double rpmMult) {
 
         // 1. Linear speed back to RPM
         // omega = (v / efficiency) / r

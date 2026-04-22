@@ -19,6 +19,8 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform3d;
 import java.util.function.Supplier;
+
+import org.jetbrains.annotations.NotNull;
 import org.photonvision.simulation.PhotonCameraSim;
 import org.photonvision.simulation.SimCameraProperties;
 import org.photonvision.simulation.VisionSystemSim;
@@ -28,7 +30,7 @@ public class VisionIOPhotonVisionSim extends VisionIOPhotonVision {
     private static VisionSystemSim visionSim;
 
     private final Supplier<Pose2d> poseSupplier;
-    private final PhotonCameraSim cameraSim;
+    private final @NotNull PhotonCameraSim cameraSim;
 
     /**
      * Creates a new VisionIOPhotonVisionSim.
@@ -41,7 +43,7 @@ public class VisionIOPhotonVisionSim extends VisionIOPhotonVision {
         this.poseSupplier = poseSupplier;
 
         // Initialize vision sim
-        if (visionSim == null) {
+        if (null == visionSim) {
             visionSim = new VisionSystemSim("main");
             visionSim.addAprilTags(aprilTagLayout);
         }
@@ -50,13 +52,13 @@ public class VisionIOPhotonVisionSim extends VisionIOPhotonVision {
         var cameraProperties = new SimCameraProperties()
                 .setCalibration(640, 480, Rotation2d.fromDegrees(90))
                 .setFPS(12);
-        cameraSim = new PhotonCameraSim(camera, cameraProperties);
-        visionSim.addCamera(cameraSim, robotToCamera);
+        this.cameraSim = new PhotonCameraSim(this.camera, cameraProperties);
+        visionSim.addCamera(this.cameraSim, robotToCamera);
     }
 
     @Override
-    public void updateInputs(VisionIOInputs inputs) {
-        visionSim.update(poseSupplier.get());
+    public void updateInputs(@NotNull VisionIOInputs inputs) {
+        visionSim.update(this.poseSupplier.get());
         super.updateInputs(inputs);
     }
 }

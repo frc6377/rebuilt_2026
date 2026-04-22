@@ -21,6 +21,7 @@ import edu.wpi.first.wpilibj.Threads;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import org.jetbrains.annotations.NotNull;
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.NT4Publisher;
@@ -33,7 +34,7 @@ import org.littletonrobotics.junction.wpilog.WPILOGWriter;
  */
 public class Robot extends LoggedRobot {
     private Command autonomousCommand;
-    private final RobotContainer robotContainer;
+    private final @NotNull RobotContainer robotContainer;
 
     public Robot() {
         // Set up data receivers & replay source
@@ -63,7 +64,7 @@ public class Robot extends LoggedRobot {
 
         // Instantiate our RobotContainer. This will perform all our button bindings,
         // and put our autonomous chooser on the dashboard.
-        robotContainer = new RobotContainer();
+        this.robotContainer = new RobotContainer();
     }
 
     /** This function is called periodically during all modes. */
@@ -89,26 +90,26 @@ public class Robot extends LoggedRobot {
     /** This function is called once when the robot is disabled. */
     @Override
     public void disabledInit() {
-        robotContainer.resetSimulationField();
-        robotContainer.intake.setNeutralMode(NeutralModeValue.Coast);
+        this.robotContainer.resetSimulationField();
+        this.robotContainer.intake.setNeutralMode(NeutralModeValue.Coast);
     }
 
     /** This function is called periodically when disabled. */
     @Override
     public void disabledPeriodic() {
         if (Constants.EnabledSubsystems.kQuestNav) {
-            CommandScheduler.getInstance().schedule(robotContainer.getRobotStartPose(0));
+            CommandScheduler.getInstance().schedule(this.robotContainer.getRobotStartPose(0));
         }
     }
 
     /** This autonomous runs the autonomous command selected by your {@link RobotContainer} class. */
     @Override
     public void autonomousInit() {
-        autonomousCommand = robotContainer.getAutonomousCommand();
-        robotContainer.intake.setNeutralMode(NeutralModeValue.Brake);
+        this.autonomousCommand = this.robotContainer.getAutonomousCommand();
+        this.robotContainer.intake.setNeutralMode(NeutralModeValue.Brake);
         // schedule the autonomous command (example)
-        if (autonomousCommand != null) {
-            CommandScheduler.getInstance().schedule(autonomousCommand);
+        if (null != autonomousCommand) {
+            CommandScheduler.getInstance().schedule(this.autonomousCommand);
         }
     }
 
@@ -123,12 +124,12 @@ public class Robot extends LoggedRobot {
         // teleop starts running. If you want the autonomous to
         // continue until interrupted by another command, remove
         // this line or comment it out.
-        if (autonomousCommand != null) {
-            autonomousCommand.cancel();
+        if (null != autonomousCommand) {
+            this.autonomousCommand.cancel();
         }
-        robotContainer.intake.setNeutralMode(NeutralModeValue.Brake);
-        CommandScheduler.getInstance().schedule(robotContainer.superstructure.stopUpgoerCommand());
-        CommandScheduler.getInstance().schedule(robotContainer.superstructure.stopShooterCommand());
+        this.robotContainer.intake.setNeutralMode(NeutralModeValue.Brake);
+        CommandScheduler.getInstance().schedule(this.robotContainer.superstructure.stopUpgoerCommand());
+        CommandScheduler.getInstance().schedule(this.robotContainer.superstructure.stopShooterCommand());
     }
 
     /** This function is called periodically during operator control. */
@@ -153,6 +154,6 @@ public class Robot extends LoggedRobot {
     /** This function is called periodically whilst in simulation. */
     @Override
     public void simulationPeriodic() {
-        robotContainer.updateSimulation();
+        this.robotContainer.updateSimulation();
     }
 }

@@ -53,6 +53,8 @@ import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
@@ -79,22 +81,22 @@ public class Superstructure extends SubsystemBase {
     private static final LoggedNetworkNumber benchModeDistanceFeet = new LoggedNetworkNumber(
             "Shooting/BenchMode/DistanceMeters", ShooterConstants.defaultBenchModeDistanceMeters);
 
-    private final Shooter shooter;
-    private final Upgoer leftUpgoer;
-    private final Upgoer rightUpgoer;
-    private final Indexer indexer;
+    private final @NotNull Shooter shooter;
+    private final @NotNull Upgoer leftUpgoer;
+    private final @NotNull Upgoer rightUpgoer;
+    private final @NotNull Indexer indexer;
     private final Vision vision;
     private final OI oi;
     private final RobotState robotState;
     private GamePieceTrajectorySimulation gamePieceTrajectorySimulation;
     private AngularVelocity manualShootingVelocity = RPM.of(ShooterConstants.kManualShootingSpeedRPM);
     private Command currentShootingCommand;
-    private TrajectoryBall.ShootingParameters latestParameters = null;
+    private TrajectoryBall.@Nullable ShootingParameters latestParameters = null;
 
     /** Creates the superstructure and selects IO implementations by mode. */
     public Superstructure(BooleanSupplier isIntaking, Vision vision, OI oi) {
         RobotState createdState = RobotState.getInstance();
-        if (createdState == null) {
+        if (null == createdState) {
             createdState = RobotState.create();
         }
         this.robotState = createdState;
@@ -150,176 +152,176 @@ public class Superstructure extends SubsystemBase {
         Logger.recordOutput("Shooting/HubIndicatorOn", FieldConstants.isHubIndicatorOn());
         Logger.recordOutput("Shooting/TimeUntilHubStateChange", FieldConstants.getTimeUntilHubStateChange());
         Logger.recordOutput(
-                "Shooting/DistanceToHub", round(vision.getHubDistanceMeasure().in(Meters) * 100.0) / 100.0);
-        if ((FieldConstants.getTimeUntilHubStateChange() > 4
-                        && FieldConstants.getTimeUntilHubStateChange() <= 7
+                "Shooting/DistanceToHub", round(this.vision.getHubDistanceMeasure().in(Meters) * 100.0) / 100.0);
+        if ((4 < FieldConstants.getTimeUntilHubStateChange()
+                        && 7 >= FieldConstants.getTimeUntilHubStateChange()
                         && DriverStation.isTeleopEnabled())
-                || DriverStation.getMatchTime() <= 10 && DriverStation.isTeleopEnabled()) {
-            oi.setRumble(1, 1);
+                || 10 >= DriverStation.getMatchTime() && DriverStation.isTeleopEnabled()) {
+            this.oi.setRumble(1, 1);
         } else {
-            oi.setRumble(0, 0);
+            this.oi.setRumble(0, 0);
         }
 
-        if (gamePieceTrajectorySimulation == null) {
+        if (null == gamePieceTrajectorySimulation) {
             return;
         }
 
-        int desiredCount = robotState.getSimGamePieceCount();
-        if (gamePieceTrajectorySimulation.getBallsInHopper() != desiredCount) {
-            gamePieceTrajectorySimulation.setBallsInHopper(desiredCount);
+        int desiredCount = this.robotState.getSimGamePieceCount();
+        if (this.gamePieceTrajectorySimulation.getBallsInHopper() != desiredCount) {
+            this.gamePieceTrajectorySimulation.setBallsInHopper(desiredCount);
         }
 
-        gamePieceTrajectorySimulation.updateAutoFire();
-        robotState.setSimGamePieceCount(gamePieceTrajectorySimulation.getBallsInHopper());
+        this.gamePieceTrajectorySimulation.updateAutoFire();
+        this.robotState.setSimGamePieceCount(this.gamePieceTrajectorySimulation.getBallsInHopper());
     }
 
     /** Configure the game piece trajectory simulation (SIM mode only). */
-    public void configureGamePieceSimulation(SwerveDriveSimulation driveSimulation) {
-        if (Constants.currentMode != Constants.Mode.SIM || driveSimulation == null) {
+    public void configureGamePieceSimulation(@Nullable SwerveDriveSimulation driveSimulation) {
+        if (Constants.Mode.SIM != Constants.currentMode || null == driveSimulation) {
             return;
         }
 
-        gamePieceTrajectorySimulation = new GamePieceTrajectorySimulation(
-                driveSimulation, () -> getAverageFlywheelVelocity().in(RPM));
-        robotState.setSimGamePieceCount(gamePieceTrajectorySimulation.getBallsInHopper());
+        this.gamePieceTrajectorySimulation = new GamePieceTrajectorySimulation(
+                driveSimulation, () -> this.getAverageFlywheelVelocity().in(RPM));
+        this.robotState.setSimGamePieceCount(this.gamePieceTrajectorySimulation.getBallsInHopper());
     }
 
     public GamePieceTrajectorySimulation getGamePieceTrajectorySimulation() {
-        return gamePieceTrajectorySimulation;
+        return this.gamePieceTrajectorySimulation;
     }
 
     public boolean hasGamePieceTrajectorySimulation() {
-        return gamePieceTrajectorySimulation != null;
+        return null != gamePieceTrajectorySimulation;
     }
 
     public Command simAutoFireHoldCommand(BooleanSupplier indexerRunningSupplier) {
-        if (gamePieceTrajectorySimulation == null) {
+        if (null == gamePieceTrajectorySimulation) {
             return Commands.none();
         }
 
-        return Commands.startEnd(() -> gamePieceTrajectorySimulation.enableAutoFire(indexerRunningSupplier), () -> {
-                    gamePieceTrajectorySimulation.setAutoFireEnabled(false);
-                    gamePieceTrajectorySimulation.setIndexerRunningSupplier(() -> false);
+        return Commands.startEnd(() -> this.gamePieceTrajectorySimulation.enableAutoFire(indexerRunningSupplier), () -> {
+                    this.gamePieceTrajectorySimulation.setAutoFireEnabled(false);
+                    this.gamePieceTrajectorySimulation.setIndexerRunningSupplier(() -> false);
                 })
                 .withName("SimAutoFireHold");
     }
 
     public boolean simShouldIndexerRun() {
-        return gamePieceTrajectorySimulation != null && gamePieceTrajectorySimulation.shouldIndexerRun();
+        return null != gamePieceTrajectorySimulation && this.gamePieceTrajectorySimulation.shouldIndexerRun();
     }
 
     public Command simLaunchGamePieceCommand() {
-        if (gamePieceTrajectorySimulation == null) {
+        if (null == gamePieceTrajectorySimulation) {
             return Commands.none();
         }
 
         return Commands.runOnce(() -> SimulatedArena.getInstance()
-                        .addGamePieceProjectile(gamePieceTrajectorySimulation.launchGamePiece()))
+                        .addGamePieceProjectile(this.gamePieceTrajectorySimulation.launchGamePiece()))
                 .withName("SimLaunchGamePiece");
     }
 
     public Command simAddBallsCommand(int count) {
-        if (gamePieceTrajectorySimulation == null) {
+        if (null == gamePieceTrajectorySimulation) {
             return Commands.none();
         }
 
-        return Commands.runOnce(() -> gamePieceTrajectorySimulation.addBalls(count))
+        return Commands.runOnce(() -> this.gamePieceTrajectorySimulation.addBalls(count))
                 .withName("SimAddBalls");
     }
 
     public Command simSetAutoFireEnabledCommand(boolean enabled) {
-        if (gamePieceTrajectorySimulation == null) {
+        if (null == gamePieceTrajectorySimulation) {
             return Commands.none();
         }
 
-        return Commands.runOnce(() -> gamePieceTrajectorySimulation.setAutoFireEnabled(enabled))
+        return Commands.runOnce(() -> this.gamePieceTrajectorySimulation.setAutoFireEnabled(enabled))
                 .withName("SimAutoFireEnabled:" + enabled);
     }
 
-    public Command createShooterCalibrationCommand(
-            SwerveDriveSimulation driveSimulation, Consumer<Pose2d> poseResetter) {
-        if (gamePieceTrajectorySimulation == null || driveSimulation == null) {
+    public @Nullable Command createShooterCalibrationCommand(
+            @Nullable SwerveDriveSimulation driveSimulation, Consumer<Pose2d> poseResetter) {
+        if (null == gamePieceTrajectorySimulation || null == driveSimulation) {
             return null;
         }
 
         return new ShooterCalibrationCommand(
-                shooter.getLeft(), gamePieceTrajectorySimulation, driveSimulation, poseResetter);
+                this.shooter.getLeft(), this.gamePieceTrajectorySimulation, driveSimulation, poseResetter);
     }
 
     public BaseShooter getLeftShooter() {
-        return shooter.getLeft();
+        return this.shooter.getLeft();
     }
 
     public BaseShooter getRightShooter() {
-        return shooter.getRight();
+        return this.shooter.getRight();
     }
 
     public Upgoer getLeftUpgoer() {
-        return leftUpgoer;
+        return this.leftUpgoer;
     }
 
     public Upgoer getRightUpgoer() {
-        return rightUpgoer;
+        return this.rightUpgoer;
     }
 
-    public Angle getHoodAngle() {
+    public @NotNull Angle getHoodAngle() {
         return ShooterConstants.kFixedHoodAngle;
     }
 
     public void setFlywheelVelocity(AngularVelocity velocity) {
-        shooter.setFlywheelVelocity(velocity);
+        this.shooter.setFlywheelVelocity(velocity);
     }
 
-    public void setUpgoerVelocity(AngularVelocity velocity) {
-        leftUpgoer.setVelocity(velocity);
-        rightUpgoer.setVelocity(velocity);
+    public void setUpgoerVelocity(@NotNull AngularVelocity velocity) {
+        this.leftUpgoer.setVelocity(velocity);
+        this.rightUpgoer.setVelocity(velocity);
     }
 
     public AngularVelocity getLeftFlywheelVelocity() {
-        return shooter.getLeft().getFlywheelVelocity();
+        return this.shooter.getLeft().getFlywheelVelocity();
     }
 
     public AngularVelocity getRightFlywheelVelocity() {
-        return shooter.getRight().getFlywheelVelocity();
+        return this.shooter.getRight().getFlywheelVelocity();
     }
 
-    public AngularVelocity getAverageFlywheelVelocity() {
+    public @NotNull AngularVelocity getAverageFlywheelVelocity() {
         double rpm =
-                (getLeftFlywheelVelocity().in(RPM) + getRightFlywheelVelocity().in(RPM)) / 2.0;
+                (this.getLeftFlywheelVelocity().in(RPM) + this.getRightFlywheelVelocity().in(RPM)) / 2.0;
         return RPM.of(rpm);
     }
 
     public void stopShooter() {
-        shooter.stop();
+        this.shooter.stop();
     }
 
     public void stopUpgoer() {
-        leftUpgoer.stop();
-        rightUpgoer.stop();
+        this.leftUpgoer.stop();
+        this.rightUpgoer.stop();
     }
 
     public Command stopShooterCommand() {
-        return shooter.stopCommand();
+        return this.shooter.stopCommand();
     }
 
     public Command stopUpgoerCommand() {
-        return leftUpgoer.stopCommand().alongWith(rightUpgoer.stopCommand());
+        return this.leftUpgoer.stopCommand().alongWith(this.rightUpgoer.stopCommand());
     }
 
     /** Calculate the distance from the robot to the hub. */
-    public Distance getDistanceToHub(Pose2d robotPose) {
+    public @NotNull Distance getDistanceToHub(@NotNull Pose2d robotPose) {
         return Meters.of(robotPose.getTranslation().getDistance(FieldConstants.getHubPosition()));
     }
 
     /** Calculate the angle from the robot to the hub. */
-    public Rotation2d getAngleToHub(Pose2d robotPose) {
+    public @NotNull Rotation2d getAngleToHub(@NotNull Pose2d robotPose) {
         Translation2d toHub = FieldConstants.getHubPosition().minus(robotPose.getTranslation());
         return new Rotation2d(toHub.getX(), toHub.getY());
     }
 
     /** Calculate the angle from the robot to the alliance wall center. */
-    public Rotation2d getAngleToAllianceWall(Pose2d robotPose) {
-        boolean isRed = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
+    public @NotNull Rotation2d getAngleToAllianceWall(@NotNull Pose2d robotPose) {
+        boolean isRed = Alliance.Red == DriverStation.getAlliance().orElse(Alliance.Blue);
         double targetX = isRed ? FieldConstants.fieldLength : 0.0;
         double targetY = FieldConstants.fieldWidth / 2.0;
         Translation2d target = new Translation2d(targetX, targetY);
@@ -327,10 +329,10 @@ public class Superstructure extends SubsystemBase {
         return new Rotation2d(toTarget.getX(), toTarget.getY());
     }
 
-    public boolean isInShootingZone(Pose2d robotPose) {
+    public boolean isInShootingZone(@NotNull Pose2d robotPose) {
         double fieldLengthMeters = FieldConstants.fieldLength;
         double xMeters = robotPose.getTranslation().getX();
-        boolean isRed = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
+        boolean isRed = Alliance.Red == DriverStation.getAlliance().orElse(Alliance.Blue);
         double distanceFromOwnWall = isRed ? fieldLengthMeters - xMeters : xMeters;
         // Can shoot from own half of the field
         return distanceFromOwnWall <= fieldLengthMeters / 2.0;
@@ -339,19 +341,19 @@ public class Superstructure extends SubsystemBase {
     private ShooterConstants.CalculationMode getCalculationModeFromDashboard() {
         int modeIndex = (int) Math.round(calculationMode.get());
         ShooterConstants.CalculationMode[] modes = ShooterConstants.CalculationMode.values();
-        if (modeIndex < 0 || modeIndex >= modes.length) {
+        if (0 > modeIndex || modeIndex >= modes.length) {
             return ShooterConstants.kDefaultCalculationMode;
         }
         return modes[modeIndex];
     }
 
     /** Command that continuously updates flywheel speed based on distance to hub. */
-    public Command autoSpeedShooter(Supplier<Pose2d> poseSupplier, Supplier<ChassisSpeeds> velocitySupplier) {
+    public Command autoSpeedShooter(@NotNull Supplier<Pose2d> poseSupplier, @NotNull Supplier<ChassisSpeeds> velocitySupplier) {
         return Commands.run(
                         () -> {
                             Pose2d robotPose;
                             ChassisSpeeds robotSpeeds;
-                            if (benchModeEnabled.get() > 0.5) {
+                            if (0.5 < benchModeEnabled.get()) {
                                 // Bench mode: use a virtual pose at the configured distance
                                 double distMeters =
                                         Feet.of(benchModeDistanceFeet.get()).in(Meters);
@@ -364,9 +366,9 @@ public class Superstructure extends SubsystemBase {
                             }
 
                             double hubDistanceMeters =
-                                    getDistanceToHub(robotPose).in(Meters);
-                            latestParameters = TrajectoryBall.calculate(
-                                    getCalculationModeFromDashboard(),
+                                    this.getDistanceToHub(robotPose).in(Meters);
+                            this.latestParameters = TrajectoryBall.calculate(
+                                    this.getCalculationModeFromDashboard(),
                                     robotPose,
                                     robotSpeeds,
                                     Feet.of(maxHeightFeet.get()),
@@ -375,43 +377,43 @@ public class Superstructure extends SubsystemBase {
                                     ShooterConstants.kSotfEnabled);
 
                             Logger.recordOutput("Shooting/DistanceSource", "PoseEstimate");
-                            Logger.recordOutput("Shooting/OdometryHubDistanceM", getCalculationModeFromDashboard());
+                            Logger.recordOutput("Shooting/OdometryHubDistanceM", this.getCalculationModeFromDashboard());
                             Logger.recordOutput(
                                     "Shooting/TargetHeadingDeg",
-                                    latestParameters.targetHeading().getDegrees());
+                                    this.latestParameters.targetHeading().getDegrees());
                             Logger.recordOutput("Shooting/CalculationMode", calculationMode.get());
 
-                            boolean inZone = isInShootingZone(robotPose);
+                            boolean inZone = this.isInShootingZone(robotPose);
                             Logger.recordOutput("Shooting/InShootingZone", inZone);
 
                             if (inZone) {
                                 Logger.recordOutput("Shooting/DistanceToHub", hubDistanceMeters);
                                 Logger.recordOutput(
                                         "Shooting/CalculatedRPM",
-                                        latestParameters.flywheelVelocity().in(RPM));
+                                        this.latestParameters.flywheelVelocity().in(RPM));
 
-                                setFlywheelVelocity(latestParameters.flywheelVelocity());
+                                this.setFlywheelVelocity(this.latestParameters.flywheelVelocity());
                             } else {
-                                setFlywheelVelocity(manualShootingVelocity);
+                                this.setFlywheelVelocity(this.manualShootingVelocity);
                             }
                         },
-                        shooter.getLeft(),
-                        shooter.getRight())
+                        this.shooter.getLeft(),
+                        this.shooter.getRight())
                 .withName("AutoAimShooter");
     }
 
-    public Command autoSpeedShooter(Supplier<Pose2d> poseSupplier) {
-        return autoSpeedShooter(poseSupplier, ChassisSpeeds::new);
+    public Command autoSpeedShooter(@NotNull Supplier<Pose2d> poseSupplier) {
+        return this.autoSpeedShooter(poseSupplier, ChassisSpeeds::new);
     }
 
     public Command autoSpeedShooter() {
-        return autoSpeedShooter(Pose2d::new, ChassisSpeeds::new);
+        return this.autoSpeedShooter(Pose2d::new, ChassisSpeeds::new);
     }
     /** Command that aims the robot at the hub while driving. */
     public Command aimAtHubWhileDriving(
-            Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier, BooleanSupplier xModePressed) {
+            @NotNull Drive drive, @NotNull DoubleSupplier xSupplier, @NotNull DoubleSupplier ySupplier, @NotNull BooleanSupplier xModePressed) {
         return DriveCommands.joystickDriveAtAngle(
-                        drive, xSupplier, ySupplier, () -> latestParameters.targetHeading(), xModePressed)
+                        drive, xSupplier, ySupplier, () -> this.latestParameters.targetHeading(), xModePressed)
                 .withName("AimAtHub");
     }
 
@@ -419,69 +421,69 @@ public class Superstructure extends SubsystemBase {
     public Command fireCommand() {
         return Commands.run(
                         () -> {
-                            leftUpgoer.setVelocity(UpgoerConstants.defaultFeedVelocity);
-                            rightUpgoer.setVelocity(UpgoerConstants.defaultFeedVelocity);
+                            this.leftUpgoer.setVelocity(UpgoerConstants.defaultFeedVelocity);
+                            this.rightUpgoer.setVelocity(UpgoerConstants.defaultFeedVelocity);
                         },
-                        leftUpgoer,
-                        rightUpgoer)
+                        this.leftUpgoer,
+                        this.rightUpgoer)
                 .withName("SuperstructureFire");
     }
 
     public Command unjamCommand() {
         return Commands.run(
                         () -> {
-                            leftUpgoer.setVelocity(UpgoerConstants.defaultUnjamVelocity);
-                            rightUpgoer.setVelocity(UpgoerConstants.defaultUnjamVelocity);
+                            this.leftUpgoer.setVelocity(UpgoerConstants.defaultUnjamVelocity);
+                            this.rightUpgoer.setVelocity(UpgoerConstants.defaultUnjamVelocity);
                         },
-                        leftUpgoer,
-                        rightUpgoer)
+                        this.leftUpgoer,
+                        this.rightUpgoer)
                 .withName("SuperstructureUnjam");
     }
 
     /** Full auto-aim command: aims robot at hub AND sets flywheel automatically. */
-    public Command fullAutoAim(Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier) {
-        return aimAtHubWhileDriving(drive, xSupplier, ySupplier, () -> false)
-                .alongWith(autoSpeedShooter(drive::getPose, drive::getChassisSpeeds))
+    public Command fullAutoAim(@NotNull Drive drive, @NotNull DoubleSupplier xSupplier, @NotNull DoubleSupplier ySupplier) {
+        return this.aimAtHubWhileDriving(drive, xSupplier, ySupplier, () -> false)
+                .alongWith(this.autoSpeedShooter(drive::getPose, drive::getChassisSpeeds))
                 .withName("FullAutoAim")
-                .beforeStarting(() -> robotState.setMode(RobotState.Mode.SHOOTING))
-                .finallyDo(() -> robotState.setMode(RobotState.Mode.IDLE));
+                .beforeStarting(() -> this.robotState.setMode(RobotState.Mode.SHOOTING))
+                .finallyDo(() -> this.robotState.setMode(RobotState.Mode.IDLE));
     }
 
-    public Command spinUpShooterCommand(Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier) {
+    public Command spinUpShooterCommand(@NotNull Drive drive, @NotNull DoubleSupplier xSupplier, @NotNull DoubleSupplier ySupplier) {
         Supplier<Rotation2d> angleSupplier = () -> {
             Pose2d pose = drive.getPose();
-            if (isInShootingZone(pose)) {
-                return getAngleToHub(pose);
+            if (this.isInShootingZone(pose)) {
+                return this.getAngleToHub(pose);
             }
             // On opponent's side —> shuttle back towards own wall
-            return getAngleToAllianceWall(pose);
+            return this.getAngleToAllianceWall(pose);
         };
 
         return DriveCommands.joystickDriveAtAngle(drive, xSupplier, ySupplier, angleSupplier)
-                .alongWith(autoSpeedShooter(drive::getPose, drive::getChassisSpeeds))
+                .alongWith(this.autoSpeedShooter(drive::getPose, drive::getChassisSpeeds))
                 .withName("SpinUpShooter");
     }
 
     public boolean atTargetVelocity() {
         Logger.recordOutput(
                 "Shooting/Ready to shoot",
-                shooter.getLeft().atTargetVelocity() && shooter.getRight().atTargetVelocity());
-        return shooter.getLeft().atTargetVelocity() && shooter.getRight().atTargetVelocity();
+                this.shooter.getLeft().atTargetVelocity() && this.shooter.getRight().atTargetVelocity());
+        return this.shooter.getLeft().atTargetVelocity() && this.shooter.getRight().atTargetVelocity();
     }
 
-    public boolean isReadyToShoot(Rotation2d currentHeading) {
-        if (latestParameters == null) return atTargetVelocity();
+    public boolean isReadyToShoot(@NotNull Rotation2d currentHeading) {
+        if (null == latestParameters) return this.atTargetVelocity();
 
-        boolean flywheelReady = atTargetVelocity(); // atTargetVelocity();
+        boolean flywheelReady = this.atTargetVelocity(); // atTargetVelocity();
         boolean headingReady =
-                Math.abs(currentHeading.minus(latestParameters.targetHeading()).getDegrees())
+                Math.abs(currentHeading.minus(this.latestParameters.targetHeading()).getDegrees())
                         < ShooterConstants.kHeadingTolerance.in(Degrees);
         Logger.recordOutput("Shooting/Ready to shoot", flywheelReady && headingReady);
         return flywheelReady && headingReady;
     }
 
     public Rotation2d getTargetHeading() {
-        return latestParameters != null ? latestParameters.targetHeading() : getAngleToHub(new Pose2d());
+        return null != latestParameters ? this.latestParameters.targetHeading() : this.getAngleToHub(new Pose2d());
     }
 
     /**
@@ -492,51 +494,51 @@ public class Superstructure extends SubsystemBase {
      * @param ySupplier Translation Y
      * @return Command that aims and spins up, finishing when ready to shoot
      */
-    public Command aimAndSpinUp(Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier) {
+    public Command aimAndSpinUp(@NotNull Drive drive, @NotNull DoubleSupplier xSupplier, @NotNull DoubleSupplier ySupplier) {
         return Commands.parallel(
-                        autoSpeedShooter(drive::getPose, drive::getChassisSpeeds),
+                        this.autoSpeedShooter(drive::getPose, drive::getChassisSpeeds),
                         DriveCommands.joystickDriveAtAngle(drive, xSupplier, ySupplier, this::getTargetHeading))
-                .until(() -> isReadyToShoot(drive.getRotation()))
+                .until(() -> this.isReadyToShoot(drive.getRotation()))
                 .withName("AimAndSpinUp");
     }
 
-    public Command setFlywheelVelocityCommand(AngularVelocity velocity) {
-        return Commands.runOnce(() -> setFlywheelVelocity(velocity), shooter.getLeft(), shooter.getRight())
+    public Command setFlywheelVelocityCommand(@NotNull AngularVelocity velocity) {
+        return Commands.runOnce(() -> this.setFlywheelVelocity(velocity), this.shooter.getLeft(), this.shooter.getRight())
                 .withName("SetFlywheelVelocity:" + velocity.in(RPM) + "RPM");
     }
 
-    public Command setFlywheelVelocityCommand(Supplier<AngularVelocity> velocitySupplier) {
-        return Commands.run(() -> setFlywheelVelocity(velocitySupplier.get()), shooter.getLeft(), shooter.getRight())
+    public Command setFlywheelVelocityCommand(@NotNull Supplier<AngularVelocity> velocitySupplier) {
+        return Commands.run(() -> this.setFlywheelVelocity(velocitySupplier.get()), this.shooter.getLeft(), this.shooter.getRight())
                 .withName("SetFlywheelVelocity");
     }
 
-    public Command setFlywheelVelocityAndWaitCommand(AngularVelocity velocity) {
-        return setFlywheelVelocityCommand(velocity).until(this::atTargetVelocity);
+    public Command setFlywheelVelocityAndWaitCommand(@NotNull AngularVelocity velocity) {
+        return this.setFlywheelVelocityCommand(velocity).until(this::atTargetVelocity);
     }
 
-    public Command autoChooseShootingCommand(Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier) {
-        if ((manualShootingEnabled.get() == 1.0) || vision.getTagCount() == 0) {
-            return autoSpeedShooter(drive::getPose, drive::getChassisSpeeds);
+    public Command autoChooseShootingCommand(@NotNull Drive drive, @NotNull DoubleSupplier xSupplier, @NotNull DoubleSupplier ySupplier) {
+        if ((1.0 == manualShootingEnabled.get()) || 0 == vision.getTagCount()) {
+            return this.autoSpeedShooter(drive::getPose, drive::getChassisSpeeds);
         } else {
-            return fullAutoAim(drive, xSupplier, ySupplier);
+            return this.fullAutoAim(drive, xSupplier, ySupplier);
         }
     }
 
     /** Manual override command for testing and bench mode. Doesn't run the shooter */
-    public Command setFlywheelVelocityManual(AngularVelocity velocity) {
-        return Commands.runOnce(() -> manualShootingVelocity = velocity);
+    public @NotNull Command setFlywheelVelocityManual(AngularVelocity velocity) {
+        return Commands.runOnce(() -> this.manualShootingVelocity = velocity);
     }
 
-    public Command changeFlywheelVelocityManual(AngularVelocity deltaRPM) {
-        return Commands.runOnce(() -> manualShootingVelocity = manualShootingVelocity.plus(deltaRPM));
+    public @NotNull Command changeFlywheelVelocityManual(AngularVelocity deltaRPM) {
+        return Commands.runOnce(() -> this.manualShootingVelocity = this.manualShootingVelocity.plus(deltaRPM));
     }
 
-    public Command changeManualShootingCommand(Command command) {
-        return Commands.runOnce(() -> currentShootingCommand = command);
+    public @NotNull Command changeManualShootingCommand(Command command) {
+        return Commands.runOnce(() -> this.currentShootingCommand = command);
     }
 
-    public Supplier<Command> getCurrentShootingCommandSupplier() {
-        return () -> currentShootingCommand;
+    public @NotNull Supplier<Command> getCurrentShootingCommandSupplier() {
+        return () -> this.currentShootingCommand;
     }
 
     public Command setManualShootingEnabledCommand(boolean enabled) {
@@ -546,21 +548,21 @@ public class Superstructure extends SubsystemBase {
                 .withName("SetManualShootingEnabled:" + enabled);
     }
 
-    public Command runToggledSpeed(Supplier<Pose2d> robotPose, Supplier<ChassisSpeeds> chassisSpeeds) {
-        if (manualShootingEnabled.get() == 1.0) {
-            return runFlywheelVelocityManual();
+    public Command runToggledSpeed(@NotNull Supplier<Pose2d> robotPose, @NotNull Supplier<ChassisSpeeds> chassisSpeeds) {
+        if (1.0 == manualShootingEnabled.get()) {
+            return this.runFlywheelVelocityManual();
         } else {
-            return autoSpeedShooter(robotPose, chassisSpeeds);
+            return this.autoSpeedShooter(robotPose, chassisSpeeds);
         }
     }
 
     public Command runFlywheelVelocityManual() {
         return Commands.run(
                         () -> {
-                            setFlywheelVelocity(manualShootingVelocity);
+                            this.setFlywheelVelocity(this.manualShootingVelocity);
                         },
-                        shooter.getLeft(),
-                        shooter.getRight())
+                        this.shooter.getLeft(),
+                        this.shooter.getRight())
                 .withName("RunFlywheelVelocityManual");
     }
 }

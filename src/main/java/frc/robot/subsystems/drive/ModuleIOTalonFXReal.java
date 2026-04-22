@@ -16,6 +16,8 @@ package frc.robot.subsystems.drive;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.util.Units;
+import org.jetbrains.annotations.NotNull;
+
 import java.util.Queue;
 
 /**
@@ -30,7 +32,7 @@ public class ModuleIOTalonFXReal extends ModuleIOTalonFX {
     private final Queue<Double> drivePositionQueue;
     private final Queue<Double> turnPositionQueue;
 
-    public ModuleIOTalonFXReal(SwerveModuleConstants constants) {
+    public ModuleIOTalonFXReal(@NotNull SwerveModuleConstants constants) {
         super(constants);
 
         this.timestampQueue = PhoenixOdometryThread.getInstance().makeTimestampQueue();
@@ -39,19 +41,19 @@ public class ModuleIOTalonFXReal extends ModuleIOTalonFX {
     }
 
     @Override
-    public void updateInputs(ModuleIOInputs inputs) {
+    public void updateInputs(@NotNull ModuleIOInputs inputs) {
         super.updateInputs(inputs);
 
         // Update odometry inputs
         inputs.odometryTimestamps =
-                timestampQueue.stream().mapToDouble((Double value) -> value).toArray();
-        inputs.odometryDrivePositionsRad = drivePositionQueue.stream()
-                .mapToDouble(pos -> Units.rotationsToRadians(pos) / constants.DriveMotorGearRatio)
+                this.timestampQueue.stream().mapToDouble((Double value) -> value).toArray();
+        inputs.odometryDrivePositionsRad = this.drivePositionQueue.stream()
+                .mapToDouble(pos -> Units.rotationsToRadians(pos) / this.constants.DriveMotorGearRatio)
                 .toArray();
         inputs.odometryTurnPositions =
-                turnPositionQueue.stream().map(Rotation2d::fromRotations).toArray(Rotation2d[]::new);
-        timestampQueue.clear();
-        drivePositionQueue.clear();
-        turnPositionQueue.clear();
+                this.turnPositionQueue.stream().map(Rotation2d::fromRotations).toArray(Rotation2d[]::new);
+        this.timestampQueue.clear();
+        this.drivePositionQueue.clear();
+        this.turnPositionQueue.clear();
     }
 }

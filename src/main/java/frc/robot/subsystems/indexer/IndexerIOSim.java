@@ -9,10 +9,11 @@ import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.simulation.FlywheelSim;
 import frc.robot.Robot;
+import org.jetbrains.annotations.NotNull;
 
 public class IndexerIOSim implements IndexerIO {
-    private final FlywheelSim indexerSim;
-    private final PIDController indexerController;
+    private final @NotNull FlywheelSim indexerSim;
+    private final @NotNull PIDController indexerController;
 
     private double indexerSetpointRPM = 0.0;
     private double indexerAppliedVolts = 0.0;
@@ -21,30 +22,30 @@ public class IndexerIOSim implements IndexerIO {
         var indexerPlant =
                 LinearSystemId.createFlywheelSystem(DCMotor.getKrakenX60Foc(2), 0.5 * 0.5 * 0.01 * 0.01, 1.0);
 
-        indexerSim = new FlywheelSim(indexerPlant, DCMotor.getKrakenX60Foc(1));
+        this.indexerSim = new FlywheelSim(indexerPlant, DCMotor.getKrakenX60Foc(1));
 
-        indexerController = new PIDController(0.001, 0.0005, 0.0);
+        this.indexerController = new PIDController(0.001, 0.0005, 0.0);
     }
 
     @Override
     public void updateInputs(IndexerIOInputs inputs) {
-        double indexerFB = indexerController.calculate(indexerSim.getAngularVelocityRPM(), indexerSetpointRPM);
-        indexerAppliedVolts = MathUtil.clamp(indexerFB, -12.0, 12.0);
+        double indexerFB = this.indexerController.calculate(this.indexerSim.getAngularVelocityRPM(), this.indexerSetpointRPM);
+        this.indexerAppliedVolts = MathUtil.clamp(indexerFB, -12.0, 12.0);
 
-        indexerSim.setInputVoltage(indexerAppliedVolts);
+        this.indexerSim.setInputVoltage(this.indexerAppliedVolts);
 
-        indexerSim.update(Robot.defaultPeriodSecs);
+        this.indexerSim.update(Robot.defaultPeriodSecs);
     }
 
     @Override
-    public void setVelocity(AngularVelocity velocity) {
-        indexerSetpointRPM = velocity.in(RPM);
+    public void setVelocity(@NotNull AngularVelocity velocity) {
+        this.indexerSetpointRPM = velocity.in(RPM);
     }
 
     @Override
     public void stop() {
-        indexerSetpointRPM = 0.0;
-        indexerAppliedVolts = 0.0;
-        indexerSim.setInputVoltage(0.0);
+        this.indexerSetpointRPM = 0.0;
+        this.indexerAppliedVolts = 0.0;
+        this.indexerSim.setInputVoltage(0.0);
     }
 }

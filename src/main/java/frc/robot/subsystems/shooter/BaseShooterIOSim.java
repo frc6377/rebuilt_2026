@@ -10,11 +10,12 @@ import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.simulation.FlywheelSim;
 import frc.robot.Robot;
+import org.jetbrains.annotations.NotNull;
 
 public class BaseShooterIOSim implements BaseShooterIO {
-    private final FlywheelSim flywheelSim;
-    private final PIDController flywheelController;
-    private final SimpleMotorFeedforward flywheelFeedforward;
+    private final @NotNull FlywheelSim flywheelSim;
+    private final @NotNull PIDController flywheelController;
+    private final @NotNull SimpleMotorFeedforward flywheelFeedforward;
 
     private double flywheelSetpointRPM = 0.0;
     private double flywheelAppliedVolts = 0.0;
@@ -25,39 +26,39 @@ public class BaseShooterIOSim implements BaseShooterIO {
                 0.5 * 0.5 * ShooterConstants.flywheelRadius.in(Meters) * ShooterConstants.flywheelRadius.in(Meters),
                 1.0);
 
-        flywheelSim = new FlywheelSim(flywheelPlant, DCMotor.getKrakenX60Foc(2));
+        this.flywheelSim = new FlywheelSim(flywheelPlant, DCMotor.getKrakenX60Foc(2));
 
-        flywheelController = new PIDController(0.001, 0.0005, 0.0);
+        this.flywheelController = new PIDController(0.001, 0.0005, 0.0);
 
         double flywheelFreeSpeedRPM = DCMotor.getKrakenX60Foc(2).freeSpeedRadPerSec * 60.0 / (2.0 * Math.PI);
-        flywheelFeedforward = new SimpleMotorFeedforward(0.0, 12.0 / flywheelFreeSpeedRPM, 0.0);
+        this.flywheelFeedforward = new SimpleMotorFeedforward(0.0, 12.0 / flywheelFreeSpeedRPM, 0.0);
     }
 
     @Override
-    public void updateInputs(BaseShooterIOInputs inputs) {
-        double flywheelFF = flywheelFeedforward.calculate(flywheelSetpointRPM);
-        double flywheelFB = flywheelController.calculate(flywheelSim.getAngularVelocityRPM(), flywheelSetpointRPM);
-        flywheelAppliedVolts = MathUtil.clamp(flywheelFF + flywheelFB, -12.0, 12.0);
+    public void updateInputs(@NotNull BaseShooterIOInputs inputs) {
+        double flywheelFF = this.flywheelFeedforward.calculate(this.flywheelSetpointRPM);
+        double flywheelFB = this.flywheelController.calculate(this.flywheelSim.getAngularVelocityRPM(), this.flywheelSetpointRPM);
+        this.flywheelAppliedVolts = MathUtil.clamp(flywheelFF + flywheelFB, -12.0, 12.0);
 
-        flywheelSim.setInputVoltage(flywheelAppliedVolts);
+        this.flywheelSim.setInputVoltage(this.flywheelAppliedVolts);
 
-        flywheelSim.update(Robot.defaultPeriodSecs);
+        this.flywheelSim.update(Robot.defaultPeriodSecs);
 
-        inputs.flywheelVelocity = RPM.of(flywheelSim.getAngularVelocityRPM());
-        inputs.flywheelAppliedVoltage = Volts.of(flywheelAppliedVolts);
-        inputs.flywheelCurrent = Amps.of(flywheelSim.getCurrentDrawAmps());
+        inputs.flywheelVelocity = RPM.of(this.flywheelSim.getAngularVelocityRPM());
+        inputs.flywheelAppliedVoltage = Volts.of(this.flywheelAppliedVolts);
+        inputs.flywheelCurrent = Amps.of(this.flywheelSim.getCurrentDrawAmps());
         inputs.flywheelTemp = Celsius.of(25.0);
     }
 
     @Override
-    public void setFlywheelVelocity(AngularVelocity velocity) {
-        flywheelSetpointRPM = velocity.in(RPM);
+    public void setFlywheelVelocity(@NotNull AngularVelocity velocity) {
+        this.flywheelSetpointRPM = velocity.in(RPM);
     }
 
     @Override
     public void stop() {
-        flywheelSetpointRPM = 0.0;
-        flywheelAppliedVolts = 0.0;
-        flywheelSim.setInputVoltage(0.0);
+        this.flywheelSetpointRPM = 0.0;
+        this.flywheelAppliedVolts = 0.0;
+        this.flywheelSim.setInputVoltage(0.0);
     }
 }

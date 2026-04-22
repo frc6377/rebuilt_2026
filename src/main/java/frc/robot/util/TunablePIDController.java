@@ -23,6 +23,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.DoubleSupplier;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 import org.littletonrobotics.junction.networktables.LoggedNetworkString;
 
@@ -57,18 +60,18 @@ import org.littletonrobotics.junction.networktables.LoggedNetworkString;
  */
 public class TunablePIDController {
     /** Compact holder for PID gains. */
-    public static record PIDConfig(double kP, double kI, double kD) {}
+    public record PIDConfig(double kP, double kI, double kD) {}
 
     public static final PIDConfig defaultConfig = new PIDConfig(0.0, 0.0, 0.0);
 
     private double calculatedOutput = 0.0;
-    private LoggedNetworkNumber loggedOutput;
+    private final @NotNull LoggedNetworkNumber loggedOutput;
 
     private final String tunableName;
     private final DoubleSupplier encoderPosition;
     private final Consumer<Double> outputConsumer;
 
-    private final ProfiledPIDController pidController;
+    private final @NotNull ProfiledPIDController pidController;
     private double setpoint;
 
     // Preset configs that can be swapped at runtime. Each preset is created on
@@ -76,11 +79,11 @@ public class TunablePIDController {
     // exposed via NetworkTables when added.
     private static class PresetHolder {
         final PIDConfig config;
-        final LoggedNetworkNumber kp;
-        final LoggedNetworkNumber ki;
-        final LoggedNetworkNumber kd;
+        final @NotNull LoggedNetworkNumber kp;
+        final @NotNull LoggedNetworkNumber ki;
+        final @NotNull LoggedNetworkNumber kd;
 
-        PresetHolder(String basePath, PIDConfig cfg) {
+        PresetHolder(String basePath, @NotNull PIDConfig cfg) {
             this.config = cfg;
             this.kp = new LoggedNetworkNumber(basePath + "/kP", cfg.kP());
             this.ki = new LoggedNetworkNumber(basePath + "/kI", cfg.kI());
@@ -92,10 +95,10 @@ public class TunablePIDController {
     // is added we create its
     // LoggedNetworkNumber entries so it appears in NetworkTables.
     private final Map<String, PresetHolder> presets = new HashMap<>();
-    private String activePresetName = null;
+    private @Nullable String activePresetName = null;
 
     // Logged index of the active preset (for dashboard visibility).
-    private final LoggedNetworkString activePreset;
+    private final @NotNull LoggedNetworkString activePreset;
 
     // Last-seen values for quick change detection when reading the active preset's
     // NT entries
@@ -103,8 +106,8 @@ public class TunablePIDController {
     private double lastKI;
     private double lastKD;
 
-    private final LoggedNetworkNumber maxVelocityLog;
-    private final LoggedNetworkNumber maxAccelerationLog;
+    private final @NotNull LoggedNetworkNumber maxVelocityLog;
+    private final @NotNull LoggedNetworkNumber maxAccelerationLog;
     private double lastMaxVelocity;
     private double lastMaxAcceleration;
 
@@ -141,7 +144,7 @@ public class TunablePIDController {
             String tunableName,
             DoubleSupplier encoderPosition,
             Consumer<Double> outputConsumer,
-            TrapezoidProfile.Constraints constraints) {
+            TrapezoidProfile.@NotNull Constraints constraints) {
         this.tunableName = tunableName;
         this.encoderPosition = encoderPosition;
         this.outputConsumer = outputConsumer;
@@ -173,7 +176,7 @@ public class TunablePIDController {
      * @param maxAcceleration Maximum profile acceleration.
      */
     public void setSpeedConstraints(double maxVelocity, double maxAcceleration) {
-        setSpeedConstraints(new TrapezoidProfile.Constraints(maxVelocity, maxAcceleration));
+        this.setSpeedConstraints(new TrapezoidProfile.Constraints(maxVelocity, maxAcceleration));
     }
 
     /**
@@ -181,20 +184,20 @@ public class TunablePIDController {
      *
      * @param constraints New trapezoid profile constraints.
      */
-    public void setSpeedConstraints(TrapezoidProfile.Constraints constraints) {
-        if (constraints == null || constraints == this.pidController.getConstraints()) {
+    public void setSpeedConstraints(TrapezoidProfile.@Nullable Constraints constraints) {
+        if (null == constraints || constraints == this.pidController.getConstraints()) {
             return;
         }
-        pidController.setConstraints(constraints);
-        maxVelocityLog.set(constraints.maxVelocity);
-        maxAccelerationLog.set(constraints.maxAcceleration);
-        lastMaxVelocity = constraints.maxVelocity;
-        lastMaxAcceleration = constraints.maxAcceleration;
+        this.pidController.setConstraints(constraints);
+        this.maxVelocityLog.set(constraints.maxVelocity);
+        this.maxAccelerationLog.set(constraints.maxAcceleration);
+        this.lastMaxVelocity = constraints.maxVelocity;
+        this.lastMaxAcceleration = constraints.maxAcceleration;
     }
 
     /** Backward-compatible typo alias. Prefer {@link #setSpeedConstraints(double, double)}. */
     public void setSpeedConstrants(double maxVelocity, double maxAcceleration) {
-        setSpeedConstraints(maxVelocity, maxAcceleration);
+        this.setSpeedConstraints(maxVelocity, maxAcceleration);
     }
 
     /**
@@ -203,14 +206,14 @@ public class TunablePIDController {
      * @param name The name of the preset.
      * @param config The PID gains for this preset.
      */
-    public void addPreset(String name, PIDConfig config) {
-        if (name == null || config == null) {
+    public void addPreset(@Nullable String name, @Nullable PIDConfig config) {
+        if (null == name || null == config) {
             return;
         }
         // Create networktable-backed entries for this preset so it appears in the
         // dashboard
-        PresetHolder holder = new PresetHolder(tunableName + "/Presets/" + name, config);
-        presets.put(name, holder);
+        PresetHolder holder = new PresetHolder(this.tunableName + "/Presets/" + name, config);
+        this.presets.put(name, holder);
     }
 
     /**
@@ -219,28 +222,28 @@ public class TunablePIDController {
      * @param name The name of the preset to remove.
      * @return true if the preset was found and removed, false otherwise.
      */
-    public boolean removePreset(String name) {
-        if (name == null) {
+    public boolean removePreset(@Nullable String name) {
+        if (null == name) {
             return false;
         }
-        PresetHolder removedHolder = presets.remove(name);
-        boolean removed = removedHolder != null;
-        if (removed && name.equals(activePresetName)) {
-            activePresetName = null;
+        PresetHolder removedHolder = this.presets.remove(name);
+        boolean removed = null != removedHolder;
+        if (removed && name.equals(this.activePresetName)) {
+            this.activePresetName = null;
         }
         return removed;
     }
 
     /** Returns an immutable list of available preset names. */
-    public List<String> getPresetNames() {
-        List<String> names = new ArrayList<>(presets.keySet());
+    public @NotNull List<String> getPresetNames() {
+        List<String> names = new ArrayList<>(this.presets.keySet());
         Collections.sort(names);
         return Collections.unmodifiableList(names);
     }
 
     /** Returns the currently active preset name, or null if none. */
     public String getActivePresetName() {
-        return activePresetName;
+        return this.activePresetName;
     }
 
     /**
@@ -251,8 +254,8 @@ public class TunablePIDController {
      * @return true if the preset was found and applied, false otherwise.
      */
     public boolean applyPreset(String name) {
-        PresetHolder holder = presets.get(name);
-        if (holder == null || name == activePresetName) {
+        PresetHolder holder = this.presets.get(name);
+        if (null == holder || name == this.activePresetName) {
             return false;
         }
 
@@ -264,18 +267,18 @@ public class TunablePIDController {
         holder.kd.set(cfg.kD());
 
         // Update controller internals immediately
-        pidController.setP(cfg.kP());
-        pidController.setI(cfg.kI());
-        pidController.setD(cfg.kD());
+        this.pidController.setP(cfg.kP());
+        this.pidController.setI(cfg.kI());
+        this.pidController.setD(cfg.kD());
 
         // Update last-seen cache so subsequent updateTunableGains reads don't re-apply
-        lastKP = cfg.kP();
-        lastKI = cfg.kI();
-        lastKD = cfg.kD();
+        this.lastKP = cfg.kP();
+        this.lastKI = cfg.kI();
+        this.lastKD = cfg.kD();
 
         // Set active preset
-        activePresetName = name;
-        activePreset.set(name);
+        this.activePresetName = name;
+        this.activePreset.set(name);
         return true;
     }
 
@@ -288,22 +291,22 @@ public class TunablePIDController {
     public boolean updateTunableGains() {
         boolean changed = false;
 
-        double currentMaxV = maxVelocityLog.get();
-        double currentMaxA = maxAccelerationLog.get();
+        double currentMaxV = this.maxVelocityLog.get();
+        double currentMaxA = this.maxAccelerationLog.get();
 
-        if (currentMaxV != lastMaxVelocity || currentMaxA != lastMaxAcceleration) {
-            lastMaxVelocity = currentMaxV;
-            lastMaxAcceleration = currentMaxA;
-            pidController.setConstraints(new TrapezoidProfile.Constraints(currentMaxV, currentMaxA));
+        if (currentMaxV != this.lastMaxVelocity || currentMaxA != this.lastMaxAcceleration) {
+            this.lastMaxVelocity = currentMaxV;
+            this.lastMaxAcceleration = currentMaxA;
+            this.pidController.setConstraints(new TrapezoidProfile.Constraints(currentMaxV, currentMaxA));
             changed = true;
         }
 
-        if (activePresetName == null) {
+        if (null == activePresetName) {
             return changed;
         }
 
-        PresetHolder holder = presets.get(activePresetName);
-        if (holder == null) {
+        PresetHolder holder = this.presets.get(this.activePresetName);
+        if (null == holder) {
             return changed;
         }
 
@@ -311,15 +314,15 @@ public class TunablePIDController {
         double currentKI = holder.ki.get();
         double currentKD = holder.kd.get();
 
-        boolean pidChanged = currentKP != lastKP || currentKI != lastKI || currentKD != lastKD;
+        boolean pidChanged = currentKP != this.lastKP || currentKI != this.lastKI || currentKD != this.lastKD;
 
         if (pidChanged) {
-            lastKP = currentKP;
-            lastKI = currentKI;
-            lastKD = currentKD;
-            pidController.setP(currentKP);
-            pidController.setI(currentKI);
-            pidController.setD(currentKD);
+            this.lastKP = currentKP;
+            this.lastKI = currentKI;
+            this.lastKD = currentKD;
+            this.pidController.setP(currentKP);
+            this.pidController.setI(currentKI);
+            this.pidController.setD(currentKD);
         }
 
         return changed || pidChanged;
@@ -341,7 +344,7 @@ public class TunablePIDController {
      * @return The PID output in the range [-1.0, 1.0].
      */
     public double calculate() {
-        double pidOut = pidController.calculate(encoderPosition.getAsDouble(), setpoint);
+        double pidOut = this.pidController.calculate(this.encoderPosition.getAsDouble(), this.setpoint);
 
         return MathUtil.clamp(pidOut, -1.0, 1.0);
     }
@@ -352,24 +355,24 @@ public class TunablePIDController {
      * calculation before sending to the motor.
      */
     public void runPid() {
-        double output = calculate();
+        double output = this.calculate();
         this.calculatedOutput = output;
-        loggedOutput.set(output);
-        outputConsumer.accept(output);
+        this.loggedOutput.set(output);
+        this.outputConsumer.accept(output);
     }
 
     /** Returns the underlying WPILib ProfiledPIDController (e.g. for atSetpoint(), getPositionError()). */
     public ProfiledPIDController getPIDController() {
-        return pidController;
+        return this.pidController;
     }
 
     /** Returns the current PID setpoint. */
     public double getSetpoint() {
-        return setpoint;
+        return this.setpoint;
     }
 
     /** Returns the tunable name of this controller. */
     public String getTunableName() {
-        return tunableName;
+        return this.tunableName;
     }
 }

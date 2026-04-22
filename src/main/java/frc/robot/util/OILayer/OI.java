@@ -1,6 +1,8 @@
 package frc.robot.util.OILayer;
 
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import org.jetbrains.annotations.NotNull;
+
 import java.util.function.DoubleSupplier;
 
 public interface OI {
@@ -35,7 +37,7 @@ public interface OI {
         return noButton;
     }
 
-    default Trigger stopIntake() {
+    default @NotNull Trigger stopIntake() {
         return noButton;
     }
 
@@ -44,7 +46,6 @@ public interface OI {
     }
 
     default void setRumble(double driverRumble, double operatorRumble) {
-        return;
     }
     /* Puts the shooter into a mode where it is able to shoot (e.g. spins up a flywheel that was currently idle)
      * Rumbles joystick or turns on lights on the robot when it gets up to speed to be able to shoot

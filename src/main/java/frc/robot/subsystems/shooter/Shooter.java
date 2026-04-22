@@ -16,14 +16,15 @@ package frc.robot.subsystems.shooter;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Constants;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Container class for the left and right shooter subsystems. Handles initialization based on the robot mode and
  * EnabledSubsystems flags.
  */
 public class Shooter {
-    private final BaseShooter left;
-    private final BaseShooter right;
+    private final @NotNull BaseShooter left;
+    private final @NotNull BaseShooter right;
 
     public Shooter() {
         BaseShooterIO leftIO;
@@ -49,42 +50,42 @@ public class Shooter {
             rightIO = new BaseShooterIO() {};
         }
 
-        left = new BaseShooter(leftIO, ShooterConstants.leftConfig);
-        right = new BaseShooter(rightIO, ShooterConstants.rightConfig);
+        this.left = new BaseShooter(leftIO, ShooterConstants.leftConfig);
+        this.right = new BaseShooter(rightIO, ShooterConstants.rightConfig);
     }
 
-    public BaseShooter getLeft() {
-        return left;
+    public @NotNull BaseShooter getLeft() {
+        return this.left;
     }
 
-    public BaseShooter getRight() {
-        return right;
+    public @NotNull BaseShooter getRight() {
+        return this.right;
     }
 
     /** Stop both left and right shooters. */
     public void stop() {
-        left.stop();
-        right.stop();
+        this.left.stop();
+        this.right.stop();
     }
 
     /** Set flywheel velocity for both left and right shooters. */
     public void setFlywheelVelocity(AngularVelocity velocity) {
-        left.setFlywheelVelocity(velocity);
-        right.setFlywheelVelocity(velocity);
+        this.left.setFlywheelVelocity(velocity);
+        this.right.setFlywheelVelocity(velocity);
     }
 
     /** Set independent flywheel velocities for each side. */
     public void setFlywheelVelocities(AngularVelocity leftVelocity, AngularVelocity rightVelocity) {
-        left.setFlywheelVelocity(leftVelocity);
-        right.setFlywheelVelocity(rightVelocity);
+        this.left.setFlywheelVelocity(leftVelocity);
+        this.right.setFlywheelVelocity(rightVelocity);
     }
 
     /** Unified stop command for both shooters. */
     public Command stopCommand() {
-        return left.stopCommand().alongWith(right.stopCommand());
+        return this.left.stopCommand().alongWith(this.right.stopCommand());
     }
 
     public boolean isRunning() {
-        return left.isRunning() || right.isRunning();
+        return this.left.isRunning() || this.right.isRunning();
     }
 }

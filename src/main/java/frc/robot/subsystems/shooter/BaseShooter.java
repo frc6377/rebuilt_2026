@@ -9,6 +9,8 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import java.util.function.Supplier;
+
+import org.jetbrains.annotations.NotNull;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
@@ -18,7 +20,7 @@ public class BaseShooter extends SubsystemBase {
     private final BaseShooterIOInputsAutoLogged inputs = new BaseShooterIOInputsAutoLogged();
     private final ShooterConstants.ShooterConfig config;
 
-    private final SysIdRoutine sysIdRoutine;
+    private final @NotNull SysIdRoutine sysIdRoutine;
 
     // Setpoints
     private AngularVelocity flywheelSetpoint = RPM.of(0.0);
@@ -26,11 +28,11 @@ public class BaseShooter extends SubsystemBase {
     // Failure state
     private boolean flywheelFailed = false;
 
-    public BaseShooter(BaseShooterIO io, ShooterConstants.ShooterConfig config) {
+    public BaseShooter(@NotNull BaseShooterIO io, ShooterConstants.ShooterConfig config) {
         this.io = io;
         this.config = config;
 
-        sysIdRoutine = new SysIdRoutine(
+        this.sysIdRoutine = new SysIdRoutine(
                 new SysIdRoutine.Config(
                         null, // Use default ramp rate (1 V/s)
                         Volts.of(1), // Reduce dynamic step voltage to 4 to prevent brownout
@@ -42,17 +44,17 @@ public class BaseShooter extends SubsystemBase {
 
     @Override
     public void periodic() {
-        io.updateInputs(inputs);
-        Logger.processInputs(config.name(), inputs);
-        Logger.recordOutput(config.name() + "/Enabled", config.enabled());
-        Logger.recordOutput(config.name() + "/FollowerEnabled", config.followerEnabled());
-        Logger.recordOutput(config.name() + "/FlywheelFailed", flywheelFailed);
-        Logger.recordOutput(config.name() + "/FlywheelSetpoint", flywheelSetpoint);
-        if (getCurrentCommand() != null) {
+        this.io.updateInputs(this.inputs);
+        Logger.processInputs(this.config.name(), this.inputs);
+        Logger.recordOutput(this.config.name() + "/Enabled", this.config.enabled());
+        Logger.recordOutput(this.config.name() + "/FollowerEnabled", this.config.followerEnabled());
+        Logger.recordOutput(this.config.name() + "/FlywheelFailed", this.flywheelFailed);
+        Logger.recordOutput(this.config.name() + "/FlywheelSetpoint", this.flywheelSetpoint);
+        if (null != getCurrentCommand()) {
             Logger.recordOutput(
-                    config.name() + "/CurrentCommand", getCurrentCommand().getName());
+                    this.config.name() + "/CurrentCommand", this.getCurrentCommand().getName());
         } else {
-            Logger.recordOutput(config.name() + "/CurrentCommand", "None");
+            Logger.recordOutput(this.config.name() + "/CurrentCommand", "None");
         }
     }
 
@@ -62,79 +64,79 @@ public class BaseShooter extends SubsystemBase {
      * @param velocity Target velocity
      */
     public void setFlywheelVelocity(AngularVelocity velocity) {
-        flywheelSetpoint = velocity;
+        this.flywheelSetpoint = velocity;
 
-        if (config.enabled() && !flywheelFailed) {
-            io.setFlywheelVelocity(velocity);
+        if (this.config.enabled() && !this.flywheelFailed) {
+            this.io.setFlywheelVelocity(velocity);
         } else {
-            io.setFlywheelVelocity(RPM.of(0.0));
+            this.io.setFlywheelVelocity(RPM.of(0.0));
         }
     }
 
     /** Stop all motors. */
     public void stop() {
-        flywheelSetpoint = RPM.of(0.0);
-        io.stop();
+        this.flywheelSetpoint = RPM.of(0.0);
+        this.io.stop();
     }
 
     public Command sysIdQuasistatic(SysIdRoutine.Direction direction) {
-        return sysIdRoutine.quasistatic(direction);
+        return this.sysIdRoutine.quasistatic(direction);
     }
 
     public Command sysIdDynamic(SysIdRoutine.Direction direction) {
-        return sysIdRoutine.dynamic(direction);
+        return this.sysIdRoutine.dynamic(direction);
     }
 
     /** Get current flywheel velocity. */
     public AngularVelocity getFlywheelVelocity() {
-        return inputs.flywheelVelocity;
+        return this.inputs.flywheelVelocity;
     }
 
     /** Check if flywheel is at target velocity. */
     @AutoLogOutput(key = "AtTargetVelocity")
     public boolean atTargetVelocity() {
         AngularVelocity tolerance = ShooterConstants.kFlywheelVelocityTolerance;
-        return flywheelFailed
-                || Math.abs(inputs.flywheelVelocity.in(RPM) - flywheelSetpoint.in(RPM)) < tolerance.in(RPM);
+        return this.flywheelFailed
+                || Math.abs(this.inputs.flywheelVelocity.in(RPM) - this.flywheelSetpoint.in(RPM)) < tolerance.in(RPM);
     }
 
     public boolean isFailed() {
-        return flywheelFailed;
+        return this.flywheelFailed;
     }
 
     public void resetFailureFlags() {
-        flywheelFailed = false;
+        this.flywheelFailed = false;
     }
 
     public boolean isRunning() {
-        return Math.abs(flywheelSetpoint.in(RPM)) > 1.0;
+        return 1.0 < Math.abs(flywheelSetpoint.in(RPM));
     }
 
     @AutoLogOutput(key = "FlywheelSetpoint")
     public AngularVelocity getFlywheelSetpoint() {
-        return flywheelSetpoint;
+        return this.flywheelSetpoint;
     }
 
     // ========== Command Factory Methods ==========
 
     public Command spinUpFlywheels(AngularVelocity velocity) {
-        return Commands.runOnce(() -> setFlywheelVelocity(velocity), this).withName(config.name() + "SpinUp");
+        return Commands.runOnce(() -> this.setFlywheelVelocity(velocity), this).withName(this.config.name() + "SpinUp");
     }
 
-    public Command spinUpFlywheels(Supplier<AngularVelocity> velocitySupplier) {
-        return Commands.run(() -> setFlywheelVelocity(velocitySupplier.get()), this)
-                .withName(config.name() + "SpinUp");
+    public Command spinUpFlywheels(@NotNull Supplier<AngularVelocity> velocitySupplier) {
+        return Commands.run(() -> this.setFlywheelVelocity(velocitySupplier.get()), this)
+                .withName(this.config.name() + "SpinUp");
     }
 
     public Command stopCommand() {
-        return Commands.runOnce(this::stop, this).withName(config.name() + "Stop");
+        return Commands.runOnce(this::stop, this).withName(this.config.name() + "Stop");
     }
 
     public Command waitUntilReady() {
-        return Commands.waitUntil(this::atTargetVelocity).withName(config.name() + "WaitUntilReady");
+        return Commands.waitUntil(this::atTargetVelocity).withName(this.config.name() + "WaitUntilReady");
     }
 
     public Command spinUpAndWait(AngularVelocity velocity) {
-        return spinUpFlywheels(velocity).andThen(waitUntilReady()).withName(config.name() + "SpinUpAndWait");
+        return this.spinUpFlywheels(velocity).andThen(this.waitUntilReady()).withName(this.config.name() + "SpinUpAndWait");
     }
 }

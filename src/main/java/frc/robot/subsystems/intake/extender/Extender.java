@@ -17,83 +17,83 @@ public class Extender extends SubsystemBase {
 
     @Override
     public void periodic() {
-        io.updateInputs(inputs);
-        io.periodic();
-        Logger.processInputs("Intake/Extender", inputs);
+        this.io.updateInputs(this.inputs);
+        this.io.periodic();
+        Logger.processInputs("Intake/Extender", this.inputs);
         Logger.recordOutput(
                 "Intake/Extender/CurrentCommand",
-                getCurrentCommand() == null ? "null" : getCurrentCommand().toString());
+                null == getCurrentCommand() ? "null" : this.getCurrentCommand().toString());
     }
 
     public BooleanSupplier isAtTarget() {
-        return io.atTarget();
+        return this.io.atTarget();
     }
 
     public BooleanSupplier isExtended() {
-        return io.isExtended();
+        return this.io.isExtended();
     }
 
     public Command extendCommand() {
-        return Commands.runOnce(io::extend, this).withName("ExtenderExtend");
+        return Commands.runOnce(this.io::extend, this).withName("ExtenderExtend");
     }
 
     public Command extendAndWaitCommand() {
-        return Commands.run(io::extend, this).until(io.isExtended()).withName("ExtenderExtendAndWait");
+        return Commands.run(this.io::extend, this).until(this.io.isExtended()).withName("ExtenderExtendAndWait");
     }
 
     public Command retractCommand() {
-        return Commands.runOnce(io::retract, this).withName("ExtenderRetract");
+        return Commands.runOnce(this.io::retract, this).withName("ExtenderRetract");
     }
 
     public Command retractAndWaitCommand() {
-        return Commands.runOnce(io::retract, this).until(io.isRetracted()).withName("ExtenderRetractAndWait");
+        return Commands.runOnce(this.io::retract, this).until(this.io.isRetracted()).withName("ExtenderRetractAndWait");
     }
 
     public Command toggleCommand() {
-        return Commands.runOnce(io::toggle, this).withName("ExtenderToggle");
+        return Commands.runOnce(this.io::toggle, this).withName("ExtenderToggle");
     }
 
     public Command toggleSiftCommand() {
-        return Commands.runOnce(io::toggleSift, this).withName("ExtenderToggleSift");
+        return Commands.runOnce(this.io::toggleSift, this).withName("ExtenderToggleSift");
     }
 
     public Command goToSiftAngleOneCommand() {
-        return Commands.runOnce(io::goToSiftAngleOne, this).withName("ExtenderSiftOne");
+        return Commands.runOnce(this.io::goToSiftAngleOne, this).withName("ExtenderSiftOne");
     }
 
     public Command goToSiftAngleTwoCommand() {
-        return Commands.runOnce(io::goToSiftAngleTwo, this).withName("ExtenderSiftTwo");
+        return Commands.runOnce(this.io::goToSiftAngleTwo, this).withName("ExtenderSiftTwo");
     }
 
     public Command goToCustomAngleOneCommand() {
-        return Commands.runOnce(io::goToCustomAngleOne, this).withName("ExtenderCustomOne");
+        return Commands.runOnce(this.io::goToCustomAngleOne, this).withName("ExtenderCustomOne");
     }
 
     public Command goToCustomAngleTwoCommand() {
-        return Commands.runOnce(io::goToCustomAngleTwo, this).withName("ExtenderCustomTwo");
+        return Commands.runOnce(this.io::goToCustomAngleTwo, this).withName("ExtenderCustomTwo");
     }
 
     public Command zeroCommand() {
-        return Commands.runOnce(io::zero, this).withName("ExtenderZero");
+        return Commands.runOnce(this.io::zero, this).withName("ExtenderZero");
     }
 
     public Command stopCommand() {
-        return Commands.runOnce(io::stop, this).withName("ExtenderStop");
+        return Commands.runOnce(this.io::stop, this).withName("ExtenderStop");
     }
 
     public void setPidEnabled(boolean enabled) {
-        io.setPidEnabled(enabled);
+        this.io.setPidEnabled(enabled);
     }
 
     public void setMode(NeutralModeValue mode) {
-        io.setMode(mode);
+        this.io.setMode(mode);
     }
 
     public void setMotorPercentage(double percent) {
-        io.setMotorPercentage(percent);
+        this.io.setMotorPercentage(percent);
     }
 
     public void siftFuel() {
-        io.toggleSift();
+        this.io.toggleSift();
     }
 }

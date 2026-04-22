@@ -22,6 +22,8 @@ import edu.wpi.first.networktables.DoubleArraySubscriber;
 import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.RobotController;
+import org.jetbrains.annotations.NotNull;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -37,14 +39,14 @@ public class VisionIOLimelight implements VisionIO {
     private static final int IDX_TXNC = 1; // horizontal angle to tag center (deg, no crosshair offset)
 
     private final Supplier<Rotation2d> rotationSupplier;
-    private final DoubleArrayPublisher orientationPublisher;
+    private final @NotNull DoubleArrayPublisher orientationPublisher;
 
-    private final DoubleSubscriber latencySubscriber;
-    private final DoubleSubscriber txSubscriber;
-    private final DoubleSubscriber tySubscriber;
-    private final DoubleArraySubscriber megatag1Subscriber;
-    private final DoubleArraySubscriber megatag2Subscriber;
-    private final DoubleArraySubscriber rawFiducialsSubscriber;
+    private final @NotNull DoubleSubscriber latencySubscriber;
+    private final @NotNull DoubleSubscriber txSubscriber;
+    private final @NotNull DoubleSubscriber tySubscriber;
+    private final @NotNull DoubleArraySubscriber megatag1Subscriber;
+    private final @NotNull DoubleArraySubscriber megatag2Subscriber;
+    private final @NotNull DoubleArraySubscriber rawFiducialsSubscriber;
 
     /**
      * Creates a new VisionIOLimelight.
@@ -52,37 +54,37 @@ public class VisionIOLimelight implements VisionIO {
      * @param name The configured name of the Limelight.
      * @param rotationSupplier Supplier for the current estimated rotation, used for MegaTag 2.
      */
-    public VisionIOLimelight(String name, Supplier<Rotation2d> rotationSupplier) {
+    public VisionIOLimelight(@NotNull String name, Supplier<Rotation2d> rotationSupplier) {
         var table = NetworkTableInstance.getDefault().getTable(name);
         this.rotationSupplier = rotationSupplier;
-        orientationPublisher =
+        this.orientationPublisher =
                 table.getDoubleArrayTopic("robot_orientation_set").publish();
-        latencySubscriber = table.getDoubleTopic("tl").subscribe(0.0);
-        txSubscriber = table.getDoubleTopic("tx").subscribe(0.0);
-        tySubscriber = table.getDoubleTopic("ty").subscribe(0.0);
-        megatag1Subscriber = table.getDoubleArrayTopic("botpose_wpiblue").subscribe(new double[] {});
-        megatag2Subscriber = table.getDoubleArrayTopic("botpose_orb_wpiblue").subscribe(new double[] {});
-        rawFiducialsSubscriber = table.getDoubleArrayTopic("rawfiducials").subscribe(new double[] {});
+        this.latencySubscriber = table.getDoubleTopic("tl").subscribe(0.0);
+        this.txSubscriber = table.getDoubleTopic("tx").subscribe(0.0);
+        this.tySubscriber = table.getDoubleTopic("ty").subscribe(0.0);
+        this.megatag1Subscriber = table.getDoubleArrayTopic("botpose_wpiblue").subscribe(new double[] {});
+        this.megatag2Subscriber = table.getDoubleArrayTopic("botpose_orb_wpiblue").subscribe(new double[] {});
+        this.rawFiducialsSubscriber = table.getDoubleArrayTopic("rawfiducials").subscribe(new double[] {});
     }
 
     @Override
-    public void updateInputs(VisionIOInputs inputs) {
+    public void updateInputs(@NotNull VisionIOInputs inputs) {
         // Update connection status based on whether an update has been seen in the last 250ms
-        inputs.connected = ((RobotController.getFPGATime() - latencySubscriber.getLastChange()) / 1000) < 250;
+        inputs.connected = 250 > ((RobotController.getFPGATime() - latencySubscriber.getLastChange()) / 1000);
 
         // Update target observation
         inputs.latestTargetObservation = new TargetObservation(
-                Rotation2d.fromDegrees(txSubscriber.get()), Rotation2d.fromDegrees(tySubscriber.get()));
+                Rotation2d.fromDegrees(this.txSubscriber.get()), Rotation2d.fromDegrees(this.tySubscriber.get()));
 
         // Update orientation for MegaTag 2
-        orientationPublisher.accept(new double[] {rotationSupplier.get().getDegrees(), 0.0, 0.0, 0.0, 0.0, 0.0});
+        this.orientationPublisher.accept(new double[] {this.rotationSupplier.get().getDegrees(), 0.0, 0.0, 0.0, 0.0, 0.0});
         NetworkTableInstance.getDefault().flush(); // Increases network traffic but recommended by Limelight
 
         // Read new pose observations from NetworkTables
         Set<Integer> tagIds = new HashSet<>();
         List<PoseObservation> poseObservations = new LinkedList<>();
-        for (var rawSample : megatag1Subscriber.readQueue()) {
-            if (rawSample.value.length == 0) continue;
+        for (var rawSample : this.megatag1Subscriber.readQueue()) {
+            if (0 == rawSample.value.length) continue;
             for (int i = 11; i < rawSample.value.length; i += 7) {
                 tagIds.add((int) rawSample.value[i]);
             }
@@ -94,7 +96,7 @@ public class VisionIOLimelight implements VisionIO {
                     parsePose(rawSample.value),
 
                     // Ambiguity, using only the first tag because ambiguity isn't applicable for multitag
-                    rawSample.value.length >= 18 ? rawSample.value[17] : 0.0,
+                    18 <= rawSample.value.length ? rawSample.value[17] : 0.0,
 
                     // Tag count
                     (int) rawSample.value[7],
@@ -105,8 +107,8 @@ public class VisionIOLimelight implements VisionIO {
                     // Observation type
                     PoseObservationType.MEGATAG_1));
         }
-        for (var rawSample : megatag2Subscriber.readQueue()) {
-            if (rawSample.value.length == 0) continue;
+        for (var rawSample : this.megatag2Subscriber.readQueue()) {
+            if (0 == rawSample.value.length) continue;
             for (int i = 11; i < rawSample.value.length; i += 7) {
                 tagIds.add((int) rawSample.value[i]);
             }
@@ -135,7 +137,7 @@ public class VisionIOLimelight implements VisionIO {
 
         // ── Hub-tag per-tag data from rawfiducials ──────────────────────────
         // Stride-7 format: [id, txnc, tync, ta, distToCamera, distToRobot, ambiguity]
-        double[] raw = rawFiducialsSubscriber.get();
+        double[] raw = this.rawFiducialsSubscriber.get();
         List<HubTagObservation> hubObs = new ArrayList<>();
         for (int i = 0; i + RAW_FIDUCIALS_STRIDE <= raw.length; i += RAW_FIDUCIALS_STRIDE) {
             int tagId = (int) raw[i + IDX_ID];
@@ -148,7 +150,7 @@ public class VisionIOLimelight implements VisionIO {
     }
 
     /** Parses the 3D pose from a Limelight botpose array. */
-    private static Pose3d parsePose(double[] rawLLArray) {
+    private static @NotNull Pose3d parsePose(double @NotNull [] rawLLArray) {
         return new Pose3d(
                 rawLLArray[0],
                 rawLLArray[1],

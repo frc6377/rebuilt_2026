@@ -46,27 +46,30 @@ import java.util.List;
 import java.util.OptionalDouble;
 import java.util.Set;
 import java.util.function.Supplier;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.littletonrobotics.junction.Logger;
 
 public class Vision extends SubsystemBase {
     private final VisionConsumer consumer;
     private final VisionIO[] io;
-    private final VisionIOInputsAutoLogged[] inputs;
-    private final Alert[] disconnectedAlerts;
+    private final VisionIOInputsAutoLogged @NotNull [] inputs;
+    private final Alert @NotNull [] disconnectedAlerts;
 
     private final QuestNavIO questNavIO;
 
     // QuestNav fields
-    private final QuestNav questNav;
+    private final @NotNull QuestNav questNav;
     private Pose3d questPose = new Pose3d();
 
-    private final String[] logKeyInputs;
-    private final String[] logKeyTagPoses;
-    private final String[] logKeyRobotPoses;
-    private final String[] logKeyRobotPosesAccepted;
-    private final String[] logKeyRobotPosesRejected;
+    private final String @NotNull [] logKeyInputs;
+    private final String @NotNull [] logKeyTagPoses;
+    private final String @NotNull [] logKeyRobotPoses;
+    private final String @NotNull [] logKeyRobotPosesAccepted;
+    private final String @NotNull [] logKeyRobotPosesRejected;
 
-    public Vision(VisionConsumer consumer, QuestNavIO questNavIO, VisionIO... io) {
+    public Vision(VisionConsumer consumer, QuestNavIO questNavIO, VisionIO @NotNull ... io) {
         this.consumer = consumer;
         this.io = io;
         this.questNavIO = questNavIO;
@@ -79,29 +82,29 @@ public class Vision extends SubsystemBase {
         this.logKeyRobotPosesAccepted = new String[io.length];
         this.logKeyRobotPosesRejected = new String[io.length];
         for (int i = 0; i < io.length; i++) {
-            inputs[i] = new VisionIOInputsAutoLogged();
+            this.inputs[i] = new VisionIOInputsAutoLogged();
             String cameraPrefix = "Vision/Camera" + i;
-            logKeyInputs[i] = cameraPrefix;
-            logKeyTagPoses[i] = cameraPrefix + "/TagPoses";
-            logKeyRobotPoses[i] = cameraPrefix + "/RobotPoses";
-            logKeyRobotPosesAccepted[i] = cameraPrefix + "/RobotPosesAccepted";
-            logKeyRobotPosesRejected[i] = cameraPrefix + "/RobotPosesRejected";
+            this.logKeyInputs[i] = cameraPrefix;
+            this.logKeyTagPoses[i] = cameraPrefix + "/TagPoses";
+            this.logKeyRobotPoses[i] = cameraPrefix + "/RobotPoses";
+            this.logKeyRobotPosesAccepted[i] = cameraPrefix + "/RobotPosesAccepted";
+            this.logKeyRobotPosesRejected[i] = cameraPrefix + "/RobotPosesRejected";
         }
 
         // Initialize disconnected alerts
         this.disconnectedAlerts = new Alert[io.length];
         for (int i = 0; i < io.length; i++) {
-            disconnectedAlerts[i] = new Alert("Vision camera " + i + " is disconnected.", AlertType.kWarning);
+            this.disconnectedAlerts[i] = new Alert("Vision camera " + i + " is disconnected.", AlertType.kWarning);
         }
 
         if (Constants.EnabledSubsystems.kQuestNav) {
 
             // Initialize QuestNav
-            questNav = new QuestNav();
-            questPose = new Pose3d();
-            questNav.setPose(questPose);
+            this.questNav = new QuestNav();
+            this.questPose = new Pose3d();
+            this.questNav.setPose(this.questPose);
         } else {
-            questNav = new QuestNav();
+            this.questNav = new QuestNav();
         }
     }
 
@@ -127,32 +130,32 @@ public class Vision extends SubsystemBase {
      *
      * <p>Returns {@link OptionalDouble#empty()} when no hub tags are visible.
      */
-    public OptionalDouble getHubDistance() {
-        boolean isRed = DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue) == DriverStation.Alliance.Red;
+    public @NotNull OptionalDouble getHubDistance() {
+        boolean isRed = DriverStation.Alliance.Red == DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue);
         Set<Integer> hubTagIds = isRed ? RED_HUB_TAG_IDS : BLUE_HUB_TAG_IDS;
         Set<Integer> middleTagIds = isRed ? RED_HUB_MIDDLE_TAG_IDS : BLUE_HUB_MIDDLE_TAG_IDS;
-        if (inputs.length == 0 || inputs[0].hubTagObservations.length == 0) return OptionalDouble.empty();
+        if (0 == inputs.length || 0 == inputs[0].hubTagObservations.length) return OptionalDouble.empty();
         // Find the closest visible middle tag, falling back to any hub tag
         HubTagObservation bestMiddle = null;
         HubTagObservation bestAny = null;
-        for (HubTagObservation obs : inputs[0].hubTagObservations) {
+        for (HubTagObservation obs : this.inputs[0].hubTagObservations) {
             if (middleTagIds.contains(obs.tagId())) {
-                if (bestMiddle == null || obs.distToCamera() < bestMiddle.distToCamera()) {
+                if (null == bestMiddle || obs.distToCamera() < bestMiddle.distToCamera()) {
                     bestMiddle = obs;
                 }
             } else if (hubTagIds.contains(obs.tagId())) {
-                if (bestAny == null || obs.distToCamera() < bestAny.distToCamera()) {
+                if (null == bestAny || obs.distToCamera() < bestAny.distToCamera()) {
                     bestAny = obs;
                 }
             }
         }
         Logger.recordOutput("Vision/HubDistance/BestMiddle", bestMiddle);
         Logger.recordOutput("Vision/HubDistance/BestAny", bestAny);
-        HubTagObservation best = bestMiddle != null ? bestMiddle : bestAny;
-        if (best == null) return OptionalDouble.empty();
+        HubTagObservation best = null != bestMiddle ? bestMiddle : bestAny;
+        if (null == best) return OptionalDouble.empty();
 
         Logger.recordOutput("Vision/HubDistance/TagId", best.tagId());
-        Logger.recordOutput("Vision/HubDistance/IsMiddleTag", bestMiddle != null);
+        Logger.recordOutput("Vision/HubDistance/IsMiddleTag", null != bestMiddle);
         Logger.recordOutput("Vision/HubDistance/DistToCamera", best.distToCamera());
         Logger.recordOutput("Vision/HubDistance/DistToRobot", best.distToRobot());
         return OptionalDouble.of(best.distToCamera());
@@ -162,15 +165,15 @@ public class Vision extends SubsystemBase {
      * Convenience wrapper — returns hub distance as a typed {@link Distance}, or {@code Meters.of(-1)} when
      * unavailable.
      */
-    public Distance getHubDistanceMeasure() {
-        return Meters.of(getHubDistance().orElse(-1.0));
+    public @NotNull Distance getHubDistanceMeasure() {
+        return Meters.of(this.getHubDistance().orElse(-1.0));
     }
 
     /**
      * Returns true when the hub angle fallback has at least two hub tags visible and can produce a distance estimate.
      */
     public boolean hasHubDistanceFallback() {
-        return getHubDistance().isPresent();
+        return this.getHubDistance().isPresent();
     }
 
     /**
@@ -179,21 +182,21 @@ public class Vision extends SubsystemBase {
      *
      * <p>Returns empty when no hub tags are visible.
      */
-    public OptionalDouble getClosestHubTagDistance() {
-        boolean isRed = DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue) == DriverStation.Alliance.Red;
+    public @NotNull OptionalDouble getClosestHubTagDistance() {
+        boolean isRed = DriverStation.Alliance.Red == DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue);
         Set<Integer> hubTagIds = isRed ? RED_HUB_TAG_IDS : BLUE_HUB_TAG_IDS;
 
         HubTagObservation best = null;
-        for (VisionIOInputsAutoLogged inp : inputs) {
+        for (VisionIOInputsAutoLogged inp : this.inputs) {
             for (HubTagObservation obs : inp.hubTagObservations) {
                 if (hubTagIds.contains(obs.tagId())) {
-                    if (best == null || obs.distToCamera() < best.distToCamera()) {
+                    if (null == best || obs.distToCamera() < best.distToCamera()) {
                         best = obs;
                     }
                 }
             }
         }
-        if (best == null) return OptionalDouble.empty();
+        if (null == best) return OptionalDouble.empty();
 
         Logger.recordOutput("Vision/ClosestHubTag/TagId", best.tagId());
         Logger.recordOutput("Vision/ClosestHubTag/DistToCamera", best.distToCamera());
@@ -209,23 +212,23 @@ public class Vision extends SubsystemBase {
      * @param cameraIndex The index of the camera to use.
      */
     public Rotation2d getTargetX(int cameraIndex) {
-        return inputs[cameraIndex].latestTargetObservation.tx();
+        return this.inputs[cameraIndex].latestTargetObservation.tx();
     }
 
     public void resetQuestNavPose(Pose3d robotPose) {
-        questNavIO.resetQuestNavPose(robotPose);
+        this.questNavIO.resetQuestNavPose(robotPose);
     }
 
     public void zeroQuestNav() {
-        questNavIO.zeroQuestNav();
+        this.questNavIO.zeroQuestNav();
     }
 
     public void setQuestNavStartPose(Pose3d pose) {
-        questNavIO.setQuestNavStartPose(pose);
+        this.questNavIO.setQuestNavStartPose(pose);
     }
 
     public Supplier<Pose2d> getQuestNavPoseSupplier() {
-        return questNavIO.getQuestNavPoseSupplier();
+        return this.questNavIO.getQuestNavPoseSupplier();
     }
     /**
      * Gets the starting pose from the Limelight (camera index 0).
@@ -233,7 +236,7 @@ public class Vision extends SubsystemBase {
      * @return The robot pose as a Pose3d, or null if no valid pose is available.
      */
     public Pose3d getStartingPoseFromLimelight() {
-        return getStartingPoseFromCamera(0);
+        return this.getStartingPoseFromCamera(0);
     }
 
     /**
@@ -243,11 +246,11 @@ public class Vision extends SubsystemBase {
      * @return The number of tags seen, or 0 if no observations are available.
      */
     public int getTagCount(int cameraIndex) {
-        if (cameraIndex >= inputs.length || !inputs[cameraIndex].connected) {
+        if (cameraIndex >= this.inputs.length || !this.inputs[cameraIndex].connected) {
             return 0;
         }
-        var observations = inputs[cameraIndex].poseObservations;
-        if (observations.length == 0) {
+        var observations = this.inputs[cameraIndex].poseObservations;
+        if (0 == observations.length) {
             return 0;
         }
         var latestObservation = observations[observations.length - 1];
@@ -256,25 +259,25 @@ public class Vision extends SubsystemBase {
 
     public int getTagCount() {
         int tagCount = 0;
-        for (var camera : inputs) {
+        for (var camera : this.inputs) {
             tagCount += camera.tagIds.length;
         }
         return tagCount;
     }
 
-    public Pose3d getStartingPoseFromCamera(int cameraIndex) {
-        if (cameraIndex >= inputs.length || !inputs[cameraIndex].connected) {
+    public @Nullable Pose3d getStartingPoseFromCamera(int cameraIndex) {
+        if (cameraIndex >= this.inputs.length || !this.inputs[cameraIndex].connected) {
             return null;
         }
 
-        var observations = inputs[cameraIndex].poseObservations;
-        if (observations.length == 0) {
+        var observations = this.inputs[cameraIndex].poseObservations;
+        if (0 == observations.length) {
             return null;
         }
 
         // Return the most recent pose observation with at least one tag
         var latestObservation = observations[observations.length - 1];
-        if (latestObservation.tagCount() > 0) {
+        if (0 < latestObservation.tagCount()) {
             return latestObservation.pose();
         }
         return null;
@@ -283,9 +286,9 @@ public class Vision extends SubsystemBase {
     @Override
     public void periodic() {
 
-        for (int i = 0; i < io.length; i++) {
-            io[i].updateInputs(inputs[i]);
-            Logger.processInputs(logKeyInputs[i], inputs[i]);
+        for (int i = 0; i < this.io.length; i++) {
+            this.io[i].updateInputs(this.inputs[i]);
+            Logger.processInputs(this.logKeyInputs[i], this.inputs[i]);
         }
 
         // Initialize logging values
@@ -295,9 +298,9 @@ public class Vision extends SubsystemBase {
         List<Pose3d> allRobotPosesRejected = new LinkedList<>();
 
         // Loop over cameras
-        for (int cameraIndex = 0; cameraIndex < io.length; cameraIndex++) {
+        for (int cameraIndex = 0; cameraIndex < this.io.length; cameraIndex++) {
             // Update disconnected alert
-            disconnectedAlerts[cameraIndex].set(!inputs[cameraIndex].connected);
+            this.disconnectedAlerts[cameraIndex].set(!this.inputs[cameraIndex].connected);
 
             // Initialize logging values
             List<Pose3d> tagPoses = new LinkedList<>();
@@ -306,7 +309,7 @@ public class Vision extends SubsystemBase {
             List<Pose3d> robotPosesRejected = new LinkedList<>();
 
             // Add tag poses
-            for (int tagId : inputs[cameraIndex].tagIds) {
+            for (int tagId : this.inputs[cameraIndex].tagIds) {
                 var tagPose = aprilTagLayout.getTagPose(tagId);
                 if (tagPose.isPresent()) {
                     tagPoses.add(tagPose.get());
@@ -314,16 +317,16 @@ public class Vision extends SubsystemBase {
             }
 
             // Loop over pose observations
-            for (var observation : inputs[cameraIndex].poseObservations) {
+            for (var observation : this.inputs[cameraIndex].poseObservations) {
                 // Check whether to reject pose
-                boolean rejectPose = observation.tagCount() < 2 // Must have at least one tag
+                boolean rejectPose = 2 > observation.tagCount() // Must have at least one tag
                         || observation.ambiguity() > maxAmbiguity // Cannot be high ambiguity
                         || Math.abs(observation.pose().getZ()) > maxZError // Must have realistic Z coordinate
 
                         // Must be within the field boundaries
-                        || observation.pose().getX() < 0.0
+                        || 0.0 > observation.pose().getX()
                         || observation.pose().getX() > aprilTagLayout.getFieldLength()
-                        || observation.pose().getY() < 0.0
+                        || 0.0 > observation.pose().getY()
                         || observation.pose().getY() > aprilTagLayout.getFieldWidth();
 
                 // Add pose to log
@@ -343,7 +346,7 @@ public class Vision extends SubsystemBase {
                 double stdDevFactor = Math.pow(observation.averageTagDistance(), 2.0) / observation.tagCount();
                 double linearStdDev = linearStdDevBaseline * stdDevFactor;
                 double angularStdDev;
-                if (observation.type() == PoseObservationType.MEGATAG_2) {
+                if (PoseObservationType.MEGATAG_2 == observation.type()) {
                     // MegaTag2 rotation is seeded from the gyro — trust it normally
                     linearStdDev *= linearStdDevMegatag2Factor;
                     angularStdDev = angularStdDevBaseline * stdDevFactor * angularStdDevMegatag2Factor;
@@ -355,14 +358,14 @@ public class Vision extends SubsystemBase {
                 if (cameraIndex < cameraStdDevFactors.length) {
                     linearStdDev *= cameraStdDevFactors[cameraIndex];
                     // Do not scale angular if it is already pinned to MAX_VALUE
-                    if (angularStdDev < Double.MAX_VALUE) {
+                    if (Double.MAX_VALUE > angularStdDev) {
                         angularStdDev *= cameraStdDevFactors[cameraIndex];
                     }
                 }
 
                 // Send vision observation
                 if (!DriverStation.isAutonomousEnabled()) {
-                    consumer.accept(
+                    this.consumer.accept(
                             observation.pose().toPose2d(),
                             observation.timestamp(),
                             VecBuilder.fill(linearStdDev, linearStdDev, angularStdDev));
@@ -370,13 +373,13 @@ public class Vision extends SubsystemBase {
             }
 
             // Log camera data
-            Logger.recordOutput(logKeyTagPoses[cameraIndex], tagPoses.toArray(new Pose3d[0]));
-            Logger.recordOutput(logKeyRobotPoses[cameraIndex], robotPoses.toArray(new Pose3d[robotPoses.size()]));
+            Logger.recordOutput(this.logKeyTagPoses[cameraIndex], tagPoses.toArray(new Pose3d[0]));
+            Logger.recordOutput(this.logKeyRobotPoses[cameraIndex], robotPoses.toArray(new Pose3d[robotPoses.size()]));
             Logger.recordOutput(
-                    logKeyRobotPosesAccepted[cameraIndex],
+                    this.logKeyRobotPosesAccepted[cameraIndex],
                     robotPosesAccepted.toArray(new Pose3d[robotPosesAccepted.size()]));
             Logger.recordOutput(
-                    logKeyRobotPosesRejected[cameraIndex],
+                    this.logKeyRobotPosesRejected[cameraIndex],
                     robotPosesRejected.toArray(new Pose3d[robotPosesRejected.size()]));
             allTagPoses.addAll(tagPoses);
             allRobotPoses.addAll(robotPoses);
@@ -396,18 +399,18 @@ public class Vision extends SubsystemBase {
 
         if (Constants.EnabledSubsystems.kQuestNav) {
             // QuestNav periodic
-            questNav.commandPeriodic();
-            PoseFrame[] questFrames = questNav.getAllUnreadPoseFrames();
+            this.questNav.commandPeriodic();
+            PoseFrame[] questFrames = this.questNav.getAllUnreadPoseFrames();
             for (PoseFrame questFrame : questFrames) {
                 if (questFrame.isTracking()) {
-                    questPose = questFrame.questPose3d();
+                    this.questPose = questFrame.questPose3d();
                     double timestamp = questFrame.dataTimestamp();
-                    Pose3d robotPose = questPose.transformBy(VisionConstants.ROBOT_TO_QUEST.inverse());
-                    consumer.accept(robotPose.toPose2d(), timestamp, VisionConstants.QUESTNAV_STD_DEVS);
+                    Pose3d robotPose = this.questPose.transformBy(VisionConstants.ROBOT_TO_QUEST.inverse());
+                    this.consumer.accept(robotPose.toPose2d(), timestamp, VisionConstants.QUESTNAV_STD_DEVS);
                 }
             }
-            Logger.recordOutput("Vision/QuestNav/Connected", questNav.isConnected());
-            Logger.recordOutput("Vision/QuestNav/Pose", questPose);
+            Logger.recordOutput("Vision/QuestNav/Connected", this.questNav.isConnected());
+            Logger.recordOutput("Vision/QuestNav/Pose", this.questPose);
         }
     }
 

@@ -24,15 +24,16 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import org.jetbrains.annotations.NotNull;
 
 public class VisionConstants {
     // AprilTag layout
-    public static AprilTagFieldLayout aprilTagLayout =
+    public static @NotNull AprilTagFieldLayout aprilTagLayout =
             AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltAndymark);
 
     // Camera names, must match names configured on coprocessor
-    public static String camera0Name = "shooter";
-    public static String camera1Name = "camera_1";
+    public static @NotNull String camera0Name = "shooter";
+    public static @NotNull String camera1Name = "camera_1";
 
     // Camera 0 position (inches) and rotation (degrees: roll, pitch, yaw)
     // These are the single source of truth — config.json is auto-generated from them.
@@ -50,7 +51,7 @@ public class VisionConstants {
             Inches.of(CAMERA0_Y_INCHES),
             Inches.of(CAMERA0_Z_INCHES),
             new Rotation3d(Degrees.of(CAMERA0_ROLL_DEG), Degrees.of(CAMERA0_PITCH_DEG), Degrees.of(CAMERA0_YAW_DEG)));
-    public static Transform3d robotToCamera1 = new Transform3d(-0.2, 0.0, 0.2, new Rotation3d(0.0, -0.4, Math.PI));
+    public static @NotNull Transform3d robotToCamera1 = new Transform3d(-0.2, 0.0, 0.2, new Rotation3d(0.0, -0.4, Math.PI));
     public static final Transform3d ROBOT_TO_QUEST =
             new Transform3d(0.0, 0.0, 0.0, new Rotation3d(Degrees.of(0), Degrees.of(0), Degrees.of(90)));
 
@@ -67,7 +68,7 @@ public class VisionConstants {
 
     // Standard deviation multipliers for each camera
     // (Adjust to trust some cameras more than others)
-    public static double[] cameraStdDevFactors = new double[] {
+    public static double @NotNull [] cameraStdDevFactors = new double[] {
         1.0, // Camera 0
         1.0 // Camera 1
     };

@@ -23,6 +23,7 @@ import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.simulation.FlywheelSim;
 import frc.robot.Robot;
+import org.jetbrains.annotations.NotNull;
 
 public class UpgoerIOSim implements UpgoerIO {
     private static final DCMotor MOTOR = DCMotor.getKrakenX60Foc(1);
@@ -31,9 +32,9 @@ public class UpgoerIOSim implements UpgoerIO {
     private static final double ROLLER_MOI = 0.5 * ROLLER_MASS_KG * ROLLER_RADIUS_M * ROLLER_RADIUS_M;
     private static final double ROLLER_GEARING = 1.0;
 
-    private final FlywheelSim sim;
-    private final PIDController controller;
-    private final SimpleMotorFeedforward feedforward;
+    private final @NotNull FlywheelSim sim;
+    private final @NotNull PIDController controller;
+    private final @NotNull SimpleMotorFeedforward feedforward;
 
     private double setpointRPM = 0.0;
     private double appliedVolts = 0.0;
@@ -50,46 +51,46 @@ public class UpgoerIOSim implements UpgoerIO {
     @SuppressWarnings("unused")
     public UpgoerIOSim(int motorId, String logName) {
         var plant = LinearSystemId.createFlywheelSystem(MOTOR, ROLLER_MOI, ROLLER_GEARING);
-        sim = new FlywheelSim(plant, MOTOR);
+        this.sim = new FlywheelSim(plant, MOTOR);
 
-        controller = new PIDController(0.001, 0.0005, 0.0);
+        this.controller = new PIDController(0.001, 0.0005, 0.0);
 
         double freeSpeedRPM = MOTOR.freeSpeedRadPerSec * 60.0 / (2.0 * Math.PI);
         double kv = 12.0 / freeSpeedRPM;
-        feedforward = new SimpleMotorFeedforward(0.0, kv, 0.0);
+        this.feedforward = new SimpleMotorFeedforward(0.0, kv, 0.0);
     }
 
     @Override
-    public void updateInputs(UpgoerIOInputs inputs) {
-        double ff = feedforward.calculate(setpointRPM);
-        double fb = controller.calculate(sim.getAngularVelocityRPM(), setpointRPM);
-        appliedVolts = MathUtil.clamp(ff + fb, -12.0, 12.0);
+    public void updateInputs(@NotNull UpgoerIOInputs inputs) {
+        double ff = this.feedforward.calculate(this.setpointRPM);
+        double fb = this.controller.calculate(this.sim.getAngularVelocityRPM(), this.setpointRPM);
+        this.appliedVolts = MathUtil.clamp(ff + fb, -12.0, 12.0);
 
-        sim.setInputVoltage(appliedVolts);
-        sim.update(0.02);
+        this.sim.setInputVoltage(this.appliedVolts);
+        this.sim.update(0.02);
 
-        double powerDissipated = sim.getCurrentDrawAmps() * Math.abs(appliedVolts) * 0.1;
+        double powerDissipated = this.sim.getCurrentDrawAmps() * Math.abs(this.appliedVolts) * 0.1;
         double equilibriumTemp = AMBIENT_TEMP + powerDissipated * THERMAL_RESISTANCE;
         double dt = Robot.defaultPeriodSecs;
-        motorTempCelsius += (equilibriumTemp - motorTempCelsius) * dt / THERMAL_TIME_CONSTANT;
+        this.motorTempCelsius += (equilibriumTemp - this.motorTempCelsius) * dt / THERMAL_TIME_CONSTANT;
 
-        inputs.velocity = RPM.of(sim.getAngularVelocityRPM());
-        inputs.appliedVoltage = Volts.of(appliedVolts);
-        inputs.statorCurrent = Amps.of(sim.getCurrentDrawAmps());
-        inputs.supplyCurrent = Amps.of(sim.getCurrentDrawAmps());
-        inputs.temp = Celsius.of(motorTempCelsius);
-        inputs.velocityError = RPM.of(setpointRPM - sim.getAngularVelocityRPM());
+        inputs.velocity = RPM.of(this.sim.getAngularVelocityRPM());
+        inputs.appliedVoltage = Volts.of(this.appliedVolts);
+        inputs.statorCurrent = Amps.of(this.sim.getCurrentDrawAmps());
+        inputs.supplyCurrent = Amps.of(this.sim.getCurrentDrawAmps());
+        inputs.temp = Celsius.of(this.motorTempCelsius);
+        inputs.velocityError = RPM.of(this.setpointRPM - this.sim.getAngularVelocityRPM());
     }
 
     @Override
-    public void setVelocity(AngularVelocity velocity) {
-        setpointRPM = velocity.in(RPM);
+    public void setVelocity(@NotNull AngularVelocity velocity) {
+        this.setpointRPM = velocity.in(RPM);
     }
 
     @Override
     public void stop() {
-        setpointRPM = 0.0;
-        appliedVolts = 0.0;
-        sim.setInputVoltage(0.0);
+        this.setpointRPM = 0.0;
+        this.appliedVolts = 0.0;
+        this.sim.setInputVoltage(0.0);
     }
 }

@@ -37,15 +37,15 @@ public class ControlCurve {
         */
 
         // Apply Deadzone
-        if (Math.abs(input) < deadzone) {
+        if (Math.abs(input) < this.deadzone) {
             return 0;
         }
 
         // Calculate Curve
-        return (inverted ? -1 : 1)
-                * (input < 0 ? -1 : 1)
+        return (this.inverted ? -1 : 1)
+                * (0 > input ? -1 : 1)
                 * Math.pow(
-                        (ySaturation * (1 / (1 - deadzone) * Math.abs(input + (input < 0 ? deadzone : -deadzone)))),
-                        1 + curvature);
+                        (this.ySaturation * (1 / (1 - this.deadzone) * Math.abs(input + (0 > input ? this.deadzone : -this.deadzone)))),
+                        1 + this.curvature);
     }
 }

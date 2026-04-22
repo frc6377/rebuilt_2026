@@ -18,22 +18,23 @@ import frc.robot.subsystems.intake.IntakeConstants;
 import frc.robot.subsystems.intake.IntakeConstants.RollerConstants;
 import frc.robot.util.TunableTalonFX;
 import org.ironmaple.simulation.drivesims.AbstractDriveTrainSimulation;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 public class PIDRollerIOSim implements RollerIO {
 
-    private final TunableTalonFX rollerMotor;
-    private final TunableTalonFX followerMotor;
-    private final TalonFXSimState rollerMotorSim;
-    private final Slot0Configs rollerPID;
-    private final LoggedNetworkNumber intakeSpeed;
-    private final LoggedNetworkNumber outtakeSpeed;
+    private final @NotNull TunableTalonFX rollerMotor;
+    private final @Nullable TunableTalonFX followerMotor;
+    private final @NotNull Slot0Configs rollerPID;
+    private final @NotNull LoggedNetworkNumber intakeSpeed;
+    private final @NotNull LoggedNetworkNumber outtakeSpeed;
 
     public PIDRollerIOSim(AbstractDriveTrainSimulation driveSim) {
-        rollerPID = new Slot0Configs();
-        rollerPID.kP = IntakeConstants.RollerConstants.PIDF.kP;
-        rollerPID.kI = IntakeConstants.RollerConstants.PIDF.kI;
-        rollerPID.kD = IntakeConstants.RollerConstants.PIDF.kD;
+        this.rollerPID = new Slot0Configs();
+        this.rollerPID.kP = IntakeConstants.RollerConstants.PIDF.kP;
+        this.rollerPID.kI = IntakeConstants.RollerConstants.PIDF.kI;
+        this.rollerPID.kD = IntakeConstants.RollerConstants.PIDF.kD;
 
         var config = new TalonFXConfiguration()
                 .withMotorOutput(new MotorOutputConfigs()
@@ -52,47 +53,47 @@ public class PIDRollerIOSim implements RollerIO {
                         .withKV(RollerConstants.PIDF.kV)
                         .withKA(RollerConstants.PIDF.kA));
 
-        rollerMotor = new TunableTalonFX(
-                Constants.CANIDs.MotorIDs.kRollerLeaderMotorID, "rio", "Intake/RollerPID", rollerPID);
-        rollerMotor.applyConfiguration(config);
+        this.rollerMotor = new TunableTalonFX(
+                Constants.CANIDs.MotorIDs.kRollerLeaderMotorID, "rio", "Intake/RollerPID", this.rollerPID);
+        this.rollerMotor.applyConfiguration(config);
 
-        rollerMotorSim = rollerMotor.getSimState();
+        TalonFXSimState rollerMotorSim = this.rollerMotor.getSimState();
         rollerMotorSim.setMotorType(MotorType.KrakenX60);
 
-        intakeSpeed = new LoggedNetworkNumber(
+        this.intakeSpeed = new LoggedNetworkNumber(
                 "Intake/Roller/IntakeSpeed", IntakeConstants.RollerConstants.kIntakeSpeed.in(RPM));
-        outtakeSpeed = new LoggedNetworkNumber(
+        this.outtakeSpeed = new LoggedNetworkNumber(
                 "Intake/Roller/OuttakeSpeed", IntakeConstants.RollerConstants.kOuttakeSpeed.in(RPM));
 
         if (IntakeConstants.RollerConstants.kfollowerEnabled) {
-            followerMotor = new TunableTalonFX(
+            this.followerMotor = new TunableTalonFX(
                     Constants.CANIDs.MotorIDs.kRollerFollowerMotorID, "rio", "Intake/RollerFollower");
-            followerMotor.getConfigurator().apply(config);
-            followerMotor.getSimState().setMotorType(MotorType.KrakenX60);
+            this.followerMotor.getConfigurator().apply(config);
+            this.followerMotor.getSimState().setMotorType(MotorType.KrakenX60);
         } else {
-            followerMotor = null;
+            this.followerMotor = null;
         }
     }
 
-    public void setRollerSpeed(AngularVelocity speed) {
-        rollerMotor.setControl(new VelocityVoltage(speed));
-        setFollower();
+    public void setRollerSpeed(@NotNull AngularVelocity speed) {
+        this.rollerMotor.setControl(new VelocityVoltage(speed));
+        this.setFollower();
     }
 
     @Override
     public void stop() {
-        rollerMotor.stopMotor();
-        if (followerMotor != null) followerMotor.stopMotor();
+        this.rollerMotor.stopMotor();
+        if (null != followerMotor) this.followerMotor.stopMotor();
     }
 
     @Override
     public void start() {
-        setRollerSpeed(RPM.of(intakeSpeed.get()));
+        this.setRollerSpeed(RPM.of(this.intakeSpeed.get()));
     }
 
     @Override
     public void outtake() {
-        setRollerSpeed(RPM.of(outtakeSpeed.get()));
+        this.setRollerSpeed(RPM.of(this.outtakeSpeed.get()));
     }
 
     @Override
@@ -103,45 +104,45 @@ public class PIDRollerIOSim implements RollerIO {
 
     @Override
     public void setMode(NeutralModeValue mode) {
-        rollerMotor.getConfigurator().apply(new MotorOutputConfigs().withNeutralMode(mode));
+        this.rollerMotor.getConfigurator().apply(new MotorOutputConfigs().withNeutralMode(mode));
     }
 
     @Override
     public void setMotorPercentage(double percent) {
-        rollerMotor.set(percent);
+        this.rollerMotor.set(percent);
     }
 
     @Override
-    public void updateInputs(RollerIO.RollerIOInputs inputs) {
-        inputs.leaderSpeedPercentile = rollerMotor.get();
-        inputs.leaderAppliedVolts = rollerMotor.getMotorVoltage().getValue();
-        inputs.leaderVelocity = rollerMotor.getVelocity().getValue();
-        inputs.leaderStatorCurrent = rollerMotor.getStatorCurrent().getValue();
-        inputs.leaderMotorTemp = rollerMotor.getDeviceTemp().getValue();
+    public void updateInputs(RollerIO.@NotNull RollerIOInputs inputs) {
+        inputs.leaderSpeedPercentile = this.rollerMotor.get();
+        inputs.leaderAppliedVolts = this.rollerMotor.getMotorVoltage().getValue();
+        inputs.leaderVelocity = this.rollerMotor.getVelocity().getValue();
+        inputs.leaderStatorCurrent = this.rollerMotor.getStatorCurrent().getValue();
+        inputs.leaderMotorTemp = this.rollerMotor.getDeviceTemp().getValue();
 
-        if (followerMotor != null) {
-            inputs.followerSpeedPercentile = followerMotor.get();
-            inputs.followerAppliedVolts = followerMotor.getMotorVoltage().getValue();
-            inputs.followerVelocity = followerMotor.getVelocity().getValue();
-            inputs.followerStatorCurrent = followerMotor.getStatorCurrent().getValue();
-            inputs.followerMotorTemp = followerMotor.getDeviceTemp().getValue();
+        if (null != followerMotor) {
+            inputs.followerSpeedPercentile = this.followerMotor.get();
+            inputs.followerAppliedVolts = this.followerMotor.getMotorVoltage().getValue();
+            inputs.followerVelocity = this.followerMotor.getVelocity().getValue();
+            inputs.followerStatorCurrent = this.followerMotor.getStatorCurrent().getValue();
+            inputs.followerMotorTemp = this.followerMotor.getDeviceTemp().getValue();
         }
     }
 
     @Override
     public void periodic() {
-        rollerMotor.updateTunableGains();
-        if (followerMotor != null) followerMotor.updateTunableGains();
+        this.rollerMotor.updateTunableGains();
+        if (null != followerMotor) this.followerMotor.updateTunableGains();
     }
 
     public void setFollower() {
-        if (followerMotor != null) {
+        if (null != followerMotor) {
             // Simulate follower by mirroring leader output, respecting configured alignment
-            double leaderOut = rollerMotor.get();
+            double leaderOut = this.rollerMotor.get();
             if (IntakeConstants.RollerConstants.MotorConfig.kFollowerInverted == MotorAlignmentValue.Opposed) {
-                followerMotor.set(-leaderOut);
+                this.followerMotor.set(-leaderOut);
             } else {
-                followerMotor.set(leaderOut);
+                this.followerMotor.set(leaderOut);
             }
         }
     }

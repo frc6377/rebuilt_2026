@@ -30,9 +30,10 @@ import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Temperature;
 import edu.wpi.first.units.measure.Voltage;
 import frc.robot.util.TunableTalonFX;
+import org.jetbrains.annotations.NotNull;
 
 public class UpgoerIOKrakenX60 implements UpgoerIO {
-    private final TunableTalonFX motor;
+    private final @NotNull TunableTalonFX motor;
     private final VelocityVoltage velocityRequest = new VelocityVoltage(0.0);
 
     private final StatusSignal<AngularVelocity> velocity;
@@ -49,7 +50,7 @@ public class UpgoerIOKrakenX60 implements UpgoerIO {
      * @param logName Logging key prefix used for tunable gains (e.g. "LeftShooterUpgoer").
      */
     public UpgoerIOKrakenX60(int motorId, String logName, int RPMMultiplier) {
-        motor = new TunableTalonFX(
+        this.motor = new TunableTalonFX(
                 motorId,
                 UpgoerConstants.canBusName,
                 logName + "/Motor",
@@ -63,60 +64,60 @@ public class UpgoerIOKrakenX60 implements UpgoerIO {
         var config = new TalonFXConfiguration();
         config.MotorOutput.NeutralMode = NeutralModeValue.Coast;
         config.MotorOutput.Inverted =
-                (RPMMultiplier == 1) ? InvertedValue.CounterClockwise_Positive : InvertedValue.Clockwise_Positive;
-        config.Slot0 = motor.getTunableSlot0Configs();
+                (1 == RPMMultiplier) ? InvertedValue.CounterClockwise_Positive : InvertedValue.Clockwise_Positive;
+        config.Slot0 = this.motor.getTunableSlot0Configs();
         config.CurrentLimits.StatorCurrentLimit = UpgoerConstants.currentLimit.in(Amps);
         config.CurrentLimits.StatorCurrentLimitEnable = true;
         config.CurrentLimits.SupplyCurrentLimit = UpgoerConstants.supplyCurrentLimit.in(Amps);
         config.CurrentLimits.SupplyCurrentLimitEnable = true;
-        tryUntilOk(5, () -> motor.applyConfiguration(config, 0.25));
+        tryUntilOk(5, () -> this.motor.applyConfiguration(config, 0.25));
 
-        velocity = motor.getVelocity();
-        acceleration = motor.getAcceleration();
-        appliedVolts = motor.getMotorVoltage();
-        statorCurrent = motor.getStatorCurrent();
-        supplyCurrent = motor.getSupplyCurrent();
-        torqueCurrent = motor.getTorqueCurrent();
-        temp = motor.getDeviceTemp();
-        velocityError = motor.getClosedLoopError();
+        this.velocity = this.motor.getVelocity();
+        this.acceleration = this.motor.getAcceleration();
+        this.appliedVolts = this.motor.getMotorVoltage();
+        this.statorCurrent = this.motor.getStatorCurrent();
+        this.supplyCurrent = this.motor.getSupplyCurrent();
+        this.torqueCurrent = this.motor.getTorqueCurrent();
+        this.temp = this.motor.getDeviceTemp();
+        this.velocityError = this.motor.getClosedLoopError();
 
         BaseStatusSignal.setUpdateFrequencyForAll(
                 50.0,
-                velocity,
-                acceleration,
-                appliedVolts,
-                statorCurrent,
-                supplyCurrent,
-                torqueCurrent,
-                temp,
-                velocityError);
-        ParentDevice.optimizeBusUtilizationForAll(motor);
+                this.velocity,
+                this.acceleration,
+                this.appliedVolts,
+                this.statorCurrent,
+                this.supplyCurrent,
+                this.torqueCurrent,
+                this.temp,
+                this.velocityError);
+        ParentDevice.optimizeBusUtilizationForAll(this.motor);
     }
 
     @Override
-    public void updateInputs(UpgoerIOInputs inputs) {
-        motor.updateTunableGains();
+    public void updateInputs(@NotNull UpgoerIOInputs inputs) {
+        this.motor.updateTunableGains();
         BaseStatusSignal.refreshAll(
-                velocity, acceleration, appliedVolts, statorCurrent, supplyCurrent, torqueCurrent, temp, velocityError);
+                this.velocity, this.acceleration, this.appliedVolts, this.statorCurrent, this.supplyCurrent, this.torqueCurrent, this.temp, this.velocityError);
 
-        inputs.velocity = velocity.getValue();
-        inputs.acceleration = acceleration.getValue();
-        inputs.appliedVoltage = appliedVolts.getValue();
-        inputs.statorCurrent = statorCurrent.getValue();
-        inputs.supplyCurrent = supplyCurrent.getValue();
-        inputs.torqueCurrent = torqueCurrent.getValue();
-        inputs.temp = temp.getValue();
-        inputs.velocityError = RotationsPerSecond.of(velocityError.getValue());
+        inputs.velocity = this.velocity.getValue();
+        inputs.acceleration = this.acceleration.getValue();
+        inputs.appliedVoltage = this.appliedVolts.getValue();
+        inputs.statorCurrent = this.statorCurrent.getValue();
+        inputs.supplyCurrent = this.supplyCurrent.getValue();
+        inputs.torqueCurrent = this.torqueCurrent.getValue();
+        inputs.temp = this.temp.getValue();
+        inputs.velocityError = RotationsPerSecond.of(this.velocityError.getValue());
     }
 
     @Override
-    public void setVelocity(AngularVelocity velocity) {
+    public void setVelocity(@NotNull AngularVelocity velocity) {
         double rotationsPerSecond = velocity.in(RotationsPerSecond);
-        motor.setControl(velocityRequest.withVelocity(rotationsPerSecond));
+        this.motor.setControl(this.velocityRequest.withVelocity(rotationsPerSecond));
     }
 
     @Override
     public void stop() {
-        motor.stopMotor();
+        this.motor.stopMotor();
     }
 }

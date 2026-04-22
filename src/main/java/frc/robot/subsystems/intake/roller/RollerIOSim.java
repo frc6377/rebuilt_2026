@@ -17,18 +17,19 @@ import frc.robot.subsystems.intake.IntakeConstants.RollerConstants;
 import org.ironmaple.simulation.IntakeSimulation;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.AbstractDriveTrainSimulation;
+import org.jetbrains.annotations.NotNull;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 public class RollerIOSim implements RollerIO {
 
-    private final TalonFX rollerMotor;
+    private final @NotNull TalonFX rollerMotor;
     private final TalonFXSimState intakeMotorSim;
-    private final IntakeSimulation intakeSim;
+    private final @NotNull IntakeSimulation intakeSim;
 
-    private final LoggedNetworkNumber kRollerIntakePercent;
-    private final LoggedNetworkNumber kRollerOuttakePercent;
+    private final @NotNull LoggedNetworkNumber kRollerIntakePercent;
+    private final @NotNull LoggedNetworkNumber kRollerOuttakePercent;
 
-    public RollerIOSim(AbstractDriveTrainSimulation driveSim) {
+    public RollerIOSim(@NotNull AbstractDriveTrainSimulation driveSim) {
         var config = new TalonFXConfiguration()
                 .withMotorOutput(new MotorOutputConfigs()
                         .withInverted(RollerConstants.MotorConfig.kInverted)
@@ -39,11 +40,11 @@ public class RollerIOSim implements RollerIO {
                         .withStatorCurrentLimitEnable(true)
                         .withStatorCurrentLimit(RollerConstants.MotorConfig.kStatorCurrentLimit));
 
-        rollerMotor = new TalonFX(Constants.CANIDs.MotorIDs.kRollerLeaderMotorID);
-        rollerMotor.getConfigurator().apply(config);
-        intakeMotorSim = rollerMotor.getSimState();
-        intakeMotorSim.setMotorType(MotorType.KrakenX60);
-        intakeSim = IntakeSimulation.OverTheBumperIntake(
+        this.rollerMotor = new TalonFX(Constants.CANIDs.MotorIDs.kRollerLeaderMotorID);
+        this.rollerMotor.getConfigurator().apply(config);
+        this.intakeMotorSim = this.rollerMotor.getSimState();
+        this.intakeMotorSim.setMotorType(MotorType.KrakenX60);
+        this.intakeSim = IntakeSimulation.OverTheBumperIntake(
                 "Fuel",
                 driveSim,
                 IntakeConstants.kIntakeWidth,
@@ -51,53 +52,53 @@ public class RollerIOSim implements RollerIO {
                 IntakeConstants.kIntakeSide,
                 IntakeConstants.kIntakeCapacity);
 
-        kRollerIntakePercent = new LoggedNetworkNumber("Intake/Roller/IntakePercent", RollerConstants.kIntakePercent);
-        kRollerOuttakePercent =
+        this.kRollerIntakePercent = new LoggedNetworkNumber("Intake/Roller/IntakePercent", RollerConstants.kIntakePercent);
+        this.kRollerOuttakePercent =
                 new LoggedNetworkNumber("Intake/Roller/OuttakePercent", RollerConstants.kOuttakePercent);
     }
 
     public void setRollerSpeed(double speed) {
-        rollerMotor.set(speed);
+        this.rollerMotor.set(speed);
     }
 
     @Override
     public void start() {
-        setRollerSpeed(kRollerIntakePercent.get());
-        intakeSim.startIntake();
+        this.setRollerSpeed(this.kRollerIntakePercent.get());
+        this.intakeSim.startIntake();
     }
 
     @Override
     public void stop() {
-        rollerMotor.stopMotor();
-        intakeSim.stopIntake();
+        this.rollerMotor.stopMotor();
+        this.intakeSim.stopIntake();
     }
 
     @Override
     public void outtake() {
-        setRollerSpeed(kRollerOuttakePercent.get());
-        intakeSim.removeObtainedGamePieces(SimulatedArena.getInstance());
+        this.setRollerSpeed(this.kRollerOuttakePercent.get());
+        this.intakeSim.removeObtainedGamePieces(SimulatedArena.getInstance());
     }
 
     @Override
     public int getIntakedFuel() {
-        return intakeSim.getGamePiecesAmount();
+        return this.intakeSim.getGamePiecesAmount();
     }
 
     @Override
     public void setMotorPercentage(double percent) {
-        rollerMotor.set(percent);
+        this.rollerMotor.set(percent);
     }
 
     @Override
     public void setMode(NeutralModeValue mode) {
-        rollerMotor.getConfigurator().apply(new MotorOutputConfigs().withNeutralMode(mode));
+        this.rollerMotor.getConfigurator().apply(new MotorOutputConfigs().withNeutralMode(mode));
     }
 
     @Override
-    public void updateInputs(RollerIO.RollerIOInputs inputs) {
-        inputs.leaderSpeedPercentile = intakeMotorSim.getMotorVoltage() / RobotController.getBatteryVoltage();
-        inputs.leaderAppliedVolts = intakeMotorSim.getMotorVoltageMeasure();
-        inputs.leaderVelocity = rollerMotor.getVelocity().getValue();
+    public void updateInputs(RollerIO.@NotNull RollerIOInputs inputs) {
+        inputs.leaderSpeedPercentile = this.intakeMotorSim.getMotorVoltage() / RobotController.getBatteryVoltage();
+        inputs.leaderAppliedVolts = this.intakeMotorSim.getMotorVoltageMeasure();
+        inputs.leaderVelocity = this.rollerMotor.getVelocity().getValue();
         inputs.leaderMotorTemp = Celsius.of(25.0);
     }
 }

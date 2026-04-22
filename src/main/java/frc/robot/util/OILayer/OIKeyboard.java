@@ -4,6 +4,8 @@ import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.POVButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import org.jetbrains.annotations.NotNull;
+
 import java.util.function.DoubleSupplier;
 
 public class OIKeyboard implements OI {
@@ -56,77 +58,77 @@ public class OIKeyboard implements OI {
     public static final Trigger PgDown = new JoystickButton(controller, 6);
 
     @Override
-    public DoubleSupplier driveTranslationX() {
+    public @NotNull DoubleSupplier driveTranslationX() {
         return AxisAD;
     }
 
     @Override
-    public DoubleSupplier driveTranslationY() {
+    public @NotNull DoubleSupplier driveTranslationY() {
         return AxisWS;
     }
 
     @Override
-    public DoubleSupplier driveRotation() {
+    public @NotNull DoubleSupplier driveRotation() {
         return LeftRightArrows;
     }
 
     @Override
-    public Trigger zeroDrivebase() {
+    public @NotNull Trigger zeroDrivebase() {
         return Z;
     }
 
     @Override
-    public Trigger spinUpShooter() {
+    public @NotNull Trigger spinUpShooter() {
         return C;
     }
 
     @Override
-    public Trigger fireShooter() {
+    public @NotNull Trigger fireShooter() {
         return V;
     }
 
     @Override
-    public Trigger stopSuperstructure() {
+    public @NotNull Trigger stopSuperstructure() {
         return X;
     }
 
     @Override
-    public Trigger driveLock0() {
+    public @NotNull Trigger driveLock0() {
         return Insert;
     }
 
     @Override
-    public Trigger intake() {
+    public @NotNull Trigger intake() {
         return M;
     }
 
     @Override
-    public Trigger outtake() {
+    public @NotNull Trigger outtake() {
         return Comma;
     }
 
     @Override
-    public Trigger intakeMiddle() {
+    public @NotNull Trigger intakeMiddle() {
         return Home;
     }
 
     @Override
-    public Trigger xDrive() {
+    public @NotNull Trigger xDrive() {
         return Home;
     }
 
     @Override
-    public Trigger toggleIntake() {
+    public @NotNull Trigger toggleIntake() {
         return Home;
     }
 
     @Override
-    public Trigger testButton() {
+    public @NotNull Trigger testButton() {
         return End;
     }
 
     @Override
-    public Trigger manualHold() {
+    public @NotNull Trigger manualHold() {
         return Slash;
     }
 }

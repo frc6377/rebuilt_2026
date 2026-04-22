@@ -2,19 +2,21 @@ package frc.robot.subsystems.vision.questnav;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
+import org.jetbrains.annotations.Nullable;
+
 import java.util.function.Supplier;
 
 public interface QuestNavIO {
 
-    public default void resetQuestNavPose(Pose3d robotPose) {}
+    default void resetQuestNavPose(Pose3d robotPose) {}
 
-    public default void zeroQuestNav() {}
+    default void zeroQuestNav() {}
 
-    public default void periodic() {}
+    default void periodic() {}
 
-    public default void setQuestNavStartPose(Pose3d pose) {}
+    default void setQuestNavStartPose(Pose3d pose) {}
 
-    public default Supplier<Pose2d> getQuestNavPoseSupplier() {
+    default @Nullable Supplier<Pose2d> getQuestNavPoseSupplier() {
         return null;
     }
 }

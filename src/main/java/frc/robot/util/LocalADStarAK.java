@@ -11,6 +11,9 @@ import edu.wpi.first.math.geometry.Translation2d;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.littletonrobotics.junction.LogTable;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.inputs.LoggableInputs;
@@ -29,12 +32,12 @@ public class LocalADStarAK implements Pathfinder {
     @Override
     public boolean isNewPathAvailable() {
         if (!Logger.hasReplaySource()) {
-            io.updateIsNewPathAvailable();
+            this.io.updateIsNewPathAvailable();
         }
 
-        Logger.processInputs("LocalADStarAK", io);
+        Logger.processInputs("LocalADStarAK", this.io);
 
-        return io.isNewPathAvailable;
+        return this.io.isNewPathAvailable;
     }
 
     /**
@@ -45,18 +48,18 @@ public class LocalADStarAK implements Pathfinder {
      * @return The PathPlannerPath created from the points calculated by the pathfinder
      */
     @Override
-    public PathPlannerPath getCurrentPath(PathConstraints constraints, GoalEndState goalEndState) {
+    public @Nullable PathPlannerPath getCurrentPath(PathConstraints constraints, GoalEndState goalEndState) {
         if (!Logger.hasReplaySource()) {
-            io.updateCurrentPathPoints(constraints, goalEndState);
+            this.io.updateCurrentPathPoints(constraints, goalEndState);
         }
 
-        Logger.processInputs("LocalADStarAK", io);
+        Logger.processInputs("LocalADStarAK", this.io);
 
-        if (io.currentPathPoints.isEmpty()) {
+        if (this.io.currentPathPoints.isEmpty()) {
             return null;
         }
 
-        return PathPlannerPath.fromPathPoints(io.currentPathPoints, constraints, goalEndState);
+        return PathPlannerPath.fromPathPoints(this.io.currentPathPoints, constraints, goalEndState);
     }
 
     /**
@@ -68,7 +71,7 @@ public class LocalADStarAK implements Pathfinder {
     @Override
     public void setStartPosition(Translation2d startPosition) {
         if (!Logger.hasReplaySource()) {
-            io.adStar.setStartPosition(startPosition);
+            this.io.adStar.setStartPosition(startPosition);
         }
     }
 
@@ -81,7 +84,7 @@ public class LocalADStarAK implements Pathfinder {
     @Override
     public void setGoalPosition(Translation2d goalPosition) {
         if (!Logger.hasReplaySource()) {
-            io.adStar.setGoalPosition(goalPosition);
+            this.io.adStar.setGoalPosition(goalPosition);
         }
     }
 
@@ -96,22 +99,22 @@ public class LocalADStarAK implements Pathfinder {
     @Override
     public void setDynamicObstacles(List<Pair<Translation2d, Translation2d>> obs, Translation2d currentRobotPos) {
         if (!Logger.hasReplaySource()) {
-            io.adStar.setDynamicObstacles(obs, currentRobotPos);
+            this.io.adStar.setDynamicObstacles(obs, currentRobotPos);
         }
     }
 
     private static class ADStarIO implements LoggableInputs {
-        public LocalADStar adStar = new LocalADStar();
+        public @NotNull LocalADStar adStar = new LocalADStar();
         public boolean isNewPathAvailable = false;
         public List<PathPoint> currentPathPoints = Collections.emptyList();
 
         @Override
-        public void toLog(LogTable table) {
-            table.put("IsNewPathAvailable", isNewPathAvailable);
+        public void toLog(@NotNull LogTable table) {
+            table.put("IsNewPathAvailable", this.isNewPathAvailable);
 
-            double[] pointsLogged = new double[currentPathPoints.size() * 2];
+            double[] pointsLogged = new double[this.currentPathPoints.size() * 2];
             int idx = 0;
-            for (PathPoint point : currentPathPoints) {
+            for (PathPoint point : this.currentPathPoints) {
                 pointsLogged[idx] = point.position.getX();
                 pointsLogged[idx + 1] = point.position.getY();
                 idx += 2;
@@ -121,8 +124,8 @@ public class LocalADStarAK implements Pathfinder {
         }
 
         @Override
-        public void fromLog(LogTable table) {
-            isNewPathAvailable = table.get("IsNewPathAvailable", false);
+        public void fromLog(@NotNull LogTable table) {
+            this.isNewPathAvailable = table.get("IsNewPathAvailable", false);
 
             double[] pointsLogged = table.get("CurrentPathPoints", new double[0]);
 
@@ -131,20 +134,20 @@ public class LocalADStarAK implements Pathfinder {
                 pathPoints.add(new PathPoint(new Translation2d(pointsLogged[i], pointsLogged[i + 1]), null));
             }
 
-            currentPathPoints = pathPoints;
+            this.currentPathPoints = pathPoints;
         }
 
         public void updateIsNewPathAvailable() {
-            isNewPathAvailable = adStar.isNewPathAvailable();
+            this.isNewPathAvailable = this.adStar.isNewPathAvailable();
         }
 
         public void updateCurrentPathPoints(PathConstraints constraints, GoalEndState goalEndState) {
-            PathPlannerPath currentPath = adStar.getCurrentPath(constraints, goalEndState);
+            PathPlannerPath currentPath = this.adStar.getCurrentPath(constraints, goalEndState);
 
-            if (currentPath != null) {
-                currentPathPoints = currentPath.getAllPathPoints();
+            if (null != currentPath) {
+                this.currentPathPoints = currentPath.getAllPathPoints();
             } else {
-                currentPathPoints = Collections.emptyList();
+                this.currentPathPoints = Collections.emptyList();
             }
         }
     }
