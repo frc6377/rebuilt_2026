@@ -29,28 +29,17 @@ public class Shooter {
         BaseShooterIO leftIO;
         BaseShooterIO rightIO;
 
-        // Choose Left IO
-        if (Constants.EnabledSubsystems.kShooterLeft) {
-            leftIO = switch (Constants.currentMode) {
-                case REAL -> new BaseShooterIOKrakenX60(ShooterConstants.leftConfig);
-                case SIM -> new BaseShooterIOSim(ShooterConstants.leftConfig);
-                default -> new BaseShooterIO() {};};
-        } else {
-            leftIO = new BaseShooterIO() {};
-        }
-
-        // Choose Right IO
-        if (Constants.EnabledSubsystems.kShooterRight) {
-            rightIO = switch (Constants.currentMode) {
-                case REAL -> new BaseShooterIOKrakenX60(ShooterConstants.rightConfig);
-                case SIM -> new BaseShooterIOSim(ShooterConstants.rightConfig);
-                default -> new BaseShooterIO() {};};
-        } else {
-            rightIO = new BaseShooterIO() {};
-        }
+        // Use YAMS implementation if available, fallback to existing logic if needed
+        // Choosing BaseShooterYAMS as it handles both REAL and SIM through passive simulation
+        leftIO = new BaseShooterYAMS(null, ShooterConstants.leftConfig);
+        rightIO = new BaseShooterYAMS(null, ShooterConstants.rightConfig);
 
         left = new BaseShooter(leftIO, ShooterConstants.leftConfig);
         right = new BaseShooter(rightIO, ShooterConstants.rightConfig);
+
+        // Finalize YAMS binding by associating with finalized subsystems
+        ((BaseShooterYAMS)leftIO).setSubsystem(left);
+        ((BaseShooterYAMS)rightIO).setSubsystem(right);
     }
 
     public BaseShooter getLeft() {

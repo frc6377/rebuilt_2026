@@ -107,36 +107,29 @@ public class Superstructure extends SubsystemBase {
         UpgoerIO rightUpgoerIO;
         IndexerIO indexerIO;
 
+        // Use YAMS for Upgoers
+        leftUpgoerIO = new UpgoerYAMS(null, Constants.CANIDs.MotorIDs.kLeftUpgoerMotorCANID, "LeftShooterUpgoer", -1);
+        rightUpgoerIO = new UpgoerYAMS(null, Constants.CANIDs.MotorIDs.kRightUpgoerMotorCANID, "RightShooterUpgoer", 1);
+
         switch (Constants.currentMode) {
             case REAL:
-                leftUpgoerIO = Constants.EnabledSubsystems.kShooterUpgoerLeft
-                        ? new UpgoerIOKrakenX60(
-                                Constants.CANIDs.MotorIDs.kLeftUpgoerMotorCANID, "LeftShooterUpgoer", -1)
-                        : new UpgoerIO() {};
-                rightUpgoerIO = Constants.EnabledSubsystems.kShooterUpgoerRight
-                        ? new UpgoerIOKrakenX60(
-                                Constants.CANIDs.MotorIDs.kRightUpgoerMotorCANID, "RightShooterUpgoer", 1)
-                        : new UpgoerIO() {};
                 indexerIO = Constants.EnabledSubsystems.kIndexer ? new IndexerIOReal() : new IndexerIO() {};
                 break;
             case SIM:
-                leftUpgoerIO = Constants.EnabledSubsystems.kShooterUpgoerLeft
-                        ? new UpgoerIOSim(Constants.CANIDs.MotorIDs.kLeftUpgoerMotorCANID, "LeftShooterUpgoer")
-                        : new UpgoerIO() {};
-                rightUpgoerIO = Constants.EnabledSubsystems.kShooterUpgoerRight
-                        ? new UpgoerIOSim(Constants.CANIDs.MotorIDs.kRightUpgoerMotorCANID, "RightShooterUpgoer")
-                        : new UpgoerIO() {};
                 indexerIO = Constants.EnabledSubsystems.kIndexer ? new IndexerIOSim() : new IndexerIO() {};
                 break;
             default:
-                leftUpgoerIO = new UpgoerIO() {};
-                rightUpgoerIO = new UpgoerIO() {};
                 indexerIO = new IndexerIO() {};
                 break;
         }
 
         this.leftUpgoer = new Upgoer(leftUpgoerIO, "LeftShooterUpgoer", 1);
         this.rightUpgoer = new Upgoer(rightUpgoerIO, "RightShooterUpgoer", 1);
+
+        // Finalize YAMS binding for Upgoers
+        ((UpgoerYAMS)leftUpgoerIO).setSubsystem(this.leftUpgoer);
+        ((UpgoerYAMS)rightUpgoerIO).setSubsystem(this.rightUpgoer);
+
         this.indexer = new Indexer(indexerIO);
         this.currentShootingCommand = this.runFlywheelVelocityManual();
     }
