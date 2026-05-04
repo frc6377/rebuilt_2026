@@ -64,7 +64,6 @@ public class TunablePIDController {
 
     public static final PIDConfig defaultConfig = new PIDConfig(0.0, 0.0, 0.0);
 
-    private double calculatedOutput = 0.0;
     private final @NotNull LoggedNetworkNumber loggedOutput;
 
     private final String tunableName;
@@ -301,7 +300,7 @@ public class TunablePIDController {
             changed = true;
         }
 
-        if (null == activePresetName) {
+        if (null == this.activePresetName) {
             return changed;
         }
 
@@ -356,7 +355,6 @@ public class TunablePIDController {
      */
     public void runPid() {
         double output = this.calculate();
-        this.calculatedOutput = output;
         this.loggedOutput.set(output);
         this.outputConsumer.accept(output);
     }

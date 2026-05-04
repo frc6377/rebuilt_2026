@@ -134,7 +134,7 @@ public class Vision extends SubsystemBase {
         boolean isRed = DriverStation.Alliance.Red == DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue);
         Set<Integer> hubTagIds = isRed ? RED_HUB_TAG_IDS : BLUE_HUB_TAG_IDS;
         Set<Integer> middleTagIds = isRed ? RED_HUB_MIDDLE_TAG_IDS : BLUE_HUB_MIDDLE_TAG_IDS;
-        if (0 == inputs.length || 0 == inputs[0].hubTagObservations.length) return OptionalDouble.empty();
+        if (0 == this.inputs.length || 0 == this.inputs[0].hubTagObservations.length) return OptionalDouble.empty();
         // Find the closest visible middle tag, falling back to any hub tag
         HubTagObservation bestMiddle = null;
         HubTagObservation bestAny = null;

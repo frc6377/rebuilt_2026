@@ -89,19 +89,19 @@ public class RobotState extends SubsystemBase {
     }
 
     public boolean isClimbing() {
-        return Mode.CLIMBING == mode;
+        return Mode.CLIMBING == this.mode;
     }
 
     public boolean isShooting() {
-        return Mode.SHOOTING == mode;
+        return Mode.SHOOTING == this.mode;
     }
 
     public boolean isShuttling() {
-        return Mode.SHUTTLING == mode;
+        return Mode.SHUTTLING == this.mode;
     }
 
     public boolean isDefense() {
-        return Mode.DEFENSE == mode;
+        return Mode.DEFENSE == this.mode;
     }
 
     public int getSimGamePieceCount() {
@@ -157,7 +157,7 @@ public class RobotState extends SubsystemBase {
     }
 
     private void updateZoneMode() {
-        if (Mode.CLIMBING == mode) {
+        if (Mode.CLIMBING == this.mode) {
             return; // Do not override climb mode
         }
 

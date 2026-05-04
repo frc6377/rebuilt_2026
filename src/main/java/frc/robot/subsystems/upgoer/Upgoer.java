@@ -46,11 +46,11 @@ public class Upgoer extends SubsystemBase {
         this.io.updateInputs(this.inputs);
         Logger.processInputs(this.logName, this.inputs);
         Logger.recordOutput(this.logName + "/Setpoint", this.setpoint);
-        Logger.recordOutput(this.logName + "/Running", 1.0 < Math.abs(setpoint.in(RPM)));
+        Logger.recordOutput(this.logName + "/Running", 1.0 < Math.abs(this.setpoint.in(RPM)));
         Logger.recordOutput(this.logName + "/AtTargetVelocity", this.atTargetVelocity());
         Logger.recordOutput(
                 this.logName + "/CurrentCommand",
-                null != getCurrentCommand() ? this.getCurrentCommand().getName() : "None");
+                null != this.getCurrentCommand() ? this.getCurrentCommand().getName() : "None");
     }
 
     /** Set the feeder velocity. */

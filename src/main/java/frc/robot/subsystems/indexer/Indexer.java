@@ -73,7 +73,7 @@ public class Indexer extends SubsystemBase {
         this.indexerIO.updateInputs(this.inputs);
         Logger.processInputs("Indexer", this.inputs);
         Logger.recordOutput("Indexer/Setpoint", this.setpoint);
-        Logger.recordOutput("Indexer/Running", 0.1 < Math.abs(setpoint.in(RotationsPerSecond)));
+        Logger.recordOutput("Indexer/Running", 0.1 < Math.abs(this.setpoint.in(RotationsPerSecond)));
         Logger.recordOutput(
                 "Indexer/variableSpeed",
                 IndexerConstants.kCollectorSpeed

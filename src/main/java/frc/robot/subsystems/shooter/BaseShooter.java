@@ -50,7 +50,7 @@ public class BaseShooter extends SubsystemBase {
         Logger.recordOutput(this.config.name() + "/FollowerEnabled", this.config.followerEnabled());
         Logger.recordOutput(this.config.name() + "/FlywheelFailed", this.flywheelFailed);
         Logger.recordOutput(this.config.name() + "/FlywheelSetpoint", this.flywheelSetpoint);
-        if (null != getCurrentCommand()) {
+        if (null != this.getCurrentCommand()) {
             Logger.recordOutput(
                     this.config.name() + "/CurrentCommand", this.getCurrentCommand().getName());
         } else {
@@ -109,7 +109,7 @@ public class BaseShooter extends SubsystemBase {
     }
 
     public boolean isRunning() {
-        return 1.0 < Math.abs(flywheelSetpoint.in(RPM));
+        return 1.0 < Math.abs(this.flywheelSetpoint.in(RPM));
     }
 
     @AutoLogOutput(key = "FlywheelSetpoint")

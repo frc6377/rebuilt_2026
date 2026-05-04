@@ -84,7 +84,6 @@ public class Superstructure extends SubsystemBase {
     private final @NotNull Shooter shooter;
     private final @NotNull Upgoer leftUpgoer;
     private final @NotNull Upgoer rightUpgoer;
-    private final @NotNull Indexer indexer;
     private final Vision vision;
     private final OI oi;
     private final RobotState robotState;
@@ -138,7 +137,6 @@ public class Superstructure extends SubsystemBase {
 
         this.leftUpgoer = new Upgoer(leftUpgoerIO, "LeftShooterUpgoer", 1);
         this.rightUpgoer = new Upgoer(rightUpgoerIO, "RightShooterUpgoer", 1);
-        this.indexer = new Indexer(indexerIO);
         this.currentShootingCommand = this.runFlywheelVelocityManual();
     }
 
@@ -162,7 +160,7 @@ public class Superstructure extends SubsystemBase {
             this.oi.setRumble(0, 0);
         }
 
-        if (null == gamePieceTrajectorySimulation) {
+        if (null == this.gamePieceTrajectorySimulation) {
             return;
         }
 
@@ -191,11 +189,11 @@ public class Superstructure extends SubsystemBase {
     }
 
     public boolean hasGamePieceTrajectorySimulation() {
-        return null != gamePieceTrajectorySimulation;
+        return null != this.gamePieceTrajectorySimulation;
     }
 
     public Command simAutoFireHoldCommand(BooleanSupplier indexerRunningSupplier) {
-        if (null == gamePieceTrajectorySimulation) {
+        if (null == this.gamePieceTrajectorySimulation) {
             return Commands.none();
         }
 
@@ -207,11 +205,11 @@ public class Superstructure extends SubsystemBase {
     }
 
     public boolean simShouldIndexerRun() {
-        return null != gamePieceTrajectorySimulation && this.gamePieceTrajectorySimulation.shouldIndexerRun();
+        return null != this.gamePieceTrajectorySimulation && this.gamePieceTrajectorySimulation.shouldIndexerRun();
     }
 
     public Command simLaunchGamePieceCommand() {
-        if (null == gamePieceTrajectorySimulation) {
+        if (null == this.gamePieceTrajectorySimulation) {
             return Commands.none();
         }
 
@@ -221,7 +219,7 @@ public class Superstructure extends SubsystemBase {
     }
 
     public Command simAddBallsCommand(int count) {
-        if (null == gamePieceTrajectorySimulation) {
+        if (null == this.gamePieceTrajectorySimulation) {
             return Commands.none();
         }
 
@@ -230,7 +228,7 @@ public class Superstructure extends SubsystemBase {
     }
 
     public Command simSetAutoFireEnabledCommand(boolean enabled) {
-        if (null == gamePieceTrajectorySimulation) {
+        if (null == this.gamePieceTrajectorySimulation) {
             return Commands.none();
         }
 
@@ -240,7 +238,7 @@ public class Superstructure extends SubsystemBase {
 
     public @Nullable Command createShooterCalibrationCommand(
             @Nullable SwerveDriveSimulation driveSimulation, Consumer<Pose2d> poseResetter) {
-        if (null == gamePieceTrajectorySimulation || null == driveSimulation) {
+        if (null == this.gamePieceTrajectorySimulation || null == driveSimulation) {
             return null;
         }
 
@@ -472,7 +470,7 @@ public class Superstructure extends SubsystemBase {
     }
 
     public boolean isReadyToShoot(@NotNull Rotation2d currentHeading) {
-        if (null == latestParameters) return this.atTargetVelocity();
+        if (null == this.latestParameters) return this.atTargetVelocity();
 
         boolean flywheelReady = this.atTargetVelocity(); // atTargetVelocity();
         boolean headingReady =
@@ -483,7 +481,7 @@ public class Superstructure extends SubsystemBase {
     }
 
     public Rotation2d getTargetHeading() {
-        return null != latestParameters ? this.latestParameters.targetHeading() : this.getAngleToHub(new Pose2d());
+        return null != this.latestParameters ? this.latestParameters.targetHeading() : this.getAngleToHub(new Pose2d());
     }
 
     /**
@@ -517,7 +515,7 @@ public class Superstructure extends SubsystemBase {
     }
 
     public Command autoChooseShootingCommand(@NotNull Drive drive, @NotNull DoubleSupplier xSupplier, @NotNull DoubleSupplier ySupplier) {
-        if ((1.0 == manualShootingEnabled.get()) || 0 == vision.getTagCount()) {
+        if ((1.0 == manualShootingEnabled.get()) || 0 == this.vision.getTagCount()) {
             return this.autoSpeedShooter(drive::getPose, drive::getChassisSpeeds);
         } else {
             return this.fullAutoAim(drive, xSupplier, ySupplier);

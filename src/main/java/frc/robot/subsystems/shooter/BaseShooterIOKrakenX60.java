@@ -88,7 +88,7 @@ public class BaseShooterIOKrakenX60 implements BaseShooterIO {
 
         tryUntilOk(5, () -> this.flywheelMotor.applyConfiguration(flywheelConfig, 0.25));
 
-        if (null != flywheelFollower) {
+        if (null != this.flywheelFollower) {
             tryUntilOk(5, () -> this.flywheelFollower.applyConfiguration(flywheelConfig, 0.25));
             this.flywheelFollower.setControl(new Follower(this.flywheelMotor.getDeviceID(), MotorAlignmentValue.Opposed));
         }
@@ -115,7 +115,7 @@ public class BaseShooterIOKrakenX60 implements BaseShooterIO {
 
         BaseStatusSignal.setUpdateFrequencyForAll(50.0, signals.toArray(new BaseStatusSignal[0]));
 
-        if (null != flywheelFollower) {
+        if (null != this.flywheelFollower) {
             ParentDevice.optimizeBusUtilizationForAll(this.flywheelMotor, this.flywheelFollower);
         } else {
             ParentDevice.optimizeBusUtilizationForAll(this.flywheelMotor);
@@ -161,7 +161,7 @@ public class BaseShooterIOKrakenX60 implements BaseShooterIO {
     public void setFlywheelVelocity(@NotNull AngularVelocity velocity) {
         this.flywheelMotor.setControl(new VelocityVoltage(velocity));
 
-        if (null != flywheelFollower) {
+        if (null != this.flywheelFollower) {
             this.flywheelFollower.setControl(new Follower(this.flywheelMotor.getDeviceID(), MotorAlignmentValue.Opposed));
         }
     }
@@ -169,7 +169,7 @@ public class BaseShooterIOKrakenX60 implements BaseShooterIO {
     @Override
     public void setFlywheelVoltage(@NotNull Voltage voltage) {
         this.flywheelMotor.setControl(new VoltageOut(voltage));
-        if (null != flywheelFollower) {
+        if (null != this.flywheelFollower) {
             this.flywheelFollower.setControl(new Follower(this.flywheelMotor.getDeviceID(), MotorAlignmentValue.Opposed));
         }
     }
@@ -177,7 +177,7 @@ public class BaseShooterIOKrakenX60 implements BaseShooterIO {
     @Override
     public void stop() {
         this.flywheelMotor.stopMotor();
-        if (null != flywheelFollower) {
+        if (null != this.flywheelFollower) {
             this.flywheelFollower.stopMotor();
         }
     }

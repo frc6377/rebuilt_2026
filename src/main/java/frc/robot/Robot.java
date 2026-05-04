@@ -108,7 +108,7 @@ public class Robot extends LoggedRobot {
         this.autonomousCommand = this.robotContainer.getAutonomousCommand();
         this.robotContainer.intake.setNeutralMode(NeutralModeValue.Brake);
         // schedule the autonomous command (example)
-        if (null != autonomousCommand) {
+        if (null != this.autonomousCommand) {
             CommandScheduler.getInstance().schedule(this.autonomousCommand);
         }
     }
@@ -124,7 +124,7 @@ public class Robot extends LoggedRobot {
         // teleop starts running. If you want the autonomous to
         // continue until interrupted by another command, remove
         // this line or comment it out.
-        if (null != autonomousCommand) {
+        if (null != this.autonomousCommand) {
             this.autonomousCommand.cancel();
         }
         this.robotContainer.intake.setNeutralMode(NeutralModeValue.Brake);

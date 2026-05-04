@@ -91,8 +91,6 @@ public class RobotContainer {
     private final @Nullable SwerveDriveSimulation driveSimulation; // Only used in simulation, but declared here for easy
     // access by subsystems that need it
 
-    private final boolean usingController;
-
     // Dashboard inputs
     private final @NotNull LoggedDashboardChooser<Command> autoChooser;
 
@@ -100,9 +98,9 @@ public class RobotContainer {
     public RobotContainer() {
         RobotState.create();
 
-        this.usingController = false;
+        boolean usingController = false;
 
-        if (this.usingController || Constants.Mode.SIM != Constants.currentMode) {
+        if (usingController || Constants.Mode.SIM != Constants.currentMode) {
             this.OIController = new OIXbox();
         } else {
             this.OIController = new OIKeyboard();
@@ -474,7 +472,7 @@ public class RobotContainer {
     }
 
     public void resetSimulation() {
-        if (Constants.Mode.SIM != Constants.currentMode || null == driveSimulation) return;
+        if (Constants.Mode.SIM != Constants.currentMode || null == this.driveSimulation) return;
 
         this.driveSimulation.setSimulationWorldPose(new Pose2d(3, 3, new Rotation2d()));
     }

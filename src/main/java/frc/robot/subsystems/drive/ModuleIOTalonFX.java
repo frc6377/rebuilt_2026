@@ -161,12 +161,12 @@ public abstract class ModuleIOTalonFX implements ModuleIO {
         inputs.turnAppliedVolts = this.turnAppliedVolts.getValueAsDouble();
         inputs.turnCurrentAmps = this.turnCurrent.getValueAsDouble();
 
-        if (Constants.motorTempWarningThreshold <= driveTalon.getDeviceTemp().getValue().in(Fahrenheit)) {
+        if (Constants.motorTempWarningThreshold <= this.driveTalon.getDeviceTemp().getValue().in(Fahrenheit)) {
             DriverStation.reportWarning(
                     "MOTOR OVERHEATING: Drive Motor (" + this.driveTalon.getDeviceID() + ")",
                     Thread.currentThread().getStackTrace());
         }
-        if (Constants.motorTempWarningThreshold <= turnTalon.getDeviceTemp().getValue().in(Fahrenheit)) {
+        if (Constants.motorTempWarningThreshold <= this.turnTalon.getDeviceTemp().getValue().in(Fahrenheit)) {
             DriverStation.reportWarning(
                     "MOTOR OVERHEATING: Turn Motor (" + this.turnTalon.getDeviceID() + ")",
                     Thread.currentThread().getStackTrace());

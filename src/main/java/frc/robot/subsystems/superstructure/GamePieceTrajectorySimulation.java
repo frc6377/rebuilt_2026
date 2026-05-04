@@ -815,7 +815,7 @@ public class GamePieceTrajectorySimulation {
      * @return true if there is at least one ball in the hopper
      */
     public boolean hasBalls() {
-        return 0 < getBallsInHopper();
+        return 0 < this.getBallsInHopper();
     }
 
     /**
@@ -824,7 +824,7 @@ public class GamePieceTrajectorySimulation {
      * @return true if the hopper is empty
      */
     public boolean isEmpty() {
-        return 0 >= getBallsInHopper();
+        return 0 >= this.getBallsInHopper();
     }
 
     /**

@@ -22,7 +22,7 @@ public class Extender extends SubsystemBase {
         Logger.processInputs("Intake/Extender", this.inputs);
         Logger.recordOutput(
                 "Intake/Extender/CurrentCommand",
-                null == getCurrentCommand() ? "null" : this.getCurrentCommand().toString());
+                null == this.getCurrentCommand() ? "null" : this.getCurrentCommand().toString());
     }
 
     public BooleanSupplier isAtTarget() {

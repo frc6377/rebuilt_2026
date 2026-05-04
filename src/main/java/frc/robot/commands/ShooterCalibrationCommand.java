@@ -234,14 +234,14 @@ public class ShooterCalibrationCommand extends Command {
                 this.poseResetter.accept(testPose);
 
                 // Set flywheel speed
-                if (ShotResult.SCORED == lastShotResult) {
+                if (ShotResult.SCORED == this.lastShotResult) {
                     // If the last shot scored, we can try a slightly higher velocity
                     this.currentRPMIndex = 100;
-                } else if (ShotResult.MISSED_SHORT == lastShotResult || ShotResult.MISSED_LOW == lastShotResult) {
+                } else if (ShotResult.MISSED_SHORT == this.lastShotResult || ShotResult.MISSED_LOW == this.lastShotResult) {
                     // If the last shot was short or low, we need to increase velocity
                     this.tempLowerBound = this.currentVelocity;
                     this.currentVelocity = this.tempLowerBound.plus(this.tempUpperBound).times(0.5);
-                } else if (ShotResult.MISSED_FAR == lastShotResult) {
+                } else if (ShotResult.MISSED_FAR == this.lastShotResult) {
                     // If the last shot was far, we need to decrease velocity
                     this.tempUpperBound = this.currentVelocity;
                     this.currentVelocity = this.tempLowerBound.plus(this.tempUpperBound).times(0.5);
@@ -263,8 +263,8 @@ public class ShooterCalibrationCommand extends Command {
                 // Wait for flywheel to reach setpoint
                 if (this.stateTimer.hasElapsed(SETTLE_TIME)) {
                     double actualRPM = this.shooter.getFlywheelVelocity().in(RPM);
-                    if (0.05 > Math.abs(actualRPM - currentVelocity.in(RotationsPerSecond))
-                            / currentVelocity.in(RotationsPerSecond)) {
+                    if (0.05 > Math.abs(actualRPM - this.currentVelocity.in(RotationsPerSecond))
+                            / this.currentVelocity.in(RotationsPerSecond)) {
                         this.state = CalibrationState.FIRE_SHOT;
                     } else if (this.stateTimer.hasElapsed(SETTLE_TIME * 3)) {
                         // Timeout - proceed anyway
@@ -312,7 +312,7 @@ public class ShooterCalibrationCommand extends Command {
             case NEXT_CONFIGURATION -> {
                 // Move to next configuration
                 this.currentRPMIndex++;
-                if (this.speedInterations <= currentRPMIndex) {
+                if (this.speedInterations <= this.currentRPMIndex) {
                     this.currentRPMIndex = 0;
                     this.currentDistanceIndex++;
                     if (this.currentDistanceIndex >= this.testDistances.length) {
@@ -471,7 +471,7 @@ public class ShooterCalibrationCommand extends Command {
 
     @Override
     public boolean isFinished() {
-        return CalibrationState.COMPLETE == state;
+        return CalibrationState.COMPLETE == this.state;
     }
 
     @Override

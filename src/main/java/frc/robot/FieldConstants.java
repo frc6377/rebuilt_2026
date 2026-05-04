@@ -332,9 +332,9 @@ public class FieldConstants {
         }
 
         public AprilTagFieldLayout getLayout() {
-            if (null == layout) {
+            if (null == this.layout) {
                 synchronized (this) {
-                    if (null == layout) {
+                    if (null == this.layout) {
                         try {
                             Path p = Path.of(
                                     Filesystem.getDeployDirectory().getPath(),
@@ -353,7 +353,7 @@ public class FieldConstants {
         }
 
         public String getLayoutString() {
-            if (null == layoutString) {
+            if (null == this.layoutString) {
                 this.getLayout();
             }
             return this.layoutString;
