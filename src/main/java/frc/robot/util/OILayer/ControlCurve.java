@@ -42,10 +42,9 @@ public class ControlCurve {
         }
 
         // Calculate Curve
-        return (inverted ? -1 : 1)
-                * (input < 0 ? -1 : 1)
-                * Math.pow(
-                        (ySaturation * (1 / (1 - deadzone) * Math.abs(input + (input < 0 ? deadzone : -deadzone)))),
-                        1 + curvature);
+        double sign = input < 0 ? -1.0 : 1.0;
+        if (inverted) sign = -sign;
+        double adjusted = Math.abs(input + (input < 0 ? deadzone : -deadzone));
+        return sign * Math.pow(ySaturation * (1.0 / (1.0 - deadzone) * adjusted), 1.0 + curvature);
     }
 }

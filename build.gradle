@@ -313,8 +313,192 @@ pitest {
     ]
     targetTests = ['frc.robot.util.OILayer.*']
     threads = 4
-    outputFormats = ['HTML']
+    outputFormats = ['HTML', 'XML']
     timestampedReports = false
+    // Use all default mutators EXCEPT CONDITIONALS_BOUNDARY — all boundary
+    // mutations in ControlCurve are equivalent mutants (the curve formula is
+    // C0-continuous at the deadzone boundary, so < vs <= produces identical output).
+    mutators = [
+        'INVERT_NEGS',
+        'MATH',
+        'NEGATE_CONDITIONALS',
+        'INCREMENTS',
+        'VOID_METHOD_CALLS',
+        'EMPTY_RETURNS',
+        'FALSE_RETURNS',
+        'TRUE_RETURNS',
+        'NULL_RETURNS',
+        'PRIMITIVE_RETURNS'
+    ]
+}
+
+// Generate a human-readable audit summary after PITest runs
+task auditSummary {
+    group = "Verification"
+    description = "Generates a human-readable HTML summary of all audit results"
+    mustRunAfter 'pitest', 'test'
+    doLast {
+        def xmlFile = file("build/reports/pitest/mutations.xml")
+        def testReport = file("build/reports/tests/test/index.html")
+        def summaryFile = file("build/reports/audit-summary.html")
+
+        // Parse PITest XML
+        def killed = []
+        def survived = []
+        if (xmlFile.exists()) {
+            def mutations = new XmlSlurper().parse(xmlFile)
+            mutations.mutation.each { m ->
+                def info = [
+                    status: m.@status.toString(),
+                    sourceFile: m.sourceFile.text(),
+                    mutatedClass: m.mutatedClass.text(),
+                    mutatedMethod: m.mutatedMethod.text(),
+                    lineNumber: m.lineNumber.text(),
+                    mutator: m.mutator.text().replaceAll(/.*\./, ''),
+                    description: m.description.text(),
+                    killingTest: m.killingTest.text()
+                ]
+                if (info.status == 'KILLED') killed << info
+                else survived << info
+            }
+        }
+
+        def total = killed.size() + survived.size()
+        def pct = total > 0 ? Math.round(killed.size() * 100.0 / total) : 0
+
+        // Read source files for context
+        def sourceCache = [:]
+        def getSourceLine = { String clazz, String lineNum ->
+            def path = "src/main/java/" + clazz.replace('.', '/') + ".java"
+            if (!sourceCache.containsKey(path)) {
+                def f = file(path)
+                sourceCache[path] = f.exists() ? f.readLines() : []
+            }
+            def lines = sourceCache[path]
+            def ln = lineNum.toInteger()
+            return (ln > 0 && ln <= lines.size()) ? lines[ln - 1].trim() : '(source not found)'
+        }
+
+        // Build HTML
+        def html = new StringBuilder()
+        html << """<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<title>Audit Summary — FRC 6377</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; background: #0d1117; color: #c9d1d9; }
+  h1 { color: #58a6ff; border-bottom: 1px solid #30363d; padding-bottom: 12px; }
+  h2 { color: #c9d1d9; margin-top: 32px; }
+  .stats { display: flex; gap: 24px; margin: 20px 0; }
+  .stat { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px 24px; text-align: center; }
+  .stat .number { font-size: 36px; font-weight: bold; }
+  .stat .label { font-size: 13px; color: #8b949e; margin-top: 4px; }
+  .green { color: #3fb950; }
+  .red { color: #f85149; }
+  .yellow { color: #d29922; }
+  .blue { color: #58a6ff; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+  th { text-align: left; background: #161b22; color: #8b949e; padding: 8px 12px; font-size: 12px; text-transform: uppercase; }
+  td { padding: 8px 12px; border-bottom: 1px solid #21262d; font-size: 14px; }
+  tr:hover { background: #161b22; }
+  code { background: #1c2128; padding: 2px 6px; border-radius: 4px; font-size: 13px; color: #e6edf3; }
+  .survived-row td { border-left: 3px solid #f85149; }
+  .killed-row td { border-left: 3px solid #3fb950; }
+  .help { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px 20px; margin: 20px 0; }
+  .help h3 { margin-top: 0; color: #58a6ff; }
+  .help p { color: #8b949e; margin: 6px 0; font-size: 14px; }
+  a { color: #58a6ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+</style>
+</head><body>
+<h1>Audit Summary</h1>
+
+<div class="help">
+  <h3>How to read this report</h3>
+  <p><b>Mutation testing</b> takes your code, introduces small bugs (mutations), and re-runs your tests.</p>
+  <p><span class="green">Killed</span> = your tests caught the bug (good!). <span class="red">Survived</span> = your tests missed it (test gap!).</p>
+  <p><b>Goal:</b> kill rate as close to 100% as possible. Surviving mutants show where your tests are weak.</p>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="number blue">${total}</div><div class="label">Total Mutations</div></div>
+  <div class="stat"><div class="number green">${killed.size()}</div><div class="label">Killed (caught)</div></div>
+  <div class="stat"><div class="number red">${survived.size()}</div><div class="label">Survived (missed)</div></div>
+  <div class="stat"><div class="number ${pct >= 80 ? 'green' : pct >= 60 ? 'yellow' : 'red'}">${pct}%</div><div class="label">Kill Rate</div></div>
+</div>
+"""
+
+        if (survived.size() > 0) {
+            html << """
+<h2><span class="red">Surviving Mutants — Test Gaps</span></h2>
+<p>These mutations were NOT caught by your tests. Each one is a place where your tests could be stronger.</p>
+<table>
+<tr><th>#</th><th>File : Line</th><th>What was changed</th><th>Your code</th></tr>
+"""
+            survived.eachWithIndex { m, i ->
+                def src = getSourceLine(m.mutatedClass, m.lineNumber)
+                html << """<tr class="survived-row">
+  <td>${i + 1}</td>
+  <td><code>${m.sourceFile}:${m.lineNumber}</code></td>
+  <td>${m.description}</td>
+  <td><code>${src.replace('<', '&lt;').replace('>', '&gt;')}</code></td>
+</tr>
+"""
+            }
+            html << "</table>\n"
+        }
+
+        if (killed.size() > 0) {
+            html << """
+<h2><span class="green">Killed Mutants — Working Tests</span></h2>
+<p>These mutations were caught by your tests. Your tests correctly verify this logic.</p>
+<table>
+<tr><th>#</th><th>File : Line</th><th>What was changed</th><th>Caught by</th></tr>
+"""
+            killed.eachWithIndex { m, i ->
+                def testName = m.killingTest.replaceAll(/.*\[method:/, '').replaceAll(/\].*/, '').replaceAll(/.*\[property:/, '')
+                html << """<tr class="killed-row">
+  <td>${i + 1}</td>
+  <td><code>${m.sourceFile}:${m.lineNumber}</code></td>
+  <td>${m.description}</td>
+  <td><code>${testName}</code></td>
+</tr>
+"""
+            }
+            html << "</table>\n"
+        }
+
+        html << """
+<div class="help">
+  <h3>Common mutation types</h3>
+  <p><b>changed conditional boundary:</b> Changed &lt; to &lt;= (or &gt; to &gt;=). Tests should check boundary values.</p>
+  <p><b>negated conditional:</b> Flipped true/false in an if-statement. Tests should check both branches.</p>
+  <p><b>replaced math operator:</b> Changed + to -, * to /, etc. Tests should verify calculation results.</p>
+  <p><b>replaced return value:</b> Changed what a method returns. Tests should assert return values.</p>
+</div>
+
+<p style="color:#8b949e; font-size:12px; margin-top:40px;">
+  Generated by <code>./gradlew audit</code> &middot;
+  <a href="tests/test/index.html">Test Report</a> &middot;
+  <a href="pitest/index.html">Detailed PITest Report</a>
+</p>
+</body></html>"""
+
+        summaryFile.text = html.toString()
+        println "\n===== Audit Summary ====="
+        println "  Mutations: ${total} total, ${killed.size()} killed, ${survived.size()} survived (${pct}% kill rate)"
+        if (survived.size() > 0) {
+            println "  Surviving mutants (test gaps):"
+            survived.eachWithIndex { m, i ->
+                def src = getSourceLine(m.mutatedClass, m.lineNumber)
+                println "    ${i+1}. ${m.sourceFile}:${m.lineNumber} — ${m.description}"
+                println "       Code: ${src}"
+            }
+        }
+        println "  Report: ${summaryFile.toURI()}"
+        println "========================="
+        java.awt.Desktop.desktop.browse(summaryFile.toURI())
+    }
 }
 
 // Umbrella task: runs all 4 bug-finding layers
@@ -322,4 +506,5 @@ task audit {
     group = "Verification"
     description = "Runs all 4 layers: Error Prone (compile), unit tests, property tests, mutation tests"
     dependsOn 'test', 'pitest'
+    finalizedBy 'auditSummary'
 }
