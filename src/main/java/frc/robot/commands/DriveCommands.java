@@ -28,7 +28,6 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.subsystems.drive.Drive;
-import frc.robot.util.OILayer.OI;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.LinkedList;
@@ -45,18 +44,40 @@ public class DriveCommands {
     private static final double FF_RAMP_RATE = 0.1; // Volts/Sec
     private static final double WHEEL_RADIUS_MAX_VELOCITY = 0.25; // Rad/Sec
     private static final double WHEEL_RADIUS_RAMP_RATE = 0.05; // Rad/Sec^2
+    private static final double DRIVE_TRANSLATION_CURVE_SATURATION = 1.0;
+    private static final double DRIVE_TRANSLATION_CURVE_CURVATURE = 4.0;
+    private static final double DRIVE_TRANSLATION_CURVE_DEADZONE = 0.1;
+    private static final boolean DRIVE_TRANSLATION_CURVE_INVERTED = true;
 
     private DriveCommands() {}
 
     private static Translation2d getLinearVelocityFromJoysticks(double x, double y) {
         // Apply deadband
-        double linearMagnitude = OI.driveTranslationCurve.calculate(Math.hypot(x, y));
+        double linearMagnitude = calculateDriveTranslationCurve(Math.hypot(x, y));
         Rotation2d linearDirection = new Rotation2d(Math.atan2(y, x));
 
         // Return new linear velocity
         return new Pose2d(new Translation2d(), linearDirection)
                 .transformBy(new Transform2d(linearMagnitude, 0.0, new Rotation2d()))
                 .getTranslation();
+    }
+
+    private static double calculateDriveTranslationCurve(double input) {
+        if (Math.abs(input) < DRIVE_TRANSLATION_CURVE_DEADZONE) {
+            return 0.0;
+        }
+
+        return (DRIVE_TRANSLATION_CURVE_INVERTED ? -1 : 1)
+                * (input < 0 ? -1 : 1)
+                * Math.pow(
+                        DRIVE_TRANSLATION_CURVE_SATURATION
+                                * (1
+                                        / (1 - DRIVE_TRANSLATION_CURVE_DEADZONE)
+                                        * Math.abs(input
+                                                + (input < 0
+                                                        ? DRIVE_TRANSLATION_CURVE_DEADZONE
+                                                        : -DRIVE_TRANSLATION_CURVE_DEADZONE))),
+                        1 + DRIVE_TRANSLATION_CURVE_CURVATURE);
     }
 
     /** Field relative drive command using two joysticks (controlling linear and angular velocities). */
@@ -158,6 +179,43 @@ public class DriveCommands {
 
                 // Reset PID controller when command starts
                 .beforeStarting(() -> angleController.reset(drive.getRotation().getRadians()));
+    }
+
+    /** Holds the robot at a target field-relative heading without driver translation input. */
+    public static Command holdAngle(Drive drive, Supplier<Rotation2d> rotationSupplier) {
+        return fieldRelativeDriveAtAngle(drive, () -> 0.0, () -> 0.0, rotationSupplier)
+                .withName("HoldAngle");
+    }
+
+    /** Field-relative velocity command with profiled PID heading control. */
+    public static Command fieldRelativeDriveAtAngle(
+            Drive drive,
+            DoubleSupplier xVelocityMetersPerSecondSupplier,
+            DoubleSupplier yVelocityMetersPerSecondSupplier,
+            Supplier<Rotation2d> rotationSupplier) {
+        ProfiledPIDController angleController = new ProfiledPIDController(
+                ANGLE_KP, 0.0, ANGLE_KD, new TrapezoidProfile.Constraints(ANGLE_MAX_VELOCITY, ANGLE_MAX_ACCELERATION));
+        angleController.enableContinuousInput(-Math.PI, Math.PI);
+
+        return Commands.run(
+                        () -> {
+                            double omega = angleController.calculate(
+                                    drive.getRotation().getRadians(),
+                                    rotationSupplier.get().getRadians());
+                            boolean isFlipped = DriverStation.getAlliance().isPresent()
+                                    && DriverStation.getAlliance().get() == Alliance.Red;
+                            drive.runVelocity(ChassisSpeeds.fromFieldRelativeSpeeds(
+                                    new ChassisSpeeds(
+                                            xVelocityMetersPerSecondSupplier.getAsDouble(),
+                                            yVelocityMetersPerSecondSupplier.getAsDouble(),
+                                            omega),
+                                    isFlipped
+                                            ? drive.getRotation().plus(new Rotation2d(Math.PI))
+                                            : drive.getRotation()));
+                        },
+                        drive)
+                .beforeStarting(() -> angleController.reset(drive.getRotation().getRadians()))
+                .withName("FieldRelativeDriveAtAngle");
     }
 
     /**

@@ -13,6 +13,7 @@
 
 package frc.robot.subsystems.vision;
 
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
@@ -45,6 +46,7 @@ public class VisionIOLimelight implements VisionIO {
     private final DoubleArraySubscriber megatag1Subscriber;
     private final DoubleArraySubscriber megatag2Subscriber;
     private final DoubleArraySubscriber rawFiducialsSubscriber;
+    private final DoubleArraySubscriber fuelObservationSubscriber;
 
     /**
      * Creates a new VisionIOLimelight.
@@ -63,6 +65,8 @@ public class VisionIOLimelight implements VisionIO {
         megatag1Subscriber = table.getDoubleArrayTopic("botpose_wpiblue").subscribe(new double[] {});
         megatag2Subscriber = table.getDoubleArrayTopic("botpose_orb_wpiblue").subscribe(new double[] {});
         rawFiducialsSubscriber = table.getDoubleArrayTopic("rawfiducials").subscribe(new double[] {});
+        fuelObservationSubscriber =
+                table.getDoubleArrayTopic("fuel_observations").subscribe(new double[] {});
     }
 
     @Override
@@ -145,6 +149,27 @@ public class VisionIOLimelight implements VisionIO {
             hubObs.add(new HubTagObservation(tagId, tx, distToCamera, distToRobot));
         }
         inputs.hubTagObservations = hubObs.toArray(new HubTagObservation[0]);
+
+        // Optional detector output. Stride-6 format:
+        // [fieldX_m, fieldY_m, tx_deg, distance_m, confidence_0_to_1, timestamp_s].
+        // If fieldX or fieldY is negative, the observation is treated as target-relative only.
+        double[] rawFuel = fuelObservationSubscriber.get();
+        List<FuelObservation> fuelObs = new ArrayList<>();
+        for (int i = 0; i + 6 <= rawFuel.length; i += 6) {
+            double x = rawFuel[i];
+            double y = rawFuel[i + 1];
+            boolean hasFieldPose = x >= 0.0 && y >= 0.0;
+            double timestamp = rawFuel[i + 5] > 0.0 ? rawFuel[i + 5] : RobotController.getFPGATime() / 1.0e6;
+            fuelObs.add(new FuelObservation(
+                    timestamp,
+                    hasFieldPose ? new Pose2d(x, y, new Rotation2d()) : new Pose2d(),
+                    hasFieldPose,
+                    Rotation2d.fromDegrees(rawFuel[i + 2]),
+                    rawFuel[i + 3],
+                    rawFuel[i + 4],
+                    "Limelight:" + timestamp));
+        }
+        inputs.fuelObservations = fuelObs.toArray(new FuelObservation[0]);
     }
 
     /** Parses the 3D pose from a Limelight botpose array. */

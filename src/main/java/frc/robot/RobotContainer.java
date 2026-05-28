@@ -13,7 +13,6 @@
 
 package frc.robot;
 
-import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.RPM;
 import static frc.robot.subsystems.vision.VisionConstants.*;
 
@@ -24,13 +23,10 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.DriverStation.Alliance;
-import edu.wpi.first.wpilibj.GenericHID;
-import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
+import frc.robot.autonomy.AutonomyManager;
 import frc.robot.commands.DriveCommands;
 import frc.robot.commands.ShooterCalibrationCommand;
 import frc.robot.generated.TunerConstants;
@@ -59,55 +55,29 @@ import frc.robot.subsystems.vision.VisionIO;
 import frc.robot.subsystems.vision.VisionIOLimelight;
 import frc.robot.subsystems.vision.VisionIOPhotonVisionSim;
 import frc.robot.subsystems.vision.questnav.QuestNavIO;
-import frc.robot.util.OILayer.OI;
-import frc.robot.util.OILayer.OIKeyboard;
-import frc.robot.util.OILayer.OIXbox;
 import java.util.Objects;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
-/**
- * This class is where the bulk of the robot should be declared. Since Command-based is a "declarative" paradigm, very
- * little robot logic should actually be handled in the {@link Robot} periodic methods (other than the scheduler calls).
- * Instead, the structure of the robot (including subsystems, commands, and button mappings) should be declared here.
- */
+/** Autonomous-first robot container. No joystick/OI bindings are installed in production runtime. */
 public class RobotContainer {
-    // Subsystems
     protected final Superstructure superstructure;
+    protected final Intake intake;
 
     private final Drive drive;
-
-    // Jay was here and basiclly is the reason that this code works <3
-    // Good job Jay! -Jackson A.
-
     private final Vision vision;
-    protected final Intake intake;
-    private final OI OIController;
     private final Indexer indexer;
-    private final SwerveDriveSimulation driveSimulation; // Only used in simulation, but declared here for easy
-    // access by subsystems that need it
-
-    private final boolean usingController;
-
-    // Dashboard inputs
+    private final SwerveDriveSimulation driveSimulation;
     private final LoggedDashboardChooser<Command> autoChooser;
+    private final AutonomyManager autonomyManager;
 
-    /** The container for the robot. Contains subsystems, OI devices, and commands. */
     public RobotContainer() {
         RobotState.create();
 
-        usingController = false;
-
-        if (usingController || Constants.currentMode != Constants.Mode.SIM) {
-            OIController = new OIXbox();
-        } else {
-            OIController = new OIKeyboard();
-        }
         switch (Constants.currentMode) {
             case REAL:
-                // Real robot, instantiate hardware IO implementations
                 if (Constants.EnabledSubsystems.kDrive) {
                     drive = new Drive(
                             new GyroIOPigeon2(),
@@ -138,8 +108,6 @@ public class RobotContainer {
                 break;
 
             case SIM:
-                // Sim robot, instantiate physics sim IO implementations
-
                 driveSimulation = new SwerveDriveSimulation(Drive.mapleSimConfig, new Pose2d(3, 3, new Rotation2d()));
                 intake = new Intake(
                         Constants.EnabledSubsystems.kExtender ? new ExtenderIOSim() : new ExtenderIO() {},
@@ -168,6 +136,7 @@ public class RobotContainer {
                                 camera1Name, robotToCamera1, driveSimulation::getSimulatedDriveTrainPose));
                 indexer = new Indexer(Constants.EnabledSubsystems.kIndexer ? new IndexerIOSim() : new IndexerIO() {});
                 break;
+
             default:
                 drive = new Drive(
                         new GyroIO() {},
@@ -183,11 +152,22 @@ public class RobotContainer {
                 break;
         }
 
-        superstructure = new Superstructure(intake::isRollerRunning, vision, OIController);
+        superstructure = new Superstructure(intake::isRollerRunning, vision);
 
         if (Constants.currentMode == Constants.Mode.SIM) {
             superstructure.configureGamePieceSimulation(driveSimulation);
         }
+
+        RobotState.getInstance().setPoseSupplier(drive::getPose);
+        autonomyManager = new AutonomyManager(drive, vision, superstructure, intake, indexer, RobotState.getInstance());
+
+        registerAutonomousSkillCommands();
+
+        autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
+        configureAutonomousChooser();
+    }
+
+    private void registerAutonomousSkillCommands() {
         NamedCommands.registerCommand(
                 "Stop shooter", superstructure.stopShooterCommand().alongWith(superstructure.stopUpgoerCommand()));
         NamedCommands.registerCommand(
@@ -222,28 +202,26 @@ public class RobotContainer {
                         Commands.parallel(superstructure.autoSpeedShooter(), intake.intakeCommand())
                                 .until(superstructure::atTargetVelocity),
                         Commands.parallel(intake.intakeCommand(), superstructure.fireCommand())));
-
         NamedCommands.registerCommand(
                 "Shoot", Commands.deadline(Commands.waitSeconds(5), superstructure.fireCommand()));
-        // NamedCommands.registerCommand("Intake",
-        // Commands.deadline(intake.intakeCommand(), Commands.waitSeconds(6)));
         NamedCommands.registerCommand("Wait 5 seconds", Commands.waitSeconds(5));
         NamedCommands.registerCommand("Extend Intake", intake.extendIntake());
         NamedCommands.registerCommand("Intake", Commands.parallel(intake.intakeCommand(), indexer.index()));
         NamedCommands.registerCommand(
                 "Index",
                 Commands.runOnce(() -> indexer.setRunning(true)).withTimeout(3).andThen(indexer.stop()));
-        NamedCommands.registerCommand(
-                "Auto Aim", superstructure.aimAtHubWhileDriving(drive, () -> 0, () -> 0, () -> OIController.xDrive()
-                        .getAsBoolean()));
+        NamedCommands.registerCommand("Auto Aim", DriveCommands.holdAngle(drive, superstructure::getTargetHeading));
         NamedCommands.registerCommand("Stop intake", intake.stopRollerCommand());
+    }
 
-        // Set up auto routines
-        autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
+    private void configureAutonomousChooser() {
+        autoChooser.addOption("Autonomous Brain - One Cycle", createAutonomousBrainCommand(true));
+        autoChooser.addOption("Autonomous Brain - Continuous", createAutonomousBrainCommand(false));
+
         if (Constants.currentMode == Constants.Mode.SIM) {
             autoChooser.addOption("Shooter Tuning Sim", new ShooterCalibrationCommand(superstructure, driveSimulation));
         }
-        // Set up SysId routines
+
         autoChooser.addOption("Drive Wheel Radius Characterization", DriveCommands.wheelRadiusCharacterization(drive));
         autoChooser.addOption("Drive Simple FF Characterization", DriveCommands.feedforwardCharacterization(drive));
         autoChooser.addOption(
@@ -301,169 +279,18 @@ public class RobotContainer {
                         .andThen(Commands.waitSeconds(5))
                         .andThen(intake.getRoller().sysIdDynamic(SysIdRoutine.Direction.kReverse))
                         .andThen(SignalLogger::stop));
-
-        // Configure the button bindings
-        configureButtonBindings();
     }
 
-    /**
-     * Use this method to define your button->command mappings. Buttons can be created by instantiating a
-     * {@link GenericHID} or one of its subclasses ({@link edu.wpi.first.wpilibj.Joystick} or {@link XboxController}),
-     * and then passing it to a {@link edu.wpi.first.wpilibj2.command.button.JoystickButton}.
-     */
-    private void configureButtonBindings() {
-        // Default command, normal field-relative drive
-        drive.setDefaultCommand(DriveCommands.joystickDrive(
-                drive,
-                // The lambda () -> ensures this check happens every loop
-                () -> OIController.driveTranslationY().getAsDouble(),
-                () -> OIController.driveTranslationX().getAsDouble(),
-                () -> OIController.driveRotation().getAsDouble(),
-                () -> OIController.xDrive().getAsBoolean()));
-        // // Lock to 0° when butn is
-        // OIController.driveLock0()
-        // .whileTrue(DriveCommands.joystickDriveAtAngle(
-        // drive,
-        // () -> -OIController.driveTranslationY().getAsDouble(),
-        // () -> -OIController.driveTranslationX().getAsDouble(),
-        // () -> new Rotation2d()));
-
-        // OIController.spinUpShooter()
-        // .whileTrue(superstructure.autoChooseShootingCommand(
-        // drive, OIController.driveTranslationX(), OIController.driveTranslationY()));
-
-        // Manual fire (feeds piece when shooter is ready)
-        // OIController.fireShooter()
-        // .whileTrue(superstructure
-        // .autoSpeedShooter(drive::getPose, drive::getChassisSpeeds)
-        // .alongWith(superstructure.aimAtHubWhileDriving(
-        // drive, OIController.driveTranslationX(), OIController.driveTranslationY()))
-        // .until(superstructure::atTargetVelocity)
-        // .andThen(superstructure.fireCommand())
-        // .alongWith(indexer.index())
-        // .alongWith(Commands.runOnce(drive::stopWithX)))
-        // .onFalse(superstructure.stopUpgoerCommand().alongWith(indexer.stop()));
-        Trigger shootingTrigger = OIController.fireShooter().or(OIController.shootDriver());
-        Trigger stopSuperTrigger = OIController.stopShooterDriver().or(OIController.stopSuperstructure());
-        OIController.spinUpShooter()
-                .whileTrue(Commands.parallel(superstructure.runFlywheelVelocityManual())
-                        .until(superstructure::atTargetVelocity)
-                        .andThen(indexer.index())
-                        .alongWith(superstructure.fireCommand()))
-                .onFalse(superstructure
-                        .setFlywheelVelocityManual(RPM.of(1500))
-                        .andThen(superstructure.runFlywheelVelocityManual()));
-
-        // Commands.either(Manual(), Auto(), ismanual)
-        //
-        shootingTrigger
-                .and(OIController.manualHold().negate())
-                .whileTrue(Commands.parallel(
-                                superstructure
-                                        .aimAtHubWhileDriving(
-                                                drive,
-                                                OIController.driveTranslationX(),
-                                                OIController.driveTranslationY(),
-                                                OIController.xDrive())
-                                        .repeatedly(),
-                                Commands.sequence(
-                                        superstructure
-                                                .autoSpeedShooter(drive::getPose, drive::getChassisSpeeds)
-                                                .until(() -> superstructure.isReadyToShoot(drive.getRotation()))
-                                                .withTimeout(0.7),
-                                        Commands.parallel(
-                                                superstructure.fireCommand(),
-                                                indexer.index(),
-                                                intake.siftFuelCommand(),
-                                                intake.intakeRollerCommand())))
-                        .withName("ShootAuto"))
-                .onFalse(Commands.parallel(
-                                superstructure.stopUpgoerCommand(),
-                                indexer.stop(),
-                                superstructure.setFlywheelVelocityManual(RPM.of(1500)),
-                                intake.extendIntake())
-                        .withName("Shoot Manual Stop")
-                        .andThen(superstructure.runFlywheelVelocityManual())
-                        .andThen(intake.stopRollerCommand()));
-        shootingTrigger
-                .and(OIController.manualHold())
-                .whileTrue(Commands.parallel(superstructure
-                        .runFlywheelVelocityManual()
-                        // superstructure.aimAtHubWhileDriving(
-                        // drive, OIController.driveTranslationX(),
-                        // OIController.driveTranslationY()))
-                        .withTimeout(0.5)
-                        .until(superstructure::atTargetVelocity)
-                        .andThen(Commands.runOnce(drive::stopWithX))
-                        .andThen(Commands.parallel(
-                                superstructure.fireCommand(), indexer.index(), intake.siftFuelCommand()))))
-                .onFalse(Commands.parallel(
-                                superstructure.stopUpgoerCommand(),
-                                indexer.stop(),
-                                superstructure.setFlywheelVelocityManual(RPM.of(1500)),
-                                intake.extendIntake())
-                        .andThen(superstructure.runFlywheelVelocityManual()));
-
-        OIController.unjamShooter()
-                .whileTrue(superstructure.unjamCommand().alongWith(indexer.indexReverse()))
-                .onFalse(superstructure.stopUpgoerCommand().alongWith(superstructure.stopShooterCommand()));
-
-        // Stop all components
-        stopSuperTrigger.onTrue(superstructure.stopShooterCommand().alongWith(superstructure.stopUpgoerCommand()));
-
-        OIController.autoSpeedMode()
-                .onTrue(superstructure.changeManualShootingCommand(superstructure.autoChooseShootingCommand(
-                        drive, OIController.driveTranslationX(), OIController.driveTranslationY())));
-        OIController.hubShootSpeed()
-                .onTrue(superstructure
-                        .setFlywheelVelocityManual(RPM.of(2600))
-                        .alongWith(superstructure.setManualShootingEnabledCommand(true))
-                        .andThen(superstructure.runFlywheelVelocityManual()));
-        OIController.towerShootSpeed()
-                .onTrue(superstructure
-                        .setFlywheelVelocityManual(RPM.of(3200))
-                        .alongWith(superstructure.setManualShootingEnabledCommand(true))
-                        .andThen(superstructure.runFlywheelVelocityManual()));
-        OIController.cornerShootSpeed()
-                .onTrue(superstructure
-                        .setFlywheelVelocityManual(RPM.of(3800))
-                        .alongWith(superstructure.setManualShootingEnabledCommand(true))
-                        .andThen(superstructure.runFlywheelVelocityManual()));
-
-        // Reset gyro / odometry
-        final Runnable resetGyro = Constants.currentMode == Constants.Mode.SIM
-                ? () -> drive.setPose(driveSimulation.getSimulatedDriveTrainPose())
-                : () -> drive.setPose(new Pose2d(
-                        drive.getPose().getTranslation(),
-                        new Rotation2d(
-                                DriverStation.getAlliance().get() == Alliance.Blue
-                                        ? Degrees.zero()
-                                        : Degrees.of(180))));
-        OIController.zeroDrivebase().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
-        //        OIController.manualHold().onTrue(Commands.runOnce(drive::stopWithX, drive));
-        // OIController.start().onTrue(Commands.runOnce(resetGyro,
-        // drive).ignoringDisable(true));
-
-        OIController.intake()
-                .and(shootingTrigger.negate())
-                .whileTrue(intake.intakeRollerCommand().alongWith(indexer.index()))
-                .onFalse(indexer.stop().alongWith(intake.idleRollerCommand()).unless(shootingTrigger::getAsBoolean));
-        OIController.outtake()
-                .and(shootingTrigger.negate())
-                .whileTrue(intake.outtakeRollerCommand().alongWith(indexer.indexReverse()))
-                .onFalse(indexer.stop().alongWith(intake.idleRollerCommand()).unless(shootingTrigger::getAsBoolean));
-
-        OIController.toggleIntake().and(shootingTrigger.negate()).onTrue(intake.toggleIntake());
-        OIController.intakeMiddle().and(shootingTrigger.negate()).onTrue(intake.goToCustomAngleOneCommand());
+    private Command createAutonomousBrainCommand(boolean finishAfterOneScoredCycle) {
+        return autonomyManager.createBrainCommand(finishAfterOneScoredCycle);
     }
 
-    /**
-     * s Use this to pass the autonomous command to the main {@link Robot} class.
-     *
-     * @return the command to run in autonomous
-     */
     public Command getAutonomousCommand() {
         return autoChooser.get();
+    }
+
+    public Command getContinuousAutonomousCommand() {
+        return createAutonomousBrainCommand(false);
     }
 
     public void resetSimulation() {

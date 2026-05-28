@@ -34,8 +34,10 @@ import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
+import frc.robot.subsystems.vision.VisionIO.FuelObservation;
 import frc.robot.subsystems.vision.VisionIO.HubTagObservation;
 import frc.robot.subsystems.vision.VisionIO.PoseObservationType;
 import frc.robot.subsystems.vision.questnav.QuestNavIO;
@@ -59,6 +61,8 @@ public class Vision extends SubsystemBase {
     // QuestNav fields
     private final QuestNav questNav;
     private Pose3d questPose = new Pose3d();
+    private double lastAcceptedPoseTimestamp = Double.NEGATIVE_INFINITY;
+    private int lastAcceptedPoseTagCount = 0;
 
     private final String[] logKeyInputs;
     private final String[] logKeyTagPoses;
@@ -262,6 +266,27 @@ public class Vision extends SubsystemBase {
         return tagCount;
     }
 
+    public int getLastAcceptedPoseTagCount() {
+        return lastAcceptedPoseTagCount;
+    }
+
+    public double getSecondsSinceLastAcceptedPose() {
+        if (lastAcceptedPoseTimestamp == Double.NEGATIVE_INFINITY) {
+            return Double.POSITIVE_INFINITY;
+        }
+        return Timer.getFPGATimestamp() - lastAcceptedPoseTimestamp;
+    }
+
+    public List<FuelObservation> getFuelObservations() {
+        List<FuelObservation> observations = new LinkedList<>();
+        for (VisionIOInputsAutoLogged input : inputs) {
+            for (FuelObservation observation : input.fuelObservations) {
+                observations.add(observation);
+            }
+        }
+        return observations;
+    }
+
     public Pose3d getStartingPoseFromCamera(int cameraIndex) {
         if (cameraIndex >= inputs.length || !inputs[cameraIndex].connected) {
             return null;
@@ -293,6 +318,7 @@ public class Vision extends SubsystemBase {
         List<Pose3d> allRobotPoses = new LinkedList<>();
         List<Pose3d> allRobotPosesAccepted = new LinkedList<>();
         List<Pose3d> allRobotPosesRejected = new LinkedList<>();
+        List<Pose2d> allFuelPoses = new LinkedList<>();
 
         // Loop over cameras
         for (int cameraIndex = 0; cameraIndex < io.length; cameraIndex++) {
@@ -361,12 +387,12 @@ public class Vision extends SubsystemBase {
                 }
 
                 // Send vision observation
-                if (!DriverStation.isAutonomousEnabled()) {
-                    consumer.accept(
-                            observation.pose().toPose2d(),
-                            observation.timestamp(),
-                            VecBuilder.fill(linearStdDev, linearStdDev, angularStdDev));
-                }
+                lastAcceptedPoseTimestamp = Timer.getFPGATimestamp();
+                lastAcceptedPoseTagCount = observation.tagCount();
+                consumer.accept(
+                        observation.pose().toPose2d(),
+                        observation.timestamp(),
+                        VecBuilder.fill(linearStdDev, linearStdDev, angularStdDev));
             }
 
             // Log camera data
@@ -382,6 +408,11 @@ public class Vision extends SubsystemBase {
             allRobotPoses.addAll(robotPoses);
             allRobotPosesAccepted.addAll(robotPosesAccepted);
             allRobotPosesRejected.addAll(robotPosesRejected);
+            for (FuelObservation observation : inputs[cameraIndex].fuelObservations) {
+                if (observation.hasFieldPose()) {
+                    allFuelPoses.add(observation.fieldPose());
+                }
+            }
         }
 
         // Log summary data
@@ -393,6 +424,9 @@ public class Vision extends SubsystemBase {
         Logger.recordOutput(
                 "Vision/Summary/RobotPosesRejected",
                 allRobotPosesRejected.toArray(new Pose3d[allRobotPosesRejected.size()]));
+        Logger.recordOutput(
+                "Vision/Summary/FuelObservationCount", getFuelObservations().size());
+        Logger.recordOutput("Vision/Summary/FuelPoses", allFuelPoses.toArray(new Pose2d[allFuelPoses.size()]));
 
         if (Constants.EnabledSubsystems.kQuestNav) {
             // QuestNav periodic

@@ -26,7 +26,6 @@ import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
@@ -47,10 +46,8 @@ import frc.robot.subsystems.upgoer.UpgoerIO;
 import frc.robot.subsystems.upgoer.UpgoerIOKrakenX60;
 import frc.robot.subsystems.upgoer.UpgoerIOSim;
 import frc.robot.subsystems.vision.Vision;
-import frc.robot.util.OILayer.OI;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
-import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
@@ -70,10 +67,8 @@ public class Superstructure extends SubsystemBase {
             new LoggedNetworkNumber("Shooting/RPMMultiplier", ShooterConstants.defaultRpmMultiplier);
     private static final LoggedNetworkNumber calculationMode =
             new LoggedNetworkNumber("Shooting/CalculationMode", ShooterConstants.kDefaultCalculationMode.ordinal());
-    private static final LoggedNetworkNumber manualShootingSpeedRPM =
-            new LoggedNetworkNumber("Shooting/ManualShootingSpeedRPM", ShooterConstants.kManualShootingSpeedRPM);
-    private static final LoggedNetworkNumber manualShootingEnabled = new LoggedNetworkNumber(
-            "Shooting/ManualShootingEnabled", ShooterConstants.kManualShootingEnabled ? 1.0 : 0.0);
+    private static final LoggedNetworkNumber fallbackShootingSpeedRPM =
+            new LoggedNetworkNumber("Shooting/FallbackShootingSpeedRPM", ShooterConstants.kFallbackShootingSpeedRPM);
     // Testing / Bench Mode
     private static final LoggedNetworkNumber benchModeEnabled =
             new LoggedNetworkNumber("Shooting/BenchMode/Enabled", ShooterConstants.defaultBenchModeEnabled);
@@ -85,15 +80,13 @@ public class Superstructure extends SubsystemBase {
     private final Upgoer rightUpgoer;
     private final Indexer indexer;
     private final Vision vision;
-    private final OI oi;
     private final RobotState robotState;
     private GamePieceTrajectorySimulation gamePieceTrajectorySimulation;
-    private AngularVelocity manualShootingVelocity = RPM.of(ShooterConstants.kManualShootingSpeedRPM);
-    private Command currentShootingCommand;
+    private AngularVelocity fallbackShootingVelocity = RPM.of(ShooterConstants.kFallbackShootingSpeedRPM);
     private TrajectoryBall.ShootingParameters latestParameters = null;
 
     /** Creates the superstructure and selects IO implementations by mode. */
-    public Superstructure(BooleanSupplier isIntaking, Vision vision, OI oi) {
+    public Superstructure(BooleanSupplier isIntaking, Vision vision) {
         RobotState createdState = RobotState.getInstance();
         if (createdState == null) {
             createdState = RobotState.create();
@@ -102,7 +95,6 @@ public class Superstructure extends SubsystemBase {
         this.vision = vision;
 
         this.shooter = new Shooter();
-        this.oi = oi;
         UpgoerIO leftUpgoerIO;
         UpgoerIO rightUpgoerIO;
         IndexerIO indexerIO;
@@ -138,7 +130,6 @@ public class Superstructure extends SubsystemBase {
         this.leftUpgoer = new Upgoer(leftUpgoerIO, "LeftShooterUpgoer", 1);
         this.rightUpgoer = new Upgoer(rightUpgoerIO, "RightShooterUpgoer", 1);
         this.indexer = new Indexer(indexerIO);
-        this.currentShootingCommand = this.runFlywheelVelocityManual();
     }
 
     @Override
@@ -152,15 +143,6 @@ public class Superstructure extends SubsystemBase {
         Logger.recordOutput("Shooting/TimeUntilHubStateChange", FieldConstants.getTimeUntilHubStateChange());
         Logger.recordOutput(
                 "Shooting/DistanceToHub", round(vision.getHubDistanceMeasure().in(Meters) * 100.0) / 100.0);
-        if (FieldConstants.getTimeUntilHubStateChange() > 0
-                && FieldConstants.getTimeUntilHubStateChange() < 1
-                && DriverStation.isEnabled()) {
-            CommandScheduler.getInstance().schedule(oi.setRumble(0, 0));
-        } else if (FieldConstants.getTimeUntilHubStateChange() > 4 && FieldConstants.getTimeUntilHubStateChange() < 5) {
-            CommandScheduler.getInstance().schedule(oi.setRumble(1, 1));
-        } else {
-            CommandScheduler.getInstance().schedule(oi.setRumble(0, 0));
-        }
 
         if (gamePieceTrajectorySimulation == null) {
             return;
@@ -394,7 +376,8 @@ public class Superstructure extends SubsystemBase {
 
                                 setFlywheelVelocity(latestParameters.flywheelVelocity());
                             } else {
-                                setFlywheelVelocity(manualShootingVelocity);
+                                fallbackShootingVelocity = RPM.of(fallbackShootingSpeedRPM.get());
+                                setFlywheelVelocity(fallbackShootingVelocity);
                             }
                         },
                         shooter.getLeft(),
@@ -409,14 +392,6 @@ public class Superstructure extends SubsystemBase {
     public Command autoSpeedShooter() {
         return autoSpeedShooter(Pose2d::new, ChassisSpeeds::new);
     }
-    /** Command that aims the robot at the hub while driving. */
-    public Command aimAtHubWhileDriving(
-            Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier, BooleanSupplier xModePressed) {
-        return DriveCommands.joystickDriveAtAngle(
-                        drive, xSupplier, ySupplier, () -> latestParameters.targetHeading(), xModePressed)
-                .withName("AimAtHub");
-    }
-
     /** Command that fires the shooter (feeds both upgoers). */
     public Command fireCommand() {
         return Commands.run(
@@ -438,30 +413,6 @@ public class Superstructure extends SubsystemBase {
                         leftUpgoer,
                         rightUpgoer)
                 .withName("SuperstructureUnjam");
-    }
-
-    /** Full auto-aim command: aims robot at hub AND sets flywheel automatically. */
-    public Command fullAutoAim(Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier) {
-        return aimAtHubWhileDriving(drive, xSupplier, ySupplier, () -> false)
-                .alongWith(autoSpeedShooter(drive::getPose, drive::getChassisSpeeds))
-                .withName("FullAutoAim")
-                .beforeStarting(() -> robotState.setMode(RobotState.Mode.SHOOTING))
-                .finallyDo(() -> robotState.setMode(RobotState.Mode.IDLE));
-    }
-
-    public Command spinUpShooterCommand(Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier) {
-        Supplier<Rotation2d> angleSupplier = () -> {
-            Pose2d pose = drive.getPose();
-            if (isInShootingZone(pose)) {
-                return getAngleToHub(pose);
-            }
-            // On opponent's side —> shuttle back towards own wall
-            return getAngleToAllianceWall(pose);
-        };
-
-        return DriveCommands.joystickDriveAtAngle(drive, xSupplier, ySupplier, angleSupplier)
-                .alongWith(autoSpeedShooter(drive::getPose, drive::getChassisSpeeds))
-                .withName("SpinUpShooter");
     }
 
     public boolean atTargetVelocity() {
@@ -486,20 +437,12 @@ public class Superstructure extends SubsystemBase {
         return latestParameters != null ? latestParameters.targetHeading() : getAngleToHub(new Pose2d());
     }
 
-    /**
-     * Unified command that aims the robot and spins up the shooter based on trajectory calculation.
-     *
-     * @param drive The drive subsystem
-     * @param xSupplier Translation X
-     * @param ySupplier Translation Y
-     * @return Command that aims and spins up, finishing when ready to shoot
-     */
-    public Command aimAndSpinUp(Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier) {
+    public Command autonomousAimAndSpinUp(Drive drive) {
         return Commands.parallel(
                         autoSpeedShooter(drive::getPose, drive::getChassisSpeeds),
-                        DriveCommands.joystickDriveAtAngle(drive, xSupplier, ySupplier, this::getTargetHeading))
+                        DriveCommands.holdAngle(drive, this::getTargetHeading))
                 .until(() -> isReadyToShoot(drive.getRotation()))
-                .withName("AimAndSpinUp");
+                .withName("AutonomousAimAndSpinUp");
     }
 
     public Command setFlywheelVelocityCommand(AngularVelocity velocity) {
@@ -514,55 +457,5 @@ public class Superstructure extends SubsystemBase {
 
     public Command setFlywheelVelocityAndWaitCommand(AngularVelocity velocity) {
         return setFlywheelVelocityCommand(velocity).until(this::atTargetVelocity);
-    }
-
-    public Command autoChooseShootingCommand(Drive drive, DoubleSupplier xSupplier, DoubleSupplier ySupplier) {
-        if ((manualShootingEnabled.get() == 1.0) || vision.getTagCount() == 0) {
-            return autoSpeedShooter(drive::getPose, drive::getChassisSpeeds);
-        } else {
-            return fullAutoAim(drive, xSupplier, ySupplier);
-        }
-    }
-
-    /** Manual override command for testing and bench mode. Doesn't run the shooter */
-    public Command setFlywheelVelocityManual(AngularVelocity velocity) {
-        return Commands.runOnce(() -> manualShootingVelocity = velocity);
-    }
-
-    public Command changeFlywheelVelocityManual(AngularVelocity deltaRPM) {
-        return Commands.runOnce(() -> manualShootingVelocity = manualShootingVelocity.plus(deltaRPM));
-    }
-
-    public Command changeManualShootingCommand(Command command) {
-        return Commands.runOnce(() -> currentShootingCommand = command);
-    }
-
-    public Supplier<Command> getCurrentShootingCommandSupplier() {
-        return () -> currentShootingCommand;
-    }
-
-    public Command setManualShootingEnabledCommand(boolean enabled) {
-        return Commands.runOnce(() -> {
-                    manualShootingEnabled.set(enabled ? 1.0 : 0.0);
-                })
-                .withName("SetManualShootingEnabled:" + enabled);
-    }
-
-    public Command runToggledSpeed(Supplier<Pose2d> robotPose, Supplier<ChassisSpeeds> chassisSpeeds) {
-        if (manualShootingEnabled.get() == 1.0) {
-            return runFlywheelVelocityManual();
-        } else {
-            return autoSpeedShooter(robotPose, chassisSpeeds);
-        }
-    }
-
-    public Command runFlywheelVelocityManual() {
-        return Commands.run(
-                        () -> {
-                            setFlywheelVelocity(manualShootingVelocity);
-                        },
-                        shooter.getLeft(),
-                        shooter.getRight())
-                .withName("RunFlywheelVelocityManual");
     }
 }

@@ -13,6 +13,7 @@
 
 package frc.robot.subsystems.vision;
 
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import org.littletonrobotics.junction.AutoLog;
@@ -25,6 +26,7 @@ public interface VisionIO {
         public PoseObservation[] poseObservations = new PoseObservation[0];
         public int[] tagIds = new int[0];
         public HubTagObservation[] hubTagObservations = new HubTagObservation[0];
+        public FuelObservation[] fuelObservations = new FuelObservation[0];
     }
 
     /** Represents the angle to a simple target, not used for pose estimation. */
@@ -32,6 +34,19 @@ public interface VisionIO {
 
     /** Per-tag observation from rawfiducials — horizontal angle, camera distance, and robot distance. */
     record HubTagObservation(int tagId, Rotation2d tx, double distToCamera, double distToRobot) {}
+
+    /**
+     * Detector-ready FUEL observation for classical or future ML vision. When {@code hasFieldPose} is false, autonomy
+     * logs it but does not use it as a global path target.
+     */
+    record FuelObservation(
+            double timestampSeconds,
+            Pose2d fieldPose,
+            boolean hasFieldPose,
+            Rotation2d tx,
+            double distanceMeters,
+            double confidence,
+            String source) {}
 
     /** Represents a robot pose sample used for pose estimation. */
     record PoseObservation(

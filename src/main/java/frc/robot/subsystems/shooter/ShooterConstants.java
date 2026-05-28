@@ -23,8 +23,7 @@ public class ShooterConstants {
     }
 
     public static final CalculationMode kDefaultCalculationMode = CalculationMode.DOU_INTERPOLATION;
-    public static final boolean kManualShootingEnabled = false;
-    public static final int kManualShootingSpeedRPM = 3600;
+    public static final int kFallbackShootingSpeedRPM = 3600;
 
     /** Fixed hood angle to use (degrees) */
     public static final Angle kFixedHoodAngle = Degrees.of(60);

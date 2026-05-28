@@ -21,6 +21,7 @@ import edu.wpi.first.wpilibj.Threads;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import edu.wpi.first.wpilibj2.command.Commands;
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.NT4Publisher;
@@ -33,6 +34,7 @@ import org.littletonrobotics.junction.wpilog.WPILOGWriter;
  */
 public class Robot extends LoggedRobot {
     private Command autonomousCommand;
+    private Command teleopAutonomyContinuationCommand;
     private final RobotContainer robotContainer;
 
     public Robot() {
@@ -89,6 +91,7 @@ public class Robot extends LoggedRobot {
     /** This function is called once when the robot is disabled. */
     @Override
     public void disabledInit() {
+        cancelAutonomyCommands();
         robotContainer.resetSimulationField();
         robotContainer.intake.setNeutralMode(NeutralModeValue.Coast);
     }
@@ -104,12 +107,8 @@ public class Robot extends LoggedRobot {
     /** This autonomous runs the autonomous command selected by your {@link RobotContainer} class. */
     @Override
     public void autonomousInit() {
-        autonomousCommand = robotContainer.getAutonomousCommand();
         robotContainer.intake.setNeutralMode(NeutralModeValue.Brake);
-        // schedule the autonomous command (example)
-        if (autonomousCommand != null) {
-            CommandScheduler.getInstance().schedule(autonomousCommand);
-        }
+        scheduleAutonomy(robotContainer.getAutonomousCommand());
     }
 
     /** This function is called periodically during autonomous. */
@@ -119,16 +118,8 @@ public class Robot extends LoggedRobot {
     /** This function is called once when teleop is enabled. */
     @Override
     public void teleopInit() {
-        // This makes sure that the autonomous stops running when
-        // teleop starts running. If you want the autonomous to
-        // continue until interrupted by another command, remove
-        // this line or comment it out.
-        if (autonomousCommand != null) {
-            autonomousCommand.cancel();
-        }
         robotContainer.intake.setNeutralMode(NeutralModeValue.Brake);
-        CommandScheduler.getInstance().schedule(robotContainer.superstructure.stopUpgoerCommand());
-        CommandScheduler.getInstance().schedule(robotContainer.superstructure.stopShooterCommand());
+        continueOrStartTeleopAutonomy();
     }
 
     /** This function is called periodically during operator control. */
@@ -154,5 +145,38 @@ public class Robot extends LoggedRobot {
     @Override
     public void simulationPeriodic() {
         robotContainer.updateSimulation();
+    }
+
+    private void scheduleAutonomy(Command command) {
+        autonomousCommand = command;
+        if (autonomousCommand != null) {
+            CommandScheduler.getInstance().schedule(autonomousCommand);
+        }
+    }
+
+    private void continueOrStartTeleopAutonomy() {
+        Command continuousAutonomy = robotContainer.getContinuousAutonomousCommand();
+        if (autonomousCommand != null && CommandScheduler.getInstance().isScheduled(autonomousCommand)) {
+            Command previousAutonomy = autonomousCommand;
+            teleopAutonomyContinuationCommand = Commands.waitUntil(
+                            () -> !CommandScheduler.getInstance().isScheduled(previousAutonomy))
+                    .andThen(Commands.runOnce(() -> autonomousCommand = continuousAutonomy), continuousAutonomy)
+                    .withName("TeleopContinuousAutonomyContinuation");
+            CommandScheduler.getInstance().schedule(teleopAutonomyContinuationCommand);
+            return;
+        }
+
+        scheduleAutonomy(continuousAutonomy);
+    }
+
+    private void cancelAutonomyCommands() {
+        if (teleopAutonomyContinuationCommand != null) {
+            teleopAutonomyContinuationCommand.cancel();
+            teleopAutonomyContinuationCommand = null;
+        }
+        if (autonomousCommand != null) {
+            autonomousCommand.cancel();
+            autonomousCommand = null;
+        }
     }
 }
