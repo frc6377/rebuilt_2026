@@ -1,10 +1,12 @@
 package frc.robot.subsystems.indexer;
 
+import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.RPM;
 
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.wpilibj.RobotController;
 
 public class IndexerConstants {
@@ -22,6 +24,7 @@ public class IndexerConstants {
         public static final double PeakReverseTorqueCurrent = 40;
         public static final InvertedValue MotorInverted = InvertedValue.Clockwise_Positive;
         public static final NeutralModeValue MotorNeutralMode = NeutralModeValue.Brake;
+        public static final Current kStatorCurrentLimit = Amps.of(25);
     }
 
     public final class PID {

@@ -2,6 +2,7 @@ package frc.robot.subsystems.intake;
 
 import static edu.wpi.first.units.Units.*;
 
+import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
@@ -52,7 +53,8 @@ public class IntakeConstants {
 
         public static class MotorConfig {
             public static final double kRampPeriod = 0.02;
-            public static final Current kStatorCurrentLimit = Amps.of(70);
+            public static final Current kStatorCurrentLimit = Amps.of(60);
+            public static final Current kSupplyCurrentLimit = Amps.of(50);
             public static final InvertedValue kInverted = InvertedValue.CounterClockwise_Positive;
             public static final NeutralModeValue kNeutralMode = NeutralModeValue.Coast;
 
@@ -76,9 +78,10 @@ public class IntakeConstants {
                 PIDF.kS,
                 PIDF.kA,
                 MotorConfig.kStatorCurrentLimit,
-                Amps.of(60), // default supply current limit
+                MotorConfig.kSupplyCurrentLimit,
                 true,
-                true);
+                true,
+                new MotorOutputConfigs().withPeakForwardDutyCycle(1).withPeakReverseDutyCycle(-1));
     }
 
     public static class ExtenderConstants {
@@ -90,9 +93,9 @@ public class IntakeConstants {
         public static final Distance kExtenderArmLength = Inches.of(12.0);
         public static final double kDownSpeed = 0.05;
 
-        public static final Angle kExtenderStowAngle = Degrees.of(0).plus(Degrees.of(180));
+        public static final Angle kExtenderStowAngle = Degrees.of(0).plus(Degrees.of(175));
         public static final Angle kExtenderIntakeAngle = Degrees.of(97).plus(Degrees.of(180));
-        public static final Angle kExtenderTolerance = Degrees.of(5.0);
+        public static final Angle kExtenderTolerance = Degrees.of(7.5);
         public static final Angle kExtenderSiftAngleOne = Degrees.of(0.0).plus(Degrees.of(180));
         public static final Angle kExtenderSiftAngleTwo = Degrees.of(97.0).plus(Degrees.of(180));
         public static final Angle kExtenderCustomAngleOne = Degrees.of(45.0).plus(Degrees.of(180));
@@ -100,7 +103,9 @@ public class IntakeConstants {
         public static final Angle kExtenderFloatLimit = Degrees.of(50).plus(Degrees.of(180));
         public static final Angle kExtenderZeroAngle = Degrees.of(-56.70141).plus(Degrees.of(180));
         public static final TrapezoidProfile.Constraints kExtenderConstraints =
-                new TrapezoidProfile.Constraints(1300, 1300);
+                new TrapezoidProfile.Constraints(100000, 7500);
+        public static final TrapezoidProfile.Constraints SIFT_CONSTRAINTS =
+                new TrapezoidProfile.Constraints(100000, 7500);
 
         public static final Time kSiftTimeout = Seconds.of(0.5);
 
@@ -109,11 +114,14 @@ public class IntakeConstants {
             public static final PIDConfig normalPID = new PIDConfig(0.005, 0.0, 0.00001);
 
             public static final PIDConfig floatPID = new PIDConfig(0.00, 0.0, 0.00001);
+
+            public static final PIDConfig babyPID = new PIDConfig(0.007, 0.0, 0.00001);
         }
 
         public static class MotorConfig {
             public static final double kRampPeriod = 4;
             public static final Current kStatorCurrentLimitExtender = Amps.of(30);
+            public static final Current kSupplyCurrentLimitExtender = Amps.of(25);
             public static final InvertedValue kInverted = InvertedValue.Clockwise_Positive;
             public static final NeutralModeValue kNeutralMode = NeutralModeValue.Brake;
         }

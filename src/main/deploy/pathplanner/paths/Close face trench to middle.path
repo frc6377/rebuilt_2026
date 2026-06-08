@@ -4,24 +4,24 @@
     {
       "anchor": {
         "x": 3.5,
-        "y": 7.53
+        "y": 7.5
       },
       "prevControl": null,
       "nextControl": {
-        "x": 5.29392386810335,
-        "y": 7.5134725849233375
+        "x": 5.28202862670557,
+        "y": 7.5454556135297794
       },
       "isLocked": false,
       "linkedName": "close trench shot"
     },
     {
       "anchor": {
-        "x": 6.2,
-        "y": 7.199999999999999
+        "x": 6.4,
+        "y": 7.4
       },
       "prevControl": {
-        "x": 5.087102649006623,
-        "y": 7.577847682119204
+        "x": 5.180852096204318,
+        "y": 7.473617084201118
       },
       "nextControl": null,
       "isLocked": false,
@@ -48,7 +48,7 @@
   "folder": null,
   "idealStartingState": {
     "velocity": 0,
-    "rotation": -76.07733413312657
+    "rotation": -71.81257308121617
   },
   "useDefaultConstraints": true
 }

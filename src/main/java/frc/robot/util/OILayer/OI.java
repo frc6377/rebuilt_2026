@@ -1,8 +1,5 @@
 package frc.robot.util.OILayer;
 
-import static edu.wpi.first.wpilibj2.command.Commands.runOnce;
-
-import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import java.util.function.DoubleSupplier;
 
@@ -46,11 +43,8 @@ public interface OI {
         return noButton;
     }
 
-    default Command setRumble(double driverRumble, double operatorRumble) {
-        return runOnce(() -> {
-            // controller.setRumble(GenericHID.RumbleType.kLeftRumble, driverRumble);
-            // controller.setRumble(GenericHID.RumbleType.kRightRumble, operatorRumble);
-        });
+    default void setRumble(double driverRumble, double operatorRumble) {
+        return;
     }
     /* Puts the shooter into a mode where it is able to shoot (e.g. spins up a flywheel that was currently idle)
      * Rumbles joystick or turns on lights on the robot when it gets up to speed to be able to shoot

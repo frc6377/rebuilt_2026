@@ -2,6 +2,7 @@ package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.*;
 
+import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.signals.InvertedValue;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.units.measure.*;
@@ -34,7 +35,7 @@ public class ShooterConstants {
 
     // Velocity tolerance
     public static final AngularVelocity kFlywheelVelocityTolerance = RPM.of(150.0);
-    public static final Angle kHeadingTolerance = Degrees.of(10);
+    public static final Angle kHeadingTolerance = Degrees.of(5);
     public static final AngularVelocity kMaxVelocityDifference =
             RotationsPerSecond.of(500.0 / 60.0); // 500 RPM difference
 
@@ -72,10 +73,12 @@ public class ShooterConstants {
     public static final HashMap<Distance, AngularVelocity> distanceToAngularVelocity = new HashMap<>();
 
     static {
-        distanceToAngularVelocity.put(Meters.of(0.0), RPM.of(1500));
+        distanceToAngularVelocity.put(Meters.of(0.0), RPM.of(1700));
         distanceToAngularVelocity.put(Meters.of(3.18), RPM.of(3600));
-        distanceToAngularVelocity.put(Meters.of(1), RPM.of(2400));
-        distanceToAngularVelocity.put(Meters.of(6), RPM.of(4000));
+        distanceToAngularVelocity.put(Meters.of(4.6), RPM.of(4230));
+        distanceToAngularVelocity.put(Meters.of(3.75), RPM.of(4000));
+        distanceToAngularVelocity.put(Meters.of(1), RPM.of(2550));
+        distanceToAngularVelocity.put(Meters.of(6), RPM.of(4500));
     }
 
     public static final InterpolatingDoubleTreeMap distanceToAngularVelocityDouMapRPM =
@@ -111,7 +114,8 @@ public class ShooterConstants {
             Current flywheelCurrentLimitStator,
             Current flywheelCurrentLimitSupply,
             boolean flywheelCurrentLimitStatorEnable,
-            boolean flywheelCurrentLimitSupplyEnable) {}
+            boolean flywheelCurrentLimitSupplyEnable,
+            MotorOutputConfigs outputConfigs) {}
 
     public static final ShooterConfig leftConfig = new ShooterConfig(
             "LeftShooter",
@@ -132,7 +136,8 @@ public class ShooterConstants {
             Amps.of(70),
             Amps.of(50),
             true,
-            true);
+            true,
+            new MotorOutputConfigs().withPeakForwardDutyCycle(1).withPeakReverseDutyCycle(-0.05));
 
     public static final ShooterConfig rightConfig = new ShooterConfig(
             "RightShooter",
@@ -153,5 +158,6 @@ public class ShooterConstants {
             Amps.of(70),
             Amps.of(50.0),
             true,
-            true);
+            true,
+            new MotorOutputConfigs().withPeakForwardDutyCycle(1).withPeakReverseDutyCycle(-0.05));
 }

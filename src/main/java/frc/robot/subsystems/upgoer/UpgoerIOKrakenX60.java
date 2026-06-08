@@ -67,6 +67,8 @@ public class UpgoerIOKrakenX60 implements UpgoerIO {
         config.Slot0 = motor.getTunableSlot0Configs();
         config.CurrentLimits.StatorCurrentLimit = UpgoerConstants.currentLimit.in(Amps);
         config.CurrentLimits.StatorCurrentLimitEnable = true;
+        config.CurrentLimits.SupplyCurrentLimit = UpgoerConstants.supplyCurrentLimit.in(Amps);
+        config.CurrentLimits.SupplyCurrentLimitEnable = true;
         tryUntilOk(5, () -> motor.applyConfiguration(config, 0.25));
 
         velocity = motor.getVelocity();

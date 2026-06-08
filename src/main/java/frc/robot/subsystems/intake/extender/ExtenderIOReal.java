@@ -41,7 +41,8 @@ public class ExtenderIOReal implements ExtenderIO {
                         .withVoltageClosedLoopRampPeriod(ExtenderConstants.MotorConfig.kRampPeriod))
                 .withCurrentLimits(new CurrentLimitsConfigs()
                         .withStatorCurrentLimitEnable(true)
-                        .withStatorCurrentLimit(ExtenderConstants.MotorConfig.kStatorCurrentLimitExtender));
+                        .withStatorCurrentLimit(ExtenderConstants.MotorConfig.kStatorCurrentLimitExtender)
+                        .withSupplyCurrentLimit(ExtenderConstants.MotorConfig.kSupplyCurrentLimitExtender));
 
         extenderMotor = new TunableTalonFX(Constants.CANIDs.MotorIDs.kExtenderMotorID, "rio", "Extender");
         extenderMotor.getConfigurator().apply(config);
@@ -60,6 +61,7 @@ public class ExtenderIOReal implements ExtenderIO {
 
         extenderPid.addPreset("default", ExtenderConstants.PIDF.normalPID);
         extenderPid.addPreset("float", ExtenderConstants.PIDF.floatPID);
+        extenderPid.addPreset("sift", ExtenderConstants.PIDF.babyPID);
 
         extenderPid.getPIDController().enableContinuousInput(0, 359);
 
@@ -93,7 +95,7 @@ public class ExtenderIOReal implements ExtenderIO {
     public void setPosition(Angle position) {
         setPidEnabled(true);
         setMode(NeutralModeValue.Brake);
-        extenderPid.applyPreset("default");
+
         extenderPid.setSetpoint(position.in(Degrees));
     }
 
@@ -112,11 +114,13 @@ public class ExtenderIOReal implements ExtenderIO {
 
     @Override
     public void extend() {
+        extenderPid.applyPreset("default");
         setPosition(Degrees.of(extenderIntakeAngle.get()));
     }
 
     @Override
     public void retract() {
+        extenderPid.applyPreset("default");
         setPosition(Degrees.of(extenderStowAngle.get()));
     }
 
@@ -137,26 +141,32 @@ public class ExtenderIOReal implements ExtenderIO {
 
     @Override
     public void goToSiftAngleOne() {
+
         setPosition(Degrees.of(extenderSiftAngleOne.get()));
     }
 
     @Override
     public void goToSiftAngleTwo() {
+
         setPosition(Degrees.of(extenderSiftAngleTwo.get()));
     }
 
     @Override
     public void goToCustomAngleOne() {
+        extenderPid.applyPreset("default");
         setPosition(Degrees.of(extenderCustomAngleOne.get()));
     }
 
     @Override
     public void goToCustomAngleTwo() {
+        extenderPid.applyPreset("default");
         setPosition(Degrees.of(extenderCustomAngleTwo.get()));
     }
 
     @Override
     public void toggleSift() {
+        extenderPid.applyPreset("sift");
+        extenderPid.setSpeedConstraints(ExtenderConstants.SIFT_CONSTRAINTS);
         if (Degrees.of(extenderPid.getSetpoint()).equals(Degrees.of(extenderSiftAngleOne.get()))) {
             goToSiftAngleTwo();
         } else {
@@ -188,6 +198,8 @@ public class ExtenderIOReal implements ExtenderIO {
 
     @Override
     public void toggle() {
+        extenderPid.applyPreset("default");
+        extenderPid.setSpeedConstraints(ExtenderConstants.kExtenderConstraints);
         double stowDeg = extenderStowAngle.get();
         if (Math.abs(Degrees.of(extenderPid.getSetpoint())
                         .minus(Degrees.of(stowDeg))

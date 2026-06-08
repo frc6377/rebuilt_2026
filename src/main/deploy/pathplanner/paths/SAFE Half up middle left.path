@@ -3,16 +3,16 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 7.877657894736844,
-        "y": 4.5119649122807015
+        "x": 7.716105263157894,
+        "y": 4.665824561403508
       },
       "prevControl": null,
       "nextControl": {
-        "x": 7.821140906022233,
-        "y": 4.755492795667045
+        "x": 7.6595882744432835,
+        "y": 4.909352444789852
       },
       "isLocked": false,
-      "linkedName": "Middle Down end"
+      "linkedName": "SAFE-Middle Down End"
     },
     {
       "anchor": {

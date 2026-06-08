@@ -378,7 +378,12 @@ public class RobotContainer {
                                                 intake.intakeRollerCommand())))
                         .withName("ShootAuto"))
                 .onFalse(Commands.parallel(
-                                superstructure.stopUpgoerCommand(),
+                                Commands.runOnce(
+                                        () -> superstructure.getLeftUpgoer().setVelocity(RPM.of(-200)),
+                                        superstructure.getLeftUpgoer()),
+                                Commands.runOnce(
+                                        () -> superstructure.getRightUpgoer().setVelocity(RPM.of(-200)),
+                                        superstructure.getRightUpgoer()),
                                 indexer.stop(),
                                 superstructure.setFlywheelVelocityManual(RPM.of(1500)),
                                 intake.extendIntake())

@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.DoubleSupplier;
-import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 import org.littletonrobotics.junction.networktables.LoggedNetworkString;
 
@@ -63,6 +62,7 @@ public class TunablePIDController {
     public static final PIDConfig defaultConfig = new PIDConfig(0.0, 0.0, 0.0);
 
     private double calculatedOutput = 0.0;
+    private LoggedNetworkNumber loggedOutput;
 
     private final String tunableName;
     private final DoubleSupplier encoderPosition;
@@ -155,6 +155,7 @@ public class TunablePIDController {
         this.maxVelocityLog = new LoggedNetworkNumber(tunableName + "/MaxVelocity", constraints.maxVelocity);
         this.maxAccelerationLog =
                 new LoggedNetworkNumber(tunableName + "/MaxAcceleration", constraints.maxAcceleration);
+        this.loggedOutput = new LoggedNetworkNumber(tunableName + "AppliedOutput", 0.0);
 
         // Initialize last-seen values to defaults so first read will be detected as a
         // change
@@ -163,6 +164,37 @@ public class TunablePIDController {
         this.lastKD = defaultConfig.kD();
         this.lastMaxVelocity = constraints.maxVelocity;
         this.lastMaxAcceleration = constraints.maxAcceleration;
+    }
+
+    /**
+     * Updates the profiled PID speed constraints at runtime.
+     *
+     * @param maxVelocity Maximum profile velocity.
+     * @param maxAcceleration Maximum profile acceleration.
+     */
+    public void setSpeedConstraints(double maxVelocity, double maxAcceleration) {
+        setSpeedConstraints(new TrapezoidProfile.Constraints(maxVelocity, maxAcceleration));
+    }
+
+    /**
+     * Updates the profiled PID speed constraints at runtime.
+     *
+     * @param constraints New trapezoid profile constraints.
+     */
+    public void setSpeedConstraints(TrapezoidProfile.Constraints constraints) {
+        if (constraints == null || constraints == this.pidController.getConstraints()) {
+            return;
+        }
+        pidController.setConstraints(constraints);
+        maxVelocityLog.set(constraints.maxVelocity);
+        maxAccelerationLog.set(constraints.maxAcceleration);
+        lastMaxVelocity = constraints.maxVelocity;
+        lastMaxAcceleration = constraints.maxAcceleration;
+    }
+
+    /** Backward-compatible typo alias. Prefer {@link #setSpeedConstraints(double, double)}. */
+    public void setSpeedConstrants(double maxVelocity, double maxAcceleration) {
+        setSpeedConstraints(maxVelocity, maxAcceleration);
     }
 
     /**
@@ -220,7 +252,7 @@ public class TunablePIDController {
      */
     public boolean applyPreset(String name) {
         PresetHolder holder = presets.get(name);
-        if (holder == null) {
+        if (holder == null || name == activePresetName) {
             return false;
         }
 
@@ -321,7 +353,8 @@ public class TunablePIDController {
      */
     public void runPid() {
         double output = calculate();
-        Logger.recordOutput(tunableName + "/appliedOutput", output);
+        this.calculatedOutput = output;
+        loggedOutput.set(output);
         outputConsumer.accept(output);
     }
 

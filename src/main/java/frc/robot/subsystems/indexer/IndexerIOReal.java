@@ -2,6 +2,7 @@ package frc.robot.subsystems.indexer;
 
 import static edu.wpi.first.units.Units.Volts;
 
+import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.VelocityVoltage;
@@ -40,7 +41,9 @@ public class IndexerIOReal implements IndexerIO {
         indexerMotorConfig.MotorOutput.Inverted = IndexerConstants.MotorConfigurationConfigs.MotorInverted;
         indexerMotorConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
         indexerMotorConfig.Slot0 = indexerPIDConfigs;
-        indexerMotor.applyConfiguration(indexerMotorConfig);
+        indexerMotor.applyConfiguration(indexerMotorConfig.withCurrentLimits(new CurrentLimitsConfigs()
+                .withStatorCurrentLimitEnable(true)
+                .withStatorCurrentLimit(IndexerConstants.MotorConfigurationConfigs.kStatorCurrentLimit)));
 
         indexerMotorOutput = new LoggedNetworkNumber("Indexer/IndexerMotorOutput", IndexerConstants.kCollectorSpeed);
         indexerMotorReverseOutput = new LoggedNetworkNumber("Indexer/IndexerMotorReverseOutput", 0);

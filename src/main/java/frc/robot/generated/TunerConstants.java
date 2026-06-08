@@ -76,9 +76,10 @@ public class TunerConstants {
     // Some configs will be overwritten; check the `with*InitialConfigs()` API documentation.
     private static final TalonFXConfiguration driveInitialConfigs = new TalonFXConfiguration()
             .withCurrentLimits(new CurrentLimitsConfigs()
-                    .withStatorCurrentLimit(Amps.of(60))
+                    .withStatorCurrentLimit(Amps.of(80))
+                    .withSupplyCurrentLimit(Amps.of(60))
                     .withStatorCurrentLimitEnable(true)
-                    .withSupplyCurrentLimitEnable(false));
+                    .withSupplyCurrentLimitEnable(true));
     private static final TalonFXConfiguration steerInitialConfigs = new TalonFXConfiguration()
             .withCurrentLimits(new CurrentLimitsConfigs()
                     // Swerve azimuth does not require much torque output, so we can set a relatively low
@@ -173,13 +174,22 @@ public class TunerConstants {
     *   Encoder: 3
     *  Zero: 0.02345
 
-    */
-
-    // Front Left
+      POD 1
     private static final int kFrontLeftDriveMotorId = 1;
     private static final int kFrontLeftSteerMotorId = 2;
     private static final int kFrontLeftEncoderId = 1;
     private static final Angle kFrontLeftEncoderOffset = Rotations.of(-0.406005859375);
+    private static final boolean kFrontLeftSteerMotorInverted = false;
+    private static final boolean kFrontLeftEncoderInverted = false;
+
+
+    */
+
+    // Front Left
+    private static final int kFrontLeftDriveMotorId = 31;
+    private static final int kFrontLeftSteerMotorId = 30;
+    private static final int kFrontLeftEncoderId = 30;
+    private static final Angle kFrontLeftEncoderOffset = Rotations.of(-0.077393);
     private static final boolean kFrontLeftSteerMotorInverted = false;
     private static final boolean kFrontLeftEncoderInverted = false;
 
