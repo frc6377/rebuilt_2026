@@ -88,7 +88,7 @@ public class ShooterConstants {
         for (Distance distance : distanceToAngularVelocity.keySet()) {
             distanceToAngularVelocityDouMapRPM.put(
                     distance.in(Meters) + offsetM,
-                    distanceToAngularVelocity.get(distance).in(RPM)/2);
+                    distanceToAngularVelocity.get(distance).in(RPM) / 2);
         }
     }
 
