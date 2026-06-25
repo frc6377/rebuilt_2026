@@ -8,8 +8,8 @@
       },
       "prevControl": null,
       "nextControl": {
-        "x": 7.6595882744432835,
-        "y": 4.909352444789852
+        "x": 7.6595869385102064,
+        "y": 4.909352134747922
       },
       "isLocked": false,
       "linkedName": "SAFE-Middle Down End"
@@ -20,8 +20,8 @@
         "y": 6.8
       },
       "prevControl": {
-        "x": 7.789298743305752,
-        "y": 5.984829525991714
+        "x": 7.78933010648685,
+        "y": 5.9846944678357215
       },
       "nextControl": null,
       "isLocked": false,
