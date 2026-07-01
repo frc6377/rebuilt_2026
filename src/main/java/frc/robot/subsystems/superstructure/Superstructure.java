@@ -24,14 +24,12 @@ import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.FieldConstants;
-import frc.robot.Robot;
 import frc.robot.commands.DriveCommands;
 import frc.robot.commands.ShooterCalibrationCommand;
 import frc.robot.subsystems.drive.Drive;
@@ -153,7 +151,8 @@ public class Superstructure extends SubsystemBase {
         Logger.recordOutput("Shooting/TimeUntilHubStateChange", FieldConstants.getTimeUntilHubStateChange());
         Logger.recordOutput(
                 "Shooting/DistanceToHub", round(vision.getHubDistanceMeasure().in(Meters) * 100.0) / 100.0);
-        if ((DriverStation.isFMSAttached()&&FieldConstants.getTimeUntilHubStateChange() > 4
+        if ((DriverStation.isFMSAttached()
+                        && FieldConstants.getTimeUntilHubStateChange() > 4
                         && FieldConstants.getTimeUntilHubStateChange() <= 7
                         && DriverStation.isTeleopEnabled())
                 || DriverStation.getMatchTime() <= 10 && DriverStation.isTeleopEnabled()) {
