@@ -13,7 +13,7 @@ public class OIKeyboard implements OI {
     // Axes
     public static final DoubleSupplier AxisAD = () -> controller.getRawAxis(0);
     public static final DoubleSupplier AxisWS = () -> controller.getRawAxis(1);
-    public static final DoubleSupplier AxisRE = () -> controller.getRawAxis(2);
+    public static final DoubleSupplier AxisQE = () -> controller.getRawAxis(2);
 
     // Buttons
     public static final Trigger Z = new JoystickButton(controller, 1);
@@ -67,7 +67,7 @@ public class OIKeyboard implements OI {
 
     @Override
     public DoubleSupplier driveRotation() {
-        return LeftRightArrows;
+        return () -> driveRotationCurve.calculate(-AxisQE.getAsDouble());
     }
 
     @Override
@@ -112,12 +112,12 @@ public class OIKeyboard implements OI {
 
     @Override
     public Trigger xDrive() {
-        return Home;
+        return PgUp;
     }
 
     @Override
     public Trigger toggleIntake() {
-        return Home;
+        return Delete;
     }
 
     @Override

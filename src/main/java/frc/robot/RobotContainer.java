@@ -316,8 +316,8 @@ public class RobotContainer {
         drive.setDefaultCommand(DriveCommands.joystickDrive(
                 drive,
                 // The lambda () -> ensures this check happens every loop
-                () -> OIController.driveTranslationY().getAsDouble(),
-                () -> OIController.driveTranslationX().getAsDouble(),
+                this::driveTranslationYInput,
+                this::driveTranslationXInput,
                 () -> OIController.driveRotation().getAsDouble(),
                 () -> OIController.xDrive().getAsBoolean()));
         // // Lock to 0° when butn is
@@ -362,8 +362,8 @@ public class RobotContainer {
                                 superstructure
                                         .aimAtHubWhileDriving(
                                                 drive,
-                                                OIController.driveTranslationX(),
-                                                OIController.driveTranslationY(),
+                                                this::driveTranslationXInput,
+                                                this::driveTranslationYInput,
                                                 OIController.xDrive())
                                         .repeatedly(),
                                 Commands.sequence(
@@ -418,7 +418,7 @@ public class RobotContainer {
 
         OIController.autoSpeedMode()
                 .onTrue(superstructure.changeManualShootingCommand(superstructure.autoChooseShootingCommand(
-                        drive, OIController.driveTranslationX(), OIController.driveTranslationY())));
+                        drive, this::driveTranslationXInput, this::driveTranslationYInput)));
         OIController.hubShootSpeed()
                 .onTrue(superstructure
                         .setFlywheelVelocityManual(RPM.of(2600))
@@ -503,5 +503,15 @@ public class RobotContainer {
                     }
                 })
                 .ignoringDisable(true);
+    }
+
+    private double driveTranslationXInput() {
+        double value = OIController.driveTranslationX().getAsDouble();
+        return Constants.currentMode == Constants.Mode.SIM ? -value : value;
+    }
+
+    private double driveTranslationYInput() {
+        double value = OIController.driveTranslationY().getAsDouble();
+        return Constants.currentMode == Constants.Mode.SIM ? -value : value;
     }
 }

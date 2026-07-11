@@ -87,8 +87,6 @@ public abstract class ModuleIOTalonFX implements ModuleIO {
         var turnConfig = new TalonFXConfiguration();
         turnConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
         turnConfig.Slot0 = constants.SteerMotorGains;
-        if (Constants.currentMode == Constants.Mode.SIM)
-            turnConfig.Slot0.withKD(0.5).withKS(0); // during simulation, gains are slightly different
 
         turnConfig.Feedback.FeedbackRemoteSensorID = constants.EncoderId;
         turnConfig.Feedback.FeedbackSensorSource = switch (constants.FeedbackSource) {

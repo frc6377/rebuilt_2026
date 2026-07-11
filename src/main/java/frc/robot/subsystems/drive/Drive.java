@@ -51,6 +51,7 @@ import frc.robot.Constants.Mode;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.vision.Vision;
 import frc.robot.util.LocalADStarAK;
+import frc.robot.util.PhoenixUtil;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
@@ -103,11 +104,11 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
                     DCMotor.getKrakenX60(1),
                     DCMotor.getKrakenX44(1),
                     TunerConstants.FrontLeft.DriveMotorGearRatio,
-                    TunerConstants.FrontLeft.SteerMotorGearRatio,
-                    Volts.of(TunerConstants.FrontLeft.DriveFrictionVoltage),
-                    Volts.of(TunerConstants.FrontLeft.SteerFrictionVoltage),
+                    PhoenixUtil.SIM_STEER_GEAR_RATIO,
+                    Volts.of(PhoenixUtil.SIM_DRIVE_FRICTION_VOLTS),
+                    Volts.of(PhoenixUtil.SIM_STEER_FRICTION_VOLTS),
                     Meters.of(TunerConstants.FrontLeft.WheelRadius),
-                    KilogramSquareMeters.of(TunerConstants.FrontLeft.SteerInertia),
+                    KilogramSquareMeters.of(PhoenixUtil.SIM_STEER_INERTIA_KGM2),
                     WHEEL_COF));
 
     static final Lock odometryLock = new ReentrantLock();
@@ -293,18 +294,15 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
      * normal orientations the next time a nonzero velocity is requested.
      */
     public void stopWithX() {
-        // Rotation2d[] headings = new Rotation2d[4];
-        // for (int i = 0; i < 4; i++) {
-        //     headings[i] = getModuleTranslations()[i].getAngle();
-        // }
-        // kinematics.resetHeadings(headings);
-        // stop();
-        Rotation2d[] headings = new Rotation2d[4];
-        headings[0] = Rotation2d.fromDegrees(45);
-        headings[1] = Rotation2d.fromDegrees(-45);
-        headings[2] = Rotation2d.fromDegrees(-45);
-        headings[3] = Rotation2d.fromDegrees(45);
-        kinematics.resetHeadings(headings);
+        SwerveModuleState[] states = new SwerveModuleState[] {
+            new SwerveModuleState(0, Rotation2d.fromDegrees(45)),
+            new SwerveModuleState(0, Rotation2d.fromDegrees(-45)),
+            new SwerveModuleState(0, Rotation2d.fromDegrees(-45)),
+            new SwerveModuleState(0, Rotation2d.fromDegrees(45)),
+        };
+        for (int i = 0; i < 4; i++) {
+            modules[i].runSetpoint(states[i]);
+        }
     }
 
     /** Returns a command to run a quasistatic test in the specified direction. */

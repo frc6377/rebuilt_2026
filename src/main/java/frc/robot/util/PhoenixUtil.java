@@ -35,6 +35,13 @@ import org.ironmaple.simulation.motorsims.SimulatedBattery;
 import org.ironmaple.simulation.motorsims.SimulatedMotorController;
 
 public final class PhoenixUtil {
+    /** Steer gear ratio used by both maple-sim physics and regulated module constants. */
+    public static final double SIM_STEER_GEAR_RATIO = 16.0;
+
+    public static final double SIM_STEER_INERTIA_KGM2 = 0.05;
+    public static final double SIM_DRIVE_FRICTION_VOLTS = 0.1;
+    public static final double SIM_STEER_FRICTION_VOLTS = 0.05;
+
     /** Attempts to run the command until no error is produced. */
     public static void tryUntilOk(int maxAttempts, Supplier<StatusCode> command) {
         for (int i = 0; i < maxAttempts; i++) {
@@ -141,11 +148,11 @@ public final class PhoenixUtil {
                         .withKV(1.91)
                         .withKA(0)
                         .withStaticFeedforwardSign(StaticFeedforwardSignValue.UseClosedLoopSign))
-                .withSteerMotorGearRatio(16.0)
+                .withSteerMotorGearRatio(SIM_STEER_GEAR_RATIO)
                 // Adjust friction voltages
-                .withDriveFrictionVoltage(Volts.of(0.1))
-                .withSteerFrictionVoltage(Volts.of(0.05))
+                .withDriveFrictionVoltage(Volts.of(SIM_DRIVE_FRICTION_VOLTS))
+                .withSteerFrictionVoltage(Volts.of(SIM_STEER_FRICTION_VOLTS))
                 // Adjust steer inertia
-                .withSteerInertia(KilogramSquareMeters.of(0.05));
+                .withSteerInertia(KilogramSquareMeters.of(SIM_STEER_INERTIA_KGM2));
     }
 }
