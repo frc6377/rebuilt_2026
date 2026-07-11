@@ -32,6 +32,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.commands.DriveCommands;
+import frc.robot.commands.PathPlannerCommands;
 import frc.robot.commands.ShooterCalibrationCommand;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.Drive;
@@ -237,6 +238,10 @@ public class RobotContainer {
                 "Auto Aim", superstructure.aimAtHubWhileDriving(drive, () -> 0, () -> 0, () -> OIController.xDrive()
                         .getAsBoolean()));
         NamedCommands.registerCommand("Stop intake", intake.stopRollerCommand());
+        NamedCommands.registerCommand(
+                "Pathfind to Hub",
+                PathPlannerCommands.pathfindToPose(
+                        new Pose2d(FieldConstants.Hub.topCenterPoint.toTranslation2d(), new Rotation2d())));
 
         // Set up auto routines
         autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
@@ -444,7 +449,9 @@ public class RobotContainer {
                                 DriverStation.getAlliance().get() == Alliance.Blue
                                         ? Degrees.zero()
                                         : Degrees.of(180))));
-        OIController.zeroDrivebase().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
+        // OIController.zeroDrivebase().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
+        OIController.zeroDrivebase()
+                .onTrue(PathPlannerCommands.pathfindToPose(drive, new Pose2d(6.0, 2.0, Rotation2d.fromDegrees(0.0))));
         //        OIController.manualHold().onTrue(Commands.runOnce(drive::stopWithX, drive));
         // OIController.start().onTrue(Commands.runOnce(resetGyro,
         // drive).ignoringDisable(true));
