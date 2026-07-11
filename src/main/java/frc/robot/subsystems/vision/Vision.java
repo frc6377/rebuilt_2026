@@ -39,6 +39,7 @@ import frc.robot.Constants;
 import frc.robot.subsystems.vision.VisionIO.HubTagObservation;
 import frc.robot.subsystems.vision.VisionIO.PoseObservationType;
 import frc.robot.subsystems.vision.questnav.QuestNavIO;
+import frc.robot.util.NerfModeController;
 import gg.questnav.questnav.PoseFrame;
 import gg.questnav.questnav.QuestNav;
 import java.util.LinkedList;
@@ -66,7 +67,7 @@ public class Vision extends SubsystemBase {
     private final String[] logKeyRobotPosesAccepted;
     private final String[] logKeyRobotPosesRejected;
 
-    public Vision(VisionConsumer consumer, QuestNavIO questNavIO, VisionIO... io) {
+    public Vision(VisionConsumer consumer, QuestNavIO questNavIO, NerfModeController nerfModeController, VisionIO... io) {
         this.consumer = consumer;
         this.io = io;
         this.questNavIO = questNavIO;

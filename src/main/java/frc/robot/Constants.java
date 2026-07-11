@@ -46,6 +46,12 @@ public final class Constants {
         SIM,
     }
 
+    public enum NerfMode {
+        FIELD, // default, uses field-specific constants and apriltags
+        TESTING, // dosent use april tags but full speed, will not turn to align
+        NERFED, // speed is reduced, no turning to shoot, drive speed reduced
+    }
+
     public static final class CANIDs {
         public static class MotorIDs {
             public static final int kShooterFlywheelLeftMotorCANID = 10;

@@ -9,6 +9,8 @@ import frc.robot.subsystems.intake.extender.Extender;
 import frc.robot.subsystems.intake.extender.ExtenderIO;
 import frc.robot.subsystems.shooter.BaseShooter;
 import frc.robot.subsystems.shooter.BaseShooterIO;
+import frc.robot.util.NerfModeController;
+
 import java.util.function.BooleanSupplier;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
@@ -23,7 +25,7 @@ public class Intake {
     private final LoggedNetworkNumber tunableIdleSpeed =
             new LoggedNetworkNumber("Intake/Roller/IdleSpeed", IntakeConstants.RollerConstants.kIdleSpeed.in(RPM));
 
-    public Intake(ExtenderIO extenderIO, BaseShooterIO rollerIO) {
+    public Intake(ExtenderIO extenderIO, BaseShooterIO rollerIO, NerfModeController nerfModeController) {
         this.extender = new Extender(extenderIO);
         this.roller = new BaseShooter(rollerIO, IntakeConstants.RollerConstants.rollerConfig);
 

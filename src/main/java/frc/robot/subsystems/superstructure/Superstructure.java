@@ -46,6 +46,7 @@ import frc.robot.subsystems.upgoer.UpgoerIO;
 import frc.robot.subsystems.upgoer.UpgoerIOKrakenX60;
 import frc.robot.subsystems.upgoer.UpgoerIOSim;
 import frc.robot.subsystems.vision.Vision;
+import frc.robot.util.NerfModeController;
 import frc.robot.util.OILayer.OI;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -86,20 +87,21 @@ public class Superstructure extends SubsystemBase {
     private final Vision vision;
     private final OI oi;
     private final RobotState robotState;
+    private final NerfModeController nerfModeController;
     private GamePieceTrajectorySimulation gamePieceTrajectorySimulation;
     private AngularVelocity manualShootingVelocity = RPM.of(ShooterConstants.kManualShootingSpeedRPM);
     private Command currentShootingCommand;
     private TrajectoryBall.ShootingParameters latestParameters = null;
 
     /** Creates the superstructure and selects IO implementations by mode. */
-    public Superstructure(BooleanSupplier isIntaking, Vision vision, OI oi) {
+    public Superstructure(BooleanSupplier isIntaking, Vision vision, OI oi, NerfModeController nerfModeController) {
         RobotState createdState = RobotState.getInstance();
         if (createdState == null) {
             createdState = RobotState.create();
         }
         this.robotState = createdState;
         this.vision = vision;
-
+        this.nerfModeController = nerfModeController;
         this.shooter = new Shooter();
         this.oi = oi;
         UpgoerIO leftUpgoerIO;
@@ -136,7 +138,7 @@ public class Superstructure extends SubsystemBase {
 
         this.leftUpgoer = new Upgoer(leftUpgoerIO, "LeftShooterUpgoer", 1);
         this.rightUpgoer = new Upgoer(rightUpgoerIO, "RightShooterUpgoer", 1);
-        this.indexer = new Indexer(indexerIO);
+        this.indexer = new Indexer(indexerIO, nerfModeController);
         this.currentShootingCommand = this.runFlywheelVelocityManual();
     }
 

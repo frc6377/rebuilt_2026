@@ -54,11 +54,13 @@ import frc.robot.subsystems.shooter.BaseShooterIOKrakenX60;
 import frc.robot.subsystems.shooter.BaseShooterIOSim;
 import frc.robot.subsystems.superstructure.RobotState;
 import frc.robot.subsystems.superstructure.Superstructure;
+import frc.robot.subsystems.upgoer.UpgoerConstants;
 import frc.robot.subsystems.vision.Vision;
 import frc.robot.subsystems.vision.VisionIO;
 import frc.robot.subsystems.vision.VisionIOLimelight;
 import frc.robot.subsystems.vision.VisionIOPhotonVisionSim;
 import frc.robot.subsystems.vision.questnav.QuestNavIO;
+import frc.robot.util.NerfModeController;
 import frc.robot.util.OILayer.OI;
 import frc.robot.util.OILayer.OIKeyboard;
 import frc.robot.util.OILayer.OIXbox;
@@ -90,7 +92,7 @@ public class RobotContainer {
     // access by subsystems that need it
 
     private final boolean usingController;
-
+    private final NerfModeController nerfModeController;
     // Dashboard inputs
     private final LoggedDashboardChooser<Command> autoChooser;
 
@@ -105,6 +107,7 @@ public class RobotContainer {
         } else {
             OIController = new OIKeyboard();
         }
+        nerfModeController = new NerfModeController(Constants.NerfMode.FIELD);
         switch (Constants.currentMode) {
             case REAL:
                 // Real robot, instantiate hardware IO implementations
@@ -115,7 +118,8 @@ public class RobotContainer {
                             new ModuleIOTalonFXReal(TunerConstants.FrontRight),
                             new ModuleIOTalonFXReal(TunerConstants.BackLeft),
                             new ModuleIOTalonFXReal(TunerConstants.BackRight),
-                            (pose) -> {});
+                            (pose) -> {},
+                            nerfModeController);
                 } else {
                     drive = new Drive(
                             new GyroIO() {},
@@ -123,17 +127,18 @@ public class RobotContainer {
                             new ModuleIO() {},
                             new ModuleIO() {},
                             new ModuleIO() {},
-                            (pose) -> {});
+                            (pose) -> {},
+                            nerfModeController);
                 }
                 vision = new Vision(
-                        drive, new QuestNavIO() {}, new VisionIOLimelight("limelight-shooter", drive::getRotation));
+                        drive, new QuestNavIO() {}, nerfModeController, new VisionIOLimelight("limelight-shooter", drive::getRotation));
                 intake = new Intake(
                         Constants.EnabledSubsystems.kExtender ? new ExtenderIOReal() : new ExtenderIO() {},
                         Constants.EnabledSubsystems.kRoller
                                 ? new BaseShooterIOKrakenX60(
                                         frc.robot.subsystems.intake.IntakeConstants.RollerConstants.rollerConfig)
-                                : new BaseShooterIO() {});
-                indexer = new Indexer(Constants.EnabledSubsystems.kIndexer ? new IndexerIOReal() : new IndexerIO() {});
+                                : new BaseShooterIO() {}, nerfModeController);
+                indexer = new Indexer(Constants.EnabledSubsystems.kIndexer ? new IndexerIOReal() : new IndexerIO() {}, nerfModeController);
                 driveSimulation = null;
                 break;
 
@@ -146,7 +151,7 @@ public class RobotContainer {
                         Constants.EnabledSubsystems.kRoller
                                 ? new BaseShooterIOSim(
                                         frc.robot.subsystems.intake.IntakeConstants.RollerConstants.rollerConfig)
-                                : new BaseShooterIO() {});
+                                : new BaseShooterIO() {}, nerfModeController);
                 SimulatedArena.getInstance().addDriveTrainSimulation(driveSimulation);
                 drive = new Drive(
                         new GyroIOSim(driveSimulation.getGyroSimulation()),
@@ -158,15 +163,17 @@ public class RobotContainer {
                                 TunerConstants.BackLeft, driveSimulation.getModules()[2]),
                         new ModuleIOTalonFXSim(
                                 TunerConstants.BackRight, driveSimulation.getModules()[3]),
-                        (pose) -> driveSimulation.setSimulationWorldPose(pose));
+                        (pose) -> driveSimulation.setSimulationWorldPose(pose),
+                        nerfModeController);
                 vision = new Vision(
                         drive,
                         new QuestNavIO() {},
+                        nerfModeController,
                         new VisionIOPhotonVisionSim(
                                 camera0Name, robotToCamera0, driveSimulation::getSimulatedDriveTrainPose),
                         new VisionIOPhotonVisionSim(
                                 camera1Name, robotToCamera1, driveSimulation::getSimulatedDriveTrainPose));
-                indexer = new Indexer(Constants.EnabledSubsystems.kIndexer ? new IndexerIOSim() : new IndexerIO() {});
+                indexer = new Indexer(Constants.EnabledSubsystems.kIndexer ? new IndexerIOSim() : new IndexerIO() {}, nerfModeController);
                 break;
             default:
                 drive = new Drive(
@@ -175,15 +182,16 @@ public class RobotContainer {
                         new ModuleIO() {},
                         new ModuleIO() {},
                         new ModuleIO() {},
-                        (pose) -> {});
+                        (pose) -> {},
+                        nerfModeController);
                 driveSimulation = null;
-                vision = new Vision(drive, new QuestNavIO() {}, new VisionIO() {}, new VisionIO() {});
-                intake = new Intake(new ExtenderIO() {}, new BaseShooterIO() {});
-                indexer = new Indexer(new IndexerIO() {});
+                vision = new Vision(drive, new QuestNavIO() {},nerfModeController,  new VisionIO() {}, new VisionIO() {});
+                intake = new Intake(new ExtenderIO() {}, new BaseShooterIO() {}, nerfModeController);
+                indexer = new Indexer(new IndexerIO() {}, nerfModeController);
                 break;
         }
 
-        superstructure = new Superstructure(intake::isRollerRunning, vision, OIController);
+        superstructure = new Superstructure(intake::isRollerRunning, vision, OIController, nerfModeController);
 
         if (Constants.currentMode == Constants.Mode.SIM) {
             superstructure.configureGamePieceSimulation(driveSimulation);

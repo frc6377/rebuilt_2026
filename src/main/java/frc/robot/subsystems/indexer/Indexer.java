@@ -6,17 +6,22 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.util.NerfModeController;
+
 import java.util.function.BooleanSupplier;
 import org.littletonrobotics.junction.Logger;
 
 public class Indexer extends SubsystemBase {
+    private final NerfModeController nerfModeController;
     private final IndexerIO indexerIO;
     private final IndexerIOInputsAutoLogged inputs = new IndexerIOInputsAutoLogged();
 
     private AngularVelocity setpoint = RotationsPerSecond.zero();
 
-    public Indexer(IndexerIO indexerIO) {
+    public Indexer(IndexerIO indexerIO, NerfModeController nerfModeController) {
         this.indexerIO = indexerIO;
+        this.nerfModeController = nerfModeController;
+        
     }
 
     public Command index() {
