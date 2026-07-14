@@ -99,7 +99,7 @@ public class RobotContainer {
     public RobotContainer() {
         RobotState.create();
 
-        usingController = false;
+        usingController = true;
 
         if (usingController || Constants.currentMode != Constants.Mode.SIM) {
             OIController = new OIXbox();
@@ -141,7 +141,8 @@ public class RobotContainer {
             case SIM:
                 // Sim robot, instantiate physics sim IO implementations
 
-                driveSimulation = new SwerveDriveSimulation(Drive.mapleSimConfig, new Pose2d(3, 3, new Rotation2d()));
+                driveSimulation =
+                        new SwerveDriveSimulation(Drive.mapleSimConfig, new Pose2d(3.0, 3.0, new Rotation2d()));
                 intake = new Intake(
                         Constants.EnabledSubsystems.kExtender ? new ExtenderIOSim() : new ExtenderIO() {},
                         Constants.EnabledSubsystems.kRoller
@@ -449,16 +450,11 @@ public class RobotContainer {
                                 DriverStation.getAlliance().get() == Alliance.Blue
                                         ? Degrees.zero()
                                         : Degrees.of(180))));
-        // OIController.zeroDrivebase().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
-        OIController.zeroDrivebase()
-                .onTrue(PathPlannerCommands.pathfindToPose(drive, new Pose2d(6.0, 2.0, Rotation2d.fromDegrees(0.0))));
-        //        OIController.manualHold().onTrue(Commands.runOnce(drive::stopWithX, drive));
-        // OIController.start().onTrue(Commands.runOnce(resetGyro,
-        // drive).ignoringDisable(true));
+        OIController.zeroDrivebase().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
 
         OIController.intake()
                 .and(shootingTrigger.negate())
-                .whileTrue(intake.intakeRollerCommand().alongWith(indexer.index()))
+                .whileTrue(Commands.parallel(intake.intakeRollerCommand(), indexer.index(), intake.extendIntake()))
                 .onFalse(indexer.stop().alongWith(intake.idleRollerCommand()).unless(shootingTrigger::getAsBoolean));
         OIController.outtake()
                 .and(shootingTrigger.negate())
@@ -495,6 +491,7 @@ public class RobotContainer {
         if (Constants.currentMode != Constants.Mode.SIM) return;
 
         SimulatedArena.getInstance().simulationPeriodic();
+
         Logger.recordOutput("FieldSimulation/RobotPosition", driveSimulation.getSimulatedDriveTrainPose());
         Logger.recordOutput("FieldSimulation/Fuel", SimulatedArena.getInstance().getGamePiecesArrayByType("Fuel"));
         Logger.recordOutput(

@@ -6,6 +6,9 @@ import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
@@ -90,7 +93,7 @@ public class IntakeConstants {
 
         public static final double kGearing = 1;
         public static final MomentOfInertia kMOI = KilogramSquareMeters.of(1.5);
-        public static final Distance kExtenderArmLength = Inches.of(12.0);
+        public static final Distance kExtenderArmLength = Inches.of(8.1);
         public static final double kDownSpeed = 0.05;
 
         public static final Angle kExtenderStowAngle = Degrees.of(0).plus(Degrees.of(175));
@@ -108,6 +111,22 @@ public class IntakeConstants {
                 new TrapezoidProfile.Constraints(100000, 7500);
 
         public static final Time kSiftTimeout = Seconds.of(0.5);
+
+        public static class ComponentPoses {
+            public static final Pose3d topBarsPose =
+                    new Pose3d(new Translation3d(0.111, -0.315, 0.38), new Rotation3d(0, 0, 0));
+            public static final Pose3d bottomBarsPose =
+                    new Pose3d(new Translation3d(0.288, -0.31, 0.22), new Rotation3d(0, 0, 0));
+            public static final Pose3d intakePose =
+                    new Pose3d(new Translation3d(0.289, -0.305, 0.46), new Rotation3d(0, 0, 0));
+        }
+
+        public static class FourBarLinkage {
+            public static final Distance kBottomBarLength = kExtenderArmLength;
+            public static final Distance kTopBarLength = Inches.of(7.9);
+            public static final Angle kBottomBarAngleAboveFloorAtExtended = Degrees.of(28.65);
+            public static final Angle kTopBarAngleAboveFloorAtExtended = Degrees.of(25.78);
+        }
 
         public static class PIDF {
 

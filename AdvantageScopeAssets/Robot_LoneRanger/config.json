@@ -1,0 +1,76 @@
+{
+  "name": "Lone Ranger",
+  "isFTC": false,
+  "disableSimplification": true,
+  "rotations": [
+    {
+      "axis": "x",
+      "degrees": 0
+    },
+    {
+      "axis": "z",
+      "degrees": -90
+    }
+  ],
+  "position": [
+    0.095,
+    -0.04,
+    0.2
+  ],
+  "cameras": [
+    {
+      "name": "camera",
+      "rotations": [],
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "resolution": [
+        1280,
+        800
+      ]
+    }
+  ],
+  "components": [
+    {
+      "zeroedRotations": [
+        {
+          "axis": "z",
+          "degrees": -90
+        }
+      ],
+      "zeroedPosition": [
+        -0.015,
+        0.27,
+        -0.18
+      ]
+    },
+    {
+      "zeroedRotations": [
+        {
+          "axis": "z",
+          "degrees": -90
+        }
+      ],
+      "zeroedPosition": [
+        -0.19,
+        0.27,
+        -0.018
+      ]
+    },
+    {
+      "zeroedRotations": [
+        {
+          "axis": "z",
+          "degrees": -90
+        }
+      ],
+      "zeroedPosition": [
+        -0.178,
+        0.26,
+        -0.28
+      ]
+    }
+  ]
+}

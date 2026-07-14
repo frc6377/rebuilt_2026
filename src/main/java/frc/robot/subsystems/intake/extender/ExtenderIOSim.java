@@ -10,7 +10,9 @@ import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.util.Color8Bit;
 import frc.robot.subsystems.intake.IntakeConstants.ExtenderConstants;
+import frc.robot.util.FourBarAngleCalculator;
 import frc.robot.util.TunablePIDController;
+import frc.robot.util.TunablePIDController.PIDConfig;
 import java.util.function.BooleanSupplier;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.mechanism.LoggedMechanism2d;
@@ -22,6 +24,7 @@ public class ExtenderIOSim implements ExtenderIO {
 
     private final SingleJointedArmSim armSim;
     private final TunablePIDController pidController;
+    private final FourBarAngleCalculator fourBarCalculator;
     private final LoggedMechanism2d armMech;
     private final LoggedMechanismRoot2d armMechRoot;
     private final LoggedMechanismLigament2d armLigament;
@@ -60,17 +63,28 @@ public class ExtenderIOSim implements ExtenderIO {
                 ExtenderConstants.kExtenderStowAngle.in(Radians),
                 ExtenderConstants.kExtenderIntakeAngle.in(Radians),
                 false,
-                ExtenderConstants.kExtenderZeroAngle.in(Radians),
+                ExtenderConstants.kExtenderStowAngle.in(Radians),
                 0.0,
                 0.0);
 
+        // Sim needs stronger gains than real (kP=0.005 barely moves the plant).
         pidController = new TunablePIDController(
                 "Intake/ExtenderPID",
                 () -> getPosition().in(Degrees),
                 percent -> appliedVolts = MathUtil.clamp(percent * 12.0, -12.0, 12.0),
                 ExtenderConstants.kExtenderConstraints);
+        pidController.addPreset("default", new PIDConfig(0.08, 0.0, 0.0));
+        pidController.applyPreset("default");
+        pidController.setSetpoint(setpoint.in(Degrees));
 
-        pidController.addPreset("default", ExtenderConstants.PIDF.normalPID);
+        fourBarCalculator = new FourBarAngleCalculator(new FourBarAngleCalculator.Geometry(
+                ExtenderConstants.ComponentPoses.topBarsPose.getTranslation(),
+                ExtenderConstants.ComponentPoses.bottomBarsPose.getTranslation(),
+                ExtenderConstants.ComponentPoses.intakePose.getTranslation(),
+                ExtenderConstants.FourBarLinkage.kTopBarLength,
+                ExtenderConstants.FourBarLinkage.kBottomBarLength,
+                ExtenderConstants.FourBarLinkage.kTopBarAngleAboveFloorAtExtended,
+                ExtenderConstants.FourBarLinkage.kBottomBarAngleAboveFloorAtExtended));
 
         armMech = new LoggedMechanism2d(5, 5);
         armMechRoot = armMech.getRoot("IntakeSimulation", 3, 3);
@@ -83,6 +97,11 @@ public class ExtenderIOSim implements ExtenderIO {
 
     private Angle getPosition() {
         return Radians.of(armSim.getAngleRads());
+    }
+
+    private Angle getBottomBarVisualPitch() {
+        // Visual model zero = fully extended (intake angle). Code stow is retracted.
+        return getPosition().minus(ExtenderConstants.kExtenderIntakeAngle);
     }
 
     private boolean isAtAngle(Angle current, Angle target) {
@@ -102,12 +121,12 @@ public class ExtenderIOSim implements ExtenderIO {
 
     @Override
     public void extend() {
-        setPosition(Degrees.of(extenderStowAngle.get()));
+        setPosition(Degrees.of(extenderIntakeAngle.get()));
     }
 
     @Override
     public void retract() {
-        setPosition(Degrees.of(extenderIntakeAngle.get()));
+        setPosition(Degrees.of(extenderStowAngle.get()));
     }
 
     @Override
@@ -169,6 +188,10 @@ public class ExtenderIOSim implements ExtenderIO {
 
     @Override
     public void updateInputs(ExtenderIOInputs inputs) {
+        if (pidEnabled) {
+            pidController.updateTunableGains();
+            pidController.runPid();
+        }
 
         armSim.setInputVoltage(appliedVolts);
         armSim.update(TimedRobot.kDefaultPeriod);
@@ -184,21 +207,21 @@ public class ExtenderIOSim implements ExtenderIO {
         inputs.motorCurrent = Amps.of(armSim.getCurrentDrawAmps());
         inputs.motorTemp = Celsius.of(25.0);
 
-        armLigament.setAngle(getPosition());
-        setpointArmLigament.setAngle(setpoint);
-        Logger.recordOutput("Intake/Simulation/2D-Simulation", armMech);
+        armLigament.setAngle(position.in(Degrees));
+        setpointArmLigament.setAngle(setpoint.in(Degrees));
 
-        Logger.recordOutput(
-                "Intake/Simulation/3D-Simulation-Pose",
-                armMech.generate3dMechanism().get(0));
+        Logger.recordOutput("Intake/Simulation/2D-Simulation", armMech);
     }
 
     @Override
     public void periodic() {
+        Angle bottomVisualPitch = getBottomBarVisualPitch();
 
-        pidController.updateTunableGains();
-        if (pidEnabled) {
-            pidController.runPid();
-        }
+        Logger.recordOutput(
+                "Intake/Extender/ComponentPoses/TopBarPose", fourBarCalculator.getOutputLinkPose(bottomVisualPitch));
+        Logger.recordOutput(
+                "Intake/Extender/ComponentPoses/BottomBarPose", fourBarCalculator.getInputLinkPose(bottomVisualPitch));
+        Logger.recordOutput(
+                "Intake/Extender/ComponentPoses/IntakePose", fourBarCalculator.getCouplerPose(bottomVisualPitch));
     }
 }
