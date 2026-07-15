@@ -20,11 +20,17 @@
   "cameras": [
     {
       "name": "camera",
-      "rotations": [],
+      "fov": 60,
+      "rotations": [
+        {
+          "axis": "y",
+          "degrees": -30
+        }
+      ],
       "position": [
-        0,
-        0,
-        0
+        -0.27,
+        -0.01,
+        0.47
       ],
       "resolution": [
         1280,

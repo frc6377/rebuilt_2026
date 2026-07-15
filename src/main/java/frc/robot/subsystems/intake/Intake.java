@@ -27,11 +27,12 @@ public class Intake {
         this.extender = new Extender(extenderIO);
         this.roller = new BaseShooter(rollerIO, IntakeConstants.RollerConstants.rollerConfig);
 
-        //        this.roller.setDefaultCommand(this.roller
-        //                .spinUpFlywheels(() ->
-        //                        IntakeConstants.RollerConstants.kIdleEnabled ? RPM.of(tunableIdleSpeed.get()) :
+        // this.roller.setDefaultCommand(this.roller
+        // .spinUpFlywheels(() ->
+        // IntakeConstants.RollerConstants.kIdleEnabled ? RPM.of(tunableIdleSpeed.get())
+        // :
         // RPM.of(0.0))
-        //                .withName("RollerIdle"));
+        // .withName("RollerIdle"));
 
     }
 
@@ -118,6 +119,10 @@ public class Intake {
 
     public boolean isRollerRunning() {
         return roller.isRunning();
+    }
+
+    public BooleanSupplier isExtendedSupplier() {
+        return extender.isExtended();
     }
 
     public BooleanSupplier isRollerRunningSupplier() {
