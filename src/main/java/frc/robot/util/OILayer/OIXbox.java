@@ -1,7 +1,6 @@
 package frc.robot.util.OILayer;
 
-import edu.wpi.first.wpilibj.GenericHID;
-import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.*;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.POVButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
@@ -110,8 +109,7 @@ public class OIXbox implements OI {
 
     @Override
     public void setRumble(double driverRumble, double operatorRumble) {
-        driverController.setRumble(GenericHID.RumbleType.kBothRumble, driverRumble);
-        operatorController.setRumble(GenericHID.RumbleType.kBothRumble, operatorRumble);
+        return;
     }
 
     @Override

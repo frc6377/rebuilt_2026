@@ -71,6 +71,7 @@ public final class Constants {
         public static final class SensorIDs {
             // TODO: change before running
             public static final int kExtenderEncoderCANID = 9;
+            public static final int kNerfModeEncoderDIOID = 8;
         }
     }
 }

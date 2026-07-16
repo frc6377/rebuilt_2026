@@ -104,7 +104,7 @@ public class RobotContainer {
             OIController = new OIKeyboard();
         }
 
-        nerfSwitch = new DigitalInput(0);
+        nerfSwitch = new DigitalInput(Constants.CANIDs.SensorIDs.kNerfModeEncoderDIOID);
         boolean isSwitchOpen = nerfSwitch.get();
 
         boolean isFMSConnected = DriverStation.isFMSAttached();
@@ -125,7 +125,8 @@ public class RobotContainer {
                             new ModuleIOTalonFXReal(TunerConstants.FrontRight),
                             new ModuleIOTalonFXReal(TunerConstants.BackLeft),
                             new ModuleIOTalonFXReal(TunerConstants.BackRight),
-                            (pose) -> {});
+                            (pose) -> {},
+                            nerfModeController);
                 } else {
                     drive = new Drive(
                             new GyroIO() {},
@@ -133,7 +134,8 @@ public class RobotContainer {
                             new ModuleIO() {},
                             new ModuleIO() {},
                             new ModuleIO() {},
-                            (pose) -> {});
+                            (pose) -> {},
+                            nerfModeController);
                 }
                 vision = new Vision(
                         drive,
@@ -182,7 +184,8 @@ public class RobotContainer {
                                 TunerConstants.BackLeft, driveSimulation.getModules()[2]),
                         new ModuleIOTalonFXSim(
                                 TunerConstants.BackRight, driveSimulation.getModules()[3]),
-                        driveSimulation::setSimulationWorldPose);
+                        driveSimulation::setSimulationWorldPose,
+                        nerfModeController);
                 vision = new Vision(
                         drive,
                         new QuestNavIO() {},
@@ -208,7 +211,8 @@ public class RobotContainer {
                         new ModuleIO() {},
                         new ModuleIO() {},
                         new ModuleIO() {},
-                        (pose) -> {});
+                        (pose) -> {},
+                        nerfModeController);
                 driveSimulation = null;
                 vision = new Vision(
                         drive, new QuestNavIO() {}, nerfModeController, new VisionIO() {}, new VisionIO() {});

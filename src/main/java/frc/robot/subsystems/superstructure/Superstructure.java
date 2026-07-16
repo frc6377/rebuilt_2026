@@ -192,6 +192,8 @@ public class Superstructure extends SubsystemBase {
         Logger.recordOutput("Shooting/TimeUntilHubStateChange", FieldConstants.getTimeUntilHubStateChange());
         Logger.recordOutput(
                 "Shooting/DistanceToHub", round(vision.getHubDistanceMeasure().in(Meters) * 100.0) / 100.0);
+        Logger.recordOutput(
+                "NerfMode/CurrentMode", nerfModeController.nerfMode().name());
         if ((DriverStation.isFMSAttached()
                         && FieldConstants.getTimeUntilHubStateChange() > 4
                         && FieldConstants.getTimeUntilHubStateChange() <= 7
