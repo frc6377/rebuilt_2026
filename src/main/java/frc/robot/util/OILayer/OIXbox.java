@@ -78,6 +78,10 @@ public class OIXbox implements OI {
     // Top Buttons
     public static final Trigger start = new JoystickButton(driverController, XboxController.Button.kStart.value);
     public static final Trigger back = new JoystickButton(driverController, XboxController.Button.kBack.value);
+    public static final Trigger operatorStart =
+            new JoystickButton(operatorController, XboxController.Button.kStart.value);
+    public static final Trigger operatorBack =
+            new JoystickButton(operatorController, XboxController.Button.kBack.value);
 
     @Override
     public DoubleSupplier driveTranslationX() {
@@ -228,5 +232,10 @@ public class OIXbox implements OI {
     @Override
     public Trigger manualHold() {
         return opA;
+    }
+
+    @Override
+    public Trigger nerfModeToggle() {
+        return start.and(operatorStart);
     }
 }

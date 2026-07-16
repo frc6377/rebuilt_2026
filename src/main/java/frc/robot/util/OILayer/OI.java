@@ -167,4 +167,8 @@ public interface OI {
     default Trigger manualHold() {
         return noButton;
     }
+
+    default Trigger nerfModeToggle() {
+        return noButton;
+    }
 }

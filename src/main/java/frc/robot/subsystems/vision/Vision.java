@@ -14,14 +14,6 @@
 package frc.robot.subsystems.vision;
 
 import static edu.wpi.first.units.Units.Meters;
-import static frc.robot.subsystems.vision.VisionConstants.angularStdDevBaseline;
-import static frc.robot.subsystems.vision.VisionConstants.angularStdDevMegatag2Factor;
-import static frc.robot.subsystems.vision.VisionConstants.aprilTagLayout;
-import static frc.robot.subsystems.vision.VisionConstants.cameraStdDevFactors;
-import static frc.robot.subsystems.vision.VisionConstants.linearStdDevBaseline;
-import static frc.robot.subsystems.vision.VisionConstants.linearStdDevMegatag2Factor;
-import static frc.robot.subsystems.vision.VisionConstants.maxAmbiguity;
-import static frc.robot.subsystems.vision.VisionConstants.maxZError;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
@@ -38,6 +30,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.subsystems.vision.VisionIO.HubTagObservation;
 import frc.robot.subsystems.vision.VisionIO.PoseObservationType;
+import frc.robot.subsystems.vision.constants.VisionConstants;
 import frc.robot.subsystems.vision.questnav.QuestNavIO;
 import frc.robot.util.NerfModeController;
 import gg.questnav.questnav.PoseFrame;
@@ -56,6 +49,7 @@ public class Vision extends SubsystemBase {
     private final Alert[] disconnectedAlerts;
 
     private final QuestNavIO questNavIO;
+    private final NerfModeController nerfModeController;
 
     // QuestNav fields
     private final QuestNav questNav;
@@ -67,10 +61,12 @@ public class Vision extends SubsystemBase {
     private final String[] logKeyRobotPosesAccepted;
     private final String[] logKeyRobotPosesRejected;
 
-    public Vision(VisionConsumer consumer, QuestNavIO questNavIO, NerfModeController nerfModeController, VisionIO... io) {
+    public Vision(
+            VisionConsumer consumer, QuestNavIO questNavIO, NerfModeController nerfModeController, VisionIO... io) {
         this.consumer = consumer;
         this.io = io;
         this.questNavIO = questNavIO;
+        this.nerfModeController = nerfModeController;
 
         // Initialize inputs and log keys
         this.inputs = new VisionIOInputsAutoLogged[io.length];
@@ -308,7 +304,8 @@ public class Vision extends SubsystemBase {
 
             // Add tag poses
             for (int tagId : inputs[cameraIndex].tagIds) {
-                var tagPose = aprilTagLayout.getTagPose(tagId);
+                var tagPose =
+                        nerfModeController.getVisionConstants().aprilTagLayout().getTagPose(tagId);
                 if (tagPose.isPresent()) {
                     tagPoses.add(tagPose.get());
                 }
@@ -316,16 +313,20 @@ public class Vision extends SubsystemBase {
 
             // Loop over pose observations
             for (var observation : inputs[cameraIndex].poseObservations) {
+                VisionConstants constants = nerfModeController.getVisionConstants();
                 // Check whether to reject pose
                 boolean rejectPose = observation.tagCount() < 2 // Must have at least one tag
-                        || observation.ambiguity() > maxAmbiguity // Cannot be high ambiguity
-                        || Math.abs(observation.pose().getZ()) > maxZError // Must have realistic Z coordinate
+                        || observation.ambiguity() > constants.maxAmbiguity() // Cannot be high ambiguity
+                        || Math.abs(observation.pose().getZ())
+                                > constants.maxZError() // Must have realistic Z coordinate
 
                         // Must be within the field boundaries
                         || observation.pose().getX() < 0.0
-                        || observation.pose().getX() > aprilTagLayout.getFieldLength()
+                        || observation.pose().getX()
+                                > constants.aprilTagLayout().getFieldLength()
                         || observation.pose().getY() < 0.0
-                        || observation.pose().getY() > aprilTagLayout.getFieldWidth();
+                        || observation.pose().getY()
+                                > constants.aprilTagLayout().getFieldWidth();
 
                 // Add pose to log
                 robotPoses.add(observation.pose());
@@ -342,22 +343,23 @@ public class Vision extends SubsystemBase {
 
                 // Calculate standard deviations
                 double stdDevFactor = Math.pow(observation.averageTagDistance(), 2.0) / observation.tagCount();
-                double linearStdDev = linearStdDevBaseline * stdDevFactor;
+                double linearStdDev = constants.linearStdDevBaseline() * stdDevFactor;
                 double angularStdDev;
                 if (observation.type() == PoseObservationType.MEGATAG_2) {
                     // MegaTag2 rotation is seeded from the gyro — trust it normally
-                    linearStdDev *= linearStdDevMegatag2Factor;
-                    angularStdDev = angularStdDevBaseline * stdDevFactor * angularStdDevMegatag2Factor;
+                    linearStdDev *= constants.linearStdDevMegatag2Factor();
+                    angularStdDev =
+                            constants.angularStdDevBaseline() * stdDevFactor * constants.angularStdDevMegatag2Factor();
                 } else {
                     // MegaTag1 rotation is computed from vision alone — never let it influence
                     // the pose estimator's heading (field-oriented drive would snap on every tag)
                     angularStdDev = Double.MAX_VALUE;
                 }
-                if (cameraIndex < cameraStdDevFactors.length) {
-                    linearStdDev *= cameraStdDevFactors[cameraIndex];
+                if (cameraIndex < constants.cameraStdDevFactors().length) {
+                    linearStdDev *= constants.cameraStdDevFactors()[cameraIndex];
                     // Do not scale angular if it is already pinned to MAX_VALUE
                     if (angularStdDev < Double.MAX_VALUE) {
-                        angularStdDev *= cameraStdDevFactors[cameraIndex];
+                        angularStdDev *= constants.cameraStdDevFactors()[cameraIndex];
                     }
                 }
 
@@ -403,8 +405,14 @@ public class Vision extends SubsystemBase {
                 if (questFrame.isTracking()) {
                     questPose = questFrame.questPose3d();
                     double timestamp = questFrame.dataTimestamp();
-                    Pose3d robotPose = questPose.transformBy(VisionConstants.ROBOT_TO_QUEST.inverse());
-                    consumer.accept(robotPose.toPose2d(), timestamp, VisionConstants.QUESTNAV_STD_DEVS);
+                    Pose3d robotPose = questPose.transformBy(nerfModeController
+                            .getVisionConstants()
+                            .robotToQuest()
+                            .inverse());
+                    consumer.accept(
+                            robotPose.toPose2d(),
+                            timestamp,
+                            nerfModeController.getVisionConstants().questNavStdDevs());
                 }
             }
             Logger.recordOutput("Vision/QuestNav/Connected", questNav.isConnected());
