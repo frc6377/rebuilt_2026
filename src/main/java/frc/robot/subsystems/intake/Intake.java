@@ -15,6 +15,9 @@ import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 public class Intake {
     private final Extender extender;
     private final BaseShooter roller;
+    private boolean activelyIntaking = false;
+    /** When true, retract/stow commands no-op so fuel cannot be trapped by a retract. */
+    private BooleanSupplier retractBlocked = () -> false;
 
     private final LoggedNetworkNumber tunableIntakeSpeed =
             new LoggedNetworkNumber("Intake/Roller/IntakeSpeed", IntakeConstants.RollerConstants.kIntakeSpeed.in(RPM));
@@ -60,16 +63,23 @@ public class Intake {
         return extender.extendAndWaitCommand();
     }
 
+    public void setRetractBlockedSupplier(BooleanSupplier retractBlocked) {
+        this.retractBlocked = retractBlocked != null ? retractBlocked : () -> false;
+    }
+
     public Command retractIntakeAndWait() {
-        return extender.retractAndWaitCommand();
+        return Commands.either(Commands.none(), extender.retractAndWaitCommand(), retractBlocked)
+                .withName("RetractIntakeAndWait");
     }
 
     public Command stowIntake() {
-        return extender.retractCommand();
+        return Commands.either(Commands.none(), extender.retractCommand(), retractBlocked)
+                .withName("StowIntake");
     }
 
     public Command toggleIntake() {
-        return extender.toggleCommand();
+        return Commands.either(extender.extendCommand(), extender.toggleCommand(), retractBlocked)
+                .withName("ToggleIntake");
     }
 
     public Command goToSiftAngleOneCommand() {
@@ -102,15 +112,21 @@ public class Intake {
     }
 
     public Command intakeRollerCommand() {
-        return roller.spinUpFlywheels(() -> RPM.of(tunableIntakeSpeed.get())).finallyDo(() -> roller.stop());
+        return roller.spinUpFlywheels(() -> RPM.of(tunableIntakeSpeed.get()))
+                .beforeStarting(() -> activelyIntaking = true)
+                .finallyDo(() -> {
+                    activelyIntaking = false;
+                    roller.stop();
+                })
+                .withName("IntakeRoller");
     }
 
     public Command outtakeRollerCommand() {
-        return roller.spinUpFlywheels(() -> RPM.of(tunableOuttakeSpeed.get()));
+        return roller.spinUpFlywheels(() -> RPM.of(tunableOuttakeSpeed.get())).withName("OuttakeRoller");
     }
 
     public Command idleRollerCommand() {
-        return roller.spinUpFlywheels(() -> RPM.of(tunableIdleSpeed.get()));
+        return roller.spinUpFlywheels(() -> RPM.of(tunableIdleSpeed.get())).withName("IdleRoller");
     }
 
     public Command stopRollerCommand() {
@@ -121,6 +137,14 @@ public class Intake {
         return roller.isRunning();
     }
 
+    /**
+     * True while {@link #intakeRollerCommand()} is running, including when nested inside a Parallel/Sequential group
+     * (getCurrentCommand() only shows the outer group name).
+     */
+    public boolean isIntaking() {
+        return activelyIntaking;
+    }
+
     public BooleanSupplier isExtendedSupplier() {
         return extender.isExtended();
     }
@@ -129,12 +153,17 @@ public class Intake {
         return this::isRollerRunning;
     }
 
+    public BooleanSupplier isActivelyIntakingSupplier() {
+        return this::isIntaking;
+    }
+
     public Command intakeCommand() {
         return extender.extendCommand().andThen(intakeRollerCommand());
     }
 
     public Command retractIntakeCommand() {
-        return roller.stopCommand().andThen(extender.retractCommand());
+        return Commands.either(Commands.none(), roller.stopCommand().andThen(extender.retractCommand()), retractBlocked)
+                .withName("RetractIntake");
     }
 
     public Command outtakeCommand() {

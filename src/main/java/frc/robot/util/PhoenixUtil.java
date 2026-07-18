@@ -39,8 +39,17 @@ public final class PhoenixUtil {
     public static final double SIM_STEER_GEAR_RATIO = 16.0;
 
     public static final double SIM_STEER_INERTIA_KGM2 = 0.05;
-    public static final double SIM_DRIVE_FRICTION_VOLTS = 0.1;
+
+    public static final double SIM_DRIVE_FRICTION_VOLTS = 0.25;
     public static final double SIM_STEER_FRICTION_VOLTS = 0.05;
+
+    private static final Slot0Configs SIM_DRIVE_GAINS = new Slot0Configs()
+            .withKP(0.25)
+            .withKI(0)
+            .withKD(0)
+            .withKS(SIM_DRIVE_FRICTION_VOLTS)
+            .withKV(0.12)
+            .withKA(0.01);
 
     /** Attempts to run the command until no error is produced. */
     public static void tryUntilOk(int maxAttempts, Supplier<StatusCode> command) {
@@ -120,6 +129,7 @@ public final class PhoenixUtil {
      *   <li><strong>Non-zero CanCoder Offsets:</strong> Fixes potential module state optimization issues.
      *   <li><strong>Steer Motor PID:</strong> Adjusts PID values tuned for real robots to improve simulation
      *       performance.
+     *   <li><strong>Drive Motor PID/FF:</strong> Real drive gains under-damp maple-sim velocity tracking.
      * </ul>
      *
      * <h4>Note:This function is skipped when running on a real robot, ensuring no impact on constants used on real
@@ -139,6 +149,7 @@ public final class PhoenixUtil {
                 .withSteerMotorInverted(false)
                 // Disable CanCoder inversion
                 .withEncoderInverted(false)
+                .withDriveMotorGains(SIM_DRIVE_GAINS)
                 // Adjust steer motor PID gains for simulation
                 .withSteerMotorGains(new Slot0Configs()
                         .withKP(70)

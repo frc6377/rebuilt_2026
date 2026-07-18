@@ -83,7 +83,9 @@ public class GamePieceTrajectorySimulation {
 
     // Ball count / hopper simulation
     private final LoggedNetworkNumber ballsInHopper =
-            new LoggedNetworkNumber("Shooter/Sim/BallsInHopper", 5); // Default to 5 balls
+            new LoggedNetworkNumber("Shooter/Sim/BallsInHopper", 5); // Default
+    // to 5
+    // balls
     private boolean hopperEmptyStopsIndexer = true; // Whether to stop indexer when hopper is empty
 
     // Shooter configuration (tunable)
@@ -370,7 +372,8 @@ public class GamePieceTrajectorySimulation {
         // Get current state
         TrajectoryState state = calculateTrajectoryState();
 
-        // Calculate time of flight using quadratic formula: z = h + v_z*t - 0.5*g*t^2 = 0
+        // Calculate time of flight using quadratic formula: z = h + v_z*t - 0.5*g*t^2 =
+        // 0
         // 0.5*g*t^2 - v_z*t - h = 0
         // t = (v_z + sqrt(v_z^2 + 2*g*h)) / g
         Optional<Double> flightTime = calculateTimeOfFlight(state.initialHeight, state.verticalVelocity);
@@ -887,7 +890,8 @@ public class GamePieceTrajectorySimulation {
                 Logger.recordOutput("Shooter/Sim/LastLaunchTime", Timer.getFPGATimestamp());
             }
         } else {
-            // Reset timer when indexer stops so next ball fires immediately when indexer starts again
+            // Reset timer when indexer stops so next ball fires immediately when indexer
+            // starts again
             autoFireTimer.restart();
         }
     }
