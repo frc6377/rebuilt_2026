@@ -194,3 +194,6 @@ docs
 docs
 nul
 CLAUDE.md
+
+# Local Git worktrees
+.worktrees/
