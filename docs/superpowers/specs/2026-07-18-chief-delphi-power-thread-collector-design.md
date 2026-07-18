@@ -46,6 +46,8 @@ The default phrase list covers:
 
 The phrases are defined in one editable constant. A repeatable `--phrase`
 option adds phrases for a run without removing the defaults.
+Multi-word phrases are submitted as quoted Discourse searches so that broad
+terms such as `power` and `draw` do not match independently.
 
 The script uses Chief Delphi's public Discourse search endpoint. Discourse
 documents public content searches through `/search.json?q={search_term}` and
@@ -97,12 +99,13 @@ and returns a nonzero exit code.
 
 For each configured phrase, the script:
 
-1. Requests the first search-result page.
+1. Requests search-result page 1.
 2. Extracts the posts and corresponding topics from the response.
 3. Adds each topic to a map keyed by numeric topic ID.
-4. Follows pagination while the response reports additional posts.
-5. Records page identities and stops with an error if the site repeats a page
-   while still reporting more results.
+4. Requests the next numbered page while
+   `grouped_search_result.more_full_page_results` is `true`.
+5. Records page identities from returned post IDs and stops with an error if
+   the site repeats a page while still reporting more results.
 
 After every phrase completes successfully, the script builds canonical URLs,
 sorts them by topic ID, and writes the destination.
