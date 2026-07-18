@@ -62,4 +62,11 @@ public record NerfModeController(Constants.NerfMode nerfMode) {
             case NERFED -> NerfDriveConstants.DATA;
         };
     }
+
+    public double getShooterSpeed() {
+        return switch (nerfMode) {
+            case FIELD, TESTING -> 1.0;
+            case NERFED -> 0.6;
+        };
+    }
 }

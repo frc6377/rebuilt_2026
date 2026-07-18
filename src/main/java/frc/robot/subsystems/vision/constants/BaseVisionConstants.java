@@ -51,6 +51,7 @@ public class BaseVisionConstants {
                 VecBuilder.fill(0.02, 0.02, 0.035),
                 new double[] {1.0, 1.0},
                 0.5,
-                Double.POSITIVE_INFINITY);
+                Double.POSITIVE_INFINITY,
+                2);
     }
 }

@@ -2,6 +2,9 @@ package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.*;
 
+import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
+import edu.wpi.first.units.measure.Distance;
+
 public class NerfShooterConstants {
     public static final ShooterConstants DATA;
 
@@ -52,14 +55,19 @@ public class NerfShooterConstants {
                 base.rightConfig().flywheelCurrentLimitStatorEnable(),
                 base.rightConfig().flywheelCurrentLimitSupplyEnable(),
                 base.rightConfig().outputConfigs());
-
+        InterpolatingDoubleTreeMap distanceToAngularVelocityMapRPM = new InterpolatingDoubleTreeMap();
+        for (Distance distance : base.distanceToAngularVelocityMapRPM().keySet()) {
+            distanceToAngularVelocityMapRPM.put(
+                    distance.in(Meters),
+                    base.distanceToAngularVelocityMapRPM().get(distance).in(RPM) * 0.7);
+        }
         DATA = new ShooterConstants(
                 base.kSotfEnabled(),
                 base.kDefaultCalculationMode(),
                 base.kManualShootingEnabled(),
-                1800, // kManualShootingSpeedRPM (nerfed from 3600)
+                2400, // kManualShootingSpeedRPM (nerfed from 3600)
                 base.kFixedHoodAngle(),
-                RotationsPerSecond.of(50.0), // kMaxFlywheelVelocity (nerfed from 100.0)
+                RPM.of(2400), // kMaxFlywheelVelocity (nerfed from 100.0)
                 base.kFlywheelVelocityTolerance(),
                 base.kHeadingTolerance(),
                 base.kMaxVelocityDifference(),
@@ -73,7 +81,7 @@ public class NerfShooterConstants {
                 base.flywheelRadius(),
                 base.launchEfficiency(),
                 base.minShootingFlywheelVelocity(),
-                RPM.of(3000.0), // maxShootingFlywheelVelocity (nerfed from 6000.0)
+                RPM.of(2400), // maxShootingFlywheelVelocity (nerfed from 6000.0)
                 base.gravity(),
                 base.kDefaultUnjamVelocity(),
                 base.defaultMaxHeightFeet(),
@@ -82,7 +90,8 @@ public class NerfShooterConstants {
                 base.defaultBenchModeEnabled(),
                 base.defaultBenchModeDistanceMeters(),
                 base.offsetM(),
-                base.distanceToAngularVelocityDouMapRPM(),
+                distanceToAngularVelocityMapRPM,
+                base.distanceToAngularVelocityMapRPM(),
                 nerfedLeftConfig,
                 nerfedRightConfig);
     }

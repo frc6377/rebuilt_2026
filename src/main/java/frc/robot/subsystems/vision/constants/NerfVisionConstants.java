@@ -20,6 +20,7 @@ public class NerfVisionConstants {
                 base.questNavStdDevs(),
                 base.cameraStdDevFactors(),
                 base.linearStdDevMegatag2Factor(),
-                base.angularStdDevMegatag2Factor());
+                base.angularStdDevMegatag2Factor(),
+                1);
     }
 }

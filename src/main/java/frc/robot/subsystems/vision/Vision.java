@@ -315,7 +315,7 @@ public class Vision extends SubsystemBase {
             for (var observation : inputs[cameraIndex].poseObservations) {
                 VisionConstants constants = nerfModeController.getVisionConstants();
                 // Check whether to reject pose
-                boolean rejectPose = observation.tagCount() < 2 // Must have at least one tag
+                boolean rejectPose = observation.tagCount() < constants.minCameras() // Must have at least one tag
                         || observation.ambiguity() > constants.maxAmbiguity() // Cannot be high ambiguity
                         || Math.abs(observation.pose().getZ())
                                 > constants.maxZError() // Must have realistic Z coordinate

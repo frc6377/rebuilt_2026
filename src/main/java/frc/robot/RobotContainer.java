@@ -461,17 +461,17 @@ public class RobotContainer {
                         drive, OIController.driveTranslationX(), OIController.driveTranslationY())));
         OIController.hubShootSpeed()
                 .onTrue(superstructure
-                        .setFlywheelVelocityManual(RPM.of(2600))
+                        .setFlywheelVelocityManual(RPM.of(2600 * nerfModeController.getShooterSpeed()))
                         .alongWith(superstructure.setManualShootingEnabledCommand(true))
                         .andThen(superstructure.runFlywheelVelocityManual()));
         OIController.towerShootSpeed()
                 .onTrue(superstructure
-                        .setFlywheelVelocityManual(RPM.of(3200))
+                        .setFlywheelVelocityManual(RPM.of(3200 * nerfModeController.getShooterSpeed()))
                         .alongWith(superstructure.setManualShootingEnabledCommand(true))
                         .andThen(superstructure.runFlywheelVelocityManual()));
         OIController.cornerShootSpeed()
                 .onTrue(superstructure
-                        .setFlywheelVelocityManual(RPM.of(3800))
+                        .setFlywheelVelocityManual(RPM.of(3800 * nerfModeController.getShooterSpeed()))
                         .alongWith(superstructure.setManualShootingEnabledCommand(true))
                         .andThen(superstructure.runFlywheelVelocityManual()));
 

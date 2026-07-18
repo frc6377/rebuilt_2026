@@ -103,6 +103,7 @@ public class BaseShooterConstants {
                 10.0, // defaultBenchModeDistanceMeters
                 offsetM,
                 distanceToAngularVelocityDouMapRPM,
+                distanceToAngularVelocity,
                 leftConfig,
                 rightConfig);
     }

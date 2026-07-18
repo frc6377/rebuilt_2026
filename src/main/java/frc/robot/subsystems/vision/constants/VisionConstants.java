@@ -20,4 +20,5 @@ public record VisionConstants(
         Matrix<N3, N1> questNavStdDevs,
         double[] cameraStdDevFactors,
         double linearStdDevMegatag2Factor,
-        double angularStdDevMegatag2Factor) {}
+        double angularStdDevMegatag2Factor,
+        double minCameras) {}

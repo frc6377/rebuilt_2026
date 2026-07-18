@@ -6,6 +6,7 @@ import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.signals.InvertedValue;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.units.measure.*;
+import java.util.HashMap;
 
 public record ShooterConstants(
         boolean kSotfEnabled,
@@ -37,6 +38,7 @@ public record ShooterConstants(
         double defaultBenchModeDistanceMeters,
         double offsetM,
         InterpolatingDoubleTreeMap distanceToAngularVelocityDouMapRPM,
+        HashMap<Distance, AngularVelocity> distanceToAngularVelocityMapRPM,
         ShooterConfig leftConfig,
         ShooterConfig rightConfig) {
     public enum CalculationMode {
