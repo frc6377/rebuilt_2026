@@ -1,7 +1,10 @@
 package frc.robot.subsystems.intake.extender;
 
 import static edu.wpi.first.units.Units.*;
+import static frc.robot.util.PhoenixUtil.tryUntilOk;
 
+import com.ctre.phoenix6.BaseStatusSignal;
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.ClosedLoopRampsConfigs;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
@@ -12,9 +15,12 @@ import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.wpilibj.DutyCycleEncoder;
 import frc.robot.Constants;
 import frc.robot.subsystems.intake.IntakeConstants.ExtenderConstants;
+import frc.robot.util.TalonFXCurrentConfigurator;
+import frc.robot.util.TalonFXNeutralModeConfigurator;
 import frc.robot.util.TunablePIDController;
 import frc.robot.util.TunableTalonFX;
 import java.util.function.BooleanSupplier;
+import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 public class ExtenderIOReal implements ExtenderIO {
@@ -22,6 +28,10 @@ public class ExtenderIOReal implements ExtenderIO {
     private final TunableTalonFX extenderMotor;
     private final DutyCycleEncoder extenderEncoder;
     private final TunablePIDController extenderPid;
+    private final StatusSignal<Current> extenderSupplyCurrent;
+    private final TalonFXCurrentConfigurator currentConfigurator;
+    private final TalonFXNeutralModeConfigurator neutralModeConfigurator;
+    private final Object configurationApplyLock = new Object();
     private boolean pidEnabled = true;
     private final LoggedNetworkNumber extenderStowAngle;
     private final LoggedNetworkNumber extenderIntakeAngle;
@@ -33,19 +43,28 @@ public class ExtenderIOReal implements ExtenderIO {
 
     public ExtenderIOReal() {
 
+        var currentLimits = new CurrentLimitsConfigs()
+                .withStatorCurrentLimitEnable(true)
+                .withStatorCurrentLimit(ExtenderConstants.MotorConfig.kStatorCurrentLimitExtender)
+                .withSupplyCurrentLimitEnable(true)
+                .withSupplyCurrentLimit(ExtenderConstants.MotorConfig.kSupplyCurrentLimitExtender);
+        var motorOutput = new MotorOutputConfigs()
+                .withInverted(ExtenderConstants.MotorConfig.kInverted)
+                .withNeutralMode(ExtenderConstants.MotorConfig.kNeutralMode);
         var config = new TalonFXConfiguration()
-                .withMotorOutput(new MotorOutputConfigs()
-                        .withInverted(ExtenderConstants.MotorConfig.kInverted)
-                        .withNeutralMode(ExtenderConstants.MotorConfig.kNeutralMode))
+                .withMotorOutput(motorOutput)
                 .withClosedLoopRamps(new ClosedLoopRampsConfigs()
                         .withVoltageClosedLoopRampPeriod(ExtenderConstants.MotorConfig.kRampPeriod))
-                .withCurrentLimits(new CurrentLimitsConfigs()
-                        .withStatorCurrentLimitEnable(true)
-                        .withStatorCurrentLimit(ExtenderConstants.MotorConfig.kStatorCurrentLimitExtender)
-                        .withSupplyCurrentLimit(ExtenderConstants.MotorConfig.kSupplyCurrentLimitExtender));
+                .withCurrentLimits(currentLimits);
 
         extenderMotor = new TunableTalonFX(Constants.CANIDs.MotorIDs.kExtenderMotorID, "rio", "Extender");
-        extenderMotor.getConfigurator().apply(config);
+        tryUntilOk(5, () -> extenderMotor.getConfigurator().apply(config, 0.25));
+        currentConfigurator = new TalonFXCurrentConfigurator(
+                "Extender", extenderMotor.getConfigurator(), currentLimits, configurationApplyLock);
+        neutralModeConfigurator = new TalonFXNeutralModeConfigurator(
+                "Extender", extenderMotor.getConfigurator(), motorOutput, configurationApplyLock);
+        extenderSupplyCurrent = extenderMotor.getSupplyCurrent();
+        BaseStatusSignal.setUpdateFrequencyForAll(50.0, extenderSupplyCurrent);
 
         extenderEncoder = new DutyCycleEncoder(
                 Constants.CANIDs.SensorIDs.kExtenderEncoderCANID,
@@ -187,7 +206,7 @@ public class ExtenderIOReal implements ExtenderIO {
 
     @Override
     public void setMode(NeutralModeValue mode) {
-        extenderMotor.getConfigurator().apply(new MotorOutputConfigs().withNeutralMode(mode));
+        neutralModeConfigurator.requestNeutralMode(mode);
     }
 
     @Override
@@ -213,6 +232,9 @@ public class ExtenderIOReal implements ExtenderIO {
 
     @Override
     public void updateInputs(ExtenderIOInputs inputs) {
+        var supplyCurrentStatus = BaseStatusSignal.refreshAll(extenderSupplyCurrent);
+        logCurrentConfigurator(
+                "Intake/Extender/CurrentLimit/Motor" + extenderMotor.getDeviceID(), currentConfigurator.snapshot());
         inputs.isExtended = isExtended().getAsBoolean();
         inputs.isRetracted = isRetracted().getAsBoolean();
         inputs.position = getPosition();
@@ -220,9 +242,12 @@ public class ExtenderIOReal implements ExtenderIO {
         inputs.velocity = extenderMotor.getVelocity().getValue();
         inputs.motorVoltage = Volts.of(extenderMotor.getMotorVoltage().getValueAsDouble());
         inputs.motorCurrent = extenderMotor.getStatorCurrent().getValue();
+        inputs.motorSupplyCurrent = extenderSupplyCurrent.getValue();
+        inputs.motorSupplyCurrentValid = supplyCurrentStatus.isOK();
         inputs.motorTemp = extenderMotor.getDeviceTemp().getValue();
         inputs.atTarget = atTarget().getAsBoolean();
         inputs.rawEncoderDegrees = Rotations.of(extenderEncoder.get()).in(Degrees);
+        logNeutralModeConfigurator("Intake/Extender/NeutralMode", neutralModeConfigurator.snapshot());
     }
 
     @Override
@@ -238,5 +263,55 @@ public class ExtenderIOReal implements ExtenderIO {
                 setMode(NeutralModeValue.Coast);
             }
         }
+    }
+
+    @Override
+    public void setSupplyCurrentLimit(double currentLimitAmps) {
+        currentConfigurator.requestSupplyCurrentLimit(currentLimitAmps);
+    }
+
+    private static void logCurrentConfigurator(String key, TalonFXCurrentConfigurator.Snapshot snapshot) {
+        Logger.recordOutput(key + "/RequestedLimitAmps", snapshot.requestedLimitAmps());
+        Logger.recordOutput(key + "/LastSuccessfulAcknowledgedLimitAmps", snapshot.lastSuccessfulLimitAmps());
+        Logger.recordOutput(key + "/RequestedRevision", snapshot.requestedRevision());
+        Logger.recordOutput(key + "/LastSuccessfulAcknowledgedRevision", snapshot.lastSuccessfulRevision());
+        Logger.recordOutput(key + "/LastOutcome", snapshot.lastOutcome().name());
+        Logger.recordOutput(key + "/LastStatusName", snapshot.lastStatusName());
+        Logger.recordOutput(key + "/LastStatusDescription", snapshot.lastStatusDescription());
+        Logger.recordOutput(key + "/LastException", snapshot.lastException());
+        Logger.recordOutput(key + "/LastAttemptAgeSeconds", snapshot.lastAttemptAgeSeconds());
+        Logger.recordOutput(
+                key + "/LastSuccessfulAcknowledgedApplyAgeSeconds", snapshot.lastSuccessfulApplyAgeSeconds());
+        Logger.recordOutput(key + "/AttemptCount", snapshot.attemptCount());
+        Logger.recordOutput(key + "/SuccessCount", snapshot.successCount());
+        Logger.recordOutput(key + "/FailureCount", snapshot.failureCount());
+        Logger.recordOutput(key + "/ExceptionCount", snapshot.exceptionCount());
+        Logger.recordOutput(key + "/RetryAttemptCount", snapshot.retryAttemptCount());
+        Logger.recordOutput(key + "/DeduplicatedRequestCount", snapshot.deduplicatedRequestCount());
+        Logger.recordOutput(key + "/Pending", snapshot.pending());
+        Logger.recordOutput(key + "/Retrying", snapshot.retrying());
+        Logger.recordOutput(key + "/InFlight", snapshot.inFlight());
+        Logger.recordOutput(key + "/Closed", snapshot.closed());
+        Logger.recordOutput(key + "/WorkerAlive", snapshot.workerAlive());
+    }
+
+    private static void logNeutralModeConfigurator(String key, TalonFXNeutralModeConfigurator.Snapshot snapshot) {
+        Logger.recordOutput(key + "/Requested", snapshot.requestedMode().name());
+        Logger.recordOutput(
+                key + "/LastSuccessfulAcknowledged",
+                snapshot.lastSuccessfulMode() == null
+                        ? "Unacknowledged"
+                        : snapshot.lastSuccessfulMode().name());
+        Logger.recordOutput(key + "/RequestedRevision", snapshot.requestedRevision());
+        Logger.recordOutput(key + "/LastSuccessfulAcknowledgedRevision", snapshot.lastSuccessfulRevision());
+        Logger.recordOutput(key + "/LastStatus", snapshot.lastStatusName());
+        Logger.recordOutput(key + "/LastException", snapshot.lastException());
+        Logger.recordOutput(key + "/AttemptCount", snapshot.attemptCount());
+        Logger.recordOutput(key + "/SuccessCount", snapshot.successCount());
+        Logger.recordOutput(key + "/FailureCount", snapshot.failureCount());
+        Logger.recordOutput(key + "/Pending", snapshot.pending());
+        Logger.recordOutput(key + "/Retrying", snapshot.retrying());
+        Logger.recordOutput(key + "/InFlight", snapshot.inFlight());
+        Logger.recordOutput(key + "/WorkerAlive", snapshot.workerAlive());
     }
 }

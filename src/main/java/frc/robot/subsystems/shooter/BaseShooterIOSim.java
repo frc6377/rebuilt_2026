@@ -47,6 +47,7 @@ public class BaseShooterIOSim implements BaseShooterIO {
         inputs.flywheelAppliedVoltage = Volts.of(flywheelAppliedVolts);
         inputs.flywheelCurrent = Amps.of(flywheelSim.getCurrentDrawAmps());
         inputs.flywheelTemp = Celsius.of(25.0);
+        inputs.supplyCurrentValid = true;
     }
 
     @Override

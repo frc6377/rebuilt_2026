@@ -79,6 +79,7 @@ public class Robot extends LoggedRobot {
         // This must be called from the robot's periodic block in order for anything in
         // the Command-based framework to work.
         CommandScheduler.getInstance().run();
+        robotContainer.updatePowerManagement();
         double newTime = Timer.getFPGATimestamp() * 1000;
         Logger.recordOutput("Loop Time (ms)", newTime - lastTime);
 
@@ -89,6 +90,7 @@ public class Robot extends LoggedRobot {
     /** This function is called once when the robot is disabled. */
     @Override
     public void disabledInit() {
+        robotContainer.resetPowerManagement();
         robotContainer.resetSimulationField();
         robotContainer.intake.setNeutralMode(NeutralModeValue.Coast);
     }

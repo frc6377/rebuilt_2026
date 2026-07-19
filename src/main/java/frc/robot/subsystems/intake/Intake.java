@@ -3,8 +3,10 @@ package frc.robot.subsystems.intake;
 import static edu.wpi.first.units.Units.RPM;
 
 import com.ctre.phoenix6.signals.NeutralModeValue;
+import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import frc.robot.energy.StateAwareCurrentAllocator.RollerActivity;
 import frc.robot.subsystems.intake.extender.Extender;
 import frc.robot.subsystems.intake.extender.ExtenderIO;
 import frc.robot.subsystems.shooter.BaseShooter;
@@ -118,6 +120,48 @@ public class Intake {
 
     public boolean isRollerRunning() {
         return roller.isRunning();
+    }
+
+    public RollerActivity getRollerPowerManagementActivity() {
+        return classifyRollerActivity(roller.getFlywheelSetpoint());
+    }
+
+    static RollerActivity classifyRollerActivity(AngularVelocity setpoint) {
+        double magnitudeRpm = Math.abs(setpoint.in(RPM));
+        if (magnitudeRpm <= 1.0) {
+            return RollerActivity.STOPPED;
+        }
+        return magnitudeRpm < IntakeConstants.RollerConstants.kPowerManagementActiveThreshold.in(RPM)
+                ? RollerActivity.IDLE
+                : RollerActivity.ACTIVE;
+    }
+
+    public double getRollerSupplyCurrentAmps() {
+        return roller.getSupplyCurrentAmps();
+    }
+
+    public boolean isRollerSupplyCurrentValid() {
+        return roller.isSupplyCurrentValid();
+    }
+
+    public void setRollerSupplyCurrentLimit(double perMotorAmps) {
+        roller.setSupplyCurrentLimit(perMotorAmps);
+    }
+
+    public double getExtenderSupplyCurrentAmps() {
+        return extender.getSupplyCurrentAmps();
+    }
+
+    public boolean isExtenderSupplyCurrentValid() {
+        return extender.isSupplyCurrentValid();
+    }
+
+    public boolean isExtenderActiveForPowerManagement() {
+        return extender.isActiveForPowerManagement();
+    }
+
+    public void setExtenderSupplyCurrentLimit(double currentLimitAmps) {
+        extender.setSupplyCurrentLimit(currentLimitAmps);
     }
 
     public BooleanSupplier isRollerRunningSupplier() {

@@ -26,6 +26,8 @@ public interface ExtenderIO {
         public AngularVelocity velocity = RotationsPerSecond.zero();
         public Voltage motorVoltage = Volts.zero();
         public Current motorCurrent = Amps.zero();
+        public Current motorSupplyCurrent = Amps.zero();
+        public boolean motorSupplyCurrentValid = false;
         public Temperature motorTemp = Celsius.zero();
         public boolean atTarget = false;
         public double rawEncoderDegrees = 0.0;
@@ -77,4 +79,6 @@ public interface ExtenderIO {
     default Current getCurrent() {
         return Amps.of(0.0);
     }
+
+    default void setSupplyCurrentLimit(double currentLimitAmps) {}
 }

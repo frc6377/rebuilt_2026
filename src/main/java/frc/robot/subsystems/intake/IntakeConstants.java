@@ -41,6 +41,7 @@ public class IntakeConstants {
         public static final AngularVelocity kIntakeSpeed = RPM.of(2500); // NEVER GO HIGHER THAN THIS - JOSH
         public static final AngularVelocity kOuttakeSpeed = RPM.of(-1800);
         public static final AngularVelocity kIdleSpeed = RPM.of(100);
+        public static final AngularVelocity kPowerManagementActiveThreshold = RPM.of(500);
 
         public static class PIDF {
             public static final double kP = 0.19188;

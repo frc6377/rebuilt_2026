@@ -16,7 +16,9 @@ package frc.robot.subsystems.drive;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.util.Units;
+import frc.robot.util.TalonFXCurrentConfigurator;
 import java.util.Queue;
+import org.littletonrobotics.junction.Logger;
 
 /**
  * Module IO implementation for Talon FX drive motor controller, Talon FX turn motor controller, and CANcoder.
@@ -29,10 +31,13 @@ public class ModuleIOTalonFXReal extends ModuleIOTalonFX {
     private final Queue<Double> timestampQueue;
     private final Queue<Double> drivePositionQueue;
     private final Queue<Double> turnPositionQueue;
+    private final TalonFXCurrentConfigurator driveCurrentConfigurator;
 
     public ModuleIOTalonFXReal(SwerveModuleConstants constants) {
         super(constants);
 
+        driveCurrentConfigurator = new TalonFXCurrentConfigurator(
+                "Drive-" + driveTalon.getDeviceID(), driveTalon.getConfigurator(), driveCurrentLimitsConfig);
         this.timestampQueue = PhoenixOdometryThread.getInstance().makeTimestampQueue();
         this.drivePositionQueue = PhoenixOdometryThread.getInstance().registerSignal(super.drivePosition);
         this.turnPositionQueue = PhoenixOdometryThread.getInstance().registerSignal(super.turnAbsolutePosition);
@@ -41,6 +46,8 @@ public class ModuleIOTalonFXReal extends ModuleIOTalonFX {
     @Override
     public void updateInputs(ModuleIOInputs inputs) {
         super.updateInputs(inputs);
+        logCurrentConfigurator(
+                "Drive/CurrentLimit/Motor" + driveTalon.getDeviceID(), driveCurrentConfigurator.snapshot());
 
         // Update odometry inputs
         inputs.odometryTimestamps =
@@ -53,5 +60,35 @@ public class ModuleIOTalonFXReal extends ModuleIOTalonFX {
         timestampQueue.clear();
         drivePositionQueue.clear();
         turnPositionQueue.clear();
+    }
+
+    @Override
+    public void setDriveSupplyCurrentLimit(double currentLimitAmps) {
+        driveCurrentConfigurator.requestSupplyCurrentLimit(currentLimitAmps);
+    }
+
+    private static void logCurrentConfigurator(String key, TalonFXCurrentConfigurator.Snapshot snapshot) {
+        Logger.recordOutput(key + "/RequestedLimitAmps", snapshot.requestedLimitAmps());
+        Logger.recordOutput(key + "/LastSuccessfulAcknowledgedLimitAmps", snapshot.lastSuccessfulLimitAmps());
+        Logger.recordOutput(key + "/RequestedRevision", snapshot.requestedRevision());
+        Logger.recordOutput(key + "/LastSuccessfulAcknowledgedRevision", snapshot.lastSuccessfulRevision());
+        Logger.recordOutput(key + "/LastOutcome", snapshot.lastOutcome().name());
+        Logger.recordOutput(key + "/LastStatusName", snapshot.lastStatusName());
+        Logger.recordOutput(key + "/LastStatusDescription", snapshot.lastStatusDescription());
+        Logger.recordOutput(key + "/LastException", snapshot.lastException());
+        Logger.recordOutput(key + "/LastAttemptAgeSeconds", snapshot.lastAttemptAgeSeconds());
+        Logger.recordOutput(
+                key + "/LastSuccessfulAcknowledgedApplyAgeSeconds", snapshot.lastSuccessfulApplyAgeSeconds());
+        Logger.recordOutput(key + "/AttemptCount", snapshot.attemptCount());
+        Logger.recordOutput(key + "/SuccessCount", snapshot.successCount());
+        Logger.recordOutput(key + "/FailureCount", snapshot.failureCount());
+        Logger.recordOutput(key + "/ExceptionCount", snapshot.exceptionCount());
+        Logger.recordOutput(key + "/RetryAttemptCount", snapshot.retryAttemptCount());
+        Logger.recordOutput(key + "/DeduplicatedRequestCount", snapshot.deduplicatedRequestCount());
+        Logger.recordOutput(key + "/Pending", snapshot.pending());
+        Logger.recordOutput(key + "/Retrying", snapshot.retrying());
+        Logger.recordOutput(key + "/InFlight", snapshot.inFlight());
+        Logger.recordOutput(key + "/Closed", snapshot.closed());
+        Logger.recordOutput(key + "/WorkerAlive", snapshot.workerAlive());
     }
 }

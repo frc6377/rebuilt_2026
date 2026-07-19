@@ -16,6 +16,7 @@ public interface BaseShooterIO {
         public Voltage followerFlywheelAppliedVoltage = Volts.of(0.0);
         public Current followerFlywheelCurrent = Amps.of(0.0);
         public Temperature followerFlywheelTemp = Celsius.of(0.0);
+        public boolean supplyCurrentValid = false;
     }
 
     /** Updates the set of loggable inputs. */
@@ -29,4 +30,7 @@ public interface BaseShooterIO {
 
     /** Stop all motors. */
     default void stop() {}
+
+    /** Requests a dynamic supply-current limit when this IO implementation explicitly supports it. */
+    default void setSupplyCurrentLimit(double currentLimitAmps) {}
 }

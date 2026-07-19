@@ -17,6 +17,7 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Temperature;
 import edu.wpi.first.units.measure.Voltage;
+import frc.robot.util.TalonFXCurrentConfigurator;
 import frc.robot.util.TunableTalonFX;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +27,8 @@ public class BaseShooterIOKrakenX60 implements BaseShooterIO {
     private final ShooterConstants.ShooterConfig config;
     private final TunableTalonFX flywheelMotor;
     private final TunableTalonFX flywheelFollower;
+    private final TalonFXCurrentConfigurator flywheelCurrentConfigurator;
+    private final TalonFXCurrentConfigurator followerCurrentConfigurator;
 
     private final StatusSignal<AngularVelocity> flywheelVelocity;
     private final StatusSignal<Voltage> flywheelAppliedVolts;
@@ -37,6 +40,10 @@ public class BaseShooterIOKrakenX60 implements BaseShooterIO {
     private final StatusSignal<Temperature> followerFlywheelTemp;
 
     public BaseShooterIOKrakenX60(ShooterConstants.ShooterConfig config) {
+        this(config, false);
+    }
+
+    public BaseShooterIOKrakenX60(ShooterConstants.ShooterConfig config, boolean dynamicSupplyCurrentLimitEnabled) {
         this.config = config;
 
         flywheelMotor = new TunableTalonFX(
@@ -90,6 +97,20 @@ public class BaseShooterIOKrakenX60 implements BaseShooterIO {
             flywheelFollower.setControl(new Follower(flywheelMotor.getDeviceID(), MotorAlignmentValue.Opposed));
         }
 
+        if (dynamicSupplyCurrentLimitEnabled) {
+            flywheelCurrentConfigurator = new TalonFXCurrentConfigurator(
+                    config.name() + "-Leader", flywheelMotor.getConfigurator(), flywheelConfig.CurrentLimits);
+            followerCurrentConfigurator = flywheelFollower == null
+                    ? null
+                    : new TalonFXCurrentConfigurator(
+                            config.name() + "-Follower",
+                            flywheelFollower.getConfigurator(),
+                            flywheelConfig.CurrentLimits);
+        } else {
+            flywheelCurrentConfigurator = null;
+            followerCurrentConfigurator = null;
+        }
+
         // Get status signals
         flywheelVelocity = flywheelMotor.getVelocity();
         flywheelAppliedVolts = flywheelMotor.getMotorVoltage();
@@ -138,7 +159,7 @@ public class BaseShooterIOKrakenX60 implements BaseShooterIO {
         signals.add(followerFlywheelCurrent);
         signals.add(followerFlywheelTemp);
 
-        BaseStatusSignal.refreshAll(signals.toArray(new BaseStatusSignal[0]));
+        var refreshStatus = BaseStatusSignal.refreshAll(signals.toArray(new BaseStatusSignal[0]));
 
         inputs.flywheelVelocity = flywheelVelocity.getValue();
         inputs.flywheelAppliedVoltage = flywheelAppliedVolts.getValue();
@@ -148,10 +169,21 @@ public class BaseShooterIOKrakenX60 implements BaseShooterIO {
         inputs.followerFlywheelAppliedVoltage = followerFlywheelAppliedVolts.getValue();
         inputs.followerFlywheelCurrent = followerFlywheelCurrent.getValue();
         inputs.followerFlywheelTemp = followerFlywheelTemp.getValue();
+        inputs.supplyCurrentValid = refreshStatus.isOK();
 
         Logger.recordOutput(
                 config.name() + "/FlywheelVelocity (RPM)",
                 flywheelMotor.getVelocity().getValue().in(RPM));
+        if (flywheelCurrentConfigurator != null) {
+            logCurrentConfigurator(
+                    config.name() + "/CurrentLimit/Leader-" + flywheelMotor.getDeviceID(),
+                    flywheelCurrentConfigurator.snapshot());
+        }
+        if (followerCurrentConfigurator != null) {
+            logCurrentConfigurator(
+                    config.name() + "/CurrentLimit/Follower-" + flywheelFollower.getDeviceID(),
+                    followerCurrentConfigurator.snapshot());
+        }
     }
 
     @Override
@@ -177,5 +209,40 @@ public class BaseShooterIOKrakenX60 implements BaseShooterIO {
         if (flywheelFollower != null) {
             flywheelFollower.stopMotor();
         }
+    }
+
+    @Override
+    public void setSupplyCurrentLimit(double currentLimitAmps) {
+        if (flywheelCurrentConfigurator != null) {
+            flywheelCurrentConfigurator.requestSupplyCurrentLimit(currentLimitAmps);
+        }
+        if (followerCurrentConfigurator != null) {
+            followerCurrentConfigurator.requestSupplyCurrentLimit(currentLimitAmps);
+        }
+    }
+
+    private static void logCurrentConfigurator(String key, TalonFXCurrentConfigurator.Snapshot snapshot) {
+        Logger.recordOutput(key + "/RequestedLimitAmps", snapshot.requestedLimitAmps());
+        Logger.recordOutput(key + "/LastSuccessfulAcknowledgedLimitAmps", snapshot.lastSuccessfulLimitAmps());
+        Logger.recordOutput(key + "/RequestedRevision", snapshot.requestedRevision());
+        Logger.recordOutput(key + "/LastSuccessfulAcknowledgedRevision", snapshot.lastSuccessfulRevision());
+        Logger.recordOutput(key + "/LastOutcome", snapshot.lastOutcome().name());
+        Logger.recordOutput(key + "/LastStatusName", snapshot.lastStatusName());
+        Logger.recordOutput(key + "/LastStatusDescription", snapshot.lastStatusDescription());
+        Logger.recordOutput(key + "/LastException", snapshot.lastException());
+        Logger.recordOutput(key + "/LastAttemptAgeSeconds", snapshot.lastAttemptAgeSeconds());
+        Logger.recordOutput(
+                key + "/LastSuccessfulAcknowledgedApplyAgeSeconds", snapshot.lastSuccessfulApplyAgeSeconds());
+        Logger.recordOutput(key + "/AttemptCount", snapshot.attemptCount());
+        Logger.recordOutput(key + "/SuccessCount", snapshot.successCount());
+        Logger.recordOutput(key + "/FailureCount", snapshot.failureCount());
+        Logger.recordOutput(key + "/ExceptionCount", snapshot.exceptionCount());
+        Logger.recordOutput(key + "/RetryAttemptCount", snapshot.retryAttemptCount());
+        Logger.recordOutput(key + "/DeduplicatedRequestCount", snapshot.deduplicatedRequestCount());
+        Logger.recordOutput(key + "/Pending", snapshot.pending());
+        Logger.recordOutput(key + "/Retrying", snapshot.retrying());
+        Logger.recordOutput(key + "/InFlight", snapshot.inFlight());
+        Logger.recordOutput(key + "/Closed", snapshot.closed());
+        Logger.recordOutput(key + "/WorkerAlive", snapshot.workerAlive());
     }
 }

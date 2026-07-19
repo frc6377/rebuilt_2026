@@ -110,6 +110,20 @@ public class BaseShooter extends SubsystemBase {
         return Math.abs(flywheelSetpoint.in(RPM)) > 1.0;
     }
 
+    /** Returns the combined measured supply current for the leader and follower. */
+    public double getSupplyCurrentAmps() {
+        return inputs.flywheelCurrent.in(Amps) + inputs.followerFlywheelCurrent.in(Amps);
+    }
+
+    public boolean isSupplyCurrentValid() {
+        return inputs.supplyCurrentValid;
+    }
+
+    /** Requests the same per-motor supply-current limit for the leader and follower. */
+    public void setSupplyCurrentLimit(double perMotorAmps) {
+        io.setSupplyCurrentLimit(perMotorAmps);
+    }
+
     @AutoLogOutput(key = "FlywheelSetpoint")
     public AngularVelocity getFlywheelSetpoint() {
         return flywheelSetpoint;

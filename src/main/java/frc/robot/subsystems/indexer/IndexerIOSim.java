@@ -16,6 +16,7 @@ public class IndexerIOSim implements IndexerIO {
 
     private double indexerSetpointRPM = 0.0;
     private double indexerAppliedVolts = 0.0;
+    private boolean closedLoopEnabled = false;
 
     public IndexerIOSim() {
         var indexerPlant =
@@ -28,21 +29,35 @@ public class IndexerIOSim implements IndexerIO {
 
     @Override
     public void updateInputs(IndexerIOInputs inputs) {
-        double indexerFB = indexerController.calculate(indexerSim.getAngularVelocityRPM(), indexerSetpointRPM);
-        indexerAppliedVolts = MathUtil.clamp(indexerFB, -12.0, 12.0);
+        if (closedLoopEnabled) {
+            double indexerFB = indexerController.calculate(indexerSim.getAngularVelocityRPM(), indexerSetpointRPM);
+            indexerAppliedVolts = MathUtil.clamp(indexerFB, -12.0, 12.0);
+        }
 
         indexerSim.setInputVoltage(indexerAppliedVolts);
 
         indexerSim.update(Robot.defaultPeriodSecs);
+        inputs.motorOutput = Volts.of(indexerAppliedVolts);
+        inputs.motorVelocity = RPM.of(indexerSim.getAngularVelocityRPM());
+        inputs.supplyCurrent = Amps.of(indexerSim.getCurrentDrawAmps());
+        inputs.supplyCurrentValid = true;
     }
 
     @Override
     public void setVelocity(AngularVelocity velocity) {
+        closedLoopEnabled = true;
         indexerSetpointRPM = velocity.in(RPM);
     }
 
     @Override
+    public void setCustomSpeed(double speed) {
+        closedLoopEnabled = false;
+        indexerAppliedVolts = MathUtil.clamp(speed * 12.0, -12.0, 12.0);
+    }
+
+    @Override
     public void stop() {
+        closedLoopEnabled = false;
         indexerSetpointRPM = 0.0;
         indexerAppliedVolts = 0.0;
         indexerSim.setInputVoltage(0.0);

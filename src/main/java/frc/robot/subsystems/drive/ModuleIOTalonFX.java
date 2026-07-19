@@ -7,6 +7,7 @@ import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
+import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.*;
 import com.ctre.phoenix6.hardware.CANcoder;
@@ -34,6 +35,7 @@ public abstract class ModuleIOTalonFX implements ModuleIO {
     protected final TalonFX driveTalon;
     protected final TalonFX turnTalon;
     protected final CANcoder cancoder;
+    protected final CurrentLimitsConfigs driveCurrentLimitsConfig;
 
     protected final VoltageOut voltageRequest = new VoltageOut(0);
     protected final PositionVoltage positionVoltageRequest = new PositionVoltage(0.0);
@@ -49,6 +51,7 @@ public abstract class ModuleIOTalonFX implements ModuleIO {
     protected final StatusSignal<AngularVelocity> driveVelocity;
     protected final StatusSignal<Voltage> driveAppliedVolts;
     protected final StatusSignal<Current> driveCurrent;
+    protected final StatusSignal<Current> driveSupplyCurrent;
 
     // Inputs from turn motor
     protected final StatusSignal<Angle> turnAbsolutePosition;
@@ -80,6 +83,7 @@ public abstract class ModuleIOTalonFX implements ModuleIO {
         driveConfig.MotorOutput.Inverted = constants.DriveMotorInverted
                 ? InvertedValue.Clockwise_Positive
                 : InvertedValue.CounterClockwise_Positive;
+        driveCurrentLimitsConfig = driveConfig.CurrentLimits.clone();
         tryUntilOk(5, () -> driveTalon.getConfigurator().apply(driveConfig, 0.25));
         tryUntilOk(5, () -> driveTalon.setPosition(0.0, 0.25));
 
@@ -122,6 +126,7 @@ public abstract class ModuleIOTalonFX implements ModuleIO {
         driveVelocity = driveTalon.getVelocity();
         driveAppliedVolts = driveTalon.getMotorVoltage();
         driveCurrent = driveTalon.getStatorCurrent();
+        driveSupplyCurrent = driveTalon.getSupplyCurrent();
 
         // Create turn status signals
         turnAbsolutePosition = cancoder.getAbsolutePosition();
@@ -133,13 +138,15 @@ public abstract class ModuleIOTalonFX implements ModuleIO {
         BaseStatusSignal.setUpdateFrequencyForAll(Drive.ODOMETRY_FREQUENCY, turnAbsolutePosition, drivePosition);
         BaseStatusSignal.setUpdateFrequencyForAll(
                 10.0, driveVelocity, driveAppliedVolts, driveCurrent, turnVelocity, turnAppliedVolts, turnCurrent);
+        BaseStatusSignal.setUpdateFrequencyForAll(50.0, driveSupplyCurrent);
         ParentDevice.optimizeBusUtilizationForAll(driveTalon, turnTalon);
     }
 
     @Override
     public void updateInputs(ModuleIOInputs inputs) {
         // Refresh all signals
-        var driveStatus = BaseStatusSignal.refreshAll(drivePosition, driveVelocity, driveAppliedVolts, driveCurrent);
+        var driveStatus = BaseStatusSignal.refreshAll(
+                drivePosition, driveVelocity, driveAppliedVolts, driveCurrent, driveSupplyCurrent);
         var turnStatus = BaseStatusSignal.refreshAll(turnVelocity, turnAppliedVolts, turnCurrent);
         var turnEncoderStatus = BaseStatusSignal.refreshAll(turnAbsolutePosition);
 
@@ -151,6 +158,8 @@ public abstract class ModuleIOTalonFX implements ModuleIO {
                 Units.rotationsToRadians(driveVelocity.getValueAsDouble()) / constants.DriveMotorGearRatio;
         inputs.driveAppliedVolts = driveAppliedVolts.getValueAsDouble();
         inputs.driveCurrentAmps = driveCurrent.getValueAsDouble();
+        inputs.driveSupplyCurrentAmps = driveSupplyCurrent.getValueAsDouble();
+        inputs.driveSupplyCurrentValid = driveStatus.isOK();
 
         // Update turn inputs
         inputs.turnConnected = turnConnectedDebounce.calculate(turnStatus.isOK());

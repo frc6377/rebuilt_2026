@@ -136,4 +136,19 @@ public class Module {
     public double getFFCharacterizationVelocity() {
         return Units.radiansToRotations(inputs.driveVelocityRadPerSec);
     }
+
+    /** Returns the drive motor's measured supply current. */
+    public double getDriveSupplyCurrentAmps() {
+        return inputs.driveSupplyCurrentAmps;
+    }
+
+    /** Returns whether the current-cycle drive supply-current refresh succeeded. */
+    public boolean isDriveSupplyCurrentValid() {
+        return inputs.driveSupplyCurrentValid;
+    }
+
+    /** Requests a dynamic supply-current limit for this module's drive motor. */
+    public void setDriveSupplyCurrentLimit(double currentLimitAmps) {
+        io.setDriveSupplyCurrentLimit(currentLimitAmps);
+    }
 }

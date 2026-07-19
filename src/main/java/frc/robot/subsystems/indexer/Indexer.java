@@ -14,6 +14,7 @@ public class Indexer extends SubsystemBase {
     private final IndexerIOInputsAutoLogged inputs = new IndexerIOInputsAutoLogged();
 
     private AngularVelocity setpoint = RotationsPerSecond.zero();
+    private boolean powerManagementActive = false;
 
     public Indexer(IndexerIO indexerIO) {
         this.indexerIO = indexerIO;
@@ -21,49 +22,75 @@ public class Indexer extends SubsystemBase {
 
     public Command index() {
         return run(() -> {
-                    indexerIO.setCustomSpeed(IndexerConstants.kCollectorSpeed
+                    setPercentOutput(IndexerConstants.kCollectorSpeed
                             + IndexerConstants.kCollectorVariableSpeed
                                     * Math.sin(Timer.getFPGATimestamp() * Math.PI / 8));
                 })
-                .finallyDo(() -> indexerIO.stop());
+                .finallyDo(this::stopIndexer);
     }
 
     public Command setCustomSpeed(double speed) {
-        return runOnce(() -> indexerIO.setCustomSpeed(speed));
+        return runOnce(() -> setPercentOutput(speed));
     }
 
     public Command runPercentOutput(double percent) {
-        return run(() -> indexerIO.setCustomSpeed(percent));
+        return run(() -> setPercentOutput(percent)).finallyDo(this::stopIndexer);
     }
 
     public Command indexReverse() {
-        return run(() -> {
-            setpoint = IndexerConstants.kCollectorRPM.times(-1);
-            indexerIO.setCustomSpeed(-IndexerConstants.kCollectorSpeed);
-        });
+        return run(() -> setPercentOutput(-IndexerConstants.kCollectorSpeed)).finallyDo(this::stopIndexer);
     }
 
     public Command index(BooleanSupplier supplier) {
-        return run(() -> {
-            indexerIO.setVelocity(supplier.getAsBoolean() ? IndexerConstants.kCollectorRPM : RotationsPerSecond.zero());
-        });
+        return run(() -> setVelocity(
+                        supplier.getAsBoolean() ? IndexerConstants.kCollectorRPM : RotationsPerSecond.zero()))
+                .finallyDo(this::stopIndexer);
     }
 
     public Command stop() {
-        return runOnce(() -> {
-            setpoint = RotationsPerSecond.zero();
-            indexerIO.stop();
-        });
+        return runOnce(this::stopIndexer);
     }
 
     public void setRunning(boolean running) {
         if (running) {
-            setpoint = IndexerConstants.kCollectorRPM;
-            indexerIO.setVelocity(IndexerConstants.kCollectorRPM);
+            setVelocity(IndexerConstants.kCollectorRPM);
         } else {
-            setpoint = RotationsPerSecond.zero();
-            indexerIO.stop();
+            stopIndexer();
         }
+    }
+
+    public boolean isPowerManagementActive() {
+        return powerManagementActive;
+    }
+
+    public double getSupplyCurrentAmps() {
+        return inputs.supplyCurrent.in(Amps);
+    }
+
+    public boolean isSupplyCurrentValid() {
+        return inputs.supplyCurrentValid;
+    }
+
+    public void setSupplyCurrentLimit(double currentLimitAmps) {
+        indexerIO.setSupplyCurrentLimit(currentLimitAmps);
+    }
+
+    private void setPercentOutput(double percent) {
+        setpoint = RotationsPerSecond.zero();
+        powerManagementActive = Math.abs(percent) > 1e-3;
+        indexerIO.setCustomSpeed(percent);
+    }
+
+    private void setVelocity(AngularVelocity velocity) {
+        setpoint = velocity;
+        powerManagementActive = Math.abs(velocity.in(RotationsPerSecond)) > 0.1;
+        indexerIO.setVelocity(velocity);
+    }
+
+    private void stopIndexer() {
+        setpoint = RotationsPerSecond.zero();
+        powerManagementActive = false;
+        indexerIO.stop();
     }
 
     @Override
@@ -71,7 +98,7 @@ public class Indexer extends SubsystemBase {
         indexerIO.updateInputs(inputs);
         Logger.processInputs("Indexer", inputs);
         Logger.recordOutput("Indexer/Setpoint", setpoint);
-        Logger.recordOutput("Indexer/Running", Math.abs(setpoint.in(RotationsPerSecond)) > 0.1);
+        Logger.recordOutput("Indexer/Running", powerManagementActive);
         Logger.recordOutput(
                 "Indexer/variableSpeed",
                 IndexerConstants.kCollectorSpeed

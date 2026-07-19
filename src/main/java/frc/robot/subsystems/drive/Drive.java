@@ -368,6 +368,32 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
         return output;
     }
 
+    /** Returns the total measured supply current for the four propulsion motors. */
+    public double getDriveSupplyCurrentAmps() {
+        double totalCurrentAmps = 0.0;
+        for (var module : modules) {
+            totalCurrentAmps += module.getDriveSupplyCurrentAmps();
+        }
+        return totalCurrentAmps;
+    }
+
+    /** Returns true only when every propulsion motor supplied a valid current sample this cycle. */
+    public boolean isDriveSupplyCurrentValid() {
+        for (var module : modules) {
+            if (!module.isDriveSupplyCurrentValid()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** Requests the same per-motor supply-current limit on all four propulsion motors. */
+    public void setDriveSupplyCurrentLimit(double perMotorAmps) {
+        for (var module : modules) {
+            module.setDriveSupplyCurrentLimit(perMotorAmps);
+        }
+    }
+
     /** Returns the current odometry pose. */
     @AutoLogOutput(key = "Odometry/Robot")
     public Pose2d getPose() {

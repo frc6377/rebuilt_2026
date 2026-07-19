@@ -33,6 +33,10 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.commands.DriveCommands;
 import frc.robot.commands.ShooterCalibrationCommand;
+import frc.robot.energy.PowerBudgetManager;
+import frc.robot.energy.PowerIO;
+import frc.robot.energy.PowerIOReal;
+import frc.robot.energy.PowerIOSim;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.GyroIO;
@@ -86,6 +90,7 @@ public class RobotContainer {
     protected final Intake intake;
     private final OI OIController;
     private final Indexer indexer;
+    private final PowerBudgetManager powerBudgetManager;
     private final SwerveDriveSimulation driveSimulation; // Only used in simulation, but declared here for easy
     // access by subsystems that need it
 
@@ -131,7 +136,7 @@ public class RobotContainer {
                         Constants.EnabledSubsystems.kExtender ? new ExtenderIOReal() : new ExtenderIO() {},
                         Constants.EnabledSubsystems.kRoller
                                 ? new BaseShooterIOKrakenX60(
-                                        frc.robot.subsystems.intake.IntakeConstants.RollerConstants.rollerConfig)
+                                        frc.robot.subsystems.intake.IntakeConstants.RollerConstants.rollerConfig, true)
                                 : new BaseShooterIO() {});
                 indexer = new Indexer(Constants.EnabledSubsystems.kIndexer ? new IndexerIOReal() : new IndexerIO() {});
                 driveSimulation = null;
@@ -182,6 +187,13 @@ public class RobotContainer {
                 indexer = new Indexer(new IndexerIO() {});
                 break;
         }
+
+        PowerIO powerIO =
+                switch (Constants.currentMode) {
+                    case REAL -> new PowerIOReal();
+                    case SIM -> new PowerIOSim();
+                };
+        powerBudgetManager = new PowerBudgetManager(powerIO, drive, intake, indexer);
 
         superstructure = new Superstructure(intake::isRollerRunning, vision, OIController);
 
@@ -493,6 +505,16 @@ public class RobotContainer {
         Logger.recordOutput(
                 "Shooting/WhoWonAuton",
                 Objects.equals(DriverStation.getGameSpecificMessage(), "B") ? "363AF4" : "F44336");
+    }
+
+    /** Updates current-budget calculations after subsystem commands have run for this scheduler cycle. */
+    public void updatePowerManagement() {
+        powerBudgetManager.update();
+    }
+
+    /** Resets the battery estimate and restores startup limits if active limiting was in use. */
+    public void resetPowerManagement() {
+        powerBudgetManager.reset();
     }
 
     public Command getRobotStartPose(int cameraIndex) {
