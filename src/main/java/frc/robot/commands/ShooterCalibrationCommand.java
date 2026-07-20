@@ -40,19 +40,22 @@ import org.ironmaple.simulation.gamepieces.GamePieceProjectile;
 import org.littletonrobotics.junction.Logger;
 
 /**
- * A calibration command that systematically tests different shooting parameters from various positions to find values
+ * A calibration command that systematically tests different shooting parameters
+ * from various positions to find values
  * that successfully score in the hub.
  *
- * <p>ONLY FOR USE IN SIMULATION!
+ * <p>
+ * ONLY FOR USE IN SIMULATION!
  *
- * <p>The command will:
+ * <p>
+ * The command will:
  *
  * <ol>
- *   <li>Move to each test position around the hub
- *   <li>Try different RPM combinations
- *   <li>Fire a test shot and wait to see if it scores
- *   <li>Record successful combinations
- *   <li>Move to the next position and repeat
+ * <li>Move to each test position around the hub
+ * <li>Try different RPM combinations
+ * <li>Fire a test shot and wait to see if it scores
+ * <li>Record successful combinations
+ * <li>Move to the next position and repeat
  * </ol>
  */
 public class ShooterCalibrationCommand extends Command {
@@ -95,8 +98,8 @@ public class ShooterCalibrationCommand extends Command {
 
     // Hub scoring detection
     private Translation2d hubPosition;
-    private static final double HUB_RADIUS =
-            FieldConstants.Hub.innerWidth / 2.0 / 6; // Use quarter the radius to be conservative
+    private static final double HUB_RADIUS = FieldConstants.Hub.innerWidth / 2.0 / 6; // Use quarter the radius to be
+                                                                                      // conservative
     private static final double HUB_HEIGHT = FieldConstants.Hub.height;
 
     // Shot result tracking (for early termination)
@@ -125,10 +128,10 @@ public class ShooterCalibrationCommand extends Command {
     /**
      * Creates a new ShooterCalibrationCommand with default test ranges.
      *
-     * @param shooter Shooter subsystem
+     * @param shooter       Shooter subsystem
      * @param trajectorySim Trajectory simulation
-     * @param driveSim Drive simulation for teleporting robot
-     * @param poseResetter Consumer to reset odometry pose
+     * @param driveSim      Drive simulation for teleporting robot
+     * @param poseResetter  Consumer to reset odometry pose
      */
     public ShooterCalibrationCommand(
             BaseShooter shooter,
@@ -142,15 +145,15 @@ public class ShooterCalibrationCommand extends Command {
                 poseResetter,
                 // Default test distances: 2m to 6m in 0.5m increments
                 new Distance[] {
-                    Meters.of(2.0),
-                    Meters.of(2.5),
-                    Meters.of(3.0),
-                    Meters.of(3.5),
-                    Meters.of(4.0),
-                    Meters.of(4.5),
-                    Meters.of(5.0),
-                    Meters.of(5.5),
-                    Meters.of(6.0)
+                        Meters.of(2.0),
+                        Meters.of(2.5),
+                        Meters.of(3.0),
+                        Meters.of(3.5),
+                        Meters.of(4.0),
+                        Meters.of(4.5),
+                        Meters.of(5.0),
+                        Meters.of(5.5),
+                        Meters.of(6.0)
                 },
                 RPM.of(2000),
                 RPM.of(6000));
@@ -163,16 +166,17 @@ public class ShooterCalibrationCommand extends Command {
                 drive,
                 drive::setSimulationWorldPose);
     }
+
     /**
      * Creates a new ShooterCalibrationCommand with custom test ranges.
      *
-     * @param shooter Shooter subsystem
+     * @param shooter       Shooter subsystem
      * @param trajectorySim Trajectory simulation
-     * @param driveSim Drive simulation for teleporting robot
-     * @param poseResetter Consumer to reset odometry pose
+     * @param driveSim      Drive simulation for teleporting robot
+     * @param poseResetter  Consumer to reset odometry pose
      * @param testDistances Array of distances to test from
-     * @param lowerBound Minimum flywheel velocity to test
-     * @param upperBound Maximum flywheel velocity to test
+     * @param lowerBound    Minimum flywheel velocity to test
+     * @param upperBound    Maximum flywheel velocity to test
      */
     public ShooterCalibrationCommand(
             BaseShooter shooter,
@@ -263,8 +267,7 @@ public class ShooterCalibrationCommand extends Command {
                 if (stateTimer.hasElapsed(SETTLE_TIME)) {
                     double actualRPM = shooter.getFlywheelVelocity().in(RPM);
                     if (Math.abs(actualRPM - currentVelocity.in(RotationsPerSecond))
-                                    / currentVelocity.in(RotationsPerSecond)
-                            < 0.05) {
+                            / currentVelocity.in(RotationsPerSecond) < 0.05) {
                         state = CalibrationState.FIRE_SHOT;
                     } else if (stateTimer.hasElapsed(SETTLE_TIME * 3)) {
                         // Timeout - proceed anyway
@@ -274,7 +277,6 @@ public class ShooterCalibrationCommand extends Command {
             }
 
             case FIRE_SHOT -> {
-                // Fire a single shot from the left shooter (matches the calibrated subsystem)
                 currentShot = trajectorySim.launchGamePiece(GamePieceTrajectorySimulation.ShooterSide.LEFT);
 
                 stateTimer.restart();
@@ -349,19 +351,20 @@ public class ShooterCalibrationCommand extends Command {
     }
 
     /**
-     * Check if the last shot scored in the hub. Uses trajectory endpoint analysis. The ball must enter from above
+     * Check if the last shot scored in the hub. Uses trajectory endpoint analysis.
+     * The ball must enter from above
      * (descending) to count as a score.
      *
      * @return true if the shot likely scored
      */
     private boolean checkIfScored() {
-        // Get the last trajectory from the left shooter (calibration fires left)
         Pose3d[] trajectory = trajectorySim.getLastTrajectory(GamePieceTrajectorySimulation.ShooterSide.LEFT);
         if (trajectory == null || trajectory.length < 2) {
             return false;
         }
 
-        // Check the trajectory points to see if the ball passes through the hub opening from above
+        // Check the trajectory points to see if the ball passes through the hub opening
+        // from above
         for (int i = 1; i < trajectory.length; i++) {
             Pose3d prevPoint = trajectory[i - 1];
             Pose3d point = trajectory[i];
@@ -434,6 +437,7 @@ public class ShooterCalibrationCommand extends Command {
         Timer.delay(1);
         return getShotResult();
     }
+
     /** Log the calibration results. */
     private void logResults() {
         Logger.recordOutput("Calibration/Status", "COMPLETE");
