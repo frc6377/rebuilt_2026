@@ -38,10 +38,26 @@ import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 public class GamePieceTrajectorySimulation {
+    public enum ShooterSide {
+        LEFT("Left"),
+        RIGHT("Right");
+
+        private final String logName;
+
+        ShooterSide(String logName) {
+            this.logName = logName;
+        }
+
+        public String logName() {
+            return logName;
+        }
+    }
+
     // Physics constants
     private static final double GRAVITY = 9.81; // Standard gravity (m/s²)
-    private static final int DEFAULT_TRAJECTORY_POINTS = 30; // Reduced from 100 for efficiency
+    private static final int DEFAULT_TRAJECTORY_POINTS = 30;
     private static final double MAX_TRAJECTORY_TIME = 3.0; // Maximum trajectory time (seconds)
+
     /**
      * Game piece info for the 2026 FUEL
      *
@@ -55,98 +71,54 @@ public class GamePieceTrajectorySimulation {
      */
     public static final GamePieceOnFieldSimulation.GamePieceInfo FUEL_INFO =
             new GamePieceOnFieldSimulation.GamePieceInfo(
-                    "Fuel", // Game piece type name
-                    new Circle(0.075), // Radius: 5.91"/2 = 2.955" = 0.075m
-                    Inches.of(5.91), // Height (diameter for a sphere)
-                    Pounds.of(0.5),
-                    2.0, // Linear damping (foam has some air resistance)
-                    3.0, // Angular damping
-                    0.6); // Coefficient of restitution (foam bounces moderately)
+                    "Fuel", new Circle(0.075), Inches.of(5.91), Pounds.of(0.5), 2.0, 3.0, 0.6);
 
-    // Game piece configuration
     private final GamePieceOnFieldSimulation.GamePieceInfo gamePieceInfo;
 
-    // Robot state suppliers
     private final Supplier<Translation2d> robotPositionSupplier;
     private final Supplier<Rotation2d> robotRotationSupplier;
     private final Supplier<ChassisSpeeds> chassisSpeedsSupplier;
 
-    // Shooter state suppliers
-    private final Supplier<Double> flywheelVelocityRPMSupplier;
+    private final ShooterChannel left;
+    private final ShooterChannel right;
 
-    // Indexer state for automatic firing
     private BooleanSupplier indexerRunningSupplier = () -> false;
+    /** Optional ammo source (e.g. IntakeSimulation). When set, hopper is ignored for firing. */
+    private BooleanSupplier externalAmmoAvailable = null;
+    private BooleanSupplier externalAmmoConsume = null;
     private final Timer autoFireTimer = new Timer();
-    private double autoFireIntervalSeconds = 1.0;
+    /** ~3 balls/sec */
+    private double autoFireIntervalSeconds = 1.0 / 3.0;
     private boolean autoFireEnabled = false;
+    private boolean autoFireImmediate = false;
     private int gamePiecesLaunched = 0;
+    private ShooterSide nextAutoFireSide = ShooterSide.LEFT;
 
-    // Ball count / hopper simulation
-    private final LoggedNetworkNumber ballsInHopper =
-            new LoggedNetworkNumber("Shooter/Sim/BallsInHopper", 5); // Default
-    // to 5
-    // balls
-    private boolean hopperEmptyStopsIndexer = true; // Whether to stop indexer when hopper is empty
+    private final LoggedNetworkNumber ballsInHopper = new LoggedNetworkNumber("Shooter/Sim/BallsInHopper", 5);
+    private boolean hopperEmptyStopsIndexer = true;
 
-    // Shooter configuration (tunable)
     private final LoggedNetworkNumber shooterHeightMeters;
-    private final LoggedNetworkNumber shooterOffsetXMeters;
-    private final LoggedNetworkNumber shooterOffsetYMeters;
     private final LoggedNetworkNumber flywheelRadiusMeters;
-    private final LoggedNetworkNumber launchEfficiency; // Account for energy loss (0.0 - 1.0)
-
-    // Trajectory visualization
-    private Pose3d[] lastTrajectory = new Pose3d[0];
+    private final LoggedNetworkNumber launchEfficiency;
 
     /**
-     * Creates a new GamePieceTrajectorySimulation using 2017 FUEL game pieces.
+     * Creates a new GamePieceTrajectorySimulation with independent left/right launch channels.
      *
      * @param driveSimulation The swerve drive simulation for robot state
-     * @param flywheelVelocityRPMSupplier Supplier for current flywheel velocity in RPM
+     * @param leftFlywheelVelocityRPMSupplier Supplier for left flywheel velocity in RPM
+     * @param rightFlywheelVelocityRPMSupplier Supplier for right flywheel velocity in RPM
      */
     public GamePieceTrajectorySimulation(
-            SwerveDriveSimulation driveSimulation, Supplier<Double> flywheelVelocityRPMSupplier) {
-        this(FUEL_INFO, driveSimulation, flywheelVelocityRPMSupplier);
-    }
-
-    /**
-     * Creates a new GamePieceTrajectorySimulation.
-     *
-     * @param gamePieceInfo Info about the game piece being launched (size, mass, etc.)
-     * @param driveSimulation The swerve drive simulation for robot state
-     * @param flywheelVelocityRPMSupplier Supplier for current flywheel velocity in RPM
-     */
-    public GamePieceTrajectorySimulation(
-            GamePieceOnFieldSimulation.GamePieceInfo gamePieceInfo,
             SwerveDriveSimulation driveSimulation,
-            Supplier<Double> flywheelVelocityRPMSupplier) {
+            Supplier<Double> leftFlywheelVelocityRPMSupplier,
+            Supplier<Double> rightFlywheelVelocityRPMSupplier) {
         this(
-                gamePieceInfo,
+                FUEL_INFO,
                 () -> driveSimulation.getSimulatedDriveTrainPose().getTranslation(),
                 () -> driveSimulation.getSimulatedDriveTrainPose().getRotation(),
                 driveSimulation::getDriveTrainSimulatedChassisSpeedsFieldRelative,
-                flywheelVelocityRPMSupplier);
-    }
-
-    /**
-     * Creates a new GamePieceTrajectorySimulation with custom suppliers using 2017 FUEL game pieces.
-     *
-     * @param robotPositionSupplier Supplier for robot position on field
-     * @param robotRotationSupplier Supplier for robot rotation
-     * @param chassisSpeedsSupplier Supplier for chassis speeds (field-relative)
-     * @param flywheelVelocityRPMSupplier Supplier for flywheel velocity in RPM
-     */
-    public GamePieceTrajectorySimulation(
-            Supplier<Translation2d> robotPositionSupplier,
-            Supplier<Rotation2d> robotRotationSupplier,
-            Supplier<ChassisSpeeds> chassisSpeedsSupplier,
-            Supplier<Double> flywheelVelocityRPMSupplier) {
-        this(
-                FUEL_INFO,
-                robotPositionSupplier,
-                robotRotationSupplier,
-                chassisSpeedsSupplier,
-                flywheelVelocityRPMSupplier);
+                leftFlywheelVelocityRPMSupplier,
+                rightFlywheelVelocityRPMSupplier);
     }
 
     /**
@@ -156,301 +128,185 @@ public class GamePieceTrajectorySimulation {
      * @param robotPositionSupplier Supplier for robot position on field
      * @param robotRotationSupplier Supplier for robot rotation
      * @param chassisSpeedsSupplier Supplier for chassis speeds (field-relative)
-     * @param flywheelVelocityRPMSupplier Supplier for flywheel velocity in RPM
+     * @param leftFlywheelVelocityRPMSupplier Supplier for left flywheel velocity in RPM
+     * @param rightFlywheelVelocityRPMSupplier Supplier for right flywheel velocity in RPM
      */
     public GamePieceTrajectorySimulation(
             GamePieceOnFieldSimulation.GamePieceInfo gamePieceInfo,
             Supplier<Translation2d> robotPositionSupplier,
             Supplier<Rotation2d> robotRotationSupplier,
             Supplier<ChassisSpeeds> chassisSpeedsSupplier,
-            Supplier<Double> flywheelVelocityRPMSupplier) {
+            Supplier<Double> leftFlywheelVelocityRPMSupplier,
+            Supplier<Double> rightFlywheelVelocityRPMSupplier) {
         this.gamePieceInfo = gamePieceInfo;
         this.robotPositionSupplier = robotPositionSupplier;
         this.robotRotationSupplier = robotRotationSupplier;
         this.chassisSpeedsSupplier = chassisSpeedsSupplier;
-        this.flywheelVelocityRPMSupplier = flywheelVelocityRPMSupplier;
 
-        // Default shooter configuration (tunable via NetworkTables)
-        this.shooterHeightMeters = new LoggedNetworkNumber("Shooter/Sim/HeightMeters", 0.5);
-        this.shooterOffsetXMeters = new LoggedNetworkNumber("Shooter/Sim/OffsetXMeters", 0.3);
-        this.shooterOffsetYMeters = new LoggedNetworkNumber("Shooter/Sim/OffsetYMeters", 0.0);
-        this.flywheelRadiusMeters = new LoggedNetworkNumber("Shooter/Sim/FlywheelRadiusMeters", 0.05);
-        this.launchEfficiency = new LoggedNetworkNumber("Shooter/Sim/LaunchEfficiency", 0.85);
+        this.shooterHeightMeters =
+                new LoggedNetworkNumber("Shooter/Sim/HeightMeters", ShooterConstants.shooterHeight.in(Meters));
+        this.flywheelRadiusMeters =
+                new LoggedNetworkNumber("Shooter/Sim/FlywheelRadiusMeters", ShooterConstants.flywheelRadius.in(Meters));
+        this.launchEfficiency =
+                new LoggedNetworkNumber("Shooter/Sim/LaunchEfficiency", ShooterConstants.launchEfficiency);
+
+        this.left = new ShooterChannel(
+                ShooterSide.LEFT,
+                leftFlywheelVelocityRPMSupplier,
+                ShooterConstants.shooterOffsetXLeft.in(Meters),
+                ShooterConstants.shooterOffsetYLeft.in(Meters));
+        this.right = new ShooterChannel(
+                ShooterSide.RIGHT,
+                rightFlywheelVelocityRPMSupplier,
+                ShooterConstants.shooterOffsetXRight.in(Meters),
+                ShooterConstants.shooterOffsetYRight.in(Meters));
     }
 
-    /**
-     * Calculates the linear launch velocity from flywheel RPM.
-     *
-     * @param flywheelRPM Flywheel velocity in RPM
-     * @return Launch velocity in meters per second
-     */
-    public double calculateLaunchVelocityMPS(double flywheelRPM) {
-        // Convert RPM to rad/s: RPM * 2π / 60
-        double angularVelocityRadPerSec = flywheelRPM * 2.0 * Math.PI / 60.0;
+    private ShooterChannel channel(ShooterSide side) {
+        return side == ShooterSide.LEFT ? left : right;
+    }
 
-        // Linear velocity = angular velocity * radius * efficiency
+    public double calculateLaunchVelocityMPS(double flywheelRPM) {
+        double angularVelocityRadPerSec = flywheelRPM * 2.0 * Math.PI / 60.0;
         return angularVelocityRadPerSec * flywheelRadiusMeters.get() * launchEfficiency.get();
     }
 
-    /**
-     * Gets the current calculated launch velocity based on flywheel state.
-     *
-     * @return Launch velocity in meters per second
-     */
-    public double getCurrentLaunchVelocityMPS() {
-        return calculateLaunchVelocityMPS(flywheelVelocityRPMSupplier.get());
+    public double getCurrentLaunchVelocityMPS(ShooterSide side) {
+        return calculateLaunchVelocityMPS(
+                channel(side).flywheelVelocityRPMSupplier.get());
     }
 
-    /**
-     * Gets the shooter position offset from robot center (in robot frame).
-     *
-     * @return Translation2d representing shooter offset
-     */
-    public Translation2d getShooterOffset() {
-        return new Translation2d(shooterOffsetXMeters.get(), shooterOffsetYMeters.get());
+    public Translation2d getShooterOffset(ShooterSide side) {
+        return channel(side).getOffset();
     }
 
-    /**
-     * Gets the shooter height from ground.
-     *
-     * @return Shooter height in meters
-     */
     public Distance getShooterHeight() {
         return Meters.of(shooterHeightMeters.get());
     }
 
-    /**
-     * Gets the current hood angle.
-     *
-     * @return Hood angle
-     */
     public Angle getHoodAngle() {
         return ShooterConstants.kFixedHoodAngle;
     }
 
-    /**
-     * Creates and launches a game piece projectile based on current shooter state.
-     *
-     * @return The launched GamePieceProjectile
-     */
+    /** Launches from the next auto-fire side (alternating left/right). */
     public GamePieceProjectile launchGamePiece() {
+        GamePieceProjectile projectile = launchGamePiece(nextAutoFireSide);
+        nextAutoFireSide = nextAutoFireSide == ShooterSide.LEFT ? ShooterSide.RIGHT : ShooterSide.LEFT;
+        return projectile;
+    }
+
+    /** Launches a game piece from the specified shooter side. */
+    public GamePieceProjectile launchGamePiece(ShooterSide side) {
+        return launchFromSide(side, getCurrentLaunchVelocityMPS(side), getHoodAngle());
+    }
+
+    /** Launches from the specified side with a custom launch velocity. */
+    public GamePieceProjectile launchGamePiece(ShooterSide side, double launchVelocityMPS) {
+        return launchFromSide(side, launchVelocityMPS, getHoodAngle());
+    }
+
+    /** Launches from the specified side with custom velocity and angle. */
+    public GamePieceProjectile launchGamePiece(ShooterSide side, double launchVelocityMPS, double launchAngleDegrees) {
+        return launchFromSide(side, launchVelocityMPS, Degrees.of(launchAngleDegrees));
+    }
+
+    /** Launches one ball from each shooter. Requires at least 2 balls in hopper for both to fire. */
+    public GamePieceProjectile[] launchBothGamePieces() {
+        GamePieceProjectile leftProjectile = launchGamePiece(ShooterSide.LEFT);
+        GamePieceProjectile rightProjectile = launchGamePiece(ShooterSide.RIGHT);
+        return new GamePieceProjectile[] {leftProjectile, rightProjectile};
+    }
+
+    private GamePieceProjectile launchFromSide(ShooterSide side, double launchVelocityMPS, Angle hoodAngle) {
+        ShooterChannel ch = channel(side);
         Translation2d robotPosition = robotPositionSupplier.get();
         Rotation2d robotRotation = robotRotationSupplier.get();
         ChassisSpeeds chassisSpeeds = chassisSpeedsSupplier.get();
-
-        double launchVelocityMPS = getCurrentLaunchVelocityMPS();
         Distance height = getShooterHeight();
-        Angle hoodAngle = getHoodAngle();
+        Translation2d offset = ch.getOffset();
 
         GamePieceProjectile projectile = new GamePieceProjectile(
                 gamePieceInfo,
                 robotPosition,
-                getShooterOffset(),
+                offset,
                 chassisSpeeds,
                 robotRotation,
                 height,
                 MetersPerSecond.of(launchVelocityMPS),
                 hoodAngle);
 
-        // Configure trajectory callback for visualization
-        projectile.withProjectileTrajectoryDisplayCallBack(trajectory -> {
-            lastTrajectory = trajectory.toArray(new Pose3d[0]);
-            Logger.recordOutput("Shooter/Sim/Trajectory", lastTrajectory);
-        });
+        projectile
+                .withProjectileTrajectoryDisplayCallBack(trajectory -> {
+                    ch.lastTrajectory = trajectory.toArray(new Pose3d[0]);
+                    Logger.recordOutput("Shooter/Sim/" + side.logName() + "/Trajectory", ch.lastTrajectory);
+                });
+        // Do not convert landed shots into dyn4j field bodies — that piles up physics objects
+        // and dominates SimulatedArena.simulationPeriodic() cost during long sims / FullAuto.
 
-        // Configure to become game piece on field after touching ground
-        projectile.enableBecomesGamePieceOnFieldAfterTouchGround();
-
-        // Add to simulation arena and launch
         SimulatedArena.getInstance().addGamePieceProjectile(projectile);
 
-        // Log launch parameters
-        Logger.recordOutput("Shooter/Sim/LaunchVelocityMPS", launchVelocityMPS);
-        Logger.recordOutput("Shooter/Sim/LaunchAngleDegrees", hoodAngle.in(Degrees));
-        Logger.recordOutput("Shooter/Sim/LaunchHeightMeters", height.in(Meters));
+        Logger.recordOutput("Shooter/Sim/" + side.logName() + "/LaunchVelocityMPS", launchVelocityMPS);
+        Logger.recordOutput("Shooter/Sim/" + side.logName() + "/LaunchAngleDegrees", hoodAngle.in(Degrees));
+        Logger.recordOutput("Shooter/Sim/" + side.logName() + "/LaunchHeightMeters", height.in(Meters));
         Logger.recordOutput(
-                "Shooter/Sim/LaunchPosition",
-                new Pose2d(robotPosition.plus(getShooterOffset().rotateBy(robotRotation)), robotRotation));
+                "Shooter/Sim/" + side.logName() + "/LaunchPosition",
+                new Pose2d(robotPosition.plus(offset.rotateBy(robotRotation)), robotRotation));
 
         return projectile;
     }
 
-    /**
-     * Creates a game piece projectile with custom velocity override.
-     *
-     * @param launchVelocityMPS Launch velocity in meters per second
-     * @return The launched GamePieceProjectile
-     */
-    public GamePieceProjectile launchGamePiece(double launchVelocityMPS) {
-        Translation2d robotPosition = robotPositionSupplier.get();
-        Rotation2d robotRotation = robotRotationSupplier.get();
-        ChassisSpeeds chassisSpeeds = chassisSpeedsSupplier.get();
-
-        Distance height = getShooterHeight();
-        Angle hoodAngle = getHoodAngle();
-
-        GamePieceProjectile projectile = new GamePieceProjectile(
-                gamePieceInfo,
-                robotPosition,
-                getShooterOffset(),
-                chassisSpeeds,
-                robotRotation,
-                height,
-                MetersPerSecond.of(launchVelocityMPS),
-                hoodAngle);
-
-        projectile
-                .withProjectileTrajectoryDisplayCallBack(trajectory -> {
-                    lastTrajectory = trajectory.toArray(new Pose3d[0]);
-                    Logger.recordOutput("Shooter/Sim/Trajectory", lastTrajectory);
-                })
-                .enableBecomesGamePieceOnFieldAfterTouchGround();
-
-        SimulatedArena.getInstance().addGamePieceProjectile(projectile);
-
-        Logger.recordOutput("Shooter/Sim/LaunchVelocityMPS", launchVelocityMPS);
-        Logger.recordOutput("Shooter/Sim/LaunchAngleDegrees", hoodAngle.in(Degrees));
-
-        return projectile;
-    }
-
-    /**
-     * Creates a game piece projectile with custom velocity and angle override.
-     *
-     * @param launchVelocityMPS Launch velocity in meters per second
-     * @param launchAngleDegrees Launch angle in degrees
-     * @return The launched GamePieceProjectile
-     */
-    public GamePieceProjectile launchGamePiece(double launchVelocityMPS, double launchAngleDegrees) {
-        Translation2d robotPosition = robotPositionSupplier.get();
-        Rotation2d robotRotation = robotRotationSupplier.get();
-        ChassisSpeeds chassisSpeeds = chassisSpeedsSupplier.get();
-
-        Distance height = getShooterHeight();
-
-        GamePieceProjectile projectile = new GamePieceProjectile(
-                gamePieceInfo,
-                robotPosition,
-                getShooterOffset(),
-                chassisSpeeds,
-                robotRotation,
-                height,
-                MetersPerSecond.of(launchVelocityMPS),
-                Degrees.of(launchAngleDegrees));
-
-        projectile
-                .withProjectileTrajectoryDisplayCallBack(trajectory -> {
-                    lastTrajectory = trajectory.toArray(new Pose3d[0]);
-                    Logger.recordOutput("Shooter/Sim/Trajectory", lastTrajectory);
-                })
-                .enableBecomesGamePieceOnFieldAfterTouchGround();
-
-        SimulatedArena.getInstance().addGamePieceProjectile(projectile);
-
-        Logger.recordOutput("Shooter/Sim/LaunchVelocityMPS", launchVelocityMPS);
-        Logger.recordOutput("Shooter/Sim/LaunchAngleDegrees", launchAngleDegrees);
-
-        return projectile;
-    }
-
-    /**
-     * Calculates and previews trajectory without actually launching using analytical physics equations. This method
-     * computes the trajectory instantaneously using closed-form kinematic equations, making it efficient for real-time
-     * aiming assistance.
-     *
-     * <p>Uses the kinematic equations:
-     *
-     * <ul>
-     *   <li>x(t) = x₀ + vₓ·t
-     *   <li>y(t) = y₀ + vᵧ·t
-     *   <li>z(t) = z₀ + vᵤ·t - ½·g·t²
-     * </ul>
-     *
-     * @return Array of Pose3d representing predicted trajectory
-     */
+    /** Previews both left and right trajectories and returns the left preview. */
     public Pose3d[] previewTrajectory() {
-        // Get current state
-        TrajectoryState state = calculateTrajectoryState();
+        previewTrajectory(ShooterSide.RIGHT);
+        return previewTrajectory(ShooterSide.LEFT);
+    }
 
-        // Calculate time of flight using quadratic formula: z = h + v_z*t - 0.5*g*t^2 =
-        // 0
-        // 0.5*g*t^2 - v_z*t - h = 0
-        // t = (v_z + sqrt(v_z^2 + 2*g*h)) / g
+    public Pose3d[] previewTrajectory(ShooterSide side) {
+        return previewTrajectory(side, DEFAULT_TRAJECTORY_POINTS);
+    }
+
+    public Pose3d[] previewTrajectory(ShooterSide side, int numPoints) {
+        ShooterChannel ch = channel(side);
+        TrajectoryState state = calculateTrajectoryState(side);
         Optional<Double> flightTime = calculateTimeOfFlight(state.initialHeight, state.verticalVelocity);
 
         if (flightTime.isEmpty()) {
-            lastTrajectory = new Pose3d[0];
-            Logger.recordOutput("Shooter/Sim/PreviewTrajectory", lastTrajectory);
-            return lastTrajectory;
+            ch.lastTrajectory = new Pose3d[0];
+            Logger.recordOutput("Shooter/Sim/" + side.logName() + "/PreviewTrajectory", ch.lastTrajectory);
+            return ch.lastTrajectory;
         }
 
         double totalTime = Math.min(flightTime.get(), MAX_TRAJECTORY_TIME);
-
-        // Generate trajectory points at uniform time intervals
-        lastTrajectory = generateTrajectoryPoints(state, totalTime, DEFAULT_TRAJECTORY_POINTS);
-        Logger.recordOutput("Shooter/Sim/PreviewTrajectory", lastTrajectory);
-        return lastTrajectory;
+        ch.lastTrajectory = generateTrajectoryPoints(state, totalTime, numPoints);
+        Logger.recordOutput("Shooter/Sim/" + side.logName() + "/PreviewTrajectory", ch.lastTrajectory);
+        return ch.lastTrajectory;
     }
 
-    /**
-     * Calculates and previews trajectory with a custom number of points for visualization. Useful when higher or lower
-     * resolution is needed.
-     *
-     * @param numPoints Number of points in the trajectory (more points = smoother curve)
-     * @return Array of Pose3d representing predicted trajectory
-     */
-    public Pose3d[] previewTrajectory(int numPoints) {
-        TrajectoryState state = calculateTrajectoryState();
-        Optional<Double> flightTime = calculateTimeOfFlight(state.initialHeight, state.verticalVelocity);
-
-        if (flightTime.isEmpty()) {
-            lastTrajectory = new Pose3d[0];
-            Logger.recordOutput("Shooter/Sim/PreviewTrajectory", lastTrajectory);
-            return lastTrajectory;
-        }
-
-        double totalTime = Math.min(flightTime.get(), MAX_TRAJECTORY_TIME);
-        lastTrajectory = generateTrajectoryPoints(state, totalTime, numPoints);
-        Logger.recordOutput("Shooter/Sim/PreviewTrajectory", lastTrajectory);
-        return lastTrajectory;
-    }
-
-    /**
-     * Calculates the trajectory state from current robot and shooter configuration. This encapsulates all the initial
-     * conditions needed for trajectory calculation.
-     *
-     * @return TrajectoryState containing all initial conditions
-     */
-    private TrajectoryState calculateTrajectoryState() {
+    private TrajectoryState calculateTrajectoryState(ShooterSide side) {
         Translation2d robotPosition = robotPositionSupplier.get();
         Rotation2d robotRotation = robotRotationSupplier.get();
         ChassisSpeeds chassisSpeeds = chassisSpeedsSupplier.get();
 
-        double launchVelocityMPS = getCurrentLaunchVelocityMPS();
+        double launchVelocityMPS = getCurrentLaunchVelocityMPS(side);
         double hoodAngleRad = getHoodAngle().in(Radians);
         double heightM = shooterHeightMeters.get();
 
-        // Calculate initial velocity components from launch
         double launchHorizontalVelocity = launchVelocityMPS * Math.cos(hoodAngleRad);
         double launchVerticalVelocity = launchVelocityMPS * Math.sin(hoodAngleRad);
 
-        // Calculate chassis velocity contribution
-        Translation2d shooterOffset = getShooterOffset();
+        Translation2d shooterOffset = getShooterOffset(side);
         Translation2d chassisVelocity =
                 new Translation2d(chassisSpeeds.vxMetersPerSecond, chassisSpeeds.vyMetersPerSecond);
 
-        // Rotational velocity at shooter position due to chassis rotation
         Translation2d shooterRotationalVelocity = shooterOffset
                 .rotateBy(robotRotation)
                 .rotateBy(Rotation2d.fromDegrees(90))
                 .times(chassisSpeeds.omegaRadiansPerSecond);
 
-        // Total horizontal velocity (launch velocity in robot frame + chassis velocity)
         Translation2d totalHorizontalVelocity = chassisVelocity
                 .plus(shooterRotationalVelocity)
                 .plus(new Translation2d(launchHorizontalVelocity, robotRotation));
 
-        // Calculate initial position
         Translation2d launchPosition = robotPosition.plus(shooterOffset.rotateBy(robotRotation));
 
         return new TrajectoryState(
@@ -462,35 +318,22 @@ public class GamePieceTrajectorySimulation {
                 launchVerticalVelocity);
     }
 
-    /**
-     * Calculates time of flight using the quadratic formula. Solves: z₀ + vᵤ·t - ½·g·t² = 0
-     *
-     * @param initialHeight Initial height (z₀)
-     * @param verticalVelocity Initial vertical velocity (vᵤ)
-     * @return Optional containing time of flight, empty if no valid solution
-     */
     private Optional<Double> calculateTimeOfFlight(double initialHeight, double verticalVelocity) {
-        // Quadratic equation: -0.5*g*t^2 + v_z*t + h = 0
-        // Rearranged: 0.5*g*t^2 - v_z*t - h = 0
-        // a = 0.5*g, b = -v_z, c = -h
         double a = 0.5 * GRAVITY;
         double b = -verticalVelocity;
         double c = -initialHeight;
 
         double discriminant = b * b - 4 * a * c;
-
         if (discriminant < 0) {
-            return Optional.empty(); // No real solution (shouldn't happen with valid inputs)
+            return Optional.empty();
         }
 
-        // We want the positive root (time in the future)
         double sqrtDiscriminant = Math.sqrt(discriminant);
         double t1 = (-b + sqrtDiscriminant) / (2 * a);
         double t2 = (-b - sqrtDiscriminant) / (2 * a);
 
-        // Return the positive root (time must be positive)
         if (t1 > 0 && t2 > 0) {
-            return Optional.of(Math.min(t1, t2)); // Both positive, take smaller
+            return Optional.of(Math.min(t1, t2));
         } else if (t1 > 0) {
             return Optional.of(t1);
         } else if (t2 > 0) {
@@ -500,14 +343,6 @@ public class GamePieceTrajectorySimulation {
         return Optional.empty();
     }
 
-    /**
-     * Generates trajectory points using analytical position calculation.
-     *
-     * @param state Initial trajectory state
-     * @param totalTime Total flight time
-     * @param numPoints Number of points to generate
-     * @return Array of Pose3d representing the trajectory
-     */
     private Pose3d[] generateTrajectoryPoints(TrajectoryState state, double totalTime, int numPoints) {
         Pose3d[] trajectory = new Pose3d[numPoints];
         double dt = totalTime / (numPoints - 1);
@@ -515,8 +350,6 @@ public class GamePieceTrajectorySimulation {
         for (int i = 0; i < numPoints; i++) {
             double t = i * dt;
             Translation3d position = state.getPositionAtTime(t, GRAVITY);
-
-            // Clamp z to ground level
             double z = Math.max(0, position.getZ());
             trajectory[i] = new Pose3d(position.getX(), position.getY(), z, new Rotation3d());
         }
@@ -524,10 +357,6 @@ public class GamePieceTrajectorySimulation {
         return trajectory;
     }
 
-    /**
-     * Immutable record containing trajectory initial conditions. Used to efficiently pass trajectory state between
-     * calculation methods.
-     */
     private record TrajectoryState(
             double initialX,
             double initialY,
@@ -536,13 +365,6 @@ public class GamePieceTrajectorySimulation {
             double horizontalVelocityY,
             double verticalVelocity) {
 
-        /**
-         * Calculates position at a given time using kinematic equations.
-         *
-         * @param t Time in seconds
-         * @param gravity Gravitational acceleration (m/s²)
-         * @return Position as Translation3d
-         */
         Translation3d getPositionAtTime(double t, double gravity) {
             double x = initialX + horizontalVelocityX * t;
             double y = initialY + horizontalVelocityY * t;
@@ -551,53 +373,36 @@ public class GamePieceTrajectorySimulation {
         }
     }
 
-    /**
-     * Gets the last calculated/launched trajectory.
-     *
-     * @return Array of Pose3d representing trajectory
-     */
-    public Pose3d[] getLastTrajectory() {
-        return lastTrajectory;
+    public Pose3d[] getLastTrajectory(ShooterSide side) {
+        return channel(side).lastTrajectory;
     }
 
-    /**
-     * Calculates the predicted landing position of the game piece using analytical equations. This is more efficient
-     * than previewTrajectory() when only the landing position is needed, as it directly solves for the final position
-     * without generating intermediate points.
-     *
-     * @return Translation3d of predicted landing position (z will be 0), or null if trajectory is invalid
-     */
-    public Translation3d getPredictedLandingPosition() {
-        TrajectoryState state = calculateTrajectoryState();
-        Optional<Double> flightTime = calculateTimeOfFlight(state.initialHeight, state.verticalVelocity);
+    /** Returns the last trajectory from the most recently used auto-fire side's counterpart. Defaults to left. */
+    public Pose3d[] getLastTrajectory() {
+        return left.lastTrajectory.length > 0 ? left.lastTrajectory : right.lastTrajectory;
+    }
 
+    public Translation3d getPredictedLandingPosition(ShooterSide side) {
+        TrajectoryState state = calculateTrajectoryState(side);
+        Optional<Double> flightTime = calculateTimeOfFlight(state.initialHeight, state.verticalVelocity);
         if (flightTime.isEmpty()) {
             return null;
         }
 
-        // Calculate landing position directly
         double t = flightTime.get();
-        double x = state.initialX() + state.horizontalVelocityX() * t;
-        double y = state.initialY() + state.horizontalVelocityY() * t;
-
-        return new Translation3d(x, y, 0);
+        return new Translation3d(
+                state.initialX() + state.horizontalVelocityX() * t,
+                state.initialY() + state.horizontalVelocityY() * t,
+                0);
     }
 
-    /**
-     * Calculates the position of the projectile at a specific time after launch. Useful for checking if the projectile
-     * will pass through a specific point or region.
-     *
-     * @param timeSeconds Time after launch in seconds
-     * @return Position as Translation3d, or null if time is negative or beyond landing
-     */
-    public Translation3d getPositionAtTime(double timeSeconds) {
+    public Translation3d getPositionAtTime(ShooterSide side, double timeSeconds) {
         if (timeSeconds < 0) {
             return null;
         }
 
-        TrajectoryState state = calculateTrajectoryState();
+        TrajectoryState state = calculateTrajectoryState(side);
         Optional<Double> flightTime = calculateTimeOfFlight(state.initialHeight, state.verticalVelocity);
-
         if (flightTime.isEmpty() || timeSeconds > flightTime.get()) {
             return null;
         }
@@ -605,67 +410,38 @@ public class GamePieceTrajectorySimulation {
         return state.getPositionAtTime(timeSeconds, GRAVITY);
     }
 
-    /**
-     * Calculates the horizontal distance the projectile will travel. Efficient calculation without generating full
-     * trajectory.
-     *
-     * @return Horizontal distance in meters, or -1 if trajectory is invalid
-     */
-    public double getHorizontalRange() {
-        Translation3d landingPosition = getPredictedLandingPosition();
+    public double getHorizontalRange(ShooterSide side) {
+        Translation3d landingPosition = getPredictedLandingPosition(side);
         if (landingPosition == null) {
             return -1;
         }
 
-        TrajectoryState state = calculateTrajectoryState();
+        TrajectoryState state = calculateTrajectoryState(side);
         double dx = landingPosition.getX() - state.initialX();
         double dy = landingPosition.getY() - state.initialY();
-
         return Math.sqrt(dx * dx + dy * dy);
     }
 
-    /**
-     * Calculates the maximum height the projectile will reach. Uses calculus: max height occurs when dz/dt = 0.
-     *
-     * @return Maximum height in meters
-     */
-    public double getMaxHeight() {
-        TrajectoryState state = calculateTrajectoryState();
-
-        // Time of max height: dz/dt = v_z - g*t = 0 => t = v_z / g
+    public double getMaxHeight(ShooterSide side) {
+        TrajectoryState state = calculateTrajectoryState(side);
         double timeAtMaxHeight = state.verticalVelocity() / GRAVITY;
 
         if (timeAtMaxHeight <= 0) {
-            // Projectile is going down from the start, max height is initial height
             return state.initialHeight();
         }
 
-        // z(t) = h + v_z*t - 0.5*g*t^2
-        double maxHeight = state.initialHeight()
+        return state.initialHeight()
                 + state.verticalVelocity() * timeAtMaxHeight
                 - 0.5 * GRAVITY * timeAtMaxHeight * timeAtMaxHeight;
-
-        return maxHeight;
     }
 
-    /**
-     * Checks if the projectile will pass through a target volume. This is an efficient collision check using analytical
-     * trajectory calculation.
-     *
-     * @param targetCenter Center of the target volume
-     * @param targetSize Half-size of the target volume in each axis
-     * @return true if the trajectory passes through the target volume
-     */
-    public boolean willHitTarget(Translation3d targetCenter, Translation3d targetSize) {
-        TrajectoryState state = calculateTrajectoryState();
+    public boolean willHitTarget(ShooterSide side, Translation3d targetCenter, Translation3d targetSize) {
+        TrajectoryState state = calculateTrajectoryState(side);
         Optional<Double> flightTime = calculateTimeOfFlight(state.initialHeight, state.verticalVelocity);
-
         if (flightTime.isEmpty()) {
             return false;
         }
 
-        // Sample trajectory at multiple points to check for intersection
-        // Use adaptive sampling: more points near expected target height
         double totalTime = flightTime.get();
         int checkPoints = 20;
 
@@ -673,7 +449,6 @@ public class GamePieceTrajectorySimulation {
             double t = (i / (double) checkPoints) * totalTime;
             Translation3d pos = state.getPositionAtTime(t, GRAVITY);
 
-            // Check if position is within target bounds
             if (Math.abs(pos.getX() - targetCenter.getX()) <= targetSize.getX()
                     && Math.abs(pos.getY() - targetCenter.getY()) <= targetSize.getY()
                     && Math.abs(pos.getZ() - targetCenter.getZ()) <= targetSize.getZ()) {
@@ -684,16 +459,9 @@ public class GamePieceTrajectorySimulation {
         return false;
     }
 
-    /**
-     * Sets the target position for hit detection. Configure this for scoring targets.
-     *
-     * @param targetPosition 3D position of the target
-     * @param tolerance Tolerance for hit detection in each axis
-     * @param onHit Callback when target is hit
-     * @return A configured projectile (not launched)
-     */
     public GamePieceProjectile createTargetedProjectile(
-            Supplier<Translation3d> targetPosition, Translation3d tolerance, Runnable onHit) {
+            ShooterSide side, Supplier<Translation3d> targetPosition, Translation3d tolerance, Runnable onHit) {
+        ShooterChannel ch = channel(side);
         Translation2d robotPosition = robotPositionSupplier.get();
         Rotation2d robotRotation = robotRotationSupplier.get();
         ChassisSpeeds chassisSpeeds = chassisSpeedsSupplier.get();
@@ -701,11 +469,11 @@ public class GamePieceTrajectorySimulation {
         GamePieceProjectile projectile = new GamePieceProjectile(
                 gamePieceInfo,
                 robotPosition,
-                getShooterOffset(),
+                ch.getOffset(),
                 chassisSpeeds,
                 robotRotation,
                 getShooterHeight(),
-                MetersPerSecond.of(getCurrentLaunchVelocityMPS()),
+                MetersPerSecond.of(getCurrentLaunchVelocityMPS(side)),
                 getHoodAngle());
 
         projectile
@@ -714,12 +482,12 @@ public class GamePieceTrajectorySimulation {
                 .withHitTargetCallBack(onHit)
                 .withProjectileTrajectoryDisplayCallBack(
                         trajectoryHit -> {
-                            lastTrajectory = trajectoryHit.toArray(new Pose3d[0]);
-                            Logger.recordOutput("Shooter/Sim/Trajectory", lastTrajectory);
+                            ch.lastTrajectory = trajectoryHit.toArray(new Pose3d[0]);
+                            Logger.recordOutput("Shooter/Sim/" + side.logName() + "/Trajectory", ch.lastTrajectory);
                         },
                         trajectoryMiss -> {
-                            lastTrajectory = trajectoryMiss.toArray(new Pose3d[0]);
-                            Logger.recordOutput("Shooter/Sim/TrajectoryMiss", lastTrajectory);
+                            ch.lastTrajectory = trajectoryMiss.toArray(new Pose3d[0]);
+                            Logger.recordOutput("Shooter/Sim/" + side.logName() + "/TrajectoryMiss", ch.lastTrajectory);
                         });
 
         return projectile;
@@ -727,133 +495,109 @@ public class GamePieceTrajectorySimulation {
 
     // ==================== Auto-Fire Simulation ====================
 
-    /**
-     * Configures the indexer running supplier for automatic firing simulation. When the indexer is running, the
-     * simulation will automatically launch game pieces at the configured interval.
-     *
-     * @param indexerRunningSupplier Supplier that returns true when indexer is feeding balls
-     */
     public void setIndexerRunningSupplier(BooleanSupplier indexerRunningSupplier) {
         this.indexerRunningSupplier = indexerRunningSupplier;
     }
 
     /**
-     * Sets the interval between automatic game piece launches when indexer is running.
-     *
-     * @param intervalSeconds Time between launches in seconds (default 1.0)
+     * Use an external ammo source (e.g. MapleSim IntakeSimulation) instead of the hopper. {@code consume} should return
+     * true if a piece was successfully taken for this shot.
      */
+    public void setExternalAmmoSource(BooleanSupplier available, BooleanSupplier consume) {
+        this.externalAmmoAvailable = available;
+        this.externalAmmoConsume = consume;
+    }
+
+    public void clearExternalAmmoSource() {
+        this.externalAmmoAvailable = null;
+        this.externalAmmoConsume = null;
+    }
+
+    private boolean usingExternalAmmo() {
+        return externalAmmoAvailable != null && externalAmmoConsume != null;
+    }
+
+    private boolean hasAmmoToFire() {
+        if (usingExternalAmmo()) {
+            return externalAmmoAvailable.getAsBoolean();
+        }
+        return !hopperEmptyStopsIndexer || hasBalls();
+    }
+
+    private boolean consumeAmmoForShot() {
+        if (usingExternalAmmo()) {
+            return externalAmmoConsume.getAsBoolean();
+        }
+        int current = getBallsInHopper();
+        if (current <= 0) {
+            return false;
+        }
+        setBallsInHopper(current - 1);
+        return true;
+    }
+
     public void setAutoFireInterval(double intervalSeconds) {
         this.autoFireIntervalSeconds = intervalSeconds;
     }
 
-    /**
-     * Enables or disables automatic firing when indexer is running.
-     *
-     * @param enabled True to enable auto-fire
-     */
     public void setAutoFireEnabled(boolean enabled) {
         this.autoFireEnabled = enabled;
         if (enabled) {
             autoFireTimer.restart();
+            autoFireImmediate = true; // Fire first ball without waiting a full interval
         } else {
             autoFireTimer.stop();
+            autoFireImmediate = false;
+            clearExternalAmmoSource();
         }
     }
 
-    /**
-     * Gets whether auto-fire is currently enabled.
-     *
-     * @return True if auto-fire is enabled
-     */
     public boolean isAutoFireEnabled() {
         return autoFireEnabled;
     }
 
-    /**
-     * Gets the total number of game pieces launched this session.
-     *
-     * @return Number of game pieces launched
-     */
     public int getGamePiecesLaunched() {
         return gamePiecesLaunched;
     }
 
-    /** Resets the game pieces launched counter. */
     public void resetGamePiecesLaunched() {
         gamePiecesLaunched = 0;
     }
 
-    /**
-     * Gets the current number of balls in the hopper.
-     *
-     * @return Number of balls remaining
-     */
     public int getBallsInHopper() {
         return (int) ballsInHopper.get();
     }
 
-    /**
-     * Sets the number of balls in the hopper.
-     *
-     * @param count Number of balls
-     */
     public void setBallsInHopper(int count) {
         ballsInHopper.set(Math.max(0, count));
     }
 
-    /**
-     * Adds balls to the hopper (e.g., when intaking).
-     *
-     * @param count Number of balls to add
-     */
     public void addBalls(int count) {
         setBallsInHopper(getBallsInHopper() + count);
     }
 
-    /**
-     * Checks if the hopper has any balls.
-     *
-     * @return true if there is at least one ball in the hopper
-     */
     public boolean hasBalls() {
         return getBallsInHopper() > 0;
     }
 
-    /**
-     * Checks if the hopper is empty.
-     *
-     * @return true if the hopper is empty
-     */
     public boolean isEmpty() {
         return getBallsInHopper() <= 0;
     }
 
-    /**
-     * Sets whether an empty hopper should stop the indexer from running.
-     *
-     * @param enabled true to stop indexer when hopper is empty
-     */
     public void setHopperEmptyStopsIndexer(boolean enabled) {
         this.hopperEmptyStopsIndexer = enabled;
     }
 
-    /**
-     * Returns whether the indexer should be allowed to run based on hopper state. This can be used as a condition in
-     * commands or triggers.
-     *
-     * @return true if indexer should be allowed to run (hopper has balls or feature disabled)
-     */
     public boolean shouldIndexerRun() {
         if (!hopperEmptyStopsIndexer) {
-            return true; // Feature disabled, always allow
+            return true;
         }
         return hasBalls();
     }
 
     /**
-     * Updates the auto-fire simulation. Call this method periodically (e.g., in a subsystem's periodic method or robot
-     * periodic). When auto-fire is enabled and the indexer is running, this will launch a game piece at the configured
-     * interval. Will not fire if hopper is empty and hopperEmptyStopsIndexer is enabled.
+     * Updates the auto-fire simulation. Alternates left/right launchers each shot so both trajectories are exercised.
+     * Preview arcs are only refreshed while a flywheel is spinning to avoid NT spam every cycle.
      */
     public void updateAutoFire() {
         int currentBalls = getBallsInHopper();
@@ -863,59 +607,86 @@ public class GamePieceTrajectorySimulation {
         Logger.recordOutput("Shooter/Sim/GamePiecesLaunched", gamePiecesLaunched);
         Logger.recordOutput("Shooter/Sim/BallsRemaining", currentBalls);
         Logger.recordOutput("Shooter/Sim/HopperEmpty", currentBalls <= 0);
+        Logger.recordOutput("Shooter/Sim/UsingExternalAmmo", usingExternalAmmo());
+        Logger.recordOutput("Shooter/Sim/HasAmmoToFire", hasAmmoToFire());
         Logger.recordOutput("Shooter/Sim/IndexerAllowed", shouldIndexerRun());
+        Logger.recordOutput("Shooter/Sim/NextAutoFireSide", nextAutoFireSide.logName());
+
+        boolean leftSpinning = left.flywheelVelocityRPMSupplier.get() > 100.0;
+        boolean rightSpinning = right.flywheelVelocityRPMSupplier.get() > 100.0;
+        if (leftSpinning) {
+            previewTrajectory(ShooterSide.LEFT);
+        }
+        if (rightSpinning) {
+            previewTrajectory(ShooterSide.RIGHT);
+        }
 
         if (!autoFireEnabled) {
             return;
         }
 
-        // Check if we should allow firing based on hopper state
-        if (hopperEmptyStopsIndexer && currentBalls <= 0) {
-            // Hopper is empty and we're configured to stop - don't fire
-            autoFireTimer.restart(); // Keep timer fresh for when balls are added
+        if (!hasAmmoToFire()) {
+            autoFireTimer.restart();
             return;
         }
 
         boolean indexerRunning = indexerRunningSupplier.getAsBoolean();
 
         if (indexerRunning) {
-            // Check if enough time has passed since last launch
-            if (autoFireTimer.hasElapsed(autoFireIntervalSeconds)) {
-                // Launch a game piece and decrement ball count
+            if (autoFireImmediate || autoFireTimer.hasElapsed(autoFireIntervalSeconds)) {
+                if (!consumeAmmoForShot()) {
+                    autoFireTimer.restart();
+                    return;
+                }
                 launchGamePiece();
                 gamePiecesLaunched++;
-                setBallsInHopper(currentBalls - 1);
+                autoFireImmediate = false;
                 autoFireTimer.restart();
-
                 Logger.recordOutput("Shooter/Sim/LastLaunchTime", Timer.getFPGATimestamp());
             }
         } else {
-            // Reset timer when indexer stops so next ball fires immediately when indexer
-            // starts again
             autoFireTimer.restart();
         }
     }
 
-    /**
-     * Convenience method to enable auto-fire with the given indexer supplier. Equivalent to calling
-     * setIndexerRunningSupplier() followed by setAutoFireEnabled(true).
-     *
-     * @param indexerRunningSupplier Supplier that returns true when indexer is feeding balls
-     */
     public void enableAutoFire(BooleanSupplier indexerRunningSupplier) {
         setIndexerRunningSupplier(indexerRunningSupplier);
         setAutoFireEnabled(true);
     }
 
-    /**
-     * Convenience method to enable auto-fire with custom interval.
-     *
-     * @param indexerRunningSupplier Supplier that returns true when indexer is feeding balls
-     * @param intervalSeconds Time between launches in seconds
-     */
     public void enableAutoFire(BooleanSupplier indexerRunningSupplier, double intervalSeconds) {
         setIndexerRunningSupplier(indexerRunningSupplier);
         setAutoFireInterval(intervalSeconds);
         setAutoFireEnabled(true);
+    }
+
+    public void enableAutoFireFromExternalAmmo(
+            BooleanSupplier indexerRunningSupplier,
+            BooleanSupplier ammoAvailable,
+            BooleanSupplier ammoConsume,
+            double intervalSeconds) {
+        setExternalAmmoSource(ammoAvailable, ammoConsume);
+        setIndexerRunningSupplier(indexerRunningSupplier);
+        setAutoFireInterval(intervalSeconds);
+        setAutoFireEnabled(true);
+    }
+
+    /** Per-shooter launch channel: independent offset, RPM supplier, and trajectory history. */
+    private static final class ShooterChannel {
+        private final Supplier<Double> flywheelVelocityRPMSupplier;
+        private final LoggedNetworkNumber offsetXMeters;
+        private final LoggedNetworkNumber offsetYMeters;
+        private Pose3d[] lastTrajectory = new Pose3d[0];
+
+        private ShooterChannel(
+                ShooterSide side, Supplier<Double> flywheelVelocityRPMSupplier, double defaultX, double defaultY) {
+            this.flywheelVelocityRPMSupplier = flywheelVelocityRPMSupplier;
+            this.offsetXMeters = new LoggedNetworkNumber("Shooter/Sim/" + side.logName() + "/OffsetXMeters", defaultX);
+            this.offsetYMeters = new LoggedNetworkNumber("Shooter/Sim/" + side.logName() + "/OffsetYMeters", defaultY);
+        }
+
+        private Translation2d getOffset() {
+            return new Translation2d(offsetXMeters.get(), offsetYMeters.get());
+        }
     }
 }

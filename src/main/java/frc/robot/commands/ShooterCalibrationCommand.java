@@ -274,8 +274,8 @@ public class ShooterCalibrationCommand extends Command {
             }
 
             case FIRE_SHOT -> {
-                // Fire a single shot
-                currentShot = trajectorySim.launchGamePiece();
+                // Fire a single shot from the left shooter (matches the calibrated subsystem)
+                currentShot = trajectorySim.launchGamePiece(GamePieceTrajectorySimulation.ShooterSide.LEFT);
 
                 stateTimer.restart();
                 state = CalibrationState.WAIT_FOR_RESULT;
@@ -355,8 +355,8 @@ public class ShooterCalibrationCommand extends Command {
      * @return true if the shot likely scored
      */
     private boolean checkIfScored() {
-        // Get the last trajectory from the simulation
-        Pose3d[] trajectory = trajectorySim.getLastTrajectory();
+        // Get the last trajectory from the left shooter (calibration fires left)
+        Pose3d[] trajectory = trajectorySim.getLastTrajectory(GamePieceTrajectorySimulation.ShooterSide.LEFT);
         if (trajectory == null || trajectory.length < 2) {
             return false;
         }
@@ -392,7 +392,7 @@ public class ShooterCalibrationCommand extends Command {
     }
 
     private ShotResult getShotResult() {
-        Pose3d[] trajectory = trajectorySim.getLastTrajectory();
+        Pose3d[] trajectory = trajectorySim.getLastTrajectory(GamePieceTrajectorySimulation.ShooterSide.LEFT);
         if (trajectory == null || trajectory.length < 2) {
             return ShotResult.TIMEOUT;
         }

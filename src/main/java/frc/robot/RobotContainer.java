@@ -15,6 +15,7 @@ package frc.robot;
 
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.RPM;
+import static edu.wpi.first.units.Units.Seconds;
 import static frc.robot.subsystems.vision.VisionConstants.*;
 
 import com.ctre.phoenix6.SignalLogger;
@@ -96,6 +97,7 @@ public class RobotContainer {
     private final Indexer indexer;
     private final SwerveDriveSimulation driveSimulation;
     private final IntakeSimulation intakeSimulation;
+
     private GamePieceCameraSim gamePieceCamera;
 
     private final boolean usingController;
@@ -158,6 +160,10 @@ public class RobotContainer {
             case SIM:
                 // Sim robot, instantiate physics sim IO implementations
 
+                // Default MapleSim timing is 5 subticks/period (~44ms arena step here).
+                // 3 subticks ≈ 150 Hz physics — still usable, much cheaper on CPU.
+                SimulatedArena.overrideSimulationTimings(Seconds.of(0.02), 3);
+
                 driveSimulation =
                         new SwerveDriveSimulation(Drive.mapleSimConfig, new Pose2d(3.0, 3.0, new Rotation2d()));
                 intakeSimulation = IntakeSimulation.OverTheBumperIntake(
@@ -167,6 +173,9 @@ public class RobotContainer {
                         IntakeConstants.kIntakeWidth,
                         IntakeSimulation.IntakeSide.FRONT,
                         IntakeConstants.kIntakeCapacity);
+                // Detect contacts for pickup, but don't physically collide with
+                // field/obstacles.
+                intakeSimulation.setSensor(true);
                 intake = new Intake(
                         Constants.EnabledSubsystems.kExtender ? new ExtenderIOSim() : new ExtenderIO() {},
                         Constants.EnabledSubsystems.kRoller
@@ -185,8 +194,7 @@ public class RobotContainer {
                         new ModuleIOTalonFXSim(
                                 TunerConstants.BackRight, driveSimulation.getModules()[3]),
                         (pose) -> driveSimulation.setSimulationWorldPose(pose));
-                // PathPlanner + PathGenerator must track MapleSim field pose, not drifted
-                // odometry.
+
                 drive.setPoseSupplier(driveSimulation::getSimulatedDriveTrainPose);
                 PathGenerator.setPoseSupplier(driveSimulation::getSimulatedDriveTrainPose);
                 vision = new Vision(
@@ -468,7 +476,7 @@ public class RobotContainer {
         // drive).ignoringDisable(true));
         OIController.zeroDrivebase()
                 .onTrue(PathGenerator.pathfindToPose(
-                        drive, new Pose2d(new Translation2d(11.5, 7.5), new Rotation2d().fromDegrees(90))));
+                        drive, new Pose2d(new Translation2d(15, 7), new Rotation2d().fromDegrees(90))));
         // OIController.zeroDrivebase()
         // .onTrue(PathGenerator.pathfindAdStar(
         // drive, new Pose2d(new Translation2d(11.5, 7.5), new
@@ -596,9 +604,13 @@ public class RobotContainer {
             intakeSimulation.stopIntake();
         }
 
+        Pose3d[] fuel = SimulatedArena.getInstance().getGamePiecesArrayByType("Fuel");
+        Pose3d[] visibleFuel = gamePieceCamera.getVisiblePieces();
         Logger.recordOutput("FieldSimulation/RobotPosition", driveSimulation.getSimulatedDriveTrainPose());
-        Logger.recordOutput("FieldSimulation/Fuel", SimulatedArena.getInstance().getGamePiecesArrayByType("Fuel"));
-        Logger.recordOutput("FieldSimulation/VisibleFuel", gamePieceCamera.getVisiblePieces());
+        Logger.recordOutput("FieldSimulation/Fuel", fuel);
+        Logger.recordOutput("FieldSimulation/VisibleFuel", visibleFuel);
+        Logger.recordOutput("FieldSimulation/FuelCount", fuel.length);
+        Logger.recordOutput("FieldSimulation/VisibleFuelCount", visibleFuel.length);
         Logger.recordOutput("FieldSimulation/Intake/IntakedGamepieces", intakeSimulation.getGamePiecesAmount());
         Logger.recordOutput(
                 "Shooting/WhoWonAuton",

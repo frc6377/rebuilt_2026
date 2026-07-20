@@ -1,6 +1,5 @@
 package frc.robot.commands;
 
-import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.MetersPerSecondPerSecond;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
@@ -21,13 +20,11 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.FieldConstants;
 import frc.robot.subsystems.drive.Drive;
 import java.io.File;
@@ -37,7 +34,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
@@ -47,16 +43,27 @@ import org.locationtech.jts.index.strtree.STRtree;
 
 public class PathGenerator {
     private static final PathConstraints kConstraints = new PathConstraints(
-            MetersPerSecond.of(1.5),
-            MetersPerSecondPerSecond.of(1.5),
-            RotationsPerSecond.of(1.5),
+            MetersPerSecond.of(4.0),
+            MetersPerSecondPerSecond.of(0.75),
+            RotationsPerSecond.of(4.0),
             RotationsPerSecondPerSecond.of(1.5));
-    private static final Distance kDefaultTakeoverLead = Meters.of(1.5);
     private static final double kTimeout = 3.0;
     private static final double kSpacing = 1e-3;
     private static final double kBackupM = 0.5;
     private static final double kBackupMps = 0.75;
     private static final double kTouch = 0.08;
+    /** Max center-to-center distance for two obstacles to be treated as a close pair. */
+    private static final double kCloseObstacleM = 0.45;
+    /** Rotation cost weight when the destination is outside the action zone. */
+    private static final double kRotCost = 2.0;
+    /**
+     * Rotation cost weight when the destination is inside the action zone — zones are assumed too tight to spin, so
+     * takeover orientation must match the goal.
+     */
+    private static final double kInZoneRotCost = 20.0;
+    /** Skip a finish pathfind when the takeover rail already reaches the goal. */
+    private static final double kTakeoverArriveM = 0.25;
+
     private static final double kHalfL = Units.inchesToMeters(33.405) / 2.0;
     private static final double kHalfW = Units.inchesToMeters(37.75) / 2.0;
     private static final GeometryFactory GEOM = new GeometryFactory();
@@ -76,15 +83,9 @@ public class PathGenerator {
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record NavGridData(double nodeSizeMeters, boolean[][] grid) {}
 
-    public record ZoneTrigger(Distance offset, Supplier<Command> command) {}
-
     public static final class ActionZone {
         final String name;
         final Envelope bounds;
-        final List<ZoneTrigger> before = new ArrayList<>();
-        final List<ZoneTrigger> during = new ArrayList<>();
-        final List<ZoneTrigger> after = new ArrayList<>();
-        Distance takeoverLead = kDefaultTakeoverLead;
         final List<String> takeoverPathNames = new ArrayList<>();
         boolean flip;
 
@@ -97,8 +98,7 @@ public class PathGenerator {
                     Math.max(a.getY(), b.getY()));
         }
 
-        public ActionZone withTakeover(Distance lead, String... pathNames) {
-            takeoverLead = lead;
+        public ActionZone withTakeover(String... pathNames) {
             takeoverPathNames.clear();
             for (String n : pathNames) {
                 if (n != null && !n.isBlank()) takeoverPathNames.add(n);
@@ -108,21 +108,6 @@ public class PathGenerator {
 
         public ActionZone flip(boolean flip) {
             this.flip = flip;
-            return this;
-        }
-
-        public ActionZone before(Distance m, Supplier<Command> c) {
-            before.add(new ZoneTrigger(m, c));
-            return this;
-        }
-
-        public ActionZone during(Distance m, Supplier<Command> c) {
-            during.add(new ZoneTrigger(m, c));
-            return this;
-        }
-
-        public ActionZone after(Distance m, Supplier<Command> c) {
-            after.add(new ZoneTrigger(m, c));
             return this;
         }
 
@@ -137,14 +122,18 @@ public class PathGenerator {
             return flip && !bounds.covers(t.getX(), t.getY());
         }
 
-        boolean near(Translation2d t, double m) {
-            Envelope e = new Envelope(bounds);
-            e.expandBy(m);
-            Translation2d f = FlippingUtil.flipFieldPosition(t);
-            return e.covers(t.getX(), t.getY()) || (flip && e.covers(f.getX(), f.getY()));
+        /** First contiguous intersection along {@code path}, or null. */
+        int[] intersectionSpan(PathPlannerPath path) {
+            List<int[]> spans = intersectionSpans(path);
+            return spans.isEmpty() ? null : spans.get(0);
         }
 
-        int[] intersectionSpan(PathPlannerPath path) {
+        /**
+         * Every contiguous intersection of {@code path} with this zone (including flipped copies). Needed when one zone
+         * is crossed more than once.
+         */
+        List<int[]> intersectionSpans(PathPlannerPath path) {
+            List<int[]> spans = new ArrayList<>();
             var pts = path.getAllPathPoints();
             int entry = -1, exit = -1;
             for (int i = 0; i < pts.size(); i++) {
@@ -152,12 +141,18 @@ public class PathGenerator {
                     if (entry < 0) entry = i;
                     exit = i;
                 } else if (entry >= 0) {
-                    break;
+                    spans.add(new int[] {entry, exit});
+                    entry = -1;
+                    exit = -1;
                 }
             }
-            return entry < 0 ? null : new int[] {entry, exit};
+            if (entry >= 0) spans.add(new int[] {entry, exit});
+            return spans;
         }
     }
+
+    /** One takeover splice opportunity along an AD* path. */
+    private record Crossing(ActionZone zone, int entry, int exit) {}
 
     private PathGenerator() {}
 
@@ -207,13 +202,22 @@ public class PathGenerator {
                                 FieldConstants.fieldWidth - FieldConstants.LeftTrench.width,
                                 Rotation2d.kZero),
                         new Pose2d(hubX + half, FieldConstants.fieldWidth, Rotation2d.kZero))
-                .withTakeover(Meters.of(3), "Straight Trench L - 1")
+                // Filenames must match deploy/pathplanner/paths exactly (one path per heading).
+                .withTakeover(
+                        "Straight Trench L -1",
+                        "Straight Trench L - 2",
+                        "Straight Trench L - 3",
+                        "Straight Trench L - 4")
                 .flip(true));
         addActionZone(new ActionZone(
                         "RightTrench",
                         new Pose2d(hubX - half, 0, Rotation2d.kZero),
                         new Pose2d(hubX + half, FieldConstants.RightTrench.width, Rotation2d.kZero))
-                .withTakeover(Meters.of(3), "Straight Trench R - 1")
+                .withTakeover(
+                        "Straight Trench R - 1",
+                        "Straight Trench R - 2",
+                        "Straight Trench R - 3",
+                        "Straight Trench R - 4")
                 .flip(true));
     }
 
@@ -243,9 +247,19 @@ public class PathGenerator {
             PathConstraints constraints,
             LinearVelocity goalEndVelocity,
             boolean useTakeover) {
+        return Commands.sequence(
+                backup(drive), pathfindFromHere(drive, target, constraints, goalEndVelocity, useTakeover));
+    }
+
+    /** AD* from the current pose to {@code target}, with optional takeover splicing. */
+    private static Command pathfindFromHere(
+            Drive drive,
+            Pose2d target,
+            PathConstraints constraints,
+            LinearVelocity goalEndVelocity,
+            boolean useTakeover) {
         GoalEndState end = new GoalEndState(goalEndVelocity, target.getRotation());
         return Commands.sequence(
-                backup(drive),
                 Commands.runOnce(() -> {
                     Pathfinding.ensureInitialized();
                     Pathfinding.getCurrentPath(constraints, end);
@@ -259,153 +273,182 @@ public class PathGenerator {
                             PathPlannerPath path = Pathfinding.getCurrentPath(constraints, end);
                             if (path == null || path.numPoints() < 2) return Commands.none();
                             path.preventFlipping = true;
-                            return useTakeover
-                                    ? follow(path, constraints, drive, target, end)
-                                    : AutoBuilder.followPath(path);
+                            return useTakeover ? follow(path, constraints, target, end) : AutoBuilder.followPath(path);
                         },
                         Set.of(drive)));
     }
 
-    private static Command follow(
-            PathPlannerPath path, PathConstraints c, Drive drive, Pose2d target, GoalEndState end) {
-        ActionZone takeover = null;
-        List<Command> parallel = new ArrayList<>();
+    /** Takeover crossings along {@code path}, earliest entry first. */
+    private static List<Crossing> takeoverCrossings(PathPlannerPath path) {
+        List<Crossing> crossings = new ArrayList<>();
         for (ActionZone z : actionZones) {
-            if (z.intersectionSpan(path) == null) continue;
-            if (takeover == null && !z.takeoverPathNames.isEmpty()) takeover = z;
-            if (!z.before.isEmpty() || !z.during.isEmpty() || !z.after.isEmpty()) {
-                parallel.add(zoneTriggers(z));
+            if (z.takeoverPathNames.isEmpty()) continue;
+            for (int[] span : z.intersectionSpans(path)) {
+                crossings.add(new Crossing(z, span[0], span[1]));
             }
         }
-        path.preventFlipping = true;
-        parallel.add(
-                0, takeover == null ? AutoBuilder.followPath(path) : driveAlong(path, c, takeover, drive, target, end));
-        return parallel.size() == 1 ? parallel.get(0) : Commands.parallel(parallel.toArray(Command[]::new));
+        crossings.sort((a, b) -> Integer.compare(a.entry(), b.entry()));
+        return crossings;
     }
 
-    private static Command zoneTriggers(ActionZone z) {
-        Trigger inside = new Trigger(() -> z.contains(currentPose().getTranslation()));
-        Command[] all = Stream.of(
-                        z.before.stream().map(t -> Commands.waitUntil(() -> z.near(
-                                        currentPose().getTranslation(),
-                                        t.offset().in(Meters)))
-                                .andThen(Commands.defer(t.command(), Set.of()))),
-                        z.during.stream().map(t -> Commands.waitUntil(inside)
-                                .andThen(Commands.defer(t.command(), Set.of()).until(inside.negate()))),
-                        z.after.stream().map(t -> Commands.waitUntil(inside)
-                                .andThen(Commands.waitUntil(inside.negate()))
-                                .andThen(Commands.defer(t.command(), Set.of()))))
-                .flatMap(s -> s)
-                .toArray(Command[]::new);
-        return all.length == 0 ? Commands.none() : Commands.parallel(all);
+    private static Command follow(PathPlannerPath path, PathConstraints c, Pose2d target, GoalEndState end) {
+        List<Crossing> crossings = takeoverCrossings(path);
+        path.preventFlipping = true;
+        if (crossings.isEmpty()) {
+            return AutoBuilder.followPath(path);
+        }
+        PathPlannerPath merged = buildMergedTakeoverPath(path, c, target, end, crossings);
+        return AutoBuilder.followPath(merged != null ? merged : path).withName("PathfindTakeoverMerged");
     }
 
-    private static Command driveAlong(
-            PathPlannerPath path, PathConstraints c, ActionZone zone, Drive drive, Pose2d target, GoalEndState end) {
-        path.preventFlipping = true;
-        Command fallback = AutoBuilder.followPath(path);
-        int[] span = zone.intersectionSpan(path);
-        if (span == null) return fallback;
-
+    /**
+     * One continuous path: AD* connector → takeover rail → AD* connector → … Connectors are real AD* paths between
+     * segment endpoints (no point morphing).
+     */
+    private static PathPlannerPath buildMergedTakeoverPath(
+            PathPlannerPath path, PathConstraints c, Pose2d target, GoalEndState end, List<Crossing> crossings) {
         List<PathPoint> pathPts = path.getAllPathPoints();
+        if (pathPts.size() < 2 || crossings.isEmpty()) return null;
+
         Translation2d pathEnd = pathPts.get(pathPts.size() - 1).position;
-        boolean pathEndsInZone = zone.contains(pathEnd);
-        Pose2d nextMajor = target;
-        if (!pathEndsInZone) {
-            Translation2d zoneExit = pathPts.get(span[1]).position;
-            for (int i = span[1] + 1; i < pathPts.size(); i++) {
-                if (pathPts.get(i).position.getDistance(zoneExit) > 0.25) {
-                    nextMajor = new Pose2d(pathPts.get(i).position, target.getRotation());
-                    break;
-                }
-            }
-        }
-        boolean flipSide = zone.onFlippedSide(pathPts.get(span[0]).position);
-        PathPlannerPath field = selectBestTakeover(zone, flipSide, nextMajor, pathEndsInZone ? pathEnd : null);
-        if (field == null) return fallback;
-
-        double spliceDist = Math.max(0, pathPts.get(span[0]).distanceAlongPath - zone.takeoverLead.in(Meters));
-        List<PathPoint> tPts = holonomic(field);
-        if (tPts.size() < 2) return fallback;
-
         Pose2d rp = currentPose();
-        Translation2d robot = rp.getTranslation();
-        Rotation2d hold = rp.getRotation();
-        Rotation2d takeRot = field.getGoalEndState().rotation();
         List<PathPoint> combined = new ArrayList<>();
+        Translation2d seam = rp.getTranslation();
+        Rotation2d heading = rp.getRotation();
 
-        // Join at nearest takeover point; AD* prefix respects takeover lead when
-        // outside the zone.
-        Translation2d joinRef = robot;
-        if (!zone.contains(robot)) {
-            PathPoint lastPrefix = null;
-            for (PathPoint p : pathPts) {
-                if (p.distanceAlongPath > spliceDist) break;
-                combined.add(pt(p.position, hold, null));
-                lastPrefix = p;
+        for (int ci = 0; ci < crossings.size(); ci++) {
+            Crossing crossing = crossings.get(ci);
+            ActionZone zone = crossing.zone();
+            int entry = crossing.entry();
+            boolean stopInZone = zone.contains(pathEnd);
+
+            boolean startInside = combined.isEmpty() && zone.contains(seam);
+            Pose2d headingGoal = startInside ? new Pose2d(target.getTranslation(), heading) : target;
+            boolean flipSide = zone.onFlippedSide(pathPts.get(Math.min(entry, pathPts.size() - 1)).position);
+            PathPlannerPath field = selectBestTakeover(zone, flipSide, headingGoal, seam, stopInZone);
+            if (field == null) continue;
+
+            List<PathPoint> tPts = holonomic(field, c);
+            if (tPts.size() < 2) continue;
+
+            Rotation2d takeRot = field.getGoalEndState().rotation();
+            int hi = tPts.size() - 1;
+            int join;
+            int railExit;
+            if (startInside) {
+                join = nearestIndex(tPts, seam);
+                railExit = stopInZone ? nearestIndex(tPts, pathEnd) : betterEndpoint(tPts, takeRot, target);
+            } else {
+                join = tPts.get(0).position.getDistance(seam)
+                                <= tPts.get(hi).position.getDistance(seam)
+                        ? 0
+                        : hi;
+                railExit = stopInZone ? nearestIndex(tPts, pathEnd) : (join == 0 ? hi : 0);
             }
-            joinRef = lastPrefix != null ? lastPrefix.position : pathPts.get(span[0]).position;
+            List<PathPoint> rail = along(tPts, join, railExit);
+            if (rail.isEmpty()) continue;
+
+            Translation2d joinPos = tPts.get(join).position;
+            // AD* from current seam to the start of this takeover rail.
+            combined.addAll(adStarConnect(seam, heading, joinPos, takeRot, c));
+            combined.addAll(rail);
+            combined = new ArrayList<>(dedupe(combined));
+
+            PathPoint last = combined.get(combined.size() - 1);
+            seam = last.position;
+            heading = takeRot;
+
+            if (stopInZone) {
+                if (seam.getDistance(target.getTranslation()) > kTakeoverArriveM) {
+                    combined.addAll(adStarConnect(seam, heading, target.getTranslation(), takeRot, c));
+                    combined = new ArrayList<>(dedupe(combined));
+                }
+                if (combined.size() < 2) return null;
+                GoalEndState railEnd = new GoalEndState(end.velocityMPS(), takeRot);
+                PathPlannerPath out = PathPlannerPath.fromPathPoints(combined, c, railEnd);
+                out.preventFlipping = true;
+                return out;
+            }
         }
 
-        int join = nearestIndex(tPts, joinRef);
-        int exit = pathEndsInZone ? nearestIndex(tPts, pathEnd) : betterEndpoint(tPts, takeRot, nextMajor);
-        List<PathPoint> rail = along(tPts, join, exit);
-        if (rail.isEmpty()) return fallback;
-
-        var ideal = field.getIdealStartingState();
-        Rotation2d joinHeading = ideal != null ? ideal.rotation() : takeRot;
-        if (zone.contains(robot)) {
-            combined.add(pt(robot, rot(tPts.get(join)), null));
-        } else {
-            combined.add(pt(rail.get(0).position, joinHeading, null));
+        // After the last pass-through rail, AD* to the goal.
+        if (!combined.isEmpty()) {
+            combined.addAll(adStarConnect(seam, heading, target.getTranslation(), target.getRotation(), c));
+            combined = new ArrayList<>(dedupe(combined));
         }
-        combined.addAll(rail);
-        combined = dedupe(combined);
-        if (combined.size() < 2) return fallback;
 
-        PathPoint last = combined.get(combined.size() - 1);
-        List<PathPoint> prefix = List.copyOf(combined);
-        return Commands.sequence(
-                        Commands.runOnce(() -> {
-                            Pathfinding.ensureInitialized();
-                            Pathfinding.setStartPosition(last.position);
-                            Pathfinding.setGoalPosition(target.getTranslation());
-                        }),
-                        Commands.waitUntil(Pathfinding::isNewPathAvailable).withTimeout(kTimeout),
-                        Commands.defer(
-                                () -> {
-                                    PathPlannerPath finish = Pathfinding.getCurrentPath(c, end);
-                                    List<PathPoint> all = new ArrayList<>(prefix);
-                                    if (finish != null) {
-                                        all.addAll(holonomic(finish));
-                                    }
-                                    all = dedupe(all);
-                                    if (all.size() < 2) return Commands.none();
-                                    PathPlannerPath full = PathPlannerPath.fromPathPoints(all, c, end);
-                                    full.preventFlipping = true;
-                                    return AutoBuilder.followPath(full);
-                                },
-                                Set.of(drive)))
-                .withName("PathfindTakeoverCombined");
+        if (combined.size() < 2) return null;
+        PathPlannerPath out = PathPlannerPath.fromPathPoints(combined, c, end);
+        out.preventFlipping = true;
+        return out;
     }
 
-    /** Pick takeover with least exit→nextMajor cost: distance + 2×|Δθ|. */
+    /**
+     * AD* path from {@code from} to {@code to}. Used to join takeover rails (and the goal) instead of morphing /
+     * splicing waypoints by hand.
+     */
+    private static List<PathPoint> adStarConnect(
+            Translation2d from, Rotation2d fromRot, Translation2d to, Rotation2d toRot, PathConstraints c) {
+        if (from.getDistance(to) <= kTakeoverArriveM) {
+            return List.of(pt(to, toRot, c));
+        }
+
+        Pathfinding.ensureInitialized();
+        GoalEndState goalEnd = new GoalEndState(0.0, toRot);
+        Pathfinding.setStartPosition(from);
+        Pathfinding.setGoalPosition(to);
+        Pathfinding.getCurrentPath(c, goalEnd);
+
+        long deadline = System.currentTimeMillis() + (long) (kTimeout * 1000.0);
+        while (!Pathfinding.isNewPathAvailable() && System.currentTimeMillis() < deadline) {
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+
+        PathPlannerPath path = Pathfinding.getCurrentPath(c, goalEnd);
+        if (path == null || path.numPoints() < 2) {
+            return List.of(pt(from, fromRot, c), pt(to, toRot, c));
+        }
+        path.preventFlipping = true;
+        List<PathPoint> pts = new ArrayList<>(holonomic(path, c));
+        if (!pts.isEmpty()) {
+            pts.set(0, pt(pts.get(0).position, fromRot, c));
+            PathPoint last = pts.get(pts.size() - 1);
+            pts.set(pts.size() - 1, pt(last.position, toRot, c));
+        }
+        return pts;
+    }
+
+    /**
+     * Pick takeover by heading match + how well the ridden rail reaches the goal. Pass-through rides endpoint→endpoint;
+     * in-zone stop scores the nearest rail point to the goal.
+     */
     private static PathPlannerPath selectBestTakeover(
-            ActionZone zone, boolean flipSide, Pose2d nextMajor, Translation2d truncateTo) {
+            ActionZone zone, boolean flipSide, Pose2d goal, Translation2d robot, boolean stopInZone) {
         PathPlannerPath best = null;
         double bestCost = Double.POSITIVE_INFINITY;
+        double rotW = stopInZone ? kInZoneRotCost : kRotCost;
         for (String name : zone.takeoverPathNames) {
             PathPlannerPath loaded = loadPath(name);
             if (loaded == null) continue;
             PathPlannerPath field = flipSide ? loaded.flipPath() : loaded;
             var pts = field.getAllPathPoints();
             if (pts.size() < 2) continue;
+            int hi = pts.size() - 1;
             Rotation2d rot = field.getGoalEndState().rotation();
-            Translation2d exit = truncateTo != null
-                    ? pts.get(nearestIndex(pts, truncateTo)).position
-                    : pts.get(betterEndpoint(pts, rot, nextMajor)).position;
-            double cost = exit.getDistance(nextMajor.getTranslation())
-                    + 2.0 * Math.abs(rot.minus(nextMajor.getRotation()).getRadians());
+            int join = pts.get(0).position.getDistance(robot)
+                            <= pts.get(hi).position.getDistance(robot)
+                    ? 0
+                    : hi;
+            int exit = stopInZone ? nearestIndex(pts, goal.getTranslation()) : (join == 0 ? hi : 0);
+            Translation2d exitPos = pts.get(exit).position;
+            double cost = exitPos.getDistance(goal.getTranslation())
+                    + 0.25 * pts.get(join).position.getDistance(robot)
+                    + rotW * Math.abs(rot.minus(goal.getRotation()).getRadians());
             if (cost < bestCost) {
                 bestCost = cost;
                 best = field;
@@ -418,9 +461,9 @@ public class PathGenerator {
     private static int betterEndpoint(List<PathPoint> pts, Rotation2d rot, Pose2d next) {
         int hi = pts.size() - 1;
         double c0 = pts.get(0).position.getDistance(next.getTranslation())
-                + 2.0 * Math.abs(rot.minus(next.getRotation()).getRadians());
+                + kRotCost * Math.abs(rot.minus(next.getRotation()).getRadians());
         double c1 = pts.get(hi).position.getDistance(next.getTranslation())
-                + 2.0 * Math.abs(rot.minus(next.getRotation()).getRadians());
+                + kRotCost * Math.abs(rot.minus(next.getRotation()).getRadians());
         return c0 <= c1 ? 0 : hi;
     }
 
@@ -489,27 +532,76 @@ public class PathGenerator {
         List<Geometry> hits = obstacleTree.query(search);
         if (hits.isEmpty()) return Optional.empty();
 
+        List<Translation2d> centers = new ArrayList<>();
         double ax = 0, ay = 0;
-        boolean touching = false;
         for (Geometry cell : hits) {
             if (bumper.distance(cell) > kTouch) continue;
-            touching = true;
             Envelope e = cell.getEnvelopeInternal();
-            Translation2d delta = new Translation2d(
-                    pose.getX() - ((e.getMinX() + e.getMaxX()) * 0.5),
-                    pose.getY() - ((e.getMinY() + e.getMaxY()) * 0.5));
+            Translation2d center =
+                    new Translation2d((e.getMinX() + e.getMaxX()) * 0.5, (e.getMinY() + e.getMaxY()) * 0.5);
+            centers.add(center);
+            Translation2d delta = new Translation2d(pose.getX() - center.getX(), pose.getY() - center.getY());
             if (Math.abs(delta.getX()) >= Math.abs(delta.getY())) {
                 ax += Math.signum(delta.getX());
             } else {
                 ay += Math.signum(delta.getY());
             }
         }
-        if (!touching) return Optional.empty();
+        if (centers.isEmpty()) return Optional.empty();
+
+        // Two close obstacles: flee from their midpoint (equal distance), or along the
+        // gap bisector when the robot sits between them and axis pushes cancel.
+        Optional<Translation2d> pairAway = awayFromClosePair(pose.getTranslation(), centers);
+        if (pairAway.isPresent()) return pairAway;
+
         Translation2d away = new Translation2d(ax, ay);
         return away.getNorm() < 1e-6 ? Optional.empty() : Optional.of(away.div(away.getNorm()));
     }
 
-    private static List<PathPoint> holonomic(PathPlannerPath path) {
+    /**
+     * If the two nearest touching obstacles are close, return a unit vector away from their midpoint. When the robot is
+     * on that midpoint (e.g. pinched in a corridor), use the perpendicular bisector.
+     */
+    private static Optional<Translation2d> awayFromClosePair(Translation2d robot, List<Translation2d> centers) {
+        if (centers.size() < 2) return Optional.empty();
+
+        int i0 = 0, i1 = 1;
+        double bestDist = Double.POSITIVE_INFINITY;
+        for (int i = 0; i < centers.size(); i++) {
+            for (int j = i + 1; j < centers.size(); j++) {
+                double d = centers.get(i).getDistance(centers.get(j));
+                if (d < bestDist) {
+                    bestDist = d;
+                    i0 = i;
+                    i1 = j;
+                }
+            }
+        }
+        if (bestDist > kCloseObstacleM) return Optional.empty();
+
+        Translation2d a = centers.get(i0);
+        Translation2d b = centers.get(i1);
+        Translation2d mid = a.plus(b).times(0.5);
+        Translation2d fromMid = robot.minus(mid);
+        if (fromMid.getNorm() > 1e-3) {
+            return Optional.of(fromMid.div(fromMid.getNorm()));
+        }
+
+        // Robot is between the pair — slide along the gap (perpendicular to A→B).
+        Translation2d ab = b.minus(a);
+        if (ab.getNorm() < 1e-6) return Optional.empty();
+        Translation2d alongGap = new Translation2d(-ab.getY(), ab.getX()).div(ab.getNorm());
+        // Prefer the side closer to field center so we don't drive into the wall edge.
+        Translation2d fieldCenter =
+                new Translation2d(FieldConstants.fieldLength / 2.0, FieldConstants.fieldWidth / 2.0);
+        if (alongGap.dot(fieldCenter.minus(robot)) < 0) {
+            alongGap = alongGap.times(-1.0);
+        }
+        return Optional.of(alongGap);
+    }
+
+    /** Holonomic resample; {@code constraints} overrides per-point file constraints when non-null. */
+    private static List<PathPoint> holonomic(PathPlannerPath path, PathConstraints constraints) {
         var raw = path.getAllPathPoints();
         if (raw.isEmpty()) return List.of();
         var ideal = path.getIdealStartingState();
@@ -518,7 +610,10 @@ public class PathGenerator {
         Rotation2d end = path.getGoalEndState().rotation();
         double total = Math.max(raw.get(raw.size() - 1).distanceAlongPath, kSpacing);
         return raw.stream()
-                .map(p -> pt(p.position, start.interpolate(end, p.distanceAlongPath / total), p.constraints))
+                .map(p -> pt(
+                        p.position,
+                        start.interpolate(end, p.distanceAlongPath / total),
+                        constraints != null ? constraints : p.constraints))
                 .toList();
     }
 
@@ -527,10 +622,6 @@ public class PathGenerator {
                 .filter(i -> i == 0 || pts.get(i).position.getDistance(pts.get(i - 1).position) > kSpacing)
                 .mapToObj(pts::get)
                 .toList();
-    }
-
-    private static Rotation2d rot(PathPoint p) {
-        return p.rotationTarget != null ? p.rotationTarget.rotation() : Rotation2d.kZero;
     }
 
     private static PathPoint pt(Translation2d t, Rotation2d r, PathConstraints c) {

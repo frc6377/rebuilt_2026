@@ -46,9 +46,9 @@ public class ShooterConstants {
     // ==================== Simulation Constants ====================
     public static final Distance shooterHeight = Meters.of(0.5);
     public static final Distance shooterOffsetXLeft = Meters.of(0.3);
-    public static final Distance shooterOffsetYLeft = Meters.of(0.0);
+    public static final Distance shooterOffsetYLeft = Meters.of(0.2);
     public static final Distance shooterOffsetXRight = Meters.of(0.3);
-    public static final Distance shooterOffsetYRight = Meters.of(0.0);
+    public static final Distance shooterOffsetYRight = Meters.of(-0.2);
     public static final Distance flywheelRadius = Inches.of(2);
     public static final double launchEfficiency = 0.75; // Percentage of theoretical velocity achieved at the target
 
