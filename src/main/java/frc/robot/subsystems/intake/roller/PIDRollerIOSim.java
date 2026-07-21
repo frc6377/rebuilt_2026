@@ -25,6 +25,7 @@ public class PIDRollerIOSim implements RollerIO {
     private final TunableTalonFX rollerMotor;
     private final TunableTalonFX followerMotor;
     private final TalonFXSimState rollerMotorSim;
+    private final TalonFXSimState followerMotorSim;
     private final Slot0Configs rollerPID;
     private final LoggedNetworkNumber intakeSpeed;
     private final LoggedNetworkNumber outtakeSpeed;
@@ -68,9 +69,11 @@ public class PIDRollerIOSim implements RollerIO {
             followerMotor = new TunableTalonFX(
                     Constants.CANIDs.MotorIDs.kRollerFollowerMotorID, "rio", "Intake/RollerFollower");
             followerMotor.getConfigurator().apply(config);
-            followerMotor.getSimState().setMotorType(MotorType.KrakenX60);
+            followerMotorSim = followerMotor.getSimState();
+            followerMotorSim.setMotorType(MotorType.KrakenX60);
         } else {
             followerMotor = null;
+            followerMotorSim = null;
         }
     }
 

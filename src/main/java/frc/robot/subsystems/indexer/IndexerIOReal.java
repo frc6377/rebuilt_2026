@@ -68,5 +68,6 @@ public class IndexerIOReal implements IndexerIO {
     public void updateInputs(IndexerIOInputs indexerInputs) {
         indexerMotor.updateTunableGains();
         indexerInputs.motorOutput = Volts.of(indexerMotor.getMotorVoltage().getValueAsDouble());
+        indexerInputs.supplyCurrent = indexerMotor.getSupplyCurrent().getValue();
     }
 }

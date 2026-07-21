@@ -220,6 +220,7 @@ public class ExtenderIOReal implements ExtenderIO {
         inputs.velocity = extenderMotor.getVelocity().getValue();
         inputs.motorVoltage = Volts.of(extenderMotor.getMotorVoltage().getValueAsDouble());
         inputs.motorCurrent = extenderMotor.getStatorCurrent().getValue();
+        inputs.supplyCurrent = extenderMotor.getSupplyCurrent().getValue();
         inputs.motorTemp = extenderMotor.getDeviceTemp().getValue();
         inputs.atTarget = atTarget().getAsBoolean();
         inputs.rawEncoderDegrees = Rotations.of(extenderEncoder.get()).in(Degrees);

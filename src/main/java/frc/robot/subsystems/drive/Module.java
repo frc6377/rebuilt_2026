@@ -20,6 +20,7 @@ import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
+import frc.robot.energy.FinanceDepartment;
 import org.littletonrobotics.junction.Logger;
 
 public class Module {
@@ -62,6 +63,17 @@ public class Module {
         driveDisconnectedAlert.set(!inputs.driveConnected);
         turnDisconnectedAlert.set(!inputs.turnConnected);
         turnEncoderDisconnectedAlert.set(!inputs.turnEncoderConnected);
+
+        FinanceDepartment.getInstance()
+                .reportCurrentUsage(
+                        "FullDrive/Drive/" + index, true, inputs.driveConnected ? inputs.driveCurrentAmps : 0.0);
+        FinanceDepartment.getInstance()
+                .reportCurrentUsage(
+                        "FullDrive/Turn/" + index, false, inputs.turnConnected ? inputs.turnCurrentAmps : 0.0);
+    }
+
+    public void periodicAfterScheduler() {
+        io.setDriveSupplyCurrentLimit(FinanceDepartment.getInstance().getDriveLimit());
     }
 
     /** Runs the module with the specified setpoint state. Mutates the state to optimize it. */

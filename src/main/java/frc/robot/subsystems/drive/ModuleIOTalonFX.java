@@ -7,6 +7,7 @@ import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
+import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.*;
 import com.ctre.phoenix6.hardware.CANcoder;
@@ -77,6 +78,8 @@ public abstract class ModuleIOTalonFX implements ModuleIO {
         driveConfig.TorqueCurrent.PeakReverseTorqueCurrent = -constants.SlipCurrent;
         driveConfig.CurrentLimits.StatorCurrentLimit = constants.SlipCurrent;
         driveConfig.CurrentLimits.StatorCurrentLimitEnable = true;
+        driveConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
+        driveConfig.CurrentLimits.SupplyCurrentLowerTime = 0.0;
         driveConfig.MotorOutput.Inverted = constants.DriveMotorInverted
                 ? InvertedValue.Clockwise_Positive
                 : InvertedValue.CounterClockwise_Positive;
@@ -121,13 +124,13 @@ public abstract class ModuleIOTalonFX implements ModuleIO {
         drivePosition = driveTalon.getPosition();
         driveVelocity = driveTalon.getVelocity();
         driveAppliedVolts = driveTalon.getMotorVoltage();
-        driveCurrent = driveTalon.getStatorCurrent();
+        driveCurrent = driveTalon.getSupplyCurrent();
 
         // Create turn status signals
         turnAbsolutePosition = cancoder.getAbsolutePosition();
         turnVelocity = turnTalon.getVelocity();
         turnAppliedVolts = turnTalon.getMotorVoltage();
-        turnCurrent = turnTalon.getStatorCurrent();
+        turnCurrent = turnTalon.getSupplyCurrent();
 
         // Configure periodic frames
         BaseStatusSignal.setUpdateFrequencyForAll(Drive.ODOMETRY_FREQUENCY, turnAbsolutePosition, drivePosition);
@@ -208,5 +211,20 @@ public abstract class ModuleIOTalonFX implements ModuleIO {
                     case Voltage -> positionVoltageRequest.withPosition(rotation.getRotations());
                     case TorqueCurrentFOC -> positionTorqueCurrentRequest.withPosition(rotation.getRotations());
                 });
+    }
+
+    private double lastDriveSupplyCurrentLimit = Double.NaN;
+
+    @Override
+    public void setDriveSupplyCurrentLimit(double amps) {
+        if (amps == lastDriveSupplyCurrentLimit) {
+            return;
+        }
+        lastDriveSupplyCurrentLimit = amps;
+        var limits = new CurrentLimitsConfigs();
+        driveTalon.getConfigurator().refresh(limits);
+        limits.SupplyCurrentLimit = amps;
+        limits.SupplyCurrentLimitEnable = true;
+        driveTalon.getConfigurator().apply(limits);
     }
 }

@@ -1,9 +1,12 @@
 package frc.robot.subsystems.intake.extender;
 
+import static edu.wpi.first.units.Units.*;
+
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.energy.FinanceDepartment;
 import java.util.function.BooleanSupplier;
 import org.littletonrobotics.junction.Logger;
 
@@ -23,6 +26,7 @@ public class Extender extends SubsystemBase {
         Logger.recordOutput(
                 "Intake/Extender/CurrentCommand",
                 getCurrentCommand() == null ? "null" : getCurrentCommand().toString());
+        FinanceDepartment.getInstance().reportCurrentUsage("Intake/Extender", false, inputs.supplyCurrent.in(Amps));
     }
 
     public BooleanSupplier isAtTarget() {

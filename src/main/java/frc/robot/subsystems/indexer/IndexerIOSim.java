@@ -34,6 +34,7 @@ public class IndexerIOSim implements IndexerIO {
         indexerSim.setInputVoltage(indexerAppliedVolts);
 
         indexerSim.update(Robot.defaultPeriodSecs);
+        inputs.supplyCurrent = Amps.of(indexerSim.getCurrentDrawAmps());
     }
 
     @Override

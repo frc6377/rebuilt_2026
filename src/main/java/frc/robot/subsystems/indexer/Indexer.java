@@ -6,6 +6,7 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.energy.FinanceDepartment;
 import java.util.function.BooleanSupplier;
 import org.littletonrobotics.junction.Logger;
 
@@ -77,5 +78,7 @@ public class Indexer extends SubsystemBase {
                 IndexerConstants.kCollectorSpeed
                         + (IndexerConstants.kCollectorVariableSpeed
                                 * Math.sin(Timer.getFPGATimestamp() * Math.PI / 2)));
+
+        FinanceDepartment.getInstance().reportCurrentUsage("Indexer", false, inputs.supplyCurrent.in(Amps));
     }
 }

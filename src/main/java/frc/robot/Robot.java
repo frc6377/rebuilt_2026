@@ -21,6 +21,8 @@ import edu.wpi.first.wpilibj.Threads;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import frc.robot.energy.FinanceDepartment;
+import frc.robot.util.FullSubsystem;
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.NT4Publisher;
@@ -61,8 +63,7 @@ public class Robot extends LoggedRobot {
 
         // SignalLogger.stop();
 
-        // Instantiate our RobotContainer. This will perform all our button bindings,
-        // and put our autonomous chooser on the dashboard.
+        FinanceDepartment.getInstance();
         robotContainer = new RobotContainer();
     }
 
@@ -79,6 +80,7 @@ public class Robot extends LoggedRobot {
         // This must be called from the robot's periodic block in order for anything in
         // the Command-based framework to work.
         CommandScheduler.getInstance().run();
+        FullSubsystem.runAllPeriodicAfterScheduler();
         double newTime = Timer.getFPGATimestamp() * 1000;
         Logger.recordOutput("Loop Time (ms)", newTime - lastTime);
 

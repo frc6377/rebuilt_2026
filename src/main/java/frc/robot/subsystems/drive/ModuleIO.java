@@ -51,4 +51,6 @@ public interface ModuleIO {
 
     /** Run the turn motor to the specified rotation. */
     default void setTurnPosition(Rotation2d rotation) {}
+
+    default void setDriveSupplyCurrentLimit(double amps) {}
 }

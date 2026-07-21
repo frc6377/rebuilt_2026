@@ -8,6 +8,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
+import frc.robot.energy.FinanceDepartment;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
@@ -53,6 +54,17 @@ public class BaseShooter extends SubsystemBase {
                     config.name() + "/CurrentCommand", getCurrentCommand().getName());
         } else {
             Logger.recordOutput(config.name() + "/CurrentCommand", "None");
+        }
+
+        if (config.followerEnabled()) {
+            FinanceDepartment.getInstance()
+                    .reportCurrentUsage(
+                            config.name(),
+                            false,
+                            inputs.flywheelCurrent.in(Amps),
+                            inputs.followerFlywheelCurrent.in(Amps));
+        } else {
+            FinanceDepartment.getInstance().reportCurrentUsage(config.name(), false, inputs.flywheelCurrent.in(Amps));
         }
     }
 

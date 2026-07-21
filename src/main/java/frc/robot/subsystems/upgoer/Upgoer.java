@@ -19,6 +19,7 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.energy.FinanceDepartment;
 import org.littletonrobotics.junction.Logger;
 
 /** Feeder subsystem that pushes game pieces into the shooter. */
@@ -50,6 +51,7 @@ public class Upgoer extends SubsystemBase {
         Logger.recordOutput(
                 logName + "/CurrentCommand",
                 getCurrentCommand() != null ? getCurrentCommand().getName() : "None");
+        FinanceDepartment.getInstance().reportCurrentUsage(logName, false, inputs.supplyCurrent.in(Amps));
     }
 
     /** Set the feeder velocity. */

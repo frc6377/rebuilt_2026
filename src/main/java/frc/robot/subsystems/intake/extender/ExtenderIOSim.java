@@ -182,6 +182,7 @@ public class ExtenderIOSim implements ExtenderIO {
         inputs.velocity = RadiansPerSecond.of(armSim.getVelocityRadPerSec());
         inputs.motorVoltage = Volts.of(appliedVolts);
         inputs.motorCurrent = Amps.of(armSim.getCurrentDrawAmps());
+        inputs.supplyCurrent = inputs.motorCurrent;
         inputs.motorTemp = Celsius.of(25.0);
 
         armLigament.setAngle(getPosition());
