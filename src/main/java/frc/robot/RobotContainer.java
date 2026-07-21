@@ -34,7 +34,8 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
-import frc.robot.autos.FullAuto;
+import frc.robot.FullAuto.FullAutoReal;
+import frc.robot.FullAuto.FullAutoSim;
 import frc.robot.commands.DriveCommands;
 import frc.robot.commands.PathGenerator;
 import frc.robot.commands.ShooterCalibrationCommand;
@@ -299,7 +300,8 @@ public class RobotContainer {
         driveModeChooser.addOption("Full Auto", DriveMode.FULL_AUTO);
         new Trigger(() -> driveModeChooser.get() == DriveMode.FULL_AUTO)
                 .and(DriverStation::isTeleopEnabled)
-                .whileTrue(new FullAuto(this));
+                .whileTrue(
+                        Constants.currentMode == Constants.Mode.SIM ? new FullAutoSim(this) : new FullAutoReal(this));
         // Set up SysId routines
         autoChooser.addOption("Drive Wheel Radius Characterization", DriveCommands.wheelRadiusCharacterization(drive));
         autoChooser.addOption("Drive Simple FF Characterization", DriveCommands.feedforwardCharacterization(drive));

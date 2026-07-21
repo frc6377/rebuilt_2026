@@ -1,4 +1,4 @@
-package frc.robot.autos;
+package frc.robot.FullAuto;
 
 import static edu.wpi.first.units.Units.*;
 
@@ -23,13 +23,12 @@ import frc.robot.subsystems.indexer.Indexer;
 import frc.robot.subsystems.intake.Intake;
 import frc.robot.subsystems.intake.IntakeConstants;
 import frc.robot.subsystems.superstructure.Superstructure;
-import frc.robot.subsystems.vision.GamePieceCameraSim;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.littletonrobotics.junction.Logger;
 
-public class FullAuto extends Command {
+public abstract class FullAutoIO extends Command {
     private enum Stage {
         FINDING,
         INTAKING,
@@ -48,19 +47,18 @@ public class FullAuto extends Command {
 
     private int estimatedFuel = 0;
 
-    private final Drive drive;
-    private final Intake intake;
-    private final Indexer indexer;
-    private final Superstructure superstructure;
-    private final GamePieceCameraSim camera;
-    private final RobotContainer robot;
+    protected final Drive drive;
+    protected final Intake intake;
+    protected final Indexer indexer;
+    protected final Superstructure superstructure;
+    protected final RobotContainer robot;
 
     private final Pose2d scoringPose = new Pose2d(2.5, 4.0, Rotation2d.kZero);
     private final Pose2d[] searchPoses = {
-            new Pose2d(FieldConstants.fieldLength / 2.0, FieldConstants.fieldWidth * 0.1, Rotation2d.fromDegrees(90)),
-            new Pose2d(FieldConstants.fieldLength / 2.0, FieldConstants.fieldWidth * 0.9, Rotation2d.fromDegrees(-90)),
-            new Pose2d(2.5, 4.0, Rotation2d.kZero),
-            new Pose2d(FieldConstants.fieldLength / 2.0, FieldConstants.fieldWidth / 2.0, new Rotation2d())
+        new Pose2d(FieldConstants.fieldLength / 2.0, FieldConstants.fieldWidth * 0.1, Rotation2d.fromDegrees(90)),
+        new Pose2d(FieldConstants.fieldLength / 2.0, FieldConstants.fieldWidth * 0.9, Rotation2d.fromDegrees(-90)),
+        new Pose2d(2.5, 4.0, Rotation2d.kZero),
+        new Pose2d(FieldConstants.fieldLength / 2.0, FieldConstants.fieldWidth / 2.0, new Rotation2d())
     };
     private final PathConstraints intakeConstraints = new PathConstraints(0.5, 0.5, 0.5, 0.5);
 
@@ -69,16 +67,25 @@ public class FullAuto extends Command {
     private Command action;
     private boolean actionRunning;
 
-    public FullAuto(RobotContainer robot) {
+    protected FullAutoIO(RobotContainer robot) {
         this.robot = robot;
         drive = robot.getDrive();
         intake = robot.getIntake();
         indexer = robot.getIndexer();
         superstructure = robot.getSuperstructure();
-        camera = robot.getGamePieceCamera();
         addRequirements(drive, intake.getExtender(), intake.getRoller(), indexer, superstructure);
         Logger.recordOutput("FullAuto/Stage", "None");
     }
+
+    protected abstract Pose3d[] getVisiblePieces();
+
+    protected abstract boolean intakeHasFuel();
+
+    protected abstract boolean consumeIntakeFuel();
+
+    protected abstract int getActualIntakeFuel();
+
+    protected abstract Command scoringFireCommand();
 
     @Override
     public void initialize() {
@@ -145,9 +152,9 @@ public class FullAuto extends Command {
         Logger.recordOutput("FullAuto/SearchPose", waypoint);
         startAction(PathGenerator.pathfindToPose(drive, waypoint)
                 .andThen(Commands.run(
-                        () -> drive.runVelocity(new ChassisSpeeds(
-                                0, 0, drive.getMaxAngularSpeedRadPerSec() * kSearchRotatePercent)),
-                        drive)
+                                () -> drive.runVelocity(new ChassisSpeeds(
+                                        0, 0, drive.getMaxAngularSpeedRadPerSec() * kSearchRotatePercent)),
+                                drive)
                         .until(this::enoughVisibleFuel)
                         .withTimeout(kSearchRotateTimeout))
                 .withName("FullAutoSearch"));
@@ -203,37 +210,21 @@ public class FullAuto extends Command {
         estimatedFuel = 0;
         startAction(PathGenerator.pathfindToPose(drive, scoringPose)
                 .andThen(Commands.parallel(
-                        robot.shootAutoCommand(() -> 0.0, () -> 0.0, () -> false),
-                        superstructure.simAutoFireFromIntakeHoldCommand(
-                                () -> true, this::intakeHasFuel, this::consumeIntakeFuel))
+                                robot.shootAutoCommand(() -> 0.0, () -> 0.0, () -> false), scoringFireCommand())
                         .until(() -> !intakeHasFuel())
                         .withTimeout(15.0))
                 .andThen(robot.shootAutoStopCommand().withTimeout(0.25))
                 .withName("FullAutoScore"));
     }
 
-    private boolean intakeHasFuel() {
-        var intakeSim = robot.getIntakeSimulation();
-        return intakeSim != null && intakeSim.getGamePiecesAmount() > 0;
-    }
-
-    private boolean consumeIntakeFuel() {
-        var intakeSim = robot.getIntakeSimulation();
-        return intakeSim != null && intakeSim.obtainGamePieceFromIntake();
-    }
-
     private void logStatus(Pose3d[] validFuel) {
         Logger.recordOutput("FullAuto/ValidVisibleFuel", validFuel.length);
         Logger.recordOutput("FullAuto/EstimatedFuel", estimatedFuel);
-        var intakeSim = robot.getIntakeSimulation();
-        Logger.recordOutput("FullAuto/ActualIntakeFuel", intakeSim != null ? intakeSim.getGamePiecesAmount() : 0);
+        Logger.recordOutput("FullAuto/ActualIntakeFuel", getActualIntakeFuel());
     }
 
-    private Pose3d[] getValidFuel() {
-        if (camera == null) {
-            return new Pose3d[0];
-        }
-        Pose3d[] pieces = camera.getVisiblePieces();
+    protected Pose3d[] getValidFuel() {
+        Pose3d[] pieces = getVisiblePieces();
         List<Pose3d> valid = new ArrayList<>(pieces.length);
         for (Pose3d piece : pieces) {
             if (piece.getMeasureZ().in(Inches) < kMaxValidFuelHeightInches) {
@@ -339,8 +330,7 @@ public class FullAuto extends Command {
         return Optional.of(path);
     }
 
-    private record FuelCluster(int fuelAmount, double distance, List<Pose3d> poses) {
-    }
+    private record FuelCluster(int fuelAmount, double distance, List<Pose3d> poses) {}
 
     private static double distanceFrom(Pose2d a, Pose2d b) {
         return a.getTranslation().getDistance(b.getTranslation());
@@ -354,8 +344,8 @@ public class FullAuto extends Command {
         while (!remaining.isEmpty()) {
             int seedIndex = 0;
             for (int i = 1; i < remaining.size(); i++) {
-                if (distanceFrom(robotPose, remaining.get(i).toPose2d()) < distanceFrom(robotPose,
-                        remaining.get(seedIndex).toPose2d())) {
+                if (distanceFrom(robotPose, remaining.get(i).toPose2d())
+                        < distanceFrom(robotPose, remaining.get(seedIndex).toPose2d())) {
                     seedIndex = i;
                 }
             }
@@ -377,7 +367,8 @@ public class FullAuto extends Command {
                 }
             }
 
-            clusters.add(new FuelCluster(poses.size(), distanceFrom(robotPose, poses.get(0).toPose2d()), poses));
+            clusters.add(new FuelCluster(
+                    poses.size(), distanceFrom(robotPose, poses.get(0).toPose2d()), poses));
         }
 
         return clusters;

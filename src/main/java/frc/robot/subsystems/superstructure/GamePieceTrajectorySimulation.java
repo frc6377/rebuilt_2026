@@ -85,10 +85,12 @@ public class GamePieceTrajectorySimulation {
     private BooleanSupplier indexerRunningSupplier = () -> false;
     /** Optional ammo source (e.g. IntakeSimulation). When set, hopper is ignored for firing. */
     private BooleanSupplier externalAmmoAvailable = null;
+
     private BooleanSupplier externalAmmoConsume = null;
     private final Timer autoFireTimer = new Timer();
     /** ~3 balls/sec */
     private double autoFireIntervalSeconds = 1.0 / 3.0;
+
     private boolean autoFireEnabled = false;
     private boolean autoFireImmediate = false;
     private int gamePiecesLaunched = 0;
@@ -235,11 +237,10 @@ public class GamePieceTrajectorySimulation {
                 MetersPerSecond.of(launchVelocityMPS),
                 hoodAngle);
 
-        projectile
-                .withProjectileTrajectoryDisplayCallBack(trajectory -> {
-                    ch.lastTrajectory = trajectory.toArray(new Pose3d[0]);
-                    Logger.recordOutput("Shooter/Sim/" + side.logName() + "/Trajectory", ch.lastTrajectory);
-                });
+        projectile.withProjectileTrajectoryDisplayCallBack(trajectory -> {
+            ch.lastTrajectory = trajectory.toArray(new Pose3d[0]);
+            Logger.recordOutput("Shooter/Sim/" + side.logName() + "/Trajectory", ch.lastTrajectory);
+        });
         // Do not convert landed shots into dyn4j field bodies — that piles up physics objects
         // and dominates SimulatedArena.simulationPeriodic() cost during long sims / FullAuto.
 
