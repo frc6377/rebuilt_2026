@@ -142,6 +142,11 @@ public class ExtenderIOSim implements ExtenderIO {
     }
 
     @Override
+    public boolean isPidEnabled() {
+        return pidEnabled;
+    }
+
+    @Override
     public void setMotorPercentage(double percent) {
         setPidEnabled(false);
         appliedVolts = MathUtil.clamp(percent * 12.0, -12.0, 12.0);

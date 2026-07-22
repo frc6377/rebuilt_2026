@@ -66,7 +66,7 @@ public class Module {
 
         FinanceDepartment.getInstance()
                 .reportCurrentUsage(
-                        "FullDrive/Drive/" + index, true, inputs.driveConnected ? inputs.driveCurrentAmps : 0.0);
+                        "FullDrive/Drive/" + index, true, inputs.driveConnected ? inputs.driveSupplyCurrentAmps : 0.0);
         FinanceDepartment.getInstance()
                 .reportCurrentUsage(
                         "FullDrive/Turn/" + index, false, inputs.turnConnected ? inputs.turnCurrentAmps : 0.0);

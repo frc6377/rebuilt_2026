@@ -29,4 +29,6 @@ public interface BaseShooterIO {
 
     /** Stop all motors. */
     default void stop() {}
+
+    default void setSupplyCurrentLimit(double amps) {}
 }

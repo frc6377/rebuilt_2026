@@ -9,11 +9,13 @@ import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.units.measure.AngularVelocity;
 import frc.robot.Constants;
+import frc.robot.util.TalonFXCurrentConfigurator;
 import frc.robot.util.TunableTalonFX;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 public class IndexerIOReal implements IndexerIO {
     private final TunableTalonFX indexerMotor;
+    private final TalonFXCurrentConfigurator supplyConfigurator;
     private final LoggedNetworkNumber indexerMotorOutput;
     private final LoggedNetworkNumber indexerMotorReverseOutput;
     private final TalonFXConfiguration indexerMotorConfig;
@@ -30,6 +32,7 @@ public class IndexerIOReal implements IndexerIO {
                 IndexerConstants.canBus,
                 "Indexer/IndexerMotor",
                 indexerPIDConfigs);
+        supplyConfigurator = new TalonFXCurrentConfigurator(indexerMotor.getConfigurator());
         indexerMotorConfig = new TalonFXConfiguration();
 
         indexerMotorConfig.ClosedLoopRamps.VoltageClosedLoopRampPeriod =
@@ -43,10 +46,27 @@ public class IndexerIOReal implements IndexerIO {
         indexerMotorConfig.Slot0 = indexerPIDConfigs;
         indexerMotor.applyConfiguration(indexerMotorConfig.withCurrentLimits(new CurrentLimitsConfigs()
                 .withStatorCurrentLimitEnable(true)
-                .withStatorCurrentLimit(IndexerConstants.MotorConfigurationConfigs.kStatorCurrentLimit)));
+                .withStatorCurrentLimit(IndexerConstants.MotorConfigurationConfigs.kStatorCurrentLimit)
+                .withSupplyCurrentLimitEnable(true)
+                .withSupplyCurrentLimit(IndexerConstants.MotorConfigurationConfigs.kSupplyCurrentLimit)));
 
         indexerMotorOutput = new LoggedNetworkNumber("Indexer/IndexerMotorOutput", IndexerConstants.kCollectorSpeed);
         indexerMotorReverseOutput = new LoggedNetworkNumber("Indexer/IndexerMotorReverseOutput", 0);
+    }
+
+    private double lastSupplyCurrentLimit = Double.NaN;
+
+    @Override
+    public void setSupplyCurrentLimit(double amps) {
+        if (amps == lastSupplyCurrentLimit) {
+            return;
+        }
+        lastSupplyCurrentLimit = amps;
+        var limits = new CurrentLimitsConfigs();
+        indexerMotor.getConfigurator().refresh(limits);
+        limits.SupplyCurrentLimit = amps;
+        limits.SupplyCurrentLimitEnable = true;
+        supplyConfigurator.setConfig(limits);
     }
 
     @Override

@@ -12,6 +12,7 @@ import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.wpilibj.DutyCycleEncoder;
 import frc.robot.Constants;
 import frc.robot.subsystems.intake.IntakeConstants.ExtenderConstants;
+import frc.robot.util.TalonFXCurrentConfigurator;
 import frc.robot.util.TunablePIDController;
 import frc.robot.util.TunableTalonFX;
 import java.util.function.BooleanSupplier;
@@ -20,6 +21,7 @@ import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 public class ExtenderIOReal implements ExtenderIO {
 
     private final TunableTalonFX extenderMotor;
+    private final TalonFXCurrentConfigurator supplyConfigurator;
     private final DutyCycleEncoder extenderEncoder;
     private final TunablePIDController extenderPid;
     private boolean pidEnabled = true;
@@ -42,10 +44,12 @@ public class ExtenderIOReal implements ExtenderIO {
                 .withCurrentLimits(new CurrentLimitsConfigs()
                         .withStatorCurrentLimitEnable(true)
                         .withStatorCurrentLimit(ExtenderConstants.MotorConfig.kStatorCurrentLimitExtender)
+                        .withSupplyCurrentLimitEnable(true)
                         .withSupplyCurrentLimit(ExtenderConstants.MotorConfig.kSupplyCurrentLimitExtender));
 
         extenderMotor = new TunableTalonFX(Constants.CANIDs.MotorIDs.kExtenderMotorID, "rio", "Extender");
         extenderMotor.getConfigurator().apply(config);
+        supplyConfigurator = new TalonFXCurrentConfigurator(extenderMotor.getConfigurator());
 
         extenderEncoder = new DutyCycleEncoder(
                 Constants.CANIDs.SensorIDs.kExtenderEncoderCANID,
@@ -186,6 +190,11 @@ public class ExtenderIOReal implements ExtenderIO {
     }
 
     @Override
+    public boolean isPidEnabled() {
+        return pidEnabled;
+    }
+
+    @Override
     public void setMode(NeutralModeValue mode) {
         extenderMotor.getConfigurator().apply(new MotorOutputConfigs().withNeutralMode(mode));
     }
@@ -239,5 +248,20 @@ public class ExtenderIOReal implements ExtenderIO {
                 setMode(NeutralModeValue.Coast);
             }
         }
+    }
+
+    private double lastSupplyCurrentLimit = Double.NaN;
+
+    @Override
+    public void setSupplyCurrentLimit(double amps) {
+        if (amps == lastSupplyCurrentLimit) {
+            return;
+        }
+        lastSupplyCurrentLimit = amps;
+        var limits = new CurrentLimitsConfigs();
+        extenderMotor.getConfigurator().refresh(limits);
+        limits.SupplyCurrentLimit = amps;
+        limits.SupplyCurrentLimitEnable = true;
+        supplyConfigurator.setConfig(limits);
     }
 }

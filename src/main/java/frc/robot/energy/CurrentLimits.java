@@ -7,15 +7,49 @@
 
 package frc.robot.energy;
 
-public class CurrentLimits {
-    public static final double driveMinLimitAmps = 5;
-    public static final double driveMaxLimitAmps = 35;
-    public static final double driveAutoLimitAmps = 50;
-    public static final double driveProbeRateBrownout = 50.0;
-    public static final double turnLimitAmps = 15;
-    public static final double flywheelLimitAmps = 40;
-    public static final double upgoerLimitAmps = 40;
-    public static final double indexerLimitAmps = 40;
-    public static final double extenderLimitAmps = 70;
-    public static final double rollerLimitAmps = 40;
+public final class CurrentLimits {
+    public static final class Shared {
+        public static final double stepAmps = 0.5;
+        public static final double recoveryRateAmpsPerSec = 50.0;
+        public static final boolean dynamicLimitingEnabled = true;
+    }
+
+    public static final class Static {
+        public static final double driveSupplyAmps = 50;
+        public static final double rollerSupplyAmps = 50;
+        public static final double extenderSupplyAmps = 25;
+        public static final double indexerSupplyAmps = 25;
+    }
+
+    public static final class Drive {
+        public static final int motorCount = 4;
+        public static final double minLimitAmps = 5;
+        public static final double maxLimitAmps = 35;
+        public static final double targetAmps = maxLimitAmps * motorCount;
+        public static final double autoLimitAmps = 50;
+        public static final double standbyAmps = minLimitAmps * motorCount;
+    }
+
+    public static final class Indexer {
+        public static final double standbyAmps = 5;
+        public static final double activeMinAmps = 15;
+        public static final double targetAmps = 25;
+        public static final double maxAmps = 25;
+    }
+
+    public static final class Extender {
+        public static final double standbyAmps = 5;
+        public static final double activeMinAmps = 12;
+        public static final double targetAmps = 25;
+        public static final double maxAmps = 25;
+    }
+
+    public static final class Roller {
+        public static final int motorCount = 2;
+        public static final double offMinAmps = 5;
+        public static final double idleMinAmps = 10;
+        public static final double activeMinAmps = 20;
+        public static final double targetAmps = 40;
+        public static final double maxAmps = 100;
+    }
 }

@@ -5,6 +5,7 @@ import static frc.robot.util.PhoenixUtil.tryUntilOk;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
+import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.Follower;
@@ -17,6 +18,7 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Temperature;
 import edu.wpi.first.units.measure.Voltage;
+import frc.robot.util.TalonFXCurrentConfigurator;
 import frc.robot.util.TunableTalonFX;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +28,8 @@ public class BaseShooterIOKrakenX60 implements BaseShooterIO {
     private final ShooterConstants.ShooterConfig config;
     private final TunableTalonFX flywheelMotor;
     private final TunableTalonFX flywheelFollower;
+    private final TalonFXCurrentConfigurator leaderSupplyConfigurator;
+    private final TalonFXCurrentConfigurator followerSupplyConfigurator;
 
     private final StatusSignal<AngularVelocity> flywheelVelocity;
     private final StatusSignal<Voltage> flywheelAppliedVolts;
@@ -88,6 +92,16 @@ public class BaseShooterIOKrakenX60 implements BaseShooterIO {
         if (flywheelFollower != null) {
             tryUntilOk(5, () -> flywheelFollower.applyConfiguration(flywheelConfig, 0.25));
             flywheelFollower.setControl(new Follower(flywheelMotor.getDeviceID(), MotorAlignmentValue.Opposed));
+        }
+
+        if ("Roller".equals(config.name())) {
+            leaderSupplyConfigurator = new TalonFXCurrentConfigurator(flywheelMotor.getConfigurator());
+            followerSupplyConfigurator = flywheelFollower != null
+                    ? new TalonFXCurrentConfigurator(flywheelFollower.getConfigurator())
+                    : null;
+        } else {
+            leaderSupplyConfigurator = null;
+            followerSupplyConfigurator = null;
         }
 
         // Get status signals
@@ -177,5 +191,27 @@ public class BaseShooterIOKrakenX60 implements BaseShooterIO {
         if (flywheelFollower != null) {
             flywheelFollower.stopMotor();
         }
+    }
+
+    private double lastSupplyCurrentLimit = Double.NaN;
+
+    @Override
+    public void setSupplyCurrentLimit(double amps) {
+        if (leaderSupplyConfigurator == null || amps == lastSupplyCurrentLimit) {
+            return;
+        }
+        lastSupplyCurrentLimit = amps;
+        queueSupplyLimit(flywheelMotor, leaderSupplyConfigurator, amps);
+        if (flywheelFollower != null && followerSupplyConfigurator != null) {
+            queueSupplyLimit(flywheelFollower, followerSupplyConfigurator, amps);
+        }
+    }
+
+    private static void queueSupplyLimit(TunableTalonFX motor, TalonFXCurrentConfigurator configurator, double amps) {
+        var limits = new CurrentLimitsConfigs();
+        motor.getConfigurator().refresh(limits);
+        limits.SupplyCurrentLimit = amps;
+        limits.SupplyCurrentLimitEnable = true;
+        configurator.setConfig(limits);
     }
 }

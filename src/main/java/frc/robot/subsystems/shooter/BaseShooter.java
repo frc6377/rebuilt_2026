@@ -6,15 +6,17 @@ import com.ctre.phoenix6.SignalLogger;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.energy.FinanceDepartment;
+import frc.robot.energy.MechanismStates;
+import frc.robot.subsystems.intake.IntakeConstants;
+import frc.robot.util.FullSubsystem;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
 /** Base shooter subsystem. */
-public class BaseShooter extends SubsystemBase {
+public class BaseShooter extends FullSubsystem {
     private final BaseShooterIO io;
     private final BaseShooterIOInputsAutoLogged inputs = new BaseShooterIOInputsAutoLogged();
     private final ShooterConstants.ShooterConfig config;
@@ -56,15 +58,27 @@ public class BaseShooter extends SubsystemBase {
             Logger.recordOutput(config.name() + "/CurrentCommand", "None");
         }
 
+        FinanceDepartment finance = FinanceDepartment.getInstance();
+        boolean intakeRoller = "Roller".equals(config.name());
         if (config.followerEnabled()) {
-            FinanceDepartment.getInstance()
-                    .reportCurrentUsage(
-                            config.name(),
-                            false,
-                            inputs.flywheelCurrent.in(Amps),
-                            inputs.followerFlywheelCurrent.in(Amps));
+            finance.reportCurrentUsage(
+                    config.name(),
+                    intakeRoller,
+                    inputs.flywheelCurrent.in(Amps),
+                    inputs.followerFlywheelCurrent.in(Amps));
         } else {
-            FinanceDepartment.getInstance().reportCurrentUsage(config.name(), false, inputs.flywheelCurrent.in(Amps));
+            finance.reportCurrentUsage(config.name(), intakeRoller, inputs.flywheelCurrent.in(Amps));
+        }
+
+        double rpm = flywheelSetpoint.in(RPM);
+        if (intakeRoller) {
+            double idleRpm = Math.abs(IntakeConstants.RollerConstants.kIdleSpeed.in(RPM));
+            MechanismStates.Roller state = Math.abs(rpm) < 1.0
+                    ? MechanismStates.Roller.OFF
+                    : Math.abs(rpm) <= idleRpm * 1.5 ? MechanismStates.Roller.IDLE : MechanismStates.Roller.ACTIVE;
+            finance.reportState(state);
+        } else {
+            finance.reportState(Math.abs(rpm) > 1.0 ? MechanismStates.Shooter.SPINNING : MechanismStates.Shooter.IDLE);
         }
     }
 
@@ -148,5 +162,12 @@ public class BaseShooter extends SubsystemBase {
 
     public Command spinUpAndWait(AngularVelocity velocity) {
         return spinUpFlywheels(velocity).andThen(waitUntilReady()).withName(config.name() + "SpinUpAndWait");
+    }
+
+    @Override
+    public void periodicAfterScheduler() {
+        if ("Roller".equals(config.name())) {
+            io.setSupplyCurrentLimit(FinanceDepartment.getInstance().getRollerLimit());
+        }
     }
 }

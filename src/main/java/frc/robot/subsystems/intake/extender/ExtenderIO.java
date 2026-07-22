@@ -69,6 +69,10 @@ public interface ExtenderIO {
 
     default void setPidEnabled(boolean enabled) {}
 
+    default boolean isPidEnabled() {
+        return false;
+    }
+
     default void setMode(NeutralModeValue mode) {}
 
     default void setMotorPercentage(double percent) {}
@@ -78,4 +82,6 @@ public interface ExtenderIO {
     default Current getCurrent() {
         return Amps.of(0.0);
     }
+
+    default void setSupplyCurrentLimit(double amps) {}
 }

@@ -47,6 +47,8 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants;
 import frc.robot.Constants.Mode;
+import frc.robot.energy.FinanceDepartment;
+import frc.robot.energy.MechanismStates;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.vision.Vision;
 import frc.robot.util.FullSubsystem;
@@ -130,6 +132,8 @@ public class Drive extends FullSubsystem implements Vision.VisionConsumer {
             };
     private final SwerveDrivePoseEstimator poseEstimator =
             new SwerveDrivePoseEstimator(kinematics, rawGyroRotation, lastModulePositions, new Pose2d());
+
+    private ChassisSpeeds lastCommandedSpeeds = new ChassisSpeeds();
 
     private final Consumer<Pose2d> resetSimulationPoseCallBack; // TODO: Needs io interface sim should not be here
 
@@ -244,6 +248,15 @@ public class Drive extends FullSubsystem implements Vision.VisionConsumer {
 
         // Update gyro alert
         gyroDisconnectedAlert.set(!gyroInputs.connected && Constants.currentMode != Mode.SIM);
+
+        if (DriverStation.isDisabled()) {
+            FinanceDepartment.getInstance().reportState(MechanismStates.Drive.DISABLED);
+        } else {
+            double commanded = Math.hypot(lastCommandedSpeeds.vxMetersPerSecond, lastCommandedSpeeds.vyMetersPerSecond)
+                    + Math.abs(lastCommandedSpeeds.omegaRadiansPerSecond);
+            FinanceDepartment.getInstance()
+                    .reportState(commanded > 0.05 ? MechanismStates.Drive.ACTIVE : MechanismStates.Drive.IDLE);
+        }
     }
 
     @Override
@@ -261,6 +274,7 @@ public class Drive extends FullSubsystem implements Vision.VisionConsumer {
     public void runVelocity(ChassisSpeeds speeds) {
         // Calculate module setpoints
         speeds = ChassisSpeeds.discretize(speeds, 0.02);
+        lastCommandedSpeeds = speeds;
         SwerveModuleState[] setpointStates = kinematics.toSwerveModuleStates(speeds);
         SwerveDriveKinematics.desaturateWheelSpeeds(setpointStates, TunerConstants.kSpeedAt12Volts);
 

@@ -25,4 +25,6 @@ public interface IndexerIO {
     default void setVelocity(AngularVelocity velocity) {}
 
     default void updateInputs(IndexerIOInputs indexerInputs) {}
+
+    default void setSupplyCurrentLimit(double amps) {}
 }

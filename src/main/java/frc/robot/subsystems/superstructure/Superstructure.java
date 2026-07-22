@@ -33,10 +33,6 @@ import frc.robot.FieldConstants;
 import frc.robot.commands.DriveCommands;
 import frc.robot.commands.ShooterCalibrationCommand;
 import frc.robot.subsystems.drive.Drive;
-import frc.robot.subsystems.indexer.Indexer;
-import frc.robot.subsystems.indexer.IndexerIO;
-import frc.robot.subsystems.indexer.IndexerIOReal;
-import frc.robot.subsystems.indexer.IndexerIOSim;
 import frc.robot.subsystems.shooter.BaseShooter;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.ShooterConstants;
@@ -82,7 +78,6 @@ public class Superstructure extends SubsystemBase {
     private final Shooter shooter;
     private final Upgoer leftUpgoer;
     private final Upgoer rightUpgoer;
-    private final Indexer indexer;
     private final Vision vision;
     private final OI oi;
     private final RobotState robotState;
@@ -104,7 +99,6 @@ public class Superstructure extends SubsystemBase {
         this.oi = oi;
         UpgoerIO leftUpgoerIO;
         UpgoerIO rightUpgoerIO;
-        IndexerIO indexerIO;
 
         switch (Constants.currentMode) {
             case REAL:
@@ -116,7 +110,6 @@ public class Superstructure extends SubsystemBase {
                         ? new UpgoerIOKrakenX60(
                                 Constants.CANIDs.MotorIDs.kRightUpgoerMotorCANID, "RightShooterUpgoer", 1)
                         : new UpgoerIO() {};
-                indexerIO = Constants.EnabledSubsystems.kIndexer ? new IndexerIOReal() : new IndexerIO() {};
                 break;
             case SIM:
                 leftUpgoerIO = Constants.EnabledSubsystems.kShooterUpgoerLeft
@@ -125,18 +118,15 @@ public class Superstructure extends SubsystemBase {
                 rightUpgoerIO = Constants.EnabledSubsystems.kShooterUpgoerRight
                         ? new UpgoerIOSim(Constants.CANIDs.MotorIDs.kRightUpgoerMotorCANID, "RightShooterUpgoer")
                         : new UpgoerIO() {};
-                indexerIO = Constants.EnabledSubsystems.kIndexer ? new IndexerIOSim() : new IndexerIO() {};
                 break;
             default:
                 leftUpgoerIO = new UpgoerIO() {};
                 rightUpgoerIO = new UpgoerIO() {};
-                indexerIO = new IndexerIO() {};
                 break;
         }
 
         this.leftUpgoer = new Upgoer(leftUpgoerIO, "LeftShooterUpgoer", 1);
         this.rightUpgoer = new Upgoer(rightUpgoerIO, "RightShooterUpgoer", 1);
-        this.indexer = new Indexer(indexerIO);
         this.currentShootingCommand = this.runFlywheelVelocityManual();
     }
 

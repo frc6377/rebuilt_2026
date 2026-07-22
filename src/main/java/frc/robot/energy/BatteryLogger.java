@@ -15,15 +15,19 @@ import org.littletonrobotics.junction.Logger;
 /** Class for logging current, power, and energy usage. */
 public class BatteryLogger {
     private double totalCurrent = 0.0;
-    private double driveCurrent = 0.0;
+    private double controlledCurrent = 0.0;
     private double totalPower = 0.0;
     private double totalEnergy = 0.0;
 
     private double batteryVoltage = 12.6;
     private double rioCurrent = 0.0;
 
-    public double getDriveCurrent() {
-        return driveCurrent;
+    public double getControlledCurrent() {
+        return controlledCurrent;
+    }
+
+    public double getUncontrolledCurrent() {
+        return Math.max(0.0, totalCurrent - controlledCurrent);
     }
 
     public void setBatteryVoltage(double batteryVoltage) {
@@ -38,11 +42,13 @@ public class BatteryLogger {
     private Map<String, Double> subsytemPowers = new HashMap<>();
     private Map<String, Double> subsytemEnergies = new HashMap<>();
 
-    public void reportCurrentUsage(String key, boolean drive, double... amps) {
+    public void reportCurrentUsage(String key, boolean controlled, double... amps) {
         double totalAmps = 0.0;
-        for (double amp : amps) totalAmps += Math.abs(amp);
-        if (drive) {
-            driveCurrent += totalAmps;
+        for (double amp : amps) {
+            totalAmps += Math.abs(amp);
+        }
+        if (controlled) {
+            controlledCurrent += totalAmps;
         }
 
         double power = totalAmps * batteryVoltage;
@@ -80,8 +86,9 @@ public class BatteryLogger {
         reportCurrentUsage("Controls/CANivore", false, 0.03);
         reportCurrentUsage("Controls/Radio", false, 0.5);
 
-        // Log total and subsystem energy usage
         Logger.recordOutput("EnergyLogger/Current", totalCurrent, "amps");
+        Logger.recordOutput("EnergyLogger/ControlledCurrent", controlledCurrent, "amps");
+        Logger.recordOutput("EnergyLogger/UncontrolledCurrent", getUncontrolledCurrent(), "amps");
         Logger.recordOutput("EnergyLogger/Power", totalPower, "watts");
         Logger.recordOutput("EnergyLogger/Energy", joulesToWattHours(totalEnergy), "watt hours");
 
@@ -100,10 +107,9 @@ public class BatteryLogger {
     }
 
     public void resetTotals() {
-        // Reset power and curren totals, before next loop
         totalPower = 0.0;
         totalCurrent = 0.0;
-        driveCurrent = 0.0;
+        controlledCurrent = 0.0;
     }
 
     public double getTotalCurrent() {
