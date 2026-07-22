@@ -18,13 +18,29 @@ import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
 import edu.wpi.first.wpilibj.RobotController;
 import frc.robot.Constants;
 import frc.robot.util.FullSubsystem;
+import java.util.Locale;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;
-import org.littletonrobotics.junction.networktables.LoggedNetworkBoolean;
+import org.littletonrobotics.junction.networktables.LoggedNetworkString;
 
 public class FinanceDepartment extends FullSubsystem {
-    // MARK: - Constants
+    public enum Mode {
+        SHADOW,
+        ACTIVE;
+
+        static Mode parse(String value) {
+            if (value == null) {
+                return SHADOW;
+            }
+            try {
+                return valueOf(value.trim().toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException e) {
+                return SHADOW;
+            }
+        }
+    }
+
     private static final double minVoltageBrownout = 7.0;
     private static final double maxBudgetAmps = 200.0;
     private static final double breakerNiceness = 0.05;
@@ -53,15 +69,13 @@ public class FinanceDepartment extends FullSubsystem {
         return instance;
     }
 
-
-    // MARK: - Members
     private final BatteryLogger energyLogger = new BatteryLogger();
     private final BatteryEstimator battery = new BatteryEstimator();
     private final BreakerModel breaker = new BreakerModel(breakerNiceness);
     private final PowerDistribution pdh = new PowerDistribution(Constants.CANIDs.kPdhCanId, ModuleType.kRev);
     private final BatteryIOInputsAutoLogged inputs = new BatteryIOInputsAutoLogged();
-    private final LoggedNetworkBoolean dynamicLimiting =
-            new LoggedNetworkBoolean("FinanceDepartment/DynamicLimiting", CurrentLimits.Shared.dynamicLimitingEnabled);
+    private final LoggedNetworkString mode = new LoggedNetworkString("FinanceDepartment/Mode", Mode.SHADOW.name());
+    private final Debouncer brownoutDebouncer = new Debouncer(2.0, DebounceType.kFalling);
 
     private double budget = 0.0;
     private double controlledPool = 0.0;
@@ -74,8 +88,6 @@ public class FinanceDepartment extends FullSubsystem {
     private double extenderLimit = CurrentLimits.Static.extenderSupplyAmps;
     private double rollerLimit = CurrentLimits.Static.rollerSupplyAmps;
     private double driveLimit = CurrentLimits.Static.driveSupplyAmps;
-
-    private final Debouncer brownoutDebouncer = new Debouncer(2.0, DebounceType.kFalling);
 
     private MechanismStates.Drive driveState = MechanismStates.Drive.IDLE;
     private MechanismStates.Roller rollerState = MechanismStates.Roller.OFF;
@@ -185,7 +197,7 @@ public class FinanceDepartment extends FullSubsystem {
             Logger.recordOutput("FinanceDepartment/PdhTotalCurrent", measuredTotal);
             Logger.recordOutput("FinanceDepartment/ControlledMeasured", controlledMeasured);
             Logger.recordOutput("FinanceDepartment/UncontrolledMeasured", uncontrolledMeasured);
-            Logger.recordOutput("FinanceDepartment/DynamicLimiting", dynamicLimiting.get());
+            Logger.recordOutput("FinanceDepartment/Mode", Mode.parse(mode.get()).name());
             Logger.recordOutput("FinanceDepartment/IndexerLimit", indexerLimit);
             Logger.recordOutput("FinanceDepartment/ExtenderLimit", extenderLimit);
             Logger.recordOutput("FinanceDepartment/RollerLimit", rollerLimit);
@@ -276,7 +288,7 @@ public class FinanceDepartment extends FullSubsystem {
     }
 
     private void updateAppliedLimits() {
-        if (!dynamicLimiting.get()) {
+        if (Mode.parse(mode.get()) != Mode.ACTIVE) {
             applyStaticLimits();
             return;
         }

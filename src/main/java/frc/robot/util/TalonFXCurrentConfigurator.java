@@ -16,14 +16,10 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * Latest-value-wins asynchronous applier for TalonFX
- * {@link CurrentLimitsConfigs}.
+ * Latest-value-wins asynchronous applier for TalonFX {@link CurrentLimitsConfigs}.
  *
- * <p>
- * Mirrors Mechanical Advantage's TalonFXCurrentConfigurator: the robot thread
- * only queues a request; a background
- * worker performs Phoenix {@code apply()} so CAN config traffic cannot stall
- * the main loop. Failed applies retry after
+ * <p>Mirrors Mechanical Advantage's TalonFXCurrentConfigurator: the robot thread only queues a request; a background
+ * worker performs Phoenix {@code apply()} so CAN config traffic cannot stall the main loop. Failed applies retry after
  * a short delay unless a newer request arrives.
  */
 public class TalonFXCurrentConfigurator {
@@ -44,10 +40,7 @@ public class TalonFXCurrentConfigurator {
         worker.start();
     }
 
-    /**
-     * Queue a current-limits config. Identical configs are ignored; newer requests
-     * supersede.
-     */
+    /** Queue a current-limits config. Identical configs are ignored; newer requests supersede. */
     public void setConfig(CurrentLimitsConfigs config) {
         mutex.lock();
         try {

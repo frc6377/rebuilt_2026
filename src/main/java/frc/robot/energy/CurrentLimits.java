@@ -11,7 +11,6 @@ public final class CurrentLimits {
     public static final class Shared {
         public static final double stepAmps = 0.5;
         public static final double recoveryRateAmpsPerSec = 50.0;
-        public static final boolean dynamicLimitingEnabled = true;
     }
 
     public static final class Static {
