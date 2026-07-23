@@ -47,9 +47,9 @@ public final class Constants {
     }
 
     public enum NerfMode {
-        FIELD, // default, uses field-specific constants and apriltags
-        TESTING, // dosent use april tags but full speed, will not turn to align
-        NERFED, // speed is reduced, no turning to shoot, drive speed reduced
+        FIELD, // default, uses field-specific constants and AprilTags
+        TESTING, // currently treated the same as FIELD by NerfModeController (reserved for future testing behavior)
+        NERFED, // speed is reduced; drive speed reduced
     }
 
     public static final class CANIDs {
