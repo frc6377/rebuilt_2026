@@ -19,10 +19,13 @@ public class BaseShooterIOSim implements BaseShooterIO {
     private double flywheelSetpointRPM = 0.0;
     private double flywheelAppliedVolts = 0.0;
 
-    public BaseShooterIOSim(ShooterConstants.ShooterConfig config) {
+    public BaseShooterIOSim(ShooterConstants.ShooterConfig config, ShooterConstants constants) {
         var flywheelPlant = LinearSystemId.createFlywheelSystem(
                 DCMotor.getKrakenX60Foc(2),
-                0.5 * 0.5 * ShooterConstants.flywheelRadius.in(Meters) * ShooterConstants.flywheelRadius.in(Meters),
+                0.5
+                        * 0.5
+                        * constants.flywheelRadius().in(Meters)
+                        * constants.flywheelRadius().in(Meters),
                 1.0);
 
         flywheelSim = new FlywheelSim(flywheelPlant, DCMotor.getKrakenX60Foc(2));

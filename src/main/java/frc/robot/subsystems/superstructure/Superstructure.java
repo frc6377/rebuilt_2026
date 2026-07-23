@@ -41,11 +41,11 @@ import frc.robot.subsystems.shooter.BaseShooter;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.ShooterConstants;
 import frc.robot.subsystems.upgoer.Upgoer;
-import frc.robot.subsystems.upgoer.UpgoerConstants;
 import frc.robot.subsystems.upgoer.UpgoerIO;
 import frc.robot.subsystems.upgoer.UpgoerIOKrakenX60;
 import frc.robot.subsystems.upgoer.UpgoerIOSim;
 import frc.robot.subsystems.vision.Vision;
+import frc.robot.util.NerfModeController;
 import frc.robot.util.OILayer.OI;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -59,25 +59,17 @@ import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 /** Superstructure subsystem that owns the shooter. */
 public class Superstructure extends SubsystemBase {
     // Trajectory target heights (tunable via NetworkTables)
-    private static final LoggedNetworkNumber maxHeightFeet =
-            new LoggedNetworkNumber("Shooting/MaxHeightFeet", ShooterConstants.defaultMaxHeightFeet);
-    private static final LoggedNetworkNumber targetHeightFeet =
-            new LoggedNetworkNumber("Shooting/TargetHeightFeet", ShooterConstants.defaultTargetHeightFeet);
+    private final LoggedNetworkNumber maxHeightFeet;
+    private final LoggedNetworkNumber targetHeightFeet;
 
     // Fine-tuning offsets
-    private static final LoggedNetworkNumber rpmMultiplier =
-            new LoggedNetworkNumber("Shooting/RPMMultiplier", ShooterConstants.defaultRpmMultiplier);
-    private static final LoggedNetworkNumber calculationMode =
-            new LoggedNetworkNumber("Shooting/CalculationMode", ShooterConstants.kDefaultCalculationMode.ordinal());
-    private static final LoggedNetworkNumber manualShootingSpeedRPM =
-            new LoggedNetworkNumber("Shooting/ManualShootingSpeedRPM", ShooterConstants.kManualShootingSpeedRPM);
-    private static final LoggedNetworkNumber manualShootingEnabled = new LoggedNetworkNumber(
-            "Shooting/ManualShootingEnabled", ShooterConstants.kManualShootingEnabled ? 1.0 : 0.0);
+    private final LoggedNetworkNumber rpmMultiplier;
+    private final LoggedNetworkNumber calculationMode;
+    private final LoggedNetworkNumber manualShootingSpeedRPM;
+    private final LoggedNetworkNumber manualShootingEnabled;
     // Testing / Bench Mode
-    private static final LoggedNetworkNumber benchModeEnabled =
-            new LoggedNetworkNumber("Shooting/BenchMode/Enabled", ShooterConstants.defaultBenchModeEnabled);
-    private static final LoggedNetworkNumber benchModeDistanceFeet = new LoggedNetworkNumber(
-            "Shooting/BenchMode/DistanceMeters", ShooterConstants.defaultBenchModeDistanceMeters);
+    private final LoggedNetworkNumber benchModeEnabled;
+    private final LoggedNetworkNumber benchModeDistanceFeet;
 
     private final Shooter shooter;
     private final Upgoer leftUpgoer;
@@ -86,21 +78,54 @@ public class Superstructure extends SubsystemBase {
     private final Vision vision;
     private final OI oi;
     private final RobotState robotState;
+    private final NerfModeController nerfModeController;
     private GamePieceTrajectorySimulation gamePieceTrajectorySimulation;
-    private AngularVelocity manualShootingVelocity = RPM.of(ShooterConstants.kManualShootingSpeedRPM);
+    private AngularVelocity manualShootingVelocity;
     private Command currentShootingCommand;
     private TrajectoryBall.ShootingParameters latestParameters = null;
 
     /** Creates the superstructure and selects IO implementations by mode. */
-    public Superstructure(BooleanSupplier isIntaking, Vision vision, OI oi) {
+    public Superstructure(BooleanSupplier isIntaking, Vision vision, OI oi, NerfModeController nerfModeController) {
         RobotState createdState = RobotState.getInstance();
         if (createdState == null) {
             createdState = RobotState.create();
         }
         this.robotState = createdState;
         this.vision = vision;
+        this.nerfModeController = nerfModeController;
 
-        this.shooter = new Shooter();
+        ShooterConstants shooterConstants = nerfModeController.getShooterConstants();
+        this.maxHeightFeet = new LoggedNetworkNumber(
+                "Shooting/MaxHeightFeet",
+                nerfModeController.getShooterConstants().defaultMaxHeightFeet());
+        this.targetHeightFeet = new LoggedNetworkNumber(
+                "Shooting/TargetHeightFeet",
+                nerfModeController.getShooterConstants().defaultTargetHeightFeet());
+        this.rpmMultiplier = new LoggedNetworkNumber(
+                "Shooting/RPMMultiplier",
+                nerfModeController.getShooterConstants().defaultRpmMultiplier());
+        this.calculationMode = new LoggedNetworkNumber(
+                "Shooting/CalculationMode",
+                nerfModeController
+                        .getShooterConstants()
+                        .kDefaultCalculationMode()
+                        .ordinal());
+        this.manualShootingSpeedRPM = new LoggedNetworkNumber(
+                "Shooting/ManualShootingSpeedRPM",
+                nerfModeController.getShooterConstants().kManualShootingSpeedRPM());
+        this.manualShootingEnabled = new LoggedNetworkNumber(
+                "Shooting/ManualShootingEnabled",
+                nerfModeController.getShooterConstants().kManualShootingEnabled() ? 1.0 : 0.0);
+        this.benchModeEnabled = new LoggedNetworkNumber(
+                "Shooting/BenchMode/Enabled",
+                nerfModeController.getShooterConstants().defaultBenchModeEnabled());
+        this.benchModeDistanceFeet = new LoggedNetworkNumber(
+                "Shooting/BenchMode/DistanceMeters",
+                nerfModeController.getShooterConstants().defaultBenchModeDistanceMeters());
+        this.manualShootingVelocity =
+                RPM.of(nerfModeController.getShooterConstants().kManualShootingSpeedRPM());
+
+        this.shooter = new Shooter(nerfModeController);
         this.oi = oi;
         UpgoerIO leftUpgoerIO;
         UpgoerIO rightUpgoerIO;
@@ -110,22 +135,38 @@ public class Superstructure extends SubsystemBase {
             case REAL:
                 leftUpgoerIO = Constants.EnabledSubsystems.kShooterUpgoerLeft
                         ? new UpgoerIOKrakenX60(
-                                Constants.CANIDs.MotorIDs.kLeftUpgoerMotorCANID, "LeftShooterUpgoer", -1)
+                                Constants.CANIDs.MotorIDs.kLeftUpgoerMotorCANID,
+                                "LeftShooterUpgoer",
+                                -1,
+                                nerfModeController.getUpgoerConstants())
                         : new UpgoerIO() {};
                 rightUpgoerIO = Constants.EnabledSubsystems.kShooterUpgoerRight
                         ? new UpgoerIOKrakenX60(
-                                Constants.CANIDs.MotorIDs.kRightUpgoerMotorCANID, "RightShooterUpgoer", 1)
+                                Constants.CANIDs.MotorIDs.kRightUpgoerMotorCANID,
+                                "RightShooterUpgoer",
+                                1,
+                                nerfModeController.getUpgoerConstants())
                         : new UpgoerIO() {};
-                indexerIO = Constants.EnabledSubsystems.kIndexer ? new IndexerIOReal() : new IndexerIO() {};
+                indexerIO = Constants.EnabledSubsystems.kIndexer
+                        ? new IndexerIOReal(nerfModeController.getIndexerConstants())
+                        : new IndexerIO() {};
                 break;
             case SIM:
                 leftUpgoerIO = Constants.EnabledSubsystems.kShooterUpgoerLeft
-                        ? new UpgoerIOSim(Constants.CANIDs.MotorIDs.kLeftUpgoerMotorCANID, "LeftShooterUpgoer")
+                        ? new UpgoerIOSim(
+                                Constants.CANIDs.MotorIDs.kLeftUpgoerMotorCANID,
+                                "LeftShooterUpgoer",
+                                nerfModeController.getUpgoerConstants())
                         : new UpgoerIO() {};
                 rightUpgoerIO = Constants.EnabledSubsystems.kShooterUpgoerRight
-                        ? new UpgoerIOSim(Constants.CANIDs.MotorIDs.kRightUpgoerMotorCANID, "RightShooterUpgoer")
+                        ? new UpgoerIOSim(
+                                Constants.CANIDs.MotorIDs.kRightUpgoerMotorCANID,
+                                "RightShooterUpgoer",
+                                nerfModeController.getUpgoerConstants())
                         : new UpgoerIO() {};
-                indexerIO = Constants.EnabledSubsystems.kIndexer ? new IndexerIOSim() : new IndexerIO() {};
+                indexerIO = Constants.EnabledSubsystems.kIndexer
+                        ? new IndexerIOSim(nerfModeController.getIndexerConstants())
+                        : new IndexerIO() {};
                 break;
             default:
                 leftUpgoerIO = new UpgoerIO() {};
@@ -134,9 +175,9 @@ public class Superstructure extends SubsystemBase {
                 break;
         }
 
-        this.leftUpgoer = new Upgoer(leftUpgoerIO, "LeftShooterUpgoer", 1);
-        this.rightUpgoer = new Upgoer(rightUpgoerIO, "RightShooterUpgoer", 1);
-        this.indexer = new Indexer(indexerIO);
+        this.leftUpgoer = new Upgoer(leftUpgoerIO, "LeftShooterUpgoer", 1, nerfModeController);
+        this.rightUpgoer = new Upgoer(rightUpgoerIO, "RightShooterUpgoer", 1, nerfModeController);
+        this.indexer = new Indexer(indexerIO, nerfModeController);
         this.currentShootingCommand = this.runFlywheelVelocityManual();
     }
 
@@ -151,6 +192,8 @@ public class Superstructure extends SubsystemBase {
         Logger.recordOutput("Shooting/TimeUntilHubStateChange", FieldConstants.getTimeUntilHubStateChange());
         Logger.recordOutput(
                 "Shooting/DistanceToHub", round(vision.getHubDistanceMeasure().in(Meters) * 100.0) / 100.0);
+        Logger.recordOutput(
+                "NerfMode/CurrentMode", nerfModeController.nerfMode().name());
         if ((DriverStation.isFMSAttached()
                         && FieldConstants.getTimeUntilHubStateChange() > 4
                         && FieldConstants.getTimeUntilHubStateChange() <= 7
@@ -181,7 +224,7 @@ public class Superstructure extends SubsystemBase {
         }
 
         gamePieceTrajectorySimulation = new GamePieceTrajectorySimulation(
-                driveSimulation, () -> getAverageFlywheelVelocity().in(RPM));
+                driveSimulation, () -> getAverageFlywheelVelocity().in(RPM), nerfModeController);
         robotState.setSimGamePieceCount(gamePieceTrajectorySimulation.getBallsInHopper());
     }
 
@@ -244,7 +287,7 @@ public class Superstructure extends SubsystemBase {
         }
 
         return new ShooterCalibrationCommand(
-                shooter.getLeft(), gamePieceTrajectorySimulation, driveSimulation, poseResetter);
+                shooter.getLeft(), gamePieceTrajectorySimulation, driveSimulation, poseResetter, nerfModeController);
     }
 
     public BaseShooter getLeftShooter() {
@@ -264,7 +307,7 @@ public class Superstructure extends SubsystemBase {
     }
 
     public Angle getHoodAngle() {
-        return ShooterConstants.kFixedHoodAngle;
+        return nerfModeController.getShooterConstants().kFixedHoodAngle();
     }
 
     public void setFlywheelVelocity(AngularVelocity velocity) {
@@ -341,7 +384,7 @@ public class Superstructure extends SubsystemBase {
         int modeIndex = (int) Math.round(calculationMode.get());
         ShooterConstants.CalculationMode[] modes = ShooterConstants.CalculationMode.values();
         if (modeIndex < 0 || modeIndex >= modes.length) {
-            return ShooterConstants.kDefaultCalculationMode;
+            return nerfModeController.getShooterConstants().kDefaultCalculationMode();
         }
         return modes[modeIndex];
     }
@@ -373,7 +416,8 @@ public class Superstructure extends SubsystemBase {
                                     Feet.of(maxHeightFeet.get()),
                                     Feet.of(targetHeightFeet.get()),
                                     rpmMultiplier.get(),
-                                    ShooterConstants.kSotfEnabled);
+                                    nerfModeController.getShooterConstants().kSotfEnabled(),
+                                    nerfModeController.getShooterConstants());
 
                             Logger.recordOutput("Shooting/DistanceSource", "PoseEstimate");
                             Logger.recordOutput("Shooting/OdometryHubDistanceM", getCalculationModeFromDashboard());
@@ -420,8 +464,10 @@ public class Superstructure extends SubsystemBase {
     public Command fireCommand() {
         return Commands.run(
                         () -> {
-                            leftUpgoer.setVelocity(UpgoerConstants.defaultFeedVelocity);
-                            rightUpgoer.setVelocity(UpgoerConstants.defaultFeedVelocity);
+                            leftUpgoer.setVelocity(
+                                    nerfModeController.getUpgoerConstants().defaultFeedVelocity());
+                            rightUpgoer.setVelocity(
+                                    nerfModeController.getUpgoerConstants().defaultFeedVelocity());
                         },
                         leftUpgoer,
                         rightUpgoer)
@@ -431,8 +477,10 @@ public class Superstructure extends SubsystemBase {
     public Command unjamCommand() {
         return Commands.run(
                         () -> {
-                            leftUpgoer.setVelocity(UpgoerConstants.defaultUnjamVelocity);
-                            rightUpgoer.setVelocity(UpgoerConstants.defaultUnjamVelocity);
+                            leftUpgoer.setVelocity(
+                                    nerfModeController.getUpgoerConstants().defaultUnjamVelocity());
+                            rightUpgoer.setVelocity(
+                                    nerfModeController.getUpgoerConstants().defaultUnjamVelocity());
                         },
                         leftUpgoer,
                         rightUpgoer)
@@ -474,9 +522,9 @@ public class Superstructure extends SubsystemBase {
         if (latestParameters == null) return atTargetVelocity();
 
         boolean flywheelReady = atTargetVelocity(); // atTargetVelocity();
-        boolean headingReady =
-                Math.abs(currentHeading.minus(latestParameters.targetHeading()).getDegrees())
-                        < ShooterConstants.kHeadingTolerance.in(Degrees);
+        boolean headingReady = Math.abs(
+                        currentHeading.minus(latestParameters.targetHeading()).getDegrees())
+                < nerfModeController.getShooterConstants().kHeadingTolerance().in(Degrees);
         Logger.recordOutput("Shooting/Ready to shoot", flywheelReady && headingReady);
         return flywheelReady && headingReady;
     }

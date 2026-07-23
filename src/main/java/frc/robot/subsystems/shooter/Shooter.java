@@ -16,6 +16,7 @@ package frc.robot.subsystems.shooter;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Constants;
+import frc.robot.util.NerfModeController;
 
 /**
  * Container class for the left and right shooter subsystems. Handles initialization based on the robot mode and
@@ -24,16 +25,20 @@ import frc.robot.Constants;
 public class Shooter {
     private final BaseShooter left;
     private final BaseShooter right;
+    private final NerfModeController nerfModeController;
 
-    public Shooter() {
+    public Shooter(NerfModeController nerfModeController) {
+        this.nerfModeController = nerfModeController;
         BaseShooterIO leftIO;
         BaseShooterIO rightIO;
+
+        ShooterConstants constants = nerfModeController.getShooterConstants();
 
         // Choose Left IO
         if (Constants.EnabledSubsystems.kShooterLeft) {
             leftIO = switch (Constants.currentMode) {
-                case REAL -> new BaseShooterIOKrakenX60(ShooterConstants.leftConfig);
-                case SIM -> new BaseShooterIOSim(ShooterConstants.leftConfig);
+                case REAL -> new BaseShooterIOKrakenX60(constants.leftConfig());
+                case SIM -> new BaseShooterIOSim(constants.leftConfig(), constants);
                 default -> new BaseShooterIO() {};};
         } else {
             leftIO = new BaseShooterIO() {};
@@ -42,15 +47,15 @@ public class Shooter {
         // Choose Right IO
         if (Constants.EnabledSubsystems.kShooterRight) {
             rightIO = switch (Constants.currentMode) {
-                case REAL -> new BaseShooterIOKrakenX60(ShooterConstants.rightConfig);
-                case SIM -> new BaseShooterIOSim(ShooterConstants.rightConfig);
+                case REAL -> new BaseShooterIOKrakenX60(constants.rightConfig());
+                case SIM -> new BaseShooterIOSim(constants.rightConfig(), constants);
                 default -> new BaseShooterIO() {};};
         } else {
             rightIO = new BaseShooterIO() {};
         }
 
-        left = new BaseShooter(leftIO, ShooterConstants.leftConfig);
-        right = new BaseShooter(rightIO, ShooterConstants.rightConfig);
+        left = new BaseShooter(leftIO, constants.leftConfig(), constants);
+        right = new BaseShooter(rightIO, constants.rightConfig(), constants);
     }
 
     public BaseShooter getLeft() {

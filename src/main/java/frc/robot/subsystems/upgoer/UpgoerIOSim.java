@@ -48,11 +48,11 @@ public class UpgoerIOSim implements UpgoerIO {
      * @param logName Logging key prefix (unused in sim, kept for API consistency).
      */
     @SuppressWarnings("unused")
-    public UpgoerIOSim(int motorId, String logName) {
+    public UpgoerIOSim(int motorId, String logName, UpgoerConstants constants) {
         var plant = LinearSystemId.createFlywheelSystem(MOTOR, ROLLER_MOI, ROLLER_GEARING);
         sim = new FlywheelSim(plant, MOTOR);
 
-        controller = new PIDController(0.001, 0.0005, 0.0);
+        controller = new PIDController(constants.defaultKP(), constants.defaultKI(), constants.defaultKD());
 
         double freeSpeedRPM = MOTOR.freeSpeedRadPerSec * 60.0 / (2.0 * Math.PI);
         double kv = 12.0 / freeSpeedRPM;

@@ -46,6 +46,12 @@ public final class Constants {
         SIM,
     }
 
+    public enum NerfMode {
+        FIELD, // default, uses field-specific constants and AprilTags
+        TESTING, // currently treated the same as FIELD by NerfModeController (reserved for future testing behavior)
+        NERFED, // speed is reduced; drive speed reduced
+    }
+
     public static final class CANIDs {
         public static class MotorIDs {
             public static final int kShooterFlywheelLeftMotorCANID = 10;
@@ -65,6 +71,7 @@ public final class Constants {
         public static final class SensorIDs {
             // TODO: change before running
             public static final int kExtenderEncoderCANID = 9;
+            public static final int kNerfModeEncoderDIOID = 8;
         }
     }
 }
