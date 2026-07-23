@@ -11,7 +11,7 @@ public class NerfShooterConstants {
     static {
         ShooterConstants base = BaseShooterConstants.DATA;
 
-        // Nerf theconfigs
+        // Nerf the configs
         ShooterConstants.ShooterConfig nerfedLeftConfig = new ShooterConstants.ShooterConfig(
                 base.leftConfig().name(),
                 base.leftConfig().flywheelLeaderId(),
