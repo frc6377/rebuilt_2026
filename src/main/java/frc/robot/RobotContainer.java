@@ -74,7 +74,6 @@ import java.util.Objects;
 import org.ironmaple.simulation.IntakeSimulation;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
-import org.ironmaple.utils.FieldMirroringUtils;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
@@ -284,8 +283,7 @@ public class RobotContainer {
         NamedCommands.registerCommand("Stop intake", intake.stopRollerCommand());
         NamedCommands.registerCommand(
                 "Pathfind to Hub",
-                PathGenerator.pathfindToPose(
-                        drive, new Pose2d(FieldConstants.Hub.topCenterPoint.toTranslation2d(), new Rotation2d())));
+                PathGenerator.pathfindToPose(drive, new Pose2d(FieldConstants.getHubPosition(), new Rotation2d())));
 
         // Set up auto routines
         autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
@@ -594,7 +592,7 @@ public class RobotContainer {
         if (Constants.currentMode != Constants.Mode.SIM) return;
 
         if (!simPoseSet && DriverStation.getAlliance().isPresent()) {
-            drive.setPose(FieldMirroringUtils.toCurrentAlliancePose(kSimStartPose));
+            drive.setPose(FieldConstants.toCurrentAlliancePose(kSimStartPose));
             simPoseSet = true;
         }
 

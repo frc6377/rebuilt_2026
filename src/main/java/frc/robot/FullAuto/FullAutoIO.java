@@ -148,7 +148,7 @@ public abstract class FullAutoIO extends Command {
     }
 
     private void startSearch() {
-        Pose2d waypoint = searchPoses[searchIndex];
+        Pose2d waypoint = FieldConstants.toCurrentAlliancePose(searchPoses[searchIndex]);
         Logger.recordOutput("FullAuto/SearchPose", waypoint);
         startAction(PathGenerator.pathfindToPose(drive, waypoint)
                 .andThen(Commands.run(
@@ -208,7 +208,7 @@ public abstract class FullAutoIO extends Command {
 
     private void startScoring() {
         estimatedFuel = 0;
-        startAction(PathGenerator.pathfindToPose(drive, scoringPose)
+        startAction(PathGenerator.pathfindToPose(drive, FieldConstants.toCurrentAlliancePose(scoringPose))
                 .andThen(Commands.parallel(
                                 robot.shootAutoCommand(() -> 0.0, () -> 0.0, () -> false), scoringFireCommand())
                         .until(() -> !intakeHasFuel())

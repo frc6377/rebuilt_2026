@@ -15,6 +15,7 @@ package frc.robot;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.util.Units;
@@ -540,26 +541,21 @@ public class FieldConstants {
         return active;
     }
 
-    /** Get the hub position for the current alliance */
-    public static Translation2d getHubPosition() {
-        // Logic to determine alliance and return appropriate hub center
-        boolean isRed = DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
-        if (isRed) {
-            // If we are Red, the target hub is the one on the Blue side (the "far" one relative to Blue driver
-            // station?)
-            // Wait, in recent games, you score in the hub/speaker on your opponent's side? Or your own side?
-            // In 2022 (Rapid React), hub was central.
-            // In 2024, speaker is on your wall.
-            // The old code says:
-            // Blue Hub: near wall (x ~ 4m)
-            // Red Hub: far wall (x ~ 16m - 4m)
-            // So each alliance has its own hub.
-
-            // If I am Red, my hub is at RED_HUB_POSITION (far X).
-            return Hub.oppTopCenterPoint.toTranslation2d();
-        } else {
-            // If I am Blue, my hub is at BLUE_HUB_POSITION (near X).
-            return Hub.topCenterPoint.toTranslation2d();
+    /** 180° alliance mirror using official 2026 field size (not MapleSim's 2025 FieldMirroringUtils). */
+    public static Pose2d toCurrentAlliancePose(Pose2d pose) {
+        if (DriverStation.getAlliance().orElse(Alliance.Blue) != Alliance.Red) {
+            return pose;
         }
+        return new Pose2d(
+                fieldLength - pose.getX(),
+                fieldWidth - pose.getY(),
+                pose.getRotation().plus(Rotation2d.kPi));
+    }
+
+    /** Hub center for the current alliance (blue-origin coords). */
+    public static Translation2d getHubPosition() {
+        return DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red
+                ? Hub.oppTopCenterPoint.toTranslation2d()
+                : Hub.topCenterPoint.toTranslation2d();
     }
 }
