@@ -530,6 +530,20 @@ public class RobotContainer {
                 .withName("ShootAuto");
     }
 
+    public Command shootAutoModeCommand(Drive drive1) {
+        return Commands.sequence(
+                        superstructure
+                                .autoSpeedShooter(drive1::getPose, drive1::getChassisSpeeds)
+                                .until(() -> superstructure.isReadyToShoot(drive1.getRotation()))
+                                .withTimeout(0.7),
+                        Commands.parallel(
+                                superstructure.fireCommand(),
+                                indexer.index(),
+                                intake.siftFuelCommand(),
+                                intake.intakeRollerCommand()))
+                .withName("ShootAutoMode");
+    }
+
     /** Same cleanup as shooting trigger onFalse. */
     public Command shootAutoStopCommand() {
         return Commands.parallel(

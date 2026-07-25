@@ -209,8 +209,7 @@ public abstract class FullAutoIO extends Command {
     private void startScoring() {
         estimatedFuel = 0;
         startAction(PathGenerator.pathfindToPose(drive, FieldConstants.toCurrentAlliancePose(scoringPose))
-                .andThen(Commands.parallel(
-                                robot.shootAutoCommand(() -> 0.0, () -> 0.0, () -> false), scoringFireCommand())
+                .andThen(Commands.parallel(robot.shootAutoModeCommand(drive), scoringFireCommand())
                         .until(() -> !intakeHasFuel())
                         .withTimeout(15.0))
                 .andThen(robot.shootAutoStopCommand().withTimeout(0.25))
