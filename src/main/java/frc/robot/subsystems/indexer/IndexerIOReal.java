@@ -12,6 +12,7 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import frc.robot.Constants;
+import frc.robot.subsystems.indexer.constants.IndexerConstants;
 import frc.robot.util.TalonFXCurrentConfigurator;
 import frc.robot.util.TunableTalonFX;
 import org.littletonrobotics.junction.Logger;
@@ -26,39 +27,36 @@ public class IndexerIOReal implements IndexerIO {
     private final StatusSignal<Current> supplyCurrent;
     private final TalonFXCurrentConfigurator currentConfigurator;
 
-    public IndexerIOReal() {
+    public IndexerIOReal(IndexerConstants constants) {
         // Real hardware-specific constructor implementation
         indexerPIDConfigs = new Slot0Configs();
-        indexerPIDConfigs.kP = IndexerConstants.PID.kP;
-        indexerPIDConfigs.kI = IndexerConstants.PID.kI;
-        indexerPIDConfigs.kD = IndexerConstants.PID.kD;
+        indexerPIDConfigs.kP = constants.kP();
+        indexerPIDConfigs.kI = constants.kI();
+        indexerPIDConfigs.kD = constants.kD();
         indexerMotor = new TunableTalonFX(
                 Constants.CANIDs.MotorIDs.kIndexerMotorID,
-                IndexerConstants.canBus,
+                constants.canBus(),
                 "Indexer/IndexerMotor",
                 indexerPIDConfigs);
         indexerMotorConfig = new TalonFXConfiguration();
 
-        indexerMotorConfig.ClosedLoopRamps.VoltageClosedLoopRampPeriod =
-                IndexerConstants.MotorConfigurationConfigs.VoltageClosedLoopRampPeriod;
-        indexerMotorConfig.TorqueCurrent.PeakForwardTorqueCurrent =
-                IndexerConstants.MotorConfigurationConfigs.PeakForwardTorqueCurrent;
-        indexerMotorConfig.TorqueCurrent.PeakReverseTorqueCurrent =
-                IndexerConstants.MotorConfigurationConfigs.PeakReverseTorqueCurrent;
-        indexerMotorConfig.MotorOutput.Inverted = IndexerConstants.MotorConfigurationConfigs.MotorInverted;
+        indexerMotorConfig.ClosedLoopRamps.VoltageClosedLoopRampPeriod = constants.voltageClosedLoopRampPeriod();
+        indexerMotorConfig.TorqueCurrent.PeakForwardTorqueCurrent = constants.peakForwardTorqueCurrent();
+        indexerMotorConfig.TorqueCurrent.PeakReverseTorqueCurrent = constants.peakReverseTorqueCurrent();
+        indexerMotorConfig.MotorOutput.Inverted = constants.motorInverted();
         indexerMotorConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
         indexerMotorConfig.Slot0 = indexerPIDConfigs;
         var currentLimits = new CurrentLimitsConfigs()
                 .withStatorCurrentLimitEnable(true)
-                .withStatorCurrentLimit(IndexerConstants.MotorConfigurationConfigs.kStatorCurrentLimit)
+                .withStatorCurrentLimit(constants.kStatorCurrentLimit())
                 .withSupplyCurrentLimitEnable(true)
-                .withSupplyCurrentLimit(IndexerConstants.MotorConfigurationConfigs.kSupplyCurrentLimit);
+                .withSupplyCurrentLimit(constants.kSupplyCurrentLimit());
         indexerMotor.applyConfiguration(indexerMotorConfig.withCurrentLimits(currentLimits));
         currentConfigurator = new TalonFXCurrentConfigurator("Indexer", indexerMotor.getConfigurator(), currentLimits);
         supplyCurrent = indexerMotor.getSupplyCurrent();
         BaseStatusSignal.setUpdateFrequencyForAll(50.0, supplyCurrent);
 
-        indexerMotorOutput = new LoggedNetworkNumber("Indexer/IndexerMotorOutput", IndexerConstants.kCollectorSpeed);
+        indexerMotorOutput = new LoggedNetworkNumber("Indexer/IndexerMotorOutput", constants.kCollectorSpeed());
         indexerMotorReverseOutput = new LoggedNetworkNumber("Indexer/IndexerMotorReverseOutput", 0);
     }
 

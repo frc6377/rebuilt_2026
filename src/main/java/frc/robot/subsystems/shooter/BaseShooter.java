@@ -17,6 +17,7 @@ public class BaseShooter extends SubsystemBase {
     private final BaseShooterIO io;
     private final BaseShooterIOInputsAutoLogged inputs = new BaseShooterIOInputsAutoLogged();
     private final ShooterConstants.ShooterConfig config;
+    private final ShooterConstants constants;
 
     private final SysIdRoutine sysIdRoutine;
 
@@ -26,9 +27,10 @@ public class BaseShooter extends SubsystemBase {
     // Failure state
     private boolean flywheelFailed = false;
 
-    public BaseShooter(BaseShooterIO io, ShooterConstants.ShooterConfig config) {
+    public BaseShooter(BaseShooterIO io, ShooterConstants.ShooterConfig config, ShooterConstants constants) {
         this.io = io;
         this.config = config;
+        this.constants = constants;
 
         sysIdRoutine = new SysIdRoutine(
                 new SysIdRoutine.Config(
@@ -93,7 +95,7 @@ public class BaseShooter extends SubsystemBase {
     /** Check if flywheel is at target velocity. */
     @AutoLogOutput(key = "AtTargetVelocity")
     public boolean atTargetVelocity() {
-        AngularVelocity tolerance = ShooterConstants.kFlywheelVelocityTolerance;
+        AngularVelocity tolerance = constants.kFlywheelVelocityTolerance();
         return flywheelFailed
                 || Math.abs(inputs.flywheelVelocity.in(RPM) - flywheelSetpoint.in(RPM)) < tolerance.in(RPM);
     }

@@ -29,9 +29,9 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.FieldConstants;
 import frc.robot.subsystems.shooter.BaseShooter;
-import frc.robot.subsystems.shooter.ShooterConstants;
 import frc.robot.subsystems.superstructure.GamePieceTrajectorySimulation;
 import frc.robot.subsystems.superstructure.Superstructure;
+import frc.robot.util.NerfModeController;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -72,6 +72,7 @@ public class ShooterCalibrationCommand extends Command {
     private final GamePieceTrajectorySimulation trajectorySim;
     private final SwerveDriveSimulation driveSim;
     private final Consumer<Pose2d> poseResetter;
+    private final NerfModeController nerfModeController;
     // Test parameters
     private final Distance[] testDistances;
     private final AngularVelocity lowerBound;
@@ -134,7 +135,8 @@ public class ShooterCalibrationCommand extends Command {
             BaseShooter shooter,
             GamePieceTrajectorySimulation trajectorySim,
             SwerveDriveSimulation driveSim,
-            Consumer<Pose2d> poseResetter) {
+            Consumer<Pose2d> poseResetter,
+            NerfModeController nerfModeController) {
         this(
                 shooter,
                 trajectorySim,
@@ -153,15 +155,18 @@ public class ShooterCalibrationCommand extends Command {
                     Meters.of(6.0)
                 },
                 RPM.of(2000),
-                RPM.of(6000));
+                RPM.of(6000),
+                nerfModeController);
     }
 
-    public ShooterCalibrationCommand(Superstructure superstructure, SwerveDriveSimulation drive) {
+    public ShooterCalibrationCommand(
+            Superstructure superstructure, SwerveDriveSimulation drive, NerfModeController nerfModeController) {
         this(
                 superstructure.getLeftShooter(),
                 superstructure.getGamePieceTrajectorySimulation(),
                 drive,
-                drive::setSimulationWorldPose);
+                drive::setSimulationWorldPose,
+                nerfModeController);
     }
     /**
      * Creates a new ShooterCalibrationCommand with custom test ranges.
@@ -181,7 +186,8 @@ public class ShooterCalibrationCommand extends Command {
             Consumer<Pose2d> poseResetter,
             Distance[] testDistances,
             AngularVelocity lowerBound,
-            AngularVelocity upperBound) {
+            AngularVelocity upperBound,
+            NerfModeController nerfModeController) {
 
         this.shooter = shooter;
         this.trajectorySim = trajectorySim;
@@ -192,6 +198,7 @@ public class ShooterCalibrationCommand extends Command {
         this.upperBound = upperBound;
         this.tempLowerBound = lowerBound;
         this.tempUpperBound = upperBound;
+        this.nerfModeController = nerfModeController;
 
         addRequirements(shooter);
     }
@@ -291,7 +298,7 @@ public class ShooterCalibrationCommand extends Command {
                     // Record result
                     ShotConfiguration config = new ShotConfiguration(
                             testDistances[currentDistanceIndex],
-                            ShooterConstants.kFixedHoodAngle,
+                            nerfModeController.getShooterConstants().kFixedHoodAngle(),
                             currentVelocity,
                             scored);
                     results.add(config);

@@ -7,6 +7,7 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.util.NerfModeController;
 import java.util.function.BooleanSupplier;
 import org.littletonrobotics.junction.Logger;
 
@@ -17,9 +18,11 @@ public class Extender extends SubsystemBase {
     private double manualOutputPercent = 0.0;
     private long inputRevision = 0;
     private long closedLoopRequestInputRevision = Long.MIN_VALUE;
+    private final NerfModeController nerfModeController;
 
-    public Extender(ExtenderIO io) {
+    public Extender(ExtenderIO io, NerfModeController nerfModeController) {
         this.io = io;
+        this.nerfModeController = nerfModeController;
     }
 
     @Override

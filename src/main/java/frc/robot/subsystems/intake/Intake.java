@@ -11,30 +11,31 @@ import frc.robot.subsystems.intake.extender.Extender;
 import frc.robot.subsystems.intake.extender.ExtenderIO;
 import frc.robot.subsystems.shooter.BaseShooter;
 import frc.robot.subsystems.shooter.BaseShooterIO;
+import frc.robot.util.NerfModeController;
 import java.util.function.BooleanSupplier;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 public class Intake {
     private final Extender extender;
     private final BaseShooter roller;
+    private final NerfModeController nerfModeController;
 
-    private final LoggedNetworkNumber tunableIntakeSpeed =
-            new LoggedNetworkNumber("Intake/Roller/IntakeSpeed", IntakeConstants.RollerConstants.kIntakeSpeed.in(RPM));
-    private final LoggedNetworkNumber tunableOuttakeSpeed = new LoggedNetworkNumber(
-            "Intake/Roller/OuttakeSpeed", IntakeConstants.RollerConstants.kOuttakeSpeed.in(RPM));
-    private final LoggedNetworkNumber tunableIdleSpeed =
-            new LoggedNetworkNumber("Intake/Roller/IdleSpeed", IntakeConstants.RollerConstants.kIdleSpeed.in(RPM));
+    private final LoggedNetworkNumber tunableIntakeSpeed;
+    private final LoggedNetworkNumber tunableOuttakeSpeed;
+    private final LoggedNetworkNumber tunableIdleSpeed;
 
-    public Intake(ExtenderIO extenderIO, BaseShooterIO rollerIO) {
-        this.extender = new Extender(extenderIO);
-        this.roller = new BaseShooter(rollerIO, IntakeConstants.RollerConstants.rollerConfig);
+    public Intake(ExtenderIO extenderIO, BaseShooterIO rollerIO, NerfModeController nerfModeController) {
+        this.nerfModeController = nerfModeController;
+        IntakeConstants constants = nerfModeController.getIntakeConstants();
+        this.extender = new Extender(extenderIO, nerfModeController);
+        this.roller = new BaseShooter(rollerIO, constants.rollerConfig(), nerfModeController.getShooterConstants());
 
-        //        this.roller.setDefaultCommand(this.roller
-        //                .spinUpFlywheels(() ->
-        //                        IntakeConstants.RollerConstants.kIdleEnabled ? RPM.of(tunableIdleSpeed.get()) :
-        // RPM.of(0.0))
-        //                .withName("RollerIdle"));
-
+        this.tunableIntakeSpeed = new LoggedNetworkNumber(
+                "Intake/Roller/IntakeSpeed", constants.rollerIntakeSpeed().in(RPM));
+        this.tunableOuttakeSpeed = new LoggedNetworkNumber(
+                "Intake/Roller/OuttakeSpeed", constants.rollerOuttakeSpeed().in(RPM));
+        this.tunableIdleSpeed = new LoggedNetworkNumber(
+                "Intake/Roller/IdleSpeed", constants.rollerIdleSpeed().in(RPM));
     }
 
     public Extender getExtender() {
@@ -123,18 +124,26 @@ public class Intake {
     }
 
     public RollerActivity getRollerPowerManagementActivity() {
-        return classifyRollerActivity(roller.getFlywheelSetpoint());
+         return classifyRollerActivity(                                                                                                                                                                     
+              roller.getFlywheelSetpoint(),                                                                                                                                                              
+              nerfModeController                                                                                                                                                                         
+                      .getIntakeConstants()                                                                                                                                                              
+                      .rollerPowerManagementActiveThreshold());    
     }
 
-    static RollerActivity classifyRollerActivity(AngularVelocity setpoint) {
-        double magnitudeRpm = Math.abs(setpoint.in(RPM));
-        if (magnitudeRpm <= 1.0) {
-            return RollerActivity.STOPPED;
-        }
-        return magnitudeRpm < IntakeConstants.RollerConstants.kPowerManagementActiveThreshold.in(RPM)
-                ? RollerActivity.IDLE
-                : RollerActivity.ACTIVE;
-    }
+  static RollerActivity classifyRollerActivity(                                                                                                                                                          
+          AngularVelocity setpoint, AngularVelocity activeThreshold) {                                                                                                                                   
+      double magnitudeRpm = Math.abs(setpoint.in(RPM));                                                                                                                                                  
+                                                                                                                                                                                                         
+      if (magnitudeRpm <= 1.0) {                                                                                                                                                                         
+          return RollerActivity.STOPPED;                                                                                                                                                                 
+      }                                                                                                                                                                                                  
+                                                                                                                                                                                                         
+      return magnitudeRpm < activeThreshold.in(RPM)                                                                                                                                                      
+              ? RollerActivity.IDLE                                                                                                                                                                      
+              : RollerActivity.ACTIVE;                                                                                                                                                                   
+  }                                                                                                                                                                                                      
+     
 
     public double getRollerSupplyCurrentAmps() {
         return roller.getSupplyCurrentAmps();
