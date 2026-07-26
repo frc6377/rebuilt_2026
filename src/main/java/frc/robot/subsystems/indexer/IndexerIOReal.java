@@ -16,6 +16,7 @@ import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 public class IndexerIOReal implements IndexerIO {
     private final TunableTalonFX indexerMotor;
     private final TalonFXCurrentConfigurator supplyConfigurator;
+    private final CurrentLimitsConfigs currentLimits;
     private final LoggedNetworkNumber indexerMotorOutput;
     private final LoggedNetworkNumber indexerMotorReverseOutput;
     private final TalonFXConfiguration indexerMotorConfig;
@@ -44,29 +45,21 @@ public class IndexerIOReal implements IndexerIO {
         indexerMotorConfig.MotorOutput.Inverted = IndexerConstants.MotorConfigurationConfigs.MotorInverted;
         indexerMotorConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
         indexerMotorConfig.Slot0 = indexerPIDConfigs;
-        indexerMotor.applyConfiguration(indexerMotorConfig.withCurrentLimits(new CurrentLimitsConfigs()
+        currentLimits = new CurrentLimitsConfigs()
                 .withStatorCurrentLimitEnable(true)
                 .withStatorCurrentLimit(IndexerConstants.MotorConfigurationConfigs.kStatorCurrentLimit)
                 .withSupplyCurrentLimitEnable(true)
-                .withSupplyCurrentLimit(IndexerConstants.MotorConfigurationConfigs.kSupplyCurrentLimit)));
+                .withSupplyCurrentLimit(IndexerConstants.MotorConfigurationConfigs.kSupplyCurrentLimit);
+        indexerMotor.applyConfiguration(indexerMotorConfig.withCurrentLimits(currentLimits));
 
         indexerMotorOutput = new LoggedNetworkNumber("Indexer/IndexerMotorOutput", IndexerConstants.kCollectorSpeed);
         indexerMotorReverseOutput = new LoggedNetworkNumber("Indexer/IndexerMotorReverseOutput", 0);
     }
 
-    private double lastSupplyCurrentLimit = Double.NaN;
-
     @Override
     public void setSupplyCurrentLimit(double amps) {
-        if (amps == lastSupplyCurrentLimit) {
-            return;
-        }
-        lastSupplyCurrentLimit = amps;
-        var limits = new CurrentLimitsConfigs();
-        indexerMotor.getConfigurator().refresh(limits);
-        limits.SupplyCurrentLimit = amps;
-        limits.SupplyCurrentLimitEnable = true;
-        supplyConfigurator.setConfig(limits);
+        currentLimits.SupplyCurrentLimit = amps;
+        supplyConfigurator.setConfig(currentLimits);
     }
 
     @Override

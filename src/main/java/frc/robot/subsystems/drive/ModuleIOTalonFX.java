@@ -37,6 +37,7 @@ public abstract class ModuleIOTalonFX implements ModuleIO {
     protected final TalonFX turnTalon;
     protected final CANcoder cancoder;
     private final TalonFXCurrentConfigurator driveSupplyConfigurator;
+    private final CurrentLimitsConfigs driveCurrentLimits;
 
     protected final VoltageOut voltageRequest = new VoltageOut(0);
     protected final PositionVoltage positionVoltageRequest = new PositionVoltage(0.0);
@@ -72,7 +73,6 @@ public abstract class ModuleIOTalonFX implements ModuleIO {
         driveTalon = new TalonFX(constants.DriveMotorId, new CANBus(TunerConstants.DrivetrainConstants.CANBusName));
         turnTalon = new TalonFX(constants.SteerMotorId, new CANBus(TunerConstants.DrivetrainConstants.CANBusName));
         cancoder = new CANcoder(constants.EncoderId, new CANBus(TunerConstants.DrivetrainConstants.CANBusName));
-        driveSupplyConfigurator = new TalonFXCurrentConfigurator(driveTalon.getConfigurator());
 
         // Configure drive motor
         var driveConfig = constants.DriveMotorInitialConfigs;
@@ -89,6 +89,8 @@ public abstract class ModuleIOTalonFX implements ModuleIO {
                 : InvertedValue.CounterClockwise_Positive;
         tryUntilOk(5, () -> driveTalon.getConfigurator().apply(driveConfig, 0.25));
         tryUntilOk(5, () -> driveTalon.setPosition(0.0, 0.25));
+        driveCurrentLimits = driveConfig.CurrentLimits;
+        driveSupplyConfigurator = new TalonFXCurrentConfigurator(driveTalon.getConfigurator());
 
         // Configure turn motor
         var turnConfig = new TalonFXConfiguration();
@@ -227,18 +229,9 @@ public abstract class ModuleIOTalonFX implements ModuleIO {
                 });
     }
 
-    private double lastDriveSupplyCurrentLimit = Double.NaN;
-
     @Override
     public void setDriveSupplyCurrentLimit(double amps) {
-        if (amps == lastDriveSupplyCurrentLimit) {
-            return;
-        }
-        lastDriveSupplyCurrentLimit = amps;
-        var limits = new CurrentLimitsConfigs();
-        driveTalon.getConfigurator().refresh(limits);
-        limits.SupplyCurrentLimit = amps;
-        limits.SupplyCurrentLimitEnable = true;
-        driveSupplyConfigurator.setConfig(limits);
+        driveCurrentLimits.SupplyCurrentLimit = amps;
+        driveSupplyConfigurator.setConfig(driveCurrentLimits);
     }
 }

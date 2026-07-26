@@ -30,6 +30,7 @@ public class BaseShooterIOKrakenX60 implements BaseShooterIO {
     private final TunableTalonFX flywheelFollower;
     private final TalonFXCurrentConfigurator leaderSupplyConfigurator;
     private final TalonFXCurrentConfigurator followerSupplyConfigurator;
+    private final CurrentLimitsConfigs supplyCurrentLimits;
 
     private final StatusSignal<AngularVelocity> flywheelVelocity;
     private final StatusSignal<Voltage> flywheelAppliedVolts;
@@ -95,11 +96,13 @@ public class BaseShooterIOKrakenX60 implements BaseShooterIO {
         }
 
         if ("Roller".equals(config.name())) {
+            supplyCurrentLimits = flywheelConfig.CurrentLimits;
             leaderSupplyConfigurator = new TalonFXCurrentConfigurator(flywheelMotor.getConfigurator());
             followerSupplyConfigurator = flywheelFollower != null
                     ? new TalonFXCurrentConfigurator(flywheelFollower.getConfigurator())
                     : null;
         } else {
+            supplyCurrentLimits = null;
             leaderSupplyConfigurator = null;
             followerSupplyConfigurator = null;
         }
@@ -193,25 +196,15 @@ public class BaseShooterIOKrakenX60 implements BaseShooterIO {
         }
     }
 
-    private double lastSupplyCurrentLimit = Double.NaN;
-
     @Override
     public void setSupplyCurrentLimit(double amps) {
-        if (leaderSupplyConfigurator == null || amps == lastSupplyCurrentLimit) {
+        if (leaderSupplyConfigurator == null || supplyCurrentLimits == null) {
             return;
         }
-        lastSupplyCurrentLimit = amps;
-        queueSupplyLimit(flywheelMotor, leaderSupplyConfigurator, amps);
-        if (flywheelFollower != null && followerSupplyConfigurator != null) {
-            queueSupplyLimit(flywheelFollower, followerSupplyConfigurator, amps);
+        supplyCurrentLimits.SupplyCurrentLimit = amps;
+        leaderSupplyConfigurator.setConfig(supplyCurrentLimits);
+        if (followerSupplyConfigurator != null) {
+            followerSupplyConfigurator.setConfig(supplyCurrentLimits);
         }
-    }
-
-    private static void queueSupplyLimit(TunableTalonFX motor, TalonFXCurrentConfigurator configurator, double amps) {
-        var limits = new CurrentLimitsConfigs();
-        motor.getConfigurator().refresh(limits);
-        limits.SupplyCurrentLimit = amps;
-        limits.SupplyCurrentLimitEnable = true;
-        configurator.setConfig(limits);
     }
 }

@@ -22,6 +22,7 @@ public class ExtenderIOReal implements ExtenderIO {
 
     private final TunableTalonFX extenderMotor;
     private final TalonFXCurrentConfigurator supplyConfigurator;
+    private final CurrentLimitsConfigs currentLimits;
     private final DutyCycleEncoder extenderEncoder;
     private final TunablePIDController extenderPid;
     private boolean pidEnabled = true;
@@ -35,17 +36,18 @@ public class ExtenderIOReal implements ExtenderIO {
 
     public ExtenderIOReal() {
 
+        currentLimits = new CurrentLimitsConfigs()
+                .withStatorCurrentLimitEnable(true)
+                .withStatorCurrentLimit(ExtenderConstants.MotorConfig.kStatorCurrentLimitExtender)
+                .withSupplyCurrentLimitEnable(true)
+                .withSupplyCurrentLimit(ExtenderConstants.MotorConfig.kSupplyCurrentLimitExtender);
         var config = new TalonFXConfiguration()
                 .withMotorOutput(new MotorOutputConfigs()
                         .withInverted(ExtenderConstants.MotorConfig.kInverted)
                         .withNeutralMode(ExtenderConstants.MotorConfig.kNeutralMode))
                 .withClosedLoopRamps(new ClosedLoopRampsConfigs()
                         .withVoltageClosedLoopRampPeriod(ExtenderConstants.MotorConfig.kRampPeriod))
-                .withCurrentLimits(new CurrentLimitsConfigs()
-                        .withStatorCurrentLimitEnable(true)
-                        .withStatorCurrentLimit(ExtenderConstants.MotorConfig.kStatorCurrentLimitExtender)
-                        .withSupplyCurrentLimitEnable(true)
-                        .withSupplyCurrentLimit(ExtenderConstants.MotorConfig.kSupplyCurrentLimitExtender));
+                .withCurrentLimits(currentLimits);
 
         extenderMotor = new TunableTalonFX(Constants.CANIDs.MotorIDs.kExtenderMotorID, "rio", "Extender");
         extenderMotor.getConfigurator().apply(config);
@@ -250,18 +252,9 @@ public class ExtenderIOReal implements ExtenderIO {
         }
     }
 
-    private double lastSupplyCurrentLimit = Double.NaN;
-
     @Override
     public void setSupplyCurrentLimit(double amps) {
-        if (amps == lastSupplyCurrentLimit) {
-            return;
-        }
-        lastSupplyCurrentLimit = amps;
-        var limits = new CurrentLimitsConfigs();
-        extenderMotor.getConfigurator().refresh(limits);
-        limits.SupplyCurrentLimit = amps;
-        limits.SupplyCurrentLimitEnable = true;
-        supplyConfigurator.setConfig(limits);
+        currentLimits.SupplyCurrentLimit = amps;
+        supplyConfigurator.setConfig(currentLimits);
     }
 }
