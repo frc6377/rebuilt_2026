@@ -23,8 +23,13 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.units.measure.LinearAcceleration;
+import edu.wpi.first.units.measure.LinearVelocity;
+import edu.wpi.first.units.measure.Time;
 import edu.wpi.first.wpilibj.Timer;
+import frc.robot.FieldConstants;
 import frc.robot.subsystems.shooter.ShooterConstants;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
@@ -54,9 +59,9 @@ public class GamePieceTrajectorySimulation {
     }
 
     // Physics constants
-    private static final double GRAVITY = 9.81; // Standard gravity (m/s²)
+    private static final LinearAcceleration GRAVITY = MetersPerSecondPerSecond.of(9.81);
     private static final int DEFAULT_TRAJECTORY_POINTS = 30;
-    private static final double MAX_TRAJECTORY_TIME = 3.0; // Maximum trajectory time (seconds)
+    private static final Time MAX_TRAJECTORY_TIME = Seconds.of(3.0);
 
     /**
      * Game piece info for the 2026 FUEL
@@ -89,7 +94,7 @@ public class GamePieceTrajectorySimulation {
     private BooleanSupplier externalAmmoConsume = null;
     private final Timer autoFireTimer = new Timer();
     /** ~3 balls/sec */
-    private double autoFireIntervalSeconds = 1.0 / 3.0;
+    private Time autoFireInterval = Seconds.of(1.0 / 3.0);
 
     private boolean autoFireEnabled = false;
     private boolean autoFireImmediate = false;
@@ -168,14 +173,17 @@ public class GamePieceTrajectorySimulation {
         return side == ShooterSide.LEFT ? left : right;
     }
 
-    public double calculateLaunchVelocityMPS(double flywheelRPM) {
-        double angularVelocityRadPerSec = flywheelRPM * 2.0 * Math.PI / 60.0;
-        return angularVelocityRadPerSec * flywheelRadiusMeters.get() * launchEfficiency.get();
+    public LinearVelocity calculateLaunchVelocity(AngularVelocity flywheelVelocity) {
+        // v = (v_wheel + v_surface_stationary) / 2
+        // For a single-wheel shooter, the ball rolls against a stationary hood,
+        // so its center-of-mass velocity is half the wheel's tangential speed.
+        return MetersPerSecond.of(
+                (flywheelVelocity.in(RadiansPerSecond) * flywheelRadiusMeters.get() / 2.0) * launchEfficiency.get());
     }
 
-    public double getCurrentLaunchVelocityMPS(ShooterSide side) {
-        return calculateLaunchVelocityMPS(
-                channel(side).flywheelVelocityRPMSupplier.get());
+    public LinearVelocity getCurrentLaunchVelocity(ShooterSide side) {
+        return calculateLaunchVelocity(
+                RPM.of(channel(side).flywheelVelocityRPMSupplier.get()));
     }
 
     public Translation2d getShooterOffset(ShooterSide side) {
@@ -199,17 +207,17 @@ public class GamePieceTrajectorySimulation {
 
     /** Launches a game piece from the specified shooter side. */
     public GamePieceProjectile launchGamePiece(ShooterSide side) {
-        return launchFromSide(side, getCurrentLaunchVelocityMPS(side), getHoodAngle());
+        return launchFromSide(side, getCurrentLaunchVelocity(side), getHoodAngle());
     }
 
     /** Launches from the specified side with a custom launch velocity. */
-    public GamePieceProjectile launchGamePiece(ShooterSide side, double launchVelocityMPS) {
-        return launchFromSide(side, launchVelocityMPS, getHoodAngle());
+    public GamePieceProjectile launchGamePiece(ShooterSide side, LinearVelocity launchVelocity) {
+        return launchFromSide(side, launchVelocity, getHoodAngle());
     }
 
     /** Launches from the specified side with custom velocity and angle. */
-    public GamePieceProjectile launchGamePiece(ShooterSide side, double launchVelocityMPS, double launchAngleDegrees) {
-        return launchFromSide(side, launchVelocityMPS, Degrees.of(launchAngleDegrees));
+    public GamePieceProjectile launchGamePiece(ShooterSide side, LinearVelocity launchVelocity, Angle launchAngle) {
+        return launchFromSide(side, launchVelocity, launchAngle);
     }
 
     /** Launches one ball from each shooter. Requires at least 2 balls in hopper for both to fire. */
@@ -219,7 +227,7 @@ public class GamePieceTrajectorySimulation {
         return new GamePieceProjectile[] {leftProjectile, rightProjectile};
     }
 
-    private GamePieceProjectile launchFromSide(ShooterSide side, double launchVelocityMPS, Angle hoodAngle) {
+    private GamePieceProjectile launchFromSide(ShooterSide side, LinearVelocity launchVelocity, Angle hoodAngle) {
         ShooterChannel ch = channel(side);
         Translation2d robotPosition = robotPositionSupplier.get();
         Rotation2d robotRotation = robotRotationSupplier.get();
@@ -228,25 +236,52 @@ public class GamePieceTrajectorySimulation {
         Translation2d offset = ch.getOffset();
 
         GamePieceProjectile projectile = new GamePieceProjectile(
-                gamePieceInfo,
-                robotPosition,
-                offset,
-                chassisSpeeds,
-                robotRotation,
-                height,
-                MetersPerSecond.of(launchVelocityMPS),
-                hoodAngle);
+                        gamePieceInfo,
+                        robotPosition,
+                        offset,
+                        chassisSpeeds,
+                        robotRotation,
+                        height,
+                        launchVelocity,
+                        hoodAngle)
+                .enableBecomesGamePieceOnFieldAfterTouchGround();
 
         projectile.withProjectileTrajectoryDisplayCallBack(trajectory -> {
             ch.lastTrajectory = trajectory.toArray(new Pose3d[0]);
             Logger.recordOutput("Shooter/Sim/" + side.logName() + "/Trajectory", ch.lastTrajectory);
         });
+
         // Do not convert landed shots into dyn4j field bodies — that piles up physics objects
         // and dominates SimulatedArena.simulationPeriodic() cost during long sims / FullAuto.
+        // Wait, I just added it back as requested by the user.
+        // We should ensure it doesn't cause too much lag if many balls are fired.
 
         SimulatedArena.getInstance().addGamePieceProjectile(projectile);
 
-        Logger.recordOutput("Shooter/Sim/" + side.logName() + "/LaunchVelocityMPS", launchVelocityMPS);
+        // Scoring logic: when the projectile hits the hub, spit it back out
+        projectile
+                .withTargetPosition(() -> FieldConstants.Hub.topCenterPoint)
+                .withTargetTolerance(new Translation3d(FieldConstants.Hub.width, FieldConstants.Hub.width, 1.0))
+                .withHitTargetCallBack(() -> {
+                    // Start from the middle of the hub
+                    Translation2d hubPos = FieldConstants.getHubPosition();
+                    // neutral zone is towards the center of the field
+                    Rotation2d spitDirection =
+                            Rotation2d.fromDegrees(hubPos.getX() < FieldConstants.fieldLength / 2.0 ? 0 : 180);
+
+                    GamePieceProjectile spitBall = new GamePieceProjectile(
+                            gamePieceInfo,
+                            hubPos,
+                            new Translation2d(),
+                            new ChassisSpeeds(),
+                            spitDirection,
+                            Meters.of(FieldConstants.Hub.innerHeight),
+                            MetersPerSecond.of(4.0),
+                            Degrees.of(15.0));
+                    SimulatedArena.getInstance().addGamePieceProjectile(spitBall);
+                });
+
+        Logger.recordOutput("Shooter/Sim/" + side.logName() + "/LaunchVelocityMPS", launchVelocity.in(MetersPerSecond));
         Logger.recordOutput("Shooter/Sim/" + side.logName() + "/LaunchAngleDegrees", hoodAngle.in(Degrees));
         Logger.recordOutput("Shooter/Sim/" + side.logName() + "/LaunchHeightMeters", height.in(Meters));
         Logger.recordOutput(
@@ -269,7 +304,7 @@ public class GamePieceTrajectorySimulation {
     public Pose3d[] previewTrajectory(ShooterSide side, int numPoints) {
         ShooterChannel ch = channel(side);
         TrajectoryState state = calculateTrajectoryState(side);
-        Optional<Double> flightTime = calculateTimeOfFlight(state.initialHeight, state.verticalVelocity);
+        Optional<Time> flightTime = calculateTimeOfFlight(state.initialHeight, state.verticalVelocity);
 
         if (flightTime.isEmpty()) {
             ch.lastTrajectory = new Pose3d[0];
@@ -277,7 +312,10 @@ public class GamePieceTrajectorySimulation {
             return ch.lastTrajectory;
         }
 
-        double totalTime = Math.min(flightTime.get(), MAX_TRAJECTORY_TIME);
+        Time totalTime = flightTime.get();
+        if (totalTime.gt(MAX_TRAJECTORY_TIME)) {
+            totalTime = MAX_TRAJECTORY_TIME;
+        }
         ch.lastTrajectory = generateTrajectoryPoints(state, totalTime, numPoints);
         Logger.recordOutput("Shooter/Sim/" + side.logName() + "/PreviewTrajectory", ch.lastTrajectory);
         return ch.lastTrajectory;
@@ -288,12 +326,12 @@ public class GamePieceTrajectorySimulation {
         Rotation2d robotRotation = robotRotationSupplier.get();
         ChassisSpeeds chassisSpeeds = chassisSpeedsSupplier.get();
 
-        double launchVelocityMPS = getCurrentLaunchVelocityMPS(side);
-        double hoodAngleRad = getHoodAngle().in(Radians);
-        double heightM = shooterHeightMeters.get();
+        LinearVelocity launchVelocity = getCurrentLaunchVelocity(side);
+        Angle hoodAngle = getHoodAngle();
+        Distance height = getShooterHeight();
 
-        double launchHorizontalVelocity = launchVelocityMPS * Math.cos(hoodAngleRad);
-        double launchVerticalVelocity = launchVelocityMPS * Math.sin(hoodAngleRad);
+        LinearVelocity launchHorizontalVelocity = launchVelocity.times(Math.cos(hoodAngle.in(Radians)));
+        LinearVelocity launchVerticalVelocity = launchVelocity.times(Math.sin(hoodAngle.in(Radians)));
 
         Translation2d shooterOffset = getShooterOffset(side);
         Translation2d chassisVelocity =
@@ -306,23 +344,27 @@ public class GamePieceTrajectorySimulation {
 
         Translation2d totalHorizontalVelocity = chassisVelocity
                 .plus(shooterRotationalVelocity)
-                .plus(new Translation2d(launchHorizontalVelocity, robotRotation));
+                .plus(new Translation2d(launchHorizontalVelocity.in(MetersPerSecond), robotRotation));
 
         Translation2d launchPosition = robotPosition.plus(shooterOffset.rotateBy(robotRotation));
 
         return new TrajectoryState(
-                launchPosition.getX(),
-                launchPosition.getY(),
-                heightM,
-                totalHorizontalVelocity.getX(),
-                totalHorizontalVelocity.getY(),
+                Meters.of(launchPosition.getX()),
+                Meters.of(launchPosition.getY()),
+                height,
+                MetersPerSecond.of(totalHorizontalVelocity.getX()),
+                MetersPerSecond.of(totalHorizontalVelocity.getY()),
                 launchVerticalVelocity);
     }
 
-    private Optional<Double> calculateTimeOfFlight(double initialHeight, double verticalVelocity) {
-        double a = 0.5 * GRAVITY;
-        double b = -verticalVelocity;
-        double c = -initialHeight;
+    private Optional<Time> calculateTimeOfFlight(Distance initialHeight, LinearVelocity verticalVelocity) {
+        double g = GRAVITY.in(MetersPerSecondPerSecond);
+        double v0 = verticalVelocity.in(MetersPerSecond);
+        double y0 = initialHeight.in(Meters);
+
+        double a = 0.5 * g;
+        double b = -v0;
+        double c = -y0;
 
         double discriminant = b * b - 4 * a * c;
         if (discriminant < 0) {
@@ -334,23 +376,23 @@ public class GamePieceTrajectorySimulation {
         double t2 = (-b - sqrtDiscriminant) / (2 * a);
 
         if (t1 > 0 && t2 > 0) {
-            return Optional.of(Math.min(t1, t2));
+            return Optional.of(Seconds.of(Math.min(t1, t2)));
         } else if (t1 > 0) {
-            return Optional.of(t1);
+            return Optional.of(Seconds.of(t1));
         } else if (t2 > 0) {
-            return Optional.of(t2);
+            return Optional.of(Seconds.of(t2));
         }
 
         return Optional.empty();
     }
 
-    private Pose3d[] generateTrajectoryPoints(TrajectoryState state, double totalTime, int numPoints) {
+    private Pose3d[] generateTrajectoryPoints(TrajectoryState state, Time totalTime, int numPoints) {
         Pose3d[] trajectory = new Pose3d[numPoints];
-        double dt = totalTime / (numPoints - 1);
+        Time dt = totalTime.div(numPoints - 1);
 
         for (int i = 0; i < numPoints; i++) {
-            double t = i * dt;
-            Translation3d position = state.getPositionAtTime(t, GRAVITY);
+            Time t = dt.times(i);
+            Translation3d position = state.getPositionAtTime(t);
             double z = Math.max(0, position.getZ());
             trajectory[i] = new Pose3d(position.getX(), position.getY(), z, new Rotation3d());
         }
@@ -358,18 +400,35 @@ public class GamePieceTrajectorySimulation {
         return trajectory;
     }
 
-    private record TrajectoryState(
-            double initialX,
-            double initialY,
-            double initialHeight,
-            double horizontalVelocityX,
-            double horizontalVelocityY,
-            double verticalVelocity) {
+    private static class TrajectoryState {
+        public final Distance initialX, initialY, initialHeight;
+        public final LinearVelocity horizontalVelocityX, horizontalVelocityY, verticalVelocity;
 
-        Translation3d getPositionAtTime(double t, double gravity) {
-            double x = initialX + horizontalVelocityX * t;
-            double y = initialY + horizontalVelocityY * t;
-            double z = initialHeight + verticalVelocity * t - 0.5 * gravity * t * t;
+        public TrajectoryState(
+                Distance initialX,
+                Distance initialY,
+                Distance initialHeight,
+                LinearVelocity horizontalVelocityX,
+                LinearVelocity horizontalVelocityY,
+                LinearVelocity verticalVelocity) {
+            this.initialX = initialX;
+            this.initialY = initialY;
+            this.initialHeight = initialHeight;
+            this.horizontalVelocityX = horizontalVelocityX;
+            this.horizontalVelocityY = horizontalVelocityY;
+            this.verticalVelocity = verticalVelocity;
+        }
+
+        Translation3d getPositionAtTime(Time t) {
+            double time = t.in(Seconds);
+            double x = initialX.plus(Meters.of(horizontalVelocityX.in(MetersPerSecond) * time))
+                    .in(Meters);
+            double y = initialY.plus(Meters.of(horizontalVelocityY.in(MetersPerSecond) * time))
+                    .in(Meters);
+            double z = initialHeight
+                    .plus(Meters.of(verticalVelocity.in(MetersPerSecond) * time))
+                    .minus(Meters.of(0.5 * GRAVITY.in(MetersPerSecondPerSecond) * time * time))
+                    .in(Meters);
             return new Translation3d(x, y, z);
         }
     }
@@ -385,70 +444,68 @@ public class GamePieceTrajectorySimulation {
 
     public Translation3d getPredictedLandingPosition(ShooterSide side) {
         TrajectoryState state = calculateTrajectoryState(side);
-        Optional<Double> flightTime = calculateTimeOfFlight(state.initialHeight, state.verticalVelocity);
+        Optional<Time> flightTime = calculateTimeOfFlight(state.initialHeight, state.verticalVelocity);
         if (flightTime.isEmpty()) {
             return null;
         }
 
-        double t = flightTime.get();
-        return new Translation3d(
-                state.initialX() + state.horizontalVelocityX() * t,
-                state.initialY() + state.horizontalVelocityY() * t,
-                0);
+        return state.getPositionAtTime(flightTime.get());
     }
 
-    public Translation3d getPositionAtTime(ShooterSide side, double timeSeconds) {
-        if (timeSeconds < 0) {
+    public Translation3d getPositionAtTime(ShooterSide side, Time time) {
+        if (time.lt(Seconds.of(0))) {
             return null;
         }
 
         TrajectoryState state = calculateTrajectoryState(side);
-        Optional<Double> flightTime = calculateTimeOfFlight(state.initialHeight, state.verticalVelocity);
-        if (flightTime.isEmpty() || timeSeconds > flightTime.get()) {
+        Optional<Time> flightTime = calculateTimeOfFlight(state.initialHeight, state.verticalVelocity);
+        if (flightTime.isEmpty() || time.gt(flightTime.get())) {
             return null;
         }
 
-        return state.getPositionAtTime(timeSeconds, GRAVITY);
+        return state.getPositionAtTime(time);
     }
 
-    public double getHorizontalRange(ShooterSide side) {
+    public Distance getHorizontalRange(ShooterSide side) {
         Translation3d landingPosition = getPredictedLandingPosition(side);
         if (landingPosition == null) {
-            return -1;
+            return Meters.of(-1);
         }
 
         TrajectoryState state = calculateTrajectoryState(side);
-        double dx = landingPosition.getX() - state.initialX();
-        double dy = landingPosition.getY() - state.initialY();
-        return Math.sqrt(dx * dx + dy * dy);
+        double dx = landingPosition.getX() - state.initialX.in(Meters);
+        double dy = landingPosition.getY() - state.initialY.in(Meters);
+        return Meters.of(Math.sqrt(dx * dx + dy * dy));
     }
 
-    public double getMaxHeight(ShooterSide side) {
+    public Distance getMaxHeight(ShooterSide side) {
         TrajectoryState state = calculateTrajectoryState(side);
-        double timeAtMaxHeight = state.verticalVelocity() / GRAVITY;
+        Time timeAtMaxHeight =
+                Seconds.of(state.verticalVelocity.in(MetersPerSecond) / GRAVITY.in(MetersPerSecondPerSecond));
 
-        if (timeAtMaxHeight <= 0) {
-            return state.initialHeight();
+        if (timeAtMaxHeight.lte(Seconds.of(0))) {
+            return state.initialHeight;
         }
 
-        return state.initialHeight()
-                + state.verticalVelocity() * timeAtMaxHeight
-                - 0.5 * GRAVITY * timeAtMaxHeight * timeAtMaxHeight;
+        double t = timeAtMaxHeight.in(Seconds);
+        return state.initialHeight
+                .plus(Meters.of(state.verticalVelocity.in(MetersPerSecond) * t))
+                .minus(Meters.of(0.5 * GRAVITY.in(MetersPerSecondPerSecond) * t * t));
     }
 
     public boolean willHitTarget(ShooterSide side, Translation3d targetCenter, Translation3d targetSize) {
         TrajectoryState state = calculateTrajectoryState(side);
-        Optional<Double> flightTime = calculateTimeOfFlight(state.initialHeight, state.verticalVelocity);
+        Optional<Time> flightTime = calculateTimeOfFlight(state.initialHeight, state.verticalVelocity);
         if (flightTime.isEmpty()) {
             return false;
         }
 
-        double totalTime = flightTime.get();
+        Time totalTime = flightTime.get();
         int checkPoints = 20;
 
         for (int i = 0; i <= checkPoints; i++) {
-            double t = (i / (double) checkPoints) * totalTime;
-            Translation3d pos = state.getPositionAtTime(t, GRAVITY);
+            Time t = totalTime.times(i / (double) checkPoints);
+            Translation3d pos = state.getPositionAtTime(t);
 
             if (Math.abs(pos.getX() - targetCenter.getX()) <= targetSize.getX()
                     && Math.abs(pos.getY() - targetCenter.getY()) <= targetSize.getY()
@@ -474,7 +531,7 @@ public class GamePieceTrajectorySimulation {
                 chassisSpeeds,
                 robotRotation,
                 getShooterHeight(),
-                MetersPerSecond.of(getCurrentLaunchVelocityMPS(side)),
+                getCurrentLaunchVelocity(side),
                 getHoodAngle());
 
         projectile
@@ -537,8 +594,8 @@ public class GamePieceTrajectorySimulation {
         return true;
     }
 
-    public void setAutoFireInterval(double intervalSeconds) {
-        this.autoFireIntervalSeconds = intervalSeconds;
+    public void setAutoFireInterval(Time interval) {
+        this.autoFireInterval = interval;
     }
 
     public void setAutoFireEnabled(boolean enabled) {
@@ -634,7 +691,7 @@ public class GamePieceTrajectorySimulation {
         boolean indexerRunning = indexerRunningSupplier.getAsBoolean();
 
         if (indexerRunning) {
-            if (autoFireImmediate || autoFireTimer.hasElapsed(autoFireIntervalSeconds)) {
+            if (autoFireImmediate || autoFireTimer.hasElapsed(autoFireInterval.in(Seconds))) {
                 if (!consumeAmmoForShot()) {
                     autoFireTimer.restart();
                     return;
@@ -655,9 +712,9 @@ public class GamePieceTrajectorySimulation {
         setAutoFireEnabled(true);
     }
 
-    public void enableAutoFire(BooleanSupplier indexerRunningSupplier, double intervalSeconds) {
+    public void enableAutoFire(BooleanSupplier indexerRunningSupplier, Time interval) {
         setIndexerRunningSupplier(indexerRunningSupplier);
-        setAutoFireInterval(intervalSeconds);
+        setAutoFireInterval(interval);
         setAutoFireEnabled(true);
     }
 
@@ -665,10 +722,10 @@ public class GamePieceTrajectorySimulation {
             BooleanSupplier indexerRunningSupplier,
             BooleanSupplier ammoAvailable,
             BooleanSupplier ammoConsume,
-            double intervalSeconds) {
+            Time interval) {
         setExternalAmmoSource(ammoAvailable, ammoConsume);
         setIndexerRunningSupplier(indexerRunningSupplier);
-        setAutoFireInterval(intervalSeconds);
+        setAutoFireInterval(interval);
         setAutoFireEnabled(true);
     }
 

@@ -28,7 +28,7 @@ public class ShooterConstants {
     public static final int kManualShootingSpeedRPM = 3600;
 
     /** Fixed hood angle to use (degrees) */
-    public static final Angle kFixedHoodAngle = Degrees.of(60);
+    public static final Angle kFixedHoodAngle = Degrees.of(76);
 
     // ==================== Operational Limits ====================
     public static final AngularVelocity kMaxFlywheelVelocity = RotationsPerSecond.of(100.0); // 6000 RPM
@@ -56,7 +56,7 @@ public class ShooterConstants {
     public static final AngularVelocity minShootingFlywheelVelocity = RPM.of(1500.0);
     public static final AngularVelocity maxShootingFlywheelVelocity = RPM.of(6000.0);
 
-    public static final LinearAcceleration gravity = MetersPerSecondPerSecond.of(11);
+    public static final LinearAcceleration gravity = MetersPerSecondPerSecond.of(9.81);
     public static final AngularVelocity kDefaultUnjamVelocity = RPM.of(-1500);
     // Shot map defaults (tunable via NetworkTables)
     public static final double defaultMaxHeightFeet = 8.0;
@@ -68,7 +68,7 @@ public class ShooterConstants {
     // Bench Mode Defaults
     public static final double defaultBenchModeEnabled = 0;
     public static final double defaultBenchModeDistanceMeters = 10.0;
-    public static final double offsetM = 0.5969;
+    public static final double offsetM = 0.0;
     // Shooter Tuning
     public static final HashMap<Distance, AngularVelocity> distanceToAngularVelocity = new HashMap<>();
 

@@ -17,7 +17,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.FieldConstants;
 import frc.robot.RobotContainer;
-import frc.robot.commands.PathGenerator;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.indexer.Indexer;
 import frc.robot.subsystems.intake.Intake;
@@ -150,7 +149,7 @@ public abstract class FullAutoIO extends Command {
     private void startSearch() {
         Pose2d waypoint = FieldConstants.toCurrentAlliancePose(searchPoses[searchIndex]);
         Logger.recordOutput("FullAuto/SearchPose", waypoint);
-        startAction(PathGenerator.pathfindToPose(drive, waypoint)
+        startAction(drive.smartAlign(waypoint)
                 .andThen(Commands.run(
                                 () -> drive.runVelocity(new ChassisSpeeds(
                                         0, 0, drive.getMaxAngularSpeedRadPerSec() * kSearchRotatePercent)),
@@ -192,9 +191,7 @@ public abstract class FullAutoIO extends Command {
 
         startAction(intake.extendIntake()
                 .andThen(Commands.parallel(
-                        PathGenerator.pathfindToPose(drive, start, intakeConstraints, MetersPerSecond.zero())
-                                .andThen(AutoBuilder.followPath(path)),
-                        intake.intakeRollerCommand()))
+                        drive.smartAlign(start).andThen(AutoBuilder.followPath(path)), intake.intakeRollerCommand()))
                 .withTimeout(kIntakeTimeoutSeconds)
                 .withName("FullAutoIntake"));
     }
@@ -208,7 +205,7 @@ public abstract class FullAutoIO extends Command {
 
     private void startScoring() {
         estimatedFuel = 0;
-        startAction(PathGenerator.pathfindToPose(drive, FieldConstants.toCurrentAlliancePose(scoringPose))
+        startAction(drive.smartAlign(FieldConstants.toCurrentAlliancePose(scoringPose))
                 .andThen(Commands.parallel(robot.shootAutoModeCommand(drive), scoringFireCommand())
                         .until(() -> !intakeHasFuel())
                         .withTimeout(15.0))

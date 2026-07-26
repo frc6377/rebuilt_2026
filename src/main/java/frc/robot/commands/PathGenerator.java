@@ -15,6 +15,7 @@ import com.pathplanner.lib.path.PathPoint;
 import com.pathplanner.lib.path.RotationTarget;
 import com.pathplanner.lib.pathfinding.Pathfinding;
 import com.pathplanner.lib.util.FlippingUtil;
+import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -44,7 +45,7 @@ import org.locationtech.jts.index.strtree.STRtree;
 public class PathGenerator {
     private static final PathConstraints kConstraints = new PathConstraints(
             MetersPerSecond.of(4.0),
-            MetersPerSecondPerSecond.of(0.75),
+            MetersPerSecondPerSecond.of(1.5),
             RotationsPerSecond.of(4.0),
             RotationsPerSecondPerSecond.of(1.5));
     private static final double kTimeout = 3.0;
@@ -78,6 +79,7 @@ public class PathGenerator {
     private static double navNodeSizeM = 0.2;
     private static boolean navGridLoaded;
     private static final List<ActionZone> actionZones = new ArrayList<>();
+    private static final List<Pair<Translation2d, Translation2d>> hubObstacles = new ArrayList<>();
     private static Supplier<Pose2d> poseSupplier = AutoBuilder::getCurrentPose;
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -194,12 +196,37 @@ public class PathGenerator {
     public static void registerTrenchZones() {
         ensureNavGrid();
         double hubX = FieldConstants.LinesVertical.hubCenter;
-        double half = FieldConstants.LeftTrench.depth / 2.0;
+        double thicknessBuffer = 0.2; // Increase "thickness" (X-axis) of the hub obstacle
+        double half = (FieldConstants.LeftTrench.depth / 2.0) + 0.3; // Added 0.3m margin
+        double trenchMargin = 0.1; // Added 0.2m margin to trigger takeover earlier
+
+        // Define dynamic obstacles to "thicken" the hub
+        hubObstacles.clear();
+
+        // Alliance hub buffer
+        hubObstacles.add(new Pair<>(
+                new Translation2d(
+                        hubX - (FieldConstants.Hub.width / 2.0) - thicknessBuffer,
+                        (FieldConstants.fieldWidth / 2.0) - (FieldConstants.Hub.width / 2.0)),
+                new Translation2d(
+                        hubX + (FieldConstants.Hub.width / 2.0) + thicknessBuffer,
+                        (FieldConstants.fieldWidth / 2.0) + (FieldConstants.Hub.width / 2.0))));
+
+        // Opposite hub buffer
+        double oppHubX = FieldConstants.LinesVertical.oppHubCenter;
+        hubObstacles.add(new Pair<>(
+                new Translation2d(
+                        oppHubX - (FieldConstants.Hub.width / 2.0) - thicknessBuffer,
+                        (FieldConstants.fieldWidth / 2.0) - (FieldConstants.Hub.width / 2.0)),
+                new Translation2d(
+                        oppHubX + (FieldConstants.Hub.width / 2.0) + thicknessBuffer,
+                        (FieldConstants.fieldWidth / 2.0) + (FieldConstants.Hub.width / 2.0))));
+
         addActionZone(new ActionZone(
                         "LeftTrench",
                         new Pose2d(
                                 hubX - half,
-                                FieldConstants.fieldWidth - FieldConstants.LeftTrench.width,
+                                FieldConstants.fieldWidth - FieldConstants.LeftTrench.width - trenchMargin,
                                 Rotation2d.kZero),
                         new Pose2d(hubX + half, FieldConstants.fieldWidth, Rotation2d.kZero))
                 // Filenames must match deploy/pathplanner/paths exactly (one path per heading).
@@ -212,7 +239,7 @@ public class PathGenerator {
         addActionZone(new ActionZone(
                         "RightTrench",
                         new Pose2d(hubX - half, 0, Rotation2d.kZero),
-                        new Pose2d(hubX + half, FieldConstants.RightTrench.width, Rotation2d.kZero))
+                        new Pose2d(hubX + half, FieldConstants.RightTrench.width + trenchMargin, Rotation2d.kZero))
                 .withTakeover(
                         "Straight Trench R - 1",
                         "Straight Trench R - 2",
@@ -222,23 +249,23 @@ public class PathGenerator {
     }
 
     public static Command pathfindToPose(Drive drive, Pose2d target) {
-        return pathfindToPose(drive, target, kConstraints, MetersPerSecond.zero());
+        return drive.smartAlign(target);
     }
 
     /** AD* pathfind with trench takeover splicing when the path crosses an action zone. */
     public static Command pathfindToPose(
             Drive drive, Pose2d target, PathConstraints constraints, LinearVelocity goalEndVelocity) {
-        return pathfind(drive, target, constraints, goalEndVelocity, true).withName("PathfindToPose");
+        return drive.smartAlign(target);
     }
 
     public static Command pathfindAdStar(Drive drive, Pose2d target) {
-        return pathfindAdStar(drive, target, kConstraints, MetersPerSecond.zero());
+        return drive.smartAlign(target);
     }
 
     /** AD* pathfind only — follows the raw Pathfinding path with no takeover splice. */
     public static Command pathfindAdStar(
             Drive drive, Pose2d target, PathConstraints constraints, LinearVelocity goalEndVelocity) {
-        return pathfind(drive, target, constraints, goalEndVelocity, false).withName("PathfindAdStar");
+        return drive.smartAlign(target);
     }
 
     private static Command pathfind(
@@ -262,6 +289,7 @@ public class PathGenerator {
         return Commands.sequence(
                 Commands.runOnce(() -> {
                     Pathfinding.ensureInitialized();
+                    Pathfinding.setDynamicObstacles(hubObstacles, currentPose().getTranslation());
                     Pathfinding.getCurrentPath(constraints, end);
                     Pose2d start = currentPose();
                     Pathfinding.setStartPosition(start.getTranslation());
@@ -394,6 +422,7 @@ public class PathGenerator {
         }
 
         Pathfinding.ensureInitialized();
+        Pathfinding.setDynamicObstacles(hubObstacles, from);
         GoalEndState goalEnd = new GoalEndState(0.0, toRot);
         Pathfinding.setStartPosition(from);
         Pathfinding.setGoalPosition(to);

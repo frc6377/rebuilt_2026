@@ -33,6 +33,7 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
@@ -45,6 +46,7 @@ public class DriveCommands {
     private static final double FF_RAMP_RATE = 0.1; // Volts/Sec
     private static final double WHEEL_RADIUS_MAX_VELOCITY = 0.25; // Rad/Sec
     private static final double WHEEL_RADIUS_RAMP_RATE = 0.05; // Rad/Sec^2
+    private static final double WHEEL_RADIUS_ROTATIONS = 10.0;
 
     private DriveCommands() {}
 
@@ -328,7 +330,10 @@ public class DriveCommands {
                                     state.lastAngle = rotation;
                                 })
 
-                                // When cancelled, calculate and print results
+                                // Stop when we've reached the target number of rotations
+                                .until(() -> state.gyroDelta > WHEEL_RADIUS_ROTATIONS * 2.0 * Math.PI)
+
+                                // When finished, calculate and print results
                                 .finallyDo(() -> {
                                     double[] positions = drive.getWheelRadiusCharacterizationPositions();
                                     double wheelDelta = 0.0;
@@ -348,6 +353,50 @@ public class DriveCommands {
                                             + formatter.format(Units.metersToInches(wheelRadius))
                                             + " inches");
                                 })));
+    }
+
+    /**
+     * Drives toward the closest visible fuel piece.
+     *
+     * @param drive Drive subsystem
+     * @param fuelSupplier Supplier for the closest detected fuel piece
+     * @param xSupplier X stick input for translation
+     * @param ySupplier Y stick input for translation
+     */
+    public static Command driveToFuel(
+            Drive drive, Supplier<Optional<Pose2d>> fuelSupplier, DoubleSupplier xSupplier, DoubleSupplier ySupplier) {
+        ProfiledPIDController turnController =
+                new ProfiledPIDController(6.0, 0.0, 0.5, new TrapezoidProfile.Constraints(4.0, 8.0));
+        turnController.enableContinuousInput(-Math.PI, Math.PI);
+
+        return Commands.run(
+                        () -> {
+                            Optional<Pose2d> fuel = fuelSupplier.get();
+                            double omega = 0.0;
+                            if (fuel.isPresent()) {
+                                Translation2d relativeFuel = fuel.get()
+                                        .getTranslation()
+                                        .minus(drive.getPose().getTranslation());
+                                Rotation2d targetAngle = relativeFuel.getAngle();
+                                omega = turnController.calculate(
+                                        drive.getRotation().getRadians(), targetAngle.getRadians());
+                            }
+
+                            boolean isFlipped = DriverStation.getAlliance().isPresent()
+                                    && DriverStation.getAlliance().get() == Alliance.Red;
+
+                            drive.runVelocity(ChassisSpeeds.fromFieldRelativeSpeeds(
+                                    new ChassisSpeeds(
+                                            xSupplier.getAsDouble() * drive.getMaxLinearSpeedMetersPerSec(),
+                                            ySupplier.getAsDouble() * drive.getMaxLinearSpeedMetersPerSec(),
+                                            omega),
+                                    isFlipped
+                                            ? drive.getRotation().plus(new Rotation2d(Math.PI))
+                                            : drive.getRotation()));
+                        },
+                        drive)
+                .beforeStarting(() -> turnController.reset(drive.getRotation().getRadians()))
+                .withName("DriveToFuel");
     }
 
     private static class WheelRadiusCharacterizationState {

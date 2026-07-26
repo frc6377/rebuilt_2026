@@ -23,13 +23,19 @@ import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import com.pathplanner.lib.pathfinding.Pathfinding;
 import com.pathplanner.lib.util.PathPlannerLogging;
+import com.therekrab.autopilot.APConstraints;
+import com.therekrab.autopilot.APProfile;
+import com.therekrab.autopilot.APTarget;
+import com.therekrab.autopilot.Autopilot;
 import edu.wpi.first.hal.FRCNetComm.tInstances;
 import edu.wpi.first.hal.FRCNetComm.tResourceType;
 import edu.wpi.first.hal.HAL;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -39,19 +45,24 @@ import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.math.util.Units;
+import edu.wpi.first.units.measure.*;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants;
 import frc.robot.Constants.Mode;
+import frc.robot.FieldConstants;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.vision.Vision;
 import frc.robot.util.LocalADStarAK;
 import frc.robot.util.PhoenixUtil;
+import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
@@ -84,6 +95,18 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
     private static final double WHEEL_COF = 1.2;
     private static final double BUMPER_LENGTH = 33.405;
     private static final double BUMPER_WIDTH = 37.75;
+
+    // Autopilot constants
+    private static final APConstraints kAutopilotConstraints =
+            new APConstraints().withAcceleration(5.5).withJerk(2.5);
+
+    private static final APProfile kAutopilotProfile = new APProfile(kAutopilotConstraints)
+            .withErrorXY(Meters.of(0.03))
+            .withErrorTheta(Degrees.of(1.0))
+            .withBeelineRadius(Meters.of(0.15));
+
+    private final Autopilot autopilot = new Autopilot(kAutopilotProfile);
+
     private static final RobotConfig PP_CONFIG = new RobotConfig(
             ROBOT_MASS_KG,
             ROBOT_MOI,
@@ -133,6 +156,7 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
     private final SwerveDrivePoseEstimator poseEstimator =
             new SwerveDrivePoseEstimator(kinematics, rawGyroRotation, lastModulePositions, new Pose2d());
 
+    private Pose3d[] smartAlignWaypoints = new Pose3d[] {};
     private final Consumer<Pose2d> resetSimulationPoseCallBack; // TODO: Needs io interface sim should not be here
 
     public Drive(
@@ -193,6 +217,8 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
         Logger.recordOutput(
                 "Drive/CurrentCommand",
                 this.getCurrentCommand() != null ? this.getCurrentCommand().getName() : "None");
+        Logger.recordOutput("Drive/SmartAlignWaypoints", smartAlignWaypoints);
+        Logger.recordOutput("Odometry/Robot3d", getPose3d(getPose()));
 
         odometryLock.lock(); // Prevents odometry updates while reading data
         gyroIO.updateInputs(gyroInputs);
@@ -288,6 +314,182 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
     /** Stops the drive. */
     public void stop() {
         runVelocity(new ChassisSpeeds());
+    }
+
+    /** Creates a command to align the robot to a specific target pose using Autopilot. */
+    public Command align(APTarget target) {
+        return this.run(() -> {
+                    Pose2d currentPose = getPose();
+                    ChassisSpeeds robotRelativeSpeeds = getChassisSpeeds();
+
+                    // Calculate the result from Autopilot
+                    var result = autopilot.calculate(currentPose, robotRelativeSpeeds, target);
+
+                    // Autopilot provides field-relative speeds
+                    ChassisSpeeds fieldRelativeSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(
+                            result.vx().in(MetersPerSecond),
+                            result.vy().in(MetersPerSecond),
+                            result.targetAngle()
+                                            .minus(currentPose.getRotation())
+                                            .getRadians()
+                                    * 8.0,
+                            currentPose.getRotation());
+
+                    runVelocity(fieldRelativeSpeeds);
+                })
+                .until(() -> autopilot.atTarget(getPose(), target))
+                .finallyDo(this::stop);
+    }
+
+    /** Smart align that avoids the hub and bumps by routing through the trench if necessary. */
+    public Command smartAlign(Pose2d target) {
+        return Commands.defer(
+                () -> {
+                    Pose2d current = getPose();
+                    Translation2d currentTrans = current.getTranslation();
+                    Translation2d targetTrans = target.getTranslation();
+
+                    // Define obstacle zones (Hub + Bumps)
+                    double hubX = FieldConstants.LinesVertical.hubCenter;
+                    double oppHubX = FieldConstants.LinesVertical.oppHubCenter;
+                    double centerDeltaY = FieldConstants.fieldWidth / 2.0;
+
+                    double hubHalfY = FieldConstants.Hub.width / 2.0;
+                    double bumpDepth = FieldConstants.LeftBump.depth;
+                    double obsHalfY = 3.5; // Covers Hub and both Bumps
+
+                    double obstacleX = -1;
+                    boolean intersectsHub = false;
+
+                    // Check alliance side
+                    if (pathIntersectsRect(
+                            currentTrans,
+                            targetTrans,
+                            hubX - bumpDepth / 2.0,
+                            hubX + bumpDepth / 2.0,
+                            centerDeltaY - obsHalfY,
+                            centerDeltaY + obsHalfY)) {
+                        obstacleX = hubX;
+                        intersectsHub = pathIntersectsRect(
+                                currentTrans,
+                                targetTrans,
+                                hubX - bumpDepth / 2.0,
+                                hubX + bumpDepth / 2.0,
+                                centerDeltaY - hubHalfY,
+                                centerDeltaY + hubHalfY);
+                    } else if (pathIntersectsRect(
+                            currentTrans,
+                            targetTrans,
+                            oppHubX - bumpDepth / 2.0,
+                            oppHubX + bumpDepth / 2.0,
+                            centerDeltaY - obsHalfY,
+                            centerDeltaY + obsHalfY)) {
+                        obstacleX = oppHubX;
+                        intersectsHub = pathIntersectsRect(
+                                currentTrans,
+                                targetTrans,
+                                oppHubX - bumpDepth / 2.0,
+                                oppHubX + bumpDepth / 2.0,
+                                centerDeltaY - hubHalfY,
+                                centerDeltaY + hubHalfY);
+                    }
+
+                    if (obstacleX != -1) {
+                        if (intersectsHub) {
+                            // Avoid the Hub by going through the Trench
+                            boolean useTopTrench = current.getY() > centerDeltaY;
+                            // Move further away from walls/bumps: 1.0m from edge
+                            double trenchY = useTopTrench ? FieldConstants.fieldWidth - 1.0 : 1.0;
+
+                            double marginX = 2.2;
+                            double beforeX = obstacleX - (current.getX() < obstacleX ? marginX : -marginX);
+                            double afterX = obstacleX + (target.getX() > obstacleX ? marginX : -marginX);
+
+                            boolean crossingX = (current.getX() < obstacleX - bumpDepth / 2.0
+                                            && target.getX() > obstacleX + bumpDepth / 2.0)
+                                    || (current.getX() > obstacleX + bumpDepth / 2.0
+                                            && target.getX() < obstacleX - bumpDepth / 2.0);
+
+                            if (crossingX) {
+                                Pose3d w1 = new Pose3d(
+                                        beforeX,
+                                        trenchY,
+                                        0.0,
+                                        new Rotation3d(
+                                                0, 0, current.getRotation().getRadians()));
+                                Pose3d w2 = new Pose3d(
+                                        afterX,
+                                        trenchY,
+                                        0.0,
+                                        new Rotation3d(
+                                                0, 0, target.getRotation().getRadians()));
+                                smartAlignWaypoints = new Pose3d[] {w1, w2, new Pose3d(target)};
+                                return align(new APTarget(w1.toPose2d()))
+                                        .andThen(align(new APTarget(w2.toPose2d())))
+                                        .andThen(smartAlign(target));
+                            } else {
+                                Pose3d w1 = new Pose3d(
+                                        beforeX,
+                                        trenchY,
+                                        0.0,
+                                        new Rotation3d(
+                                                0, 0, target.getRotation().getRadians()));
+                                smartAlignWaypoints = new Pose3d[] {w1, new Pose3d(target)};
+                                return align(new APTarget(w1.toPose2d())).andThen(smartAlign(target));
+                            }
+                        } else {
+                            // Traverse directly OVER the Bump
+                            double bumpHeight = Units.inchesToMeters(5.02);
+                            Pose3d w1 = new Pose3d(
+                                    obstacleX,
+                                    target.getY(),
+                                    bumpHeight,
+                                    new Rotation3d(0, 0, target.getRotation().getRadians()));
+                            smartAlignWaypoints = new Pose3d[] {w1, new Pose3d(target)};
+                            // Autopilot only needs the 2D target
+                            return align(new APTarget(target));
+                        }
+                    }
+
+                    smartAlignWaypoints = new Pose3d[] {new Pose3d(target)};
+                    return align(new APTarget(target));
+                },
+                Set.of(this));
+    }
+
+    /** Helper to check if a line segment intersects an axis-aligned bounding box. */
+    private boolean pathIntersectsRect(
+            Translation2d start, Translation2d end, double minX, double maxX, double minY, double maxY) {
+        // Liang-Barsky or simple Cohen-Sutherland like check for segment-AABB intersection
+        double x1 = start.getX();
+        double y1 = start.getY();
+        double x2 = end.getX();
+        double y2 = end.getY();
+
+        double tmin = 0.0;
+        double tmax = 1.0;
+
+        double dx = x2 - x1;
+        if (dx == 0) {
+            if (x1 < minX || x1 > maxX) return false;
+        } else {
+            double t1 = (minX - x1) / dx;
+            double t2 = (maxX - x1) / dx;
+            tmin = Math.max(tmin, Math.min(t1, t2));
+            tmax = Math.min(tmax, Math.max(t1, t2));
+        }
+
+        double dy = y2 - y1;
+        if (dy == 0) {
+            if (y1 < minY || y1 > maxY) return false;
+        } else {
+            double t1 = (minY - y1) / dy;
+            double t2 = (maxY - y1) / dy;
+            tmin = Math.max(tmin, Math.min(t1, t2));
+            tmax = Math.min(tmax, Math.max(t1, t2));
+        }
+
+        return tmax >= tmin;
     }
 
     /**
@@ -406,6 +608,89 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
     /** Returns the maximum angular speed in radians per sec. */
     public double getMaxAngularSpeedRadPerSec() {
         return getMaxLinearSpeedMetersPerSec() / DRIVE_BASE_RADIUS;
+    }
+
+    /** Returns the elevation of the field at the specified translation. */
+    public double getElevation(Translation2d translation) {
+        double hubX = FieldConstants.LinesVertical.hubCenter;
+        double oppHubX = FieldConstants.LinesVertical.oppHubCenter;
+        double centerDeltaY = FieldConstants.fieldWidth / 2.0;
+
+        double hubHalfY = FieldConstants.Hub.width / 2.0;
+        double bumpDepth = FieldConstants.LeftBump.depth;
+        double bumpHeight = FieldConstants.LeftBump.height;
+        double bumpTopWidth = FieldConstants.LeftBump.topWidth;
+        double obsHalfY = hubHalfY + FieldConstants.LeftBump.width;
+
+        double distanceToHubX = Math.abs(translation.getX() - hubX);
+        double distanceToOppHubX = Math.abs(translation.getX() - oppHubX);
+        double dx = Math.min(distanceToHubX, distanceToOppHubX);
+
+        if (dx < bumpDepth / 2.0 && Math.abs(translation.getY() - centerDeltaY) < obsHalfY) {
+            // It's in the Hub + Bump zone. If it's NOT in the Hub's Y-extent, it's on a bump.
+            if (Math.abs(translation.getY() - centerDeltaY) > hubHalfY) {
+                if (dx < bumpTopWidth / 2.0) {
+                    return bumpHeight;
+                } else {
+                    double rampLength = (bumpDepth - bumpTopWidth) / 2.0;
+                    return bumpHeight * (1.0 - (dx - bumpTopWidth / 2.0) / rampLength);
+                }
+            }
+        }
+
+        return 0.0;
+    }
+
+    /** Returns true if the robot pose is on or approaching a bump zone. */
+    public boolean isNearBump(Translation2d translation) {
+        double hubX = FieldConstants.LinesVertical.hubCenter;
+        double oppHubX = FieldConstants.LinesVertical.oppHubCenter;
+        double centerDeltaY = FieldConstants.fieldWidth / 2.0;
+
+        double hubHalfY = FieldConstants.Hub.width / 2.0;
+        double bumpDepth = FieldConstants.LeftBump.depth;
+        double obsHalfY = hubHalfY + FieldConstants.LeftBump.width;
+
+        double distanceToHubX = Math.abs(translation.getX() - hubX);
+        double distanceToOppHubX = Math.abs(translation.getX() - oppHubX);
+        double dx = Math.min(distanceToHubX, distanceToOppHubX);
+
+        // Bumper offset margin so sensor toggles before front bumper collides with bump obstacle
+        double marginX = DRIVE_BASE_RADIUS + 0.15;
+
+        if (dx < (bumpDepth / 2.0 + marginX) && Math.abs(translation.getY() - centerDeltaY) < obsHalfY) {
+            if (Math.abs(translation.getY() - centerDeltaY) > hubHalfY) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** Returns the 3D pose of the robot at the specified 2D pose, accounting for field elevation. */
+    public Pose3d getPose3d(Pose2d pose) {
+        Translation2d[] moduleTranslations = getModuleTranslations();
+        double[] moduleElevations = new double[4];
+        for (int i = 0; i < 4; i++) {
+            Translation2d moduleFieldPos =
+                    pose.getTranslation().plus(moduleTranslations[i].rotateBy(pose.getRotation()));
+            moduleElevations[i] = getElevation(moduleFieldPos);
+        }
+
+        double z = (moduleElevations[0] + moduleElevations[1] + moduleElevations[2] + moduleElevations[3]) / 4.0;
+        double wheelbase = moduleTranslations[0].getX() - moduleTranslations[2].getX();
+        double trackwidth = moduleTranslations[0].getY() - moduleTranslations[1].getY();
+        double pitch = Math.atan2(
+                (moduleElevations[0] + moduleElevations[1]) - (moduleElevations[2] + moduleElevations[3]),
+                2.0 * wheelbase);
+        double roll = Math.atan2(
+                (moduleElevations[0] + moduleElevations[2]) - (moduleElevations[1] + moduleElevations[3]),
+                2.0 * trackwidth);
+        return new Pose3d(
+                pose.getX(),
+                pose.getY(),
+                z,
+                new Rotation3d(roll, pitch, pose.getRotation().getRadians()));
     }
 
     /** Returns an array of module translations. */

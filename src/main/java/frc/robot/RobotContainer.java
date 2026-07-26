@@ -21,6 +21,7 @@ import static frc.robot.subsystems.vision.VisionConstants.*;
 import com.ctre.phoenix6.SignalLogger;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
+import com.therekrab.autopilot.APTarget;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -65,15 +66,18 @@ import frc.robot.subsystems.vision.GamePieceCameraSim;
 import frc.robot.subsystems.vision.Vision;
 import frc.robot.subsystems.vision.VisionIO;
 import frc.robot.subsystems.vision.VisionIOLimelight;
-import frc.robot.subsystems.vision.VisionIOPhotonVisionSim;
+import frc.robot.subsystems.vision.VisionIOSimNoCam;
 import frc.robot.subsystems.vision.questnav.QuestNavIO;
 import frc.robot.util.OILayer.OI;
 import frc.robot.util.OILayer.OIKeyboard;
 import frc.robot.util.OILayer.OIXbox;
 import java.util.Objects;
+import java.util.Optional;
+import org.dyn4j.dynamics.BodyFixture;
 import org.ironmaple.simulation.IntakeSimulation;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
+import org.ironmaple.simulation.gamepieces.GamePieceOnFieldSimulation;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
@@ -162,7 +166,7 @@ public class RobotContainer {
 
                 // Default MapleSim timing is 5 subticks/period (~44ms arena step here).
                 // 3 subticks ≈ 150 Hz physics — still usable, much cheaper on CPU.
-                SimulatedArena.overrideSimulationTimings(Seconds.of(0.02), 3);
+                SimulatedArena.overrideSimulationTimings(Seconds.of(0.02), 1);
 
                 driveSimulation =
                         new SwerveDriveSimulation(Drive.mapleSimConfig, new Pose2d(3.0, 3.0, new Rotation2d()));
@@ -200,10 +204,8 @@ public class RobotContainer {
                 vision = new Vision(
                         drive,
                         new QuestNavIO() {},
-                        new VisionIOPhotonVisionSim(
-                                camera0Name, robotToCamera0, driveSimulation::getSimulatedDriveTrainPose),
-                        new VisionIOPhotonVisionSim(
-                                camera1Name, robotToCamera1, driveSimulation::getSimulatedDriveTrainPose));
+                        new VisionIOSimNoCam(driveSimulation::getSimulatedDriveTrainPose),
+                        new VisionIOSimNoCam(driveSimulation::getSimulatedDriveTrainPose));
                 gamePieceCamera =
                         new GamePieceCameraSim(new Transform3d(), driveSimulation::getSimulatedDriveTrainPose);
                 indexer = new Indexer(Constants.EnabledSubsystems.kIndexer ? new IndexerIOSim() : new IndexerIO() {});
@@ -283,7 +285,23 @@ public class RobotContainer {
         NamedCommands.registerCommand("Stop intake", intake.stopRollerCommand());
         NamedCommands.registerCommand(
                 "Pathfind to Hub",
-                PathGenerator.pathfindToPose(drive, new Pose2d(FieldConstants.getHubPosition(), new Rotation2d())));
+                drive.align(new APTarget(new Pose2d(FieldConstants.getHubPosition(), new Rotation2d()))));
+        NamedCommands.registerCommand(
+                "Drive to Fuel",
+                DriveCommands.driveToFuel(
+                        drive,
+                        () -> {
+                            if (Constants.currentMode == Constants.Mode.SIM) {
+                                return gamePieceCamera
+                                        .getClosestVisiblePiece()
+                                        .map(p -> new Pose2d(
+                                                p.getTranslation().toTranslation2d(),
+                                                p.getRotation().toRotation2d()));
+                            }
+                            return Optional.empty();
+                        },
+                        this::driveTranslationXInput,
+                        this::driveTranslationYInput));
 
         // Set up auto routines
         autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
@@ -611,6 +629,27 @@ public class RobotContainer {
         }
 
         SimulatedArena.getInstance().simulationPeriodic();
+
+        // Toggle collisions when on a bump
+        if (driveSimulation != null) {
+            boolean onBump = drive.isNearBump(
+                    driveSimulation.getSimulatedDriveTrainPose().getTranslation());
+            for (BodyFixture fixture : driveSimulation.getFixtures()) {
+                fixture.setSensor(onBump);
+            }
+        }
+
+        // Toggle collisions for game pieces when on a bump
+        for (GamePieceOnFieldSimulation gamePiece : SimulatedArena.getInstance().gamePiecesOnField()) {
+            boolean onBump = drive.getElevation(new Translation2d(
+                            gamePiece.getTransform().getTranslation().x,
+                            gamePiece.getTransform().getTranslation().y))
+                    > 0;
+            for (BodyFixture fixture : gamePiece.getFixtures()) {
+                fixture.setSensor(onBump);
+            }
+        }
+
         if (intake.isRollerRunningSupplier().getAsBoolean()
                 && intake.isExtendedSupplier().getAsBoolean()) {
             intakeSimulation.startIntake();
@@ -619,8 +658,18 @@ public class RobotContainer {
         }
 
         Pose3d[] fuel = SimulatedArena.getInstance().getGamePiecesArrayByType("Fuel");
+        for (int i = 0; i < fuel.length; i++) {
+            fuel[i] = new Pose3d(
+                    fuel[i].getX(),
+                    fuel[i].getY(),
+                    drive.getElevation(fuel[i].getTranslation().toTranslation2d()),
+                    fuel[i].getRotation());
+        }
         Pose3d[] visibleFuel = gamePieceCamera.getVisiblePieces();
-        Logger.recordOutput("FieldSimulation/RobotPosition", driveSimulation.getSimulatedDriveTrainPose());
+        if (driveSimulation != null) {
+            Logger.recordOutput(
+                    "FieldSimulation/RobotPosition", drive.getPose3d(driveSimulation.getSimulatedDriveTrainPose()));
+        }
         Logger.recordOutput("FieldSimulation/Fuel", fuel);
         Logger.recordOutput("FieldSimulation/VisibleFuel", visibleFuel);
         Logger.recordOutput("FieldSimulation/FuelCount", fuel.length);

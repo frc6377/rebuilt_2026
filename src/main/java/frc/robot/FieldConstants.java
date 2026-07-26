@@ -143,8 +143,9 @@ public class FieldConstants {
 
         // Dimensions
         public static final double width = Units.inchesToMeters(73.0);
-        public static final double height = Units.inchesToMeters(6.513);
-        public static final double depth = Units.inchesToMeters(44.4);
+        public static final double height = Units.inchesToMeters(6.5);
+        public static final double depth = Units.inchesToMeters(60.32);
+        public static final double topWidth = Units.inchesToMeters(11.8);
 
         // Relevant reference points on alliance side
         public static final Translation2d nearLeftCorner =
@@ -167,8 +168,9 @@ public class FieldConstants {
     public static class RightBump {
         // Dimensions
         public static final double width = Units.inchesToMeters(73.0);
-        public static final double height = Units.inchesToMeters(6.513);
-        public static final double depth = Units.inchesToMeters(44.4);
+        public static final double height = Units.inchesToMeters(6.5);
+        public static final double depth = Units.inchesToMeters(60.32);
+        public static final double topWidth = Units.inchesToMeters(11.8);
 
         // Relevant reference points on alliance side
         public static final Translation2d nearLeftCorner =

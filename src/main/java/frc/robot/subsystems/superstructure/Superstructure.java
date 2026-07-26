@@ -199,7 +199,9 @@ public class Superstructure extends SubsystemBase {
         }
 
         return Commands.startEnd(
-                        () -> gamePieceTrajectorySimulation.enableAutoFire(indexerRunningSupplier, 1.0 / 3.0), () -> {
+                        () -> gamePieceTrajectorySimulation.enableAutoFire(
+                                indexerRunningSupplier, Seconds.of(1.0 / 3.0)),
+                        () -> {
                             gamePieceTrajectorySimulation.setAutoFireEnabled(false);
                             gamePieceTrajectorySimulation.setIndexerRunningSupplier(() -> false);
                         })
@@ -214,7 +216,7 @@ public class Superstructure extends SubsystemBase {
 
         return Commands.startEnd(
                         () -> gamePieceTrajectorySimulation.enableAutoFireFromExternalAmmo(
-                                indexerRunningSupplier, intakeHasFuel, consumeIntakeFuel, 1.0 / 3.0),
+                                indexerRunningSupplier, intakeHasFuel, consumeIntakeFuel, Seconds.of(1.0 / 3.0)),
                         () -> {
                             gamePieceTrajectorySimulation.setAutoFireEnabled(false);
                             gamePieceTrajectorySimulation.setIndexerRunningSupplier(() -> false);

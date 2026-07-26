@@ -56,6 +56,8 @@ public class TrajectoryBall {
         Translation2d hubPosition = FieldConstants.getHubPosition();
         Translation2d robotPosition = robotPose.getTranslation();
         Distance staticDistance = Meters.of(robotPosition.getDistance(hubPosition));
+        // Subtract shooter offset since the ball is launched from the shooter, not the robot center
+        staticDistance = Meters.of(Math.max(0.0, staticDistance.in(Meters)));
         Rotation2d staticAngle =
                 new Rotation2d(hubPosition.getX() - robotPosition.getX(), hubPosition.getY() - robotPosition.getY());
 
@@ -90,9 +92,11 @@ public class TrajectoryBall {
         AngularVelocity flywheelVelocity = RPM.of(rpm);
 
         // 2. Convert RPM to tangential surface speed of the flywheel
-        // v = omega * r
-        LinearVelocity tangentialVelocity =
-                MetersPerSecond.of(flywheelVelocity.in(RadiansPerSecond) * ShooterConstants.flywheelRadius.in(Meters));
+        // v = (v_wheel + v_hood) / 2
+        // Since it's a single-wheel shooter with a stationary hood, the ball's exit velocity is half the wheel's
+        // surface speed.
+        LinearVelocity tangentialVelocity = MetersPerSecond.of(
+                flywheelVelocity.in(RadiansPerSecond) * ShooterConstants.flywheelRadius.in(Meters) / 2.0);
 
         // 3. Estimate launch speed using an efficiency factor (loss during transfer to ball)
         LinearVelocity launchSpeed =
@@ -212,10 +216,11 @@ public class TrajectoryBall {
             Angle launchAngle, LinearVelocity launchSpeed, Rotation2d heading, double rpmMult) {
 
         // 1. Linear speed back to RPM
-        // omega = (v / efficiency) / r
+        // omega = (v / efficiency) * 2 / r
+        // For a single-wheel shooter, the wheel tangential speed is twice the exit velocity.
         double flywheelRadiusMeters = ShooterConstants.flywheelRadius.in(Meters);
         double angularVelRadPerSec =
-                (launchSpeed.in(MetersPerSecond) / ShooterConstants.launchEfficiency) / flywheelRadiusMeters;
+                ((launchSpeed.in(MetersPerSecond) / ShooterConstants.launchEfficiency) * 2.0) / flywheelRadiusMeters;
         double rpm = RadiansPerSecond.of(angularVelRadPerSec).in(RPM) * rpmMult;
 
         rpm = Math.max(
