@@ -53,6 +53,7 @@ import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.vision.Vision;
 import frc.robot.util.FullSubsystem;
 import frc.robot.util.LocalADStarAK;
+import frc.robot.util.NerfModeController;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
@@ -84,17 +85,20 @@ public class Drive extends FullSubsystem implements Vision.VisionConsumer {
     private static final double WHEEL_COF = 1.2;
     private static final double BUMPER_LENGTH = 30.0;
     private static final double BUMPER_WIDTH = 30.0;
-    private static final RobotConfig PP_CONFIG = new RobotConfig(
-            ROBOT_MASS_KG,
-            ROBOT_MOI,
-            new ModuleConfig(
-                    TunerConstants.FrontLeft.WheelRadius,
-                    TunerConstants.kSpeedAt12Volts.in(MetersPerSecond),
-                    WHEEL_COF,
-                    DCMotor.getKrakenX60Foc(1).withReduction(TunerConstants.FrontLeft.DriveMotorGearRatio),
-                    TunerConstants.FrontLeft.SlipCurrent,
-                    1),
-            getModuleTranslations());
+
+    private static RobotConfig buildPathPlannerConfig(double maxLinearSpeedMetersPerSec) {
+        return new RobotConfig(
+                ROBOT_MASS_KG,
+                ROBOT_MOI,
+                new ModuleConfig(
+                        TunerConstants.FrontLeft.WheelRadius,
+                        maxLinearSpeedMetersPerSec,
+                        WHEEL_COF,
+                        DCMotor.getKrakenX60Foc(1).withReduction(TunerConstants.FrontLeft.DriveMotorGearRatio),
+                        TunerConstants.FrontLeft.SlipCurrent,
+                        1),
+                getModuleTranslations());
+    }
 
     public static final DriveTrainSimulationConfig mapleSimConfig = DriveTrainSimulationConfig.Default()
             .withRobotMass(Kilograms.of(ROBOT_MASS_KG))
@@ -136,6 +140,7 @@ public class Drive extends FullSubsystem implements Vision.VisionConsumer {
     private ChassisSpeeds lastCommandedSpeeds = new ChassisSpeeds();
 
     private final Consumer<Pose2d> resetSimulationPoseCallBack; // TODO: Needs io interface sim should not be here
+    private final NerfModeController nerfModeController;
 
     public Drive(
             GyroIO gyroIO,
@@ -143,10 +148,12 @@ public class Drive extends FullSubsystem implements Vision.VisionConsumer {
             ModuleIO frModuleIO,
             ModuleIO blModuleIO,
             ModuleIO brModuleIO,
-            Consumer<Pose2d> resetSimulationPoseCallBack) {
+            Consumer<Pose2d> resetSimulationPoseCallBack,
+            NerfModeController nerfModeController) {
         this.gyroIO = gyroIO;
         this.poseSupplier = this::getPose;
         this.resetSimulationPoseCallBack = resetSimulationPoseCallBack;
+        this.nerfModeController = nerfModeController;
         modules[0] = new Module(flModuleIO, 0, TunerConstants.FrontLeft);
         modules[1] = new Module(frModuleIO, 1, TunerConstants.FrontRight);
         modules[2] = new Module(blModuleIO, 2, TunerConstants.BackLeft);
@@ -165,7 +172,8 @@ public class Drive extends FullSubsystem implements Vision.VisionConsumer {
                 this::getChassisSpeeds,
                 this::runVelocity,
                 new PPHolonomicDriveController(new PIDConstants(5.0, 0.0, 0.0), new PIDConstants(5.0, 0.0, 0.0)),
-                PP_CONFIG,
+                buildPathPlannerConfig(
+                        nerfModeController.getDriveConstants().maxLinearSpeed().in(MetersPerSecond)),
                 () -> DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red,
                 this);
         Pathfinding.setPathfinder(new LocalADStarAK());
@@ -276,7 +284,8 @@ public class Drive extends FullSubsystem implements Vision.VisionConsumer {
         speeds = ChassisSpeeds.discretize(speeds, 0.02);
         lastCommandedSpeeds = speeds;
         SwerveModuleState[] setpointStates = kinematics.toSwerveModuleStates(speeds);
-        SwerveDriveKinematics.desaturateWheelSpeeds(setpointStates, TunerConstants.kSpeedAt12Volts);
+        SwerveDriveKinematics.desaturateWheelSpeeds(
+                setpointStates, nerfModeController.getDriveConstants().maxLinearSpeed());
 
         // Log unoptimized setpoints and setpoint speeds
         Logger.recordOutput("SwerveStates/Setpoints", setpointStates);
@@ -419,12 +428,12 @@ public class Drive extends FullSubsystem implements Vision.VisionConsumer {
 
     /** Returns the maximum linear speed in meters per sec. */
     public double getMaxLinearSpeedMetersPerSec() {
-        return TunerConstants.kSpeedAt12Volts.in(MetersPerSecond);
+        return nerfModeController.getDriveConstants().maxLinearSpeed().in(MetersPerSecond);
     }
 
     /** Returns the maximum angular speed in radians per sec. */
     public double getMaxAngularSpeedRadPerSec() {
-        return getMaxLinearSpeedMetersPerSec() / DRIVE_BASE_RADIUS;
+        return nerfModeController.getDriveConstants().maxAngularSpeedRadPerSec();
     }
 
     /** Returns an array of module translations. */

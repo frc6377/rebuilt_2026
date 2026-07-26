@@ -9,7 +9,8 @@ import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.util.Color8Bit;
-import frc.robot.subsystems.intake.IntakeConstants.ExtenderConstants;
+import frc.robot.subsystems.intake.IntakeConstants;
+import frc.robot.util.NerfModeController;
 import frc.robot.util.TunablePIDController;
 import java.util.function.BooleanSupplier;
 import org.littletonrobotics.junction.Logger;
@@ -36,31 +37,34 @@ public class ExtenderIOSim implements ExtenderIO {
     private final LoggedNetworkNumber extenderTolerance;
     private final LoggedNetworkNumber extenderSiftAngleOne;
     private final LoggedNetworkNumber extenderSiftAngleTwo;
+    private final NerfModeController nerfModeController;
 
-    public ExtenderIOSim() {
-        setpoint = ExtenderConstants.kExtenderStowAngle;
+    public ExtenderIOSim(NerfModeController nerfModeController) {
+        this.nerfModeController = nerfModeController;
+        IntakeConstants constants = nerfModeController.getIntakeConstants();
+        setpoint = constants.extenderStowAngle();
 
-        extenderStowAngle =
-                new LoggedNetworkNumber("Intake/Extender/StowAngle", ExtenderConstants.kExtenderStowAngle.in(Degrees));
+        extenderStowAngle = new LoggedNetworkNumber(
+                "Intake/Extender/StowAngle", constants.extenderStowAngle().in(Degrees));
         extenderIntakeAngle = new LoggedNetworkNumber(
-                "Intake/Extender/IntakeAngle", ExtenderConstants.kExtenderIntakeAngle.in(Degrees));
-        extenderTolerance =
-                new LoggedNetworkNumber("Intake/Extender/Tolerance", ExtenderConstants.kExtenderTolerance.in(Degrees));
+                "Intake/Extender/IntakeAngle", constants.extenderIntakeAngle().in(Degrees));
+        extenderTolerance = new LoggedNetworkNumber(
+                "Intake/Extender/Tolerance", constants.extenderTolerance().in(Degrees));
         extenderSiftAngleOne = new LoggedNetworkNumber(
-                "Intake/Extender/SiftAngleOne", ExtenderConstants.kExtenderSiftAngleOne.in(Degrees));
+                "Intake/Extender/SiftAngleOne", constants.extenderSiftAngleOne().in(Degrees));
         extenderSiftAngleTwo = new LoggedNetworkNumber(
-                "Intake/Extender/SiftAngleTwo", ExtenderConstants.kExtenderSiftAngleTwo.in(Degrees));
-        new LoggedNetworkNumber("Intake/Extender/DownSpeed", ExtenderConstants.kDownSpeed);
+                "Intake/Extender/SiftAngleTwo", constants.extenderSiftAngleTwo().in(Degrees));
+        new LoggedNetworkNumber("Intake/Extender/DownSpeed", constants.extenderDownSpeed());
 
         armSim = new SingleJointedArmSim(
                 DCMotor.getKrakenX60(1),
-                ExtenderConstants.kGearing,
-                ExtenderConstants.kMOI.in(KilogramSquareMeters),
-                ExtenderConstants.kExtenderArmLength.in(Meters),
-                ExtenderConstants.kExtenderStowAngle.in(Radians),
-                ExtenderConstants.kExtenderIntakeAngle.in(Radians),
+                constants.extenderGearing(),
+                constants.extenderMOI().in(KilogramSquareMeters),
+                constants.extenderArmLength().in(Meters),
+                constants.extenderStowAngle().in(Radians),
+                constants.extenderIntakeAngle().in(Radians),
                 false,
-                ExtenderConstants.kExtenderZeroAngle.in(Radians),
+                constants.extenderZeroAngle().in(Radians),
                 0.0,
                 0.0);
 
@@ -68,9 +72,9 @@ public class ExtenderIOSim implements ExtenderIO {
                 "Intake/ExtenderPID",
                 () -> getPosition().in(Degrees),
                 percent -> appliedVolts = MathUtil.clamp(percent * 12.0, -12.0, 12.0),
-                ExtenderConstants.kExtenderConstraints);
+                constants.extenderConstraints());
 
-        pidController.addPreset("default", ExtenderConstants.PIDF.normalPID);
+        pidController.addPreset("default", constants.extenderNormalPID());
 
         armMech = new LoggedMechanism2d(5, 5);
         armMechRoot = armMech.getRoot("IntakeSimulation", 3, 3);
@@ -102,12 +106,12 @@ public class ExtenderIOSim implements ExtenderIO {
 
     @Override
     public void extend() {
-        setPosition(Degrees.of(extenderStowAngle.get()));
+        setPosition(Degrees.of(extenderIntakeAngle.get()));
     }
 
     @Override
     public void retract() {
-        setPosition(Degrees.of(extenderIntakeAngle.get()));
+        setPosition(Degrees.of(extenderStowAngle.get()));
     }
 
     @Override

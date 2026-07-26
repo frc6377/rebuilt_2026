@@ -8,25 +8,29 @@ import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.energy.FinanceDepartment;
 import frc.robot.energy.MechanismStates;
 import frc.robot.util.FullSubsystem;
+import frc.robot.util.NerfModeController;
 import java.util.function.BooleanSupplier;
 import org.littletonrobotics.junction.Logger;
 
 public class Indexer extends FullSubsystem {
+    private final NerfModeController nerfModeController;
     private final IndexerIO indexerIO;
     private final IndexerIOInputsAutoLogged inputs = new IndexerIOInputsAutoLogged();
 
     private AngularVelocity setpoint = RotationsPerSecond.zero();
 
-    public Indexer(IndexerIO indexerIO) {
+    public Indexer(IndexerIO indexerIO, NerfModeController nerfModeController) {
         this.indexerIO = indexerIO;
+        this.nerfModeController = nerfModeController;
     }
 
     public Command index() {
         return run(() -> {
-                    setpoint = IndexerConstants.kCollectorRPM;
-                    indexerIO.setCustomSpeed(IndexerConstants.kCollectorSpeed
-                            + IndexerConstants.kCollectorVariableSpeed
-                                    * Math.sin(Timer.getFPGATimestamp() * Math.PI / 8));
+                    setpoint = nerfModeController.getIndexerConstants().kCollectorRPM();
+                    indexerIO.setCustomSpeed(
+                            nerfModeController.getIndexerConstants().kCollectorSpeed()
+                                    + nerfModeController.getIndexerConstants().kCollectorVariableSpeed()
+                                            * Math.sin(Timer.getFPGATimestamp() * Math.PI / 8));
                 })
                 .finallyDo(() -> {
                     setpoint = RotationsPerSecond.zero();
@@ -36,28 +40,34 @@ public class Indexer extends FullSubsystem {
 
     public Command setCustomSpeed(double speed) {
         return runOnce(() -> {
-            setpoint = speed == 0.0 ? RotationsPerSecond.zero() : IndexerConstants.kCollectorRPM;
+            setpoint = speed == 0.0
+                    ? RotationsPerSecond.zero()
+                    : nerfModeController.getIndexerConstants().kCollectorRPM();
             indexerIO.setCustomSpeed(speed);
         });
     }
 
     public Command runPercentOutput(double percent) {
         return run(() -> {
-            setpoint = percent == 0.0 ? RotationsPerSecond.zero() : IndexerConstants.kCollectorRPM;
+            setpoint = percent == 0.0
+                    ? RotationsPerSecond.zero()
+                    : nerfModeController.getIndexerConstants().kCollectorRPM();
             indexerIO.setCustomSpeed(percent);
         });
     }
 
     public Command indexReverse() {
         return run(() -> {
-            setpoint = IndexerConstants.kCollectorRPM.times(-1);
-            indexerIO.setCustomSpeed(-IndexerConstants.kCollectorSpeed);
+            setpoint = nerfModeController.getIndexerConstants().kCollectorRPM().times(-1);
+            indexerIO.setCustomSpeed(-nerfModeController.getIndexerConstants().kCollectorSpeed());
         });
     }
 
     public Command index(BooleanSupplier supplier) {
         return run(() -> {
-            setpoint = supplier.getAsBoolean() ? IndexerConstants.kCollectorRPM : RotationsPerSecond.zero();
+            setpoint = supplier.getAsBoolean()
+                    ? nerfModeController.getIndexerConstants().kCollectorRPM()
+                    : RotationsPerSecond.zero();
             indexerIO.setVelocity(setpoint);
         });
     }
@@ -71,8 +81,8 @@ public class Indexer extends FullSubsystem {
 
     public void setRunning(boolean running) {
         if (running) {
-            setpoint = IndexerConstants.kCollectorRPM;
-            indexerIO.setVelocity(IndexerConstants.kCollectorRPM);
+            setpoint = nerfModeController.getIndexerConstants().kCollectorRPM();
+            indexerIO.setVelocity(nerfModeController.getIndexerConstants().kCollectorRPM());
         } else {
             setpoint = RotationsPerSecond.zero();
             indexerIO.stop();
@@ -87,8 +97,8 @@ public class Indexer extends FullSubsystem {
         Logger.recordOutput("Indexer/Running", Math.abs(setpoint.in(RotationsPerSecond)) > 0.1);
         Logger.recordOutput(
                 "Indexer/variableSpeed",
-                IndexerConstants.kCollectorSpeed
-                        + (IndexerConstants.kCollectorVariableSpeed
+                nerfModeController.getIndexerConstants().kCollectorSpeed()
+                        + (nerfModeController.getIndexerConstants().kCollectorVariableSpeed()
                                 * Math.sin(Timer.getFPGATimestamp() * Math.PI / 2)));
 
         FinanceDepartment finance = FinanceDepartment.getInstance();

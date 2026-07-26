@@ -48,26 +48,26 @@ public class UpgoerIOKrakenX60 implements UpgoerIO {
      * @param motorId CAN ID of the Kraken X60 motor.
      * @param logName Logging key prefix used for tunable gains (e.g. "LeftShooterUpgoer").
      */
-    public UpgoerIOKrakenX60(int motorId, String logName, int RPMMultiplier) {
+    public UpgoerIOKrakenX60(int motorId, String logName, int RPMMultiplier, UpgoerConstants constants) {
         motor = new TunableTalonFX(
                 motorId,
-                UpgoerConstants.canBusName,
+                constants.canBusName(),
                 logName + "/Motor",
                 new Slot0Configs()
-                        .withKP(UpgoerConstants.defaultKP)
-                        .withKI(UpgoerConstants.defaultKI)
-                        .withKD(UpgoerConstants.defaultKD)
-                        .withKV(UpgoerConstants.defaultKV)
-                        .withKS(UpgoerConstants.defaultKS));
+                        .withKP(constants.defaultKP())
+                        .withKI(constants.defaultKI())
+                        .withKD(constants.defaultKD())
+                        .withKV(constants.defaultKV())
+                        .withKS(constants.defaultKS()));
 
         var config = new TalonFXConfiguration();
         config.MotorOutput.NeutralMode = NeutralModeValue.Coast;
         config.MotorOutput.Inverted =
                 (RPMMultiplier == 1) ? InvertedValue.CounterClockwise_Positive : InvertedValue.Clockwise_Positive;
         config.Slot0 = motor.getTunableSlot0Configs();
-        config.CurrentLimits.StatorCurrentLimit = UpgoerConstants.currentLimit.in(Amps);
+        config.CurrentLimits.StatorCurrentLimit = constants.currentLimit().in(Amps);
         config.CurrentLimits.StatorCurrentLimitEnable = true;
-        config.CurrentLimits.SupplyCurrentLimit = UpgoerConstants.supplyCurrentLimit.in(Amps);
+        config.CurrentLimits.SupplyCurrentLimit = constants.supplyCurrentLimit().in(Amps);
         config.CurrentLimits.SupplyCurrentLimitEnable = true;
         tryUntilOk(5, () -> motor.applyConfiguration(config, 0.25));
 

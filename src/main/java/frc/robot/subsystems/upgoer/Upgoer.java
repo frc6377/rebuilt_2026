@@ -21,6 +21,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.energy.FinanceDepartment;
 import frc.robot.energy.MechanismStates;
+import frc.robot.util.NerfModeController;
 import org.littletonrobotics.junction.Logger;
 
 /** Feeder subsystem that pushes game pieces into the shooter. */
@@ -29,6 +30,7 @@ public class Upgoer extends SubsystemBase {
     private final UpgoerIOInputsAutoLogged inputs = new UpgoerIOInputsAutoLogged();
     private final String logName;
     private final double multiplier;
+    private final NerfModeController nerfModeController;
 
     private AngularVelocity setpoint = RPM.of(0.0);
 
@@ -36,10 +38,11 @@ public class Upgoer extends SubsystemBase {
      * @param io The IO implementation to use.
      * @param logName Logging key prefix (e.g. "LeftShooterUpgoer").
      */
-    public Upgoer(UpgoerIO io, String logName, double multiplier) {
+    public Upgoer(UpgoerIO io, String logName, double multiplier, NerfModeController nerfModeController) {
         this.io = io;
         this.logName = logName;
         this.multiplier = multiplier;
+        this.nerfModeController = nerfModeController;
     }
 
     @Override
@@ -75,7 +78,8 @@ public class Upgoer extends SubsystemBase {
     }
 
     public Command feedCommand() {
-        return runVelocityCommand(UpgoerConstants.defaultFeedVelocity).withName("UpgoerFeed");
+        return runVelocityCommand(nerfModeController.getUpgoerConstants().defaultFeedVelocity())
+                .withName("UpgoerFeed");
     }
 
     public Command stopCommand() {

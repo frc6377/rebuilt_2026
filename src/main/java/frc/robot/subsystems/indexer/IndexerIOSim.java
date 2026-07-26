@@ -9,6 +9,7 @@ import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.simulation.FlywheelSim;
 import frc.robot.Robot;
+import frc.robot.subsystems.indexer.constants.IndexerConstants;
 
 public class IndexerIOSim implements IndexerIO {
     private final FlywheelSim indexerSim;
@@ -17,13 +18,13 @@ public class IndexerIOSim implements IndexerIO {
     private double indexerSetpointRPM = 0.0;
     private double indexerAppliedVolts = 0.0;
 
-    public IndexerIOSim() {
-        var indexerPlant =
-                LinearSystemId.createFlywheelSystem(DCMotor.getKrakenX60Foc(2), 0.5 * 0.5 * 0.01 * 0.01, 1.0);
+    public IndexerIOSim(IndexerConstants constants) {
+        var indexerPlant = LinearSystemId.createFlywheelSystem(
+                DCMotor.getKrakenX60Foc(1), constants.rollerMOI(), constants.rollerGearing());
 
         indexerSim = new FlywheelSim(indexerPlant, DCMotor.getKrakenX60Foc(1));
 
-        indexerController = new PIDController(0.001, 0.0005, 0.0);
+        indexerController = new PIDController(constants.simKP(), constants.simKI(), constants.simKD());
     }
 
     @Override

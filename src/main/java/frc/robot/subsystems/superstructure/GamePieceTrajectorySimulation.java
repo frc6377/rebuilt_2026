@@ -25,7 +25,7 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.Timer;
-import frc.robot.subsystems.shooter.ShooterConstants;
+import frc.robot.util.NerfModeController;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
@@ -80,7 +80,7 @@ public class GamePieceTrajectorySimulation {
     private double autoFireIntervalSeconds = 1.0;
     private boolean autoFireEnabled = false;
     private int gamePiecesLaunched = 0;
-
+    private NerfModeController nerfModeController;
     // Ball count / hopper simulation
     private final LoggedNetworkNumber ballsInHopper =
             new LoggedNetworkNumber("Shooter/Sim/BallsInHopper", 5); // Default to 5 balls
@@ -103,8 +103,10 @@ public class GamePieceTrajectorySimulation {
      * @param flywheelVelocityRPMSupplier Supplier for current flywheel velocity in RPM
      */
     public GamePieceTrajectorySimulation(
-            SwerveDriveSimulation driveSimulation, Supplier<Double> flywheelVelocityRPMSupplier) {
-        this(FUEL_INFO, driveSimulation, flywheelVelocityRPMSupplier);
+            SwerveDriveSimulation driveSimulation,
+            Supplier<Double> flywheelVelocityRPMSupplier,
+            NerfModeController nerfModeController) {
+        this(FUEL_INFO, driveSimulation, flywheelVelocityRPMSupplier, nerfModeController);
     }
 
     /**
@@ -117,13 +119,15 @@ public class GamePieceTrajectorySimulation {
     public GamePieceTrajectorySimulation(
             GamePieceOnFieldSimulation.GamePieceInfo gamePieceInfo,
             SwerveDriveSimulation driveSimulation,
-            Supplier<Double> flywheelVelocityRPMSupplier) {
+            Supplier<Double> flywheelVelocityRPMSupplier,
+            NerfModeController nerfModeController) {
         this(
                 gamePieceInfo,
                 () -> driveSimulation.getSimulatedDriveTrainPose().getTranslation(),
                 () -> driveSimulation.getSimulatedDriveTrainPose().getRotation(),
                 driveSimulation::getDriveTrainSimulatedChassisSpeedsFieldRelative,
-                flywheelVelocityRPMSupplier);
+                flywheelVelocityRPMSupplier,
+                nerfModeController);
     }
 
     /**
@@ -138,13 +142,15 @@ public class GamePieceTrajectorySimulation {
             Supplier<Translation2d> robotPositionSupplier,
             Supplier<Rotation2d> robotRotationSupplier,
             Supplier<ChassisSpeeds> chassisSpeedsSupplier,
-            Supplier<Double> flywheelVelocityRPMSupplier) {
+            Supplier<Double> flywheelVelocityRPMSupplier,
+            NerfModeController nerfModeController) {
         this(
                 FUEL_INFO,
                 robotPositionSupplier,
                 robotRotationSupplier,
                 chassisSpeedsSupplier,
-                flywheelVelocityRPMSupplier);
+                flywheelVelocityRPMSupplier,
+                nerfModeController);
     }
 
     /**
@@ -161,12 +167,14 @@ public class GamePieceTrajectorySimulation {
             Supplier<Translation2d> robotPositionSupplier,
             Supplier<Rotation2d> robotRotationSupplier,
             Supplier<ChassisSpeeds> chassisSpeedsSupplier,
-            Supplier<Double> flywheelVelocityRPMSupplier) {
+            Supplier<Double> flywheelVelocityRPMSupplier,
+            NerfModeController nerfModeController) {
         this.gamePieceInfo = gamePieceInfo;
         this.robotPositionSupplier = robotPositionSupplier;
         this.robotRotationSupplier = robotRotationSupplier;
         this.chassisSpeedsSupplier = chassisSpeedsSupplier;
         this.flywheelVelocityRPMSupplier = flywheelVelocityRPMSupplier;
+        this.nerfModeController = nerfModeController;
 
         // Default shooter configuration (tunable via NetworkTables)
         this.shooterHeightMeters = new LoggedNetworkNumber("Shooter/Sim/HeightMeters", 0.5);
@@ -223,7 +231,7 @@ public class GamePieceTrajectorySimulation {
      * @return Hood angle
      */
     public Angle getHoodAngle() {
-        return ShooterConstants.kFixedHoodAngle;
+        return nerfModeController.getShooterConstants().kFixedHoodAngle();
     }
 
     /**

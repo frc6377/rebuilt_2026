@@ -2,7 +2,7 @@ package frc.robot.subsystems.vision.questnav;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
-import frc.robot.subsystems.vision.VisionConstants;
+import frc.robot.subsystems.vision.constants.BaseVisionConstants;
 import gg.questnav.questnav.*;
 import java.util.function.Supplier;
 
@@ -23,13 +23,14 @@ public class QuestNavIOReal implements QuestNavIO {
      * @param robotPose The robot pose to set.
      */
     public void resetQuestNavPose(Pose3d robotPose) {
-        Pose3d newQuestPose = robotPose.transformBy(VisionConstants.QuestNavConstants.ROBOT_TO_QUEST);
+        Pose3d newQuestPose = robotPose.transformBy(BaseVisionConstants.DATA.robotToQuest());
         questNav.setPose(newQuestPose);
     }
 
     public void zeroQuestNav() {
-        questNav.setPose(
-                new Pose3d(questPose.getTranslation(), VisionConstants.QuestNavConstants.ROBOT_TO_QUEST.getRotation()));
+        questNav.setPose(new Pose3d(
+                questPose.getTranslation(),
+                BaseVisionConstants.DATA.robotToQuest().getRotation()));
     }
 
     public void periodic() {
@@ -39,8 +40,9 @@ public class QuestNavIOReal implements QuestNavIO {
             if (questFrame.isTracking()) {
                 questPose = questFrame.questPose3d();
                 double timestamp = questFrame.dataTimestamp();
-                Pose3d robotPose = questPose.transformBy(VisionConstants.QuestNavConstants.ROBOT_TO_QUEST.inverse());
-                // consumer.accept(robotPose.toPose2d(), timestamp, VisionConstants.QUESTNAV_STD_DEVS);
+                Pose3d robotPose = questPose.transformBy(
+                        BaseVisionConstants.DATA.robotToQuest().inverse());
+                // consumer.accept(robotPose.toPose2d(), timestamp, BaseVisionConstants.DATA.questNavStdDevs());
             }
         }
     }
@@ -61,7 +63,7 @@ public class QuestNavIOReal implements QuestNavIO {
      */
     public Supplier<Pose2d> getQuestNavPoseSupplier() {
         return () -> questPose
-                .transformBy(VisionConstants.QuestNavConstants.ROBOT_TO_QUEST.inverse())
+                .transformBy(BaseVisionConstants.DATA.robotToQuest().inverse())
                 .toPose2d();
     }
 }

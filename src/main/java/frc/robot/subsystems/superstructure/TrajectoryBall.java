@@ -52,7 +52,8 @@ public class TrajectoryBall {
             Distance maxHeight,
             Distance targetHeight,
             double rpmMultiplier,
-            boolean isSotfEnabled) {
+            boolean isSotfEnabled,
+            ShooterConstants shooterConstants) {
         Translation2d hubPosition = FieldConstants.getHubPosition();
         Translation2d robotPosition = robotPose.getTranslation();
         Distance staticDistance = Meters.of(robotPosition.getDistance(hubPosition));
@@ -65,13 +66,15 @@ public class TrajectoryBall {
         // 1. Initial stationary trajectory
         TrajectoryResult stationary;
         if (mode == CalculationMode.DOU_INTERPOLATION) {
-            stationary = calculateStationaryMap(staticDistance);
+            stationary = calculateStationaryMap(staticDistance, shooterConstants);
         } else {
-            stationary = calculateFixedAngle(staticDistance, targetHeight, ShooterConstants.kFixedHoodAngle);
+            stationary = calculateFixedAngle(
+                    staticDistance, targetHeight, shooterConstants.kFixedHoodAngle(), shooterConstants);
         }
 
         if (!isSotfEnabled || robotSpeeds == null || stationary.totalTime() <= 0) {
-            return finalizeParameters(stationary.launchAngle, stationary.launchSpeed, staticAngle, rpmMultiplier);
+            return finalizeParameters(
+                    stationary.launchAngle, stationary.launchSpeed, staticAngle, rpmMultiplier, shooterConstants);
         }
 
         TrajectoryResult compensated =
@@ -80,24 +83,25 @@ public class TrajectoryBall {
         Rotation2d targetHeading =
                 calculateTargetHeading(hubPosition, robotPosition, robotVelocity, stationary.totalTime());
 
-        return finalizeParameters(compensated.launchAngle, compensated.launchSpeed, targetHeading, rpmMultiplier);
+        return finalizeParameters(
+                compensated.launchAngle, compensated.launchSpeed, targetHeading, rpmMultiplier, shooterConstants);
     }
 
     /** Calculates trajectory based on a lookup table (map) of RPM vs Distance. Assumes a fixed hood angle. */
-    public static TrajectoryResult calculateStationaryMap(Distance distance) {
+    public static TrajectoryResult calculateStationaryMap(Distance distance, ShooterConstants shooterConstants) {
         // 1. Get base RPM from interpolation map
-        double rpm = ShooterConstants.distanceToAngularVelocityDouMapRPM.get(distance.in(Meters));
+        double rpm = shooterConstants.distanceToAngularVelocityDouMapRPM().get(distance.in(Meters));
         AngularVelocity flywheelVelocity = RPM.of(rpm);
 
         // 2. Convert RPM to tangential surface speed of the flywheel
         // v = omega * r
-        LinearVelocity tangentialVelocity =
-                MetersPerSecond.of(flywheelVelocity.in(RadiansPerSecond) * ShooterConstants.flywheelRadius.in(Meters));
+        LinearVelocity tangentialVelocity = MetersPerSecond.of(flywheelVelocity.in(RadiansPerSecond)
+                * shooterConstants.flywheelRadius().in(Meters));
 
         // 3. Estimate launch speed using an efficiency factor (loss during transfer to ball)
         LinearVelocity launchSpeed =
-                MetersPerSecond.of(tangentialVelocity.in(MetersPerSecond) * ShooterConstants.launchEfficiency);
-        Angle angle = ShooterConstants.kFixedHoodAngle;
+                MetersPerSecond.of(tangentialVelocity.in(MetersPerSecond) * shooterConstants.launchEfficiency());
+        Angle angle = shooterConstants.kFixedHoodAngle();
 
         // 4. Calculate Time of Flight (TOF)
         // t = distance / horizontal_velocity
@@ -107,8 +111,8 @@ public class TrajectoryBall {
         return new TrajectoryResult(angle, launchSpeed, totalTime);
     }
 
-    public static AngularVelocity getFlywheelVelocityForDistance(Distance distance) {
-        double rpm = ShooterConstants.distanceToAngularVelocityDouMapRPM.get(distance.in(Meters));
+    public static AngularVelocity getFlywheelVelocityForDistance(Distance distance, ShooterConstants shooterConstants) {
+        double rpm = shooterConstants.distanceToAngularVelocityDouMapRPM().get(distance.in(Meters));
         return RPM.of(rpm);
     }
 
@@ -116,11 +120,12 @@ public class TrajectoryBall {
      * Calculates required velocity for a fixed launch angle to hit a target. Uses the projectile motion equation: y =
      * x*tan(theta) - (g*x^2) / (2*v^2*cos^2(theta))
      */
-    private static TrajectoryResult calculateFixedAngle(Distance distance, Distance targetHeight, Angle fixedAngle) {
+    private static TrajectoryResult calculateFixedAngle(
+            Distance distance, Distance targetHeight, Angle fixedAngle, ShooterConstants shooterConstants) {
         double d = distance.in(Meters);
         double theta = fixedAngle.in(Radians);
-        double gravity = ShooterConstants.gravity.in(MetersPerSecondPerSecond);
-        double deltaH = targetHeight.minus(ShooterConstants.shooterHeight).in(Meters);
+        double gravity = shooterConstants.gravity().in(MetersPerSecondPerSecond);
+        double deltaH = targetHeight.minus(shooterConstants.shooterHeight()).in(Meters);
 
         // Solving for v: v = sqrt( (g * d^2) / (2 * cos^2(theta) * (d * tan(theta) - deltaH)) )
         double cosTheta = Math.cos(theta);
@@ -209,18 +214,22 @@ public class TrajectoryBall {
 
     /** Applies multipliers, clamps, and converts linear speed back to flywheel RPM. */
     private static ShootingParameters finalizeParameters(
-            Angle launchAngle, LinearVelocity launchSpeed, Rotation2d heading, double rpmMult) {
+            Angle launchAngle,
+            LinearVelocity launchSpeed,
+            Rotation2d heading,
+            double rpmMult,
+            ShooterConstants shooterConstants) {
 
         // 1. Linear speed back to RPM
         // omega = (v / efficiency) / r
-        double flywheelRadiusMeters = ShooterConstants.flywheelRadius.in(Meters);
+        double flywheelRadiusMeters = shooterConstants.flywheelRadius().in(Meters);
         double angularVelRadPerSec =
-                (launchSpeed.in(MetersPerSecond) / ShooterConstants.launchEfficiency) / flywheelRadiusMeters;
+                (launchSpeed.in(MetersPerSecond) / shooterConstants.launchEfficiency()) / flywheelRadiusMeters;
         double rpm = RadiansPerSecond.of(angularVelRadPerSec).in(RPM) * rpmMult;
 
         rpm = Math.max(
-                ShooterConstants.minShootingFlywheelVelocity.in(RPM),
-                Math.min(ShooterConstants.maxShootingFlywheelVelocity.in(RPM), rpm));
+                shooterConstants.minShootingFlywheelVelocity().in(RPM),
+                Math.min(shooterConstants.maxShootingFlywheelVelocity().in(RPM), rpm));
         return new ShootingParameters(launchAngle, RPM.of(rpm), heading);
     }
 }

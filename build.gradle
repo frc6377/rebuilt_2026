@@ -193,9 +193,9 @@ task(eventDeploy) {
 }
 createVersionFile.dependsOn(eventDeploy)
 
-// Sync camera positions from VisionConstants.java to AdvantageScope config.json
+// Sync camera positions from BaseVisionConstants.java to AdvantageScope config.json
 task syncAdvantageScopeConfig {
-    def visionConstantsFile = file('src/main/java/frc/robot/subsystems/vision/VisionConstants.java')
+    def visionConstantsFile = file('src/main/java/frc/robot/subsystems/vision/constants/BaseVisionConstants.java')
     def configFile = file('AdvantageScopeAssets/Robot_HowdyBot_2026/config.json')
 
     inputs.file visionConstantsFile
@@ -207,7 +207,7 @@ task syncAdvantageScopeConfig {
         def extract = { String name ->
             def m = (src =~ /(?m)$name\s*=\s*([^;]+);/)
             if (m.find()) return m.group(1).trim() as double
-            throw new GradleException("Could not find $name in VisionConstants.java")
+            throw new GradleException("Could not find $name in BaseVisionConstants.java")
         }
 
         def x = extract('CAMERA0_X_INCHES')

@@ -9,7 +9,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.energy.FinanceDepartment;
 import frc.robot.energy.MechanismStates;
-import frc.robot.subsystems.intake.IntakeConstants;
+import frc.robot.subsystems.intake.BaseIntakeConstants;
 import frc.robot.util.FullSubsystem;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLogOutput;
@@ -20,6 +20,7 @@ public class BaseShooter extends FullSubsystem {
     private final BaseShooterIO io;
     private final BaseShooterIOInputsAutoLogged inputs = new BaseShooterIOInputsAutoLogged();
     private final ShooterConstants.ShooterConfig config;
+    private final ShooterConstants constants;
 
     private final SysIdRoutine sysIdRoutine;
 
@@ -29,9 +30,10 @@ public class BaseShooter extends FullSubsystem {
     // Failure state
     private boolean flywheelFailed = false;
 
-    public BaseShooter(BaseShooterIO io, ShooterConstants.ShooterConfig config) {
+    public BaseShooter(BaseShooterIO io, ShooterConstants.ShooterConfig config, ShooterConstants constants) {
         this.io = io;
         this.config = config;
+        this.constants = constants;
 
         sysIdRoutine = new SysIdRoutine(
                 new SysIdRoutine.Config(
@@ -72,7 +74,7 @@ public class BaseShooter extends FullSubsystem {
 
         double rpm = flywheelSetpoint.in(RPM);
         if (intakeRoller) {
-            double idleRpm = Math.abs(IntakeConstants.RollerConstants.kIdleSpeed.in(RPM));
+            double idleRpm = Math.abs(BaseIntakeConstants.DATA.rollerIdleSpeed().in(RPM));
             MechanismStates.Roller state = Math.abs(rpm) < 1.0
                     ? MechanismStates.Roller.OFF
                     : Math.abs(rpm) <= idleRpm * 1.5 ? MechanismStates.Roller.IDLE : MechanismStates.Roller.ACTIVE;
@@ -119,7 +121,7 @@ public class BaseShooter extends FullSubsystem {
     /** Check if flywheel is at target velocity. */
     @AutoLogOutput(key = "AtTargetVelocity")
     public boolean atTargetVelocity() {
-        AngularVelocity tolerance = ShooterConstants.kFlywheelVelocityTolerance;
+        AngularVelocity tolerance = constants.kFlywheelVelocityTolerance();
         return flywheelFailed
                 || Math.abs(inputs.flywheelVelocity.in(RPM) - flywheelSetpoint.in(RPM)) < tolerance.in(RPM);
     }
