@@ -19,6 +19,7 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants;
 import org.littletonrobotics.junction.Logger;
 
 /** Feeder subsystem that pushes game pieces into the shooter. */
@@ -27,6 +28,7 @@ public class Upgoer extends SubsystemBase {
     private final UpgoerIOInputsAutoLogged inputs = new UpgoerIOInputsAutoLogged();
     private final String logName;
     private final double multiplier;
+    private int loopCounter = 0;
 
     private AngularVelocity setpoint = RPM.of(0.0);
 
@@ -43,13 +45,16 @@ public class Upgoer extends SubsystemBase {
     @Override
     public void periodic() {
         io.updateInputs(inputs);
-        Logger.processInputs(logName, inputs);
-        Logger.recordOutput(logName + "/Setpoint", setpoint);
-        Logger.recordOutput(logName + "/Running", Math.abs(setpoint.in(RPM)) > 1.0);
-        Logger.recordOutput(logName + "/AtTargetVelocity", atTargetVelocity());
-        Logger.recordOutput(
-                logName + "/CurrentCommand",
-                getCurrentCommand() != null ? getCurrentCommand().getName() : "None");
+        loopCounter++;
+        if (Constants.currentMode != Constants.Mode.SIM || loopCounter % 2 == 0) {
+            Logger.processInputs(logName, inputs);
+            Logger.recordOutput(logName + "/Setpoint", setpoint);
+            Logger.recordOutput(logName + "/Running", Math.abs(setpoint.in(RPM)) > 1.0);
+            Logger.recordOutput(logName + "/AtTargetVelocity", atTargetVelocity());
+            Logger.recordOutput(
+                    logName + "/CurrentCommand",
+                    getCurrentCommand() != null ? getCurrentCommand().getName() : "None");
+        }
     }
 
     /** Set the feeder velocity. */

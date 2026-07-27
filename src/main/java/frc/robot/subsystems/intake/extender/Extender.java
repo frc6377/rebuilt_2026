@@ -4,12 +4,14 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants;
 import java.util.function.BooleanSupplier;
 import org.littletonrobotics.junction.Logger;
 
 public class Extender extends SubsystemBase {
     private final ExtenderIO io;
     private final ExtenderIOInputsAutoLogged inputs = new ExtenderIOInputsAutoLogged();
+    private int loopCounter = 0;
 
     public Extender(ExtenderIO io) {
         this.io = io;
@@ -19,10 +21,13 @@ public class Extender extends SubsystemBase {
     public void periodic() {
         io.updateInputs(inputs);
         io.periodic();
-        Logger.processInputs("Intake/Extender", inputs);
-        Logger.recordOutput(
-                "Intake/Extender/CurrentCommand",
-                getCurrentCommand() == null ? "null" : getCurrentCommand().toString());
+        loopCounter++;
+        if (Constants.currentMode != Constants.Mode.SIM || loopCounter % 2 == 0) {
+            Logger.processInputs("Intake/Extender", inputs);
+            Logger.recordOutput(
+                    "Intake/Extender/CurrentCommand",
+                    getCurrentCommand() == null ? "null" : getCurrentCommand().toString());
+        }
     }
 
     public BooleanSupplier isAtTarget() {

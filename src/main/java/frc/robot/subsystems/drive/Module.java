@@ -20,6 +20,7 @@ import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
+import frc.robot.Constants;
 import org.littletonrobotics.junction.Logger;
 
 public class Module {
@@ -28,6 +29,7 @@ public class Module {
     private final int index;
     private final SwerveModuleConstants constants;
     private final String logKey;
+    private int loopCounter = 0;
 
     private final Alert driveDisconnectedAlert;
     private final Alert turnDisconnectedAlert;
@@ -47,7 +49,10 @@ public class Module {
 
     public void periodic() {
         io.updateInputs(inputs);
-        Logger.processInputs(logKey, inputs);
+        loopCounter++;
+        if (Constants.currentMode != Constants.Mode.SIM || loopCounter % 2 == 0) {
+            Logger.processInputs(logKey, inputs);
+        }
 
         // Calculate positions for odometry
         int sampleCount = inputs.odometryTimestamps.length; // All signals are sampled together

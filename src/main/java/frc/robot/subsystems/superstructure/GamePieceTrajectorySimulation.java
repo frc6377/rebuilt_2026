@@ -260,7 +260,10 @@ public class GamePieceTrajectorySimulation {
 
         // Scoring logic: when the projectile hits the hub, spit it back out
         projectile
-                .withTargetPosition(() -> FieldConstants.Hub.topCenterPoint)
+                .withTargetPosition(() -> new Translation3d(
+                        FieldConstants.getHubPosition().getMeasureX(),
+                        FieldConstants.getHubPosition().getMeasureY(),
+                        FieldConstants.Hub.topCenterPoint.getMeasureZ()))
                 .withTargetTolerance(new Translation3d(FieldConstants.Hub.width, FieldConstants.Hub.width, 1.0))
                 .withHitTargetCallBack(() -> {
                     // Start from the middle of the hub
@@ -275,7 +278,7 @@ public class GamePieceTrajectorySimulation {
                             new Translation2d(),
                             new ChassisSpeeds(),
                             spitDirection,
-                            Meters.of(FieldConstants.Hub.innerHeight),
+                            Feet.of(2),
                             MetersPerSecond.of(4.0),
                             Degrees.of(15.0));
                     SimulatedArena.getInstance().addGamePieceProjectile(spitBall);

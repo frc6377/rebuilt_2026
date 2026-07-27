@@ -32,11 +32,42 @@ public class GamePieceCameraSim {
         private static final double stepMeters = 0.1;
 
         boolean blocks(Translation3d start, Translation3d end) {
-            int samples = Math.max(1, (int) Math.ceil(start.getDistance(end) / stepMeters));
-            for (int i = 0; i <= samples; i++) {
-                if (contains(start.interpolate(end, (double) i / samples))) return true;
+            double x1 = start.getX(), y1 = start.getY(), z1 = start.getZ();
+            double x2 = end.getX(), y2 = end.getY(), z2 = end.getZ();
+
+            double tmin = 0.0, tmax = 1.0;
+
+            double dx = x2 - x1;
+            if (Math.abs(dx) < 1e-9) {
+                if (x1 < minX || x1 > maxX) return false;
+            } else {
+                double t1 = (minX - x1) / dx;
+                double t2 = (maxX - x1) / dx;
+                tmin = Math.max(tmin, Math.min(t1, t2));
+                tmax = Math.min(tmax, Math.max(t1, t2));
             }
-            return false;
+
+            double dy = y2 - y1;
+            if (Math.abs(dy) < 1e-9) {
+                if (y1 < minY || y1 > maxY) return false;
+            } else {
+                double t1 = (minY - y1) / dy;
+                double t2 = (maxY - y1) / dy;
+                tmin = Math.max(tmin, Math.min(t1, t2));
+                tmax = Math.min(tmax, Math.max(t1, t2));
+            }
+
+            double dz = z2 - z1;
+            if (Math.abs(dz) < 1e-9) {
+                if (z1 < minZ || z1 > maxZ) return false;
+            } else {
+                double t1 = (minZ - z1) / dz;
+                double t2 = (maxZ - z1) / dz;
+                tmin = Math.max(tmin, Math.min(t1, t2));
+                tmax = Math.min(tmax, Math.max(t1, t2));
+            }
+
+            return tmax >= tmin;
         }
 
         boolean contains(Translation3d point) {
@@ -124,9 +155,13 @@ public class GamePieceCameraSim {
 
     public Pose3d[] getVisiblePieces() {
         Pose3d cameraPose = new Pose3d(robotPoseSupplier.get()).transformBy(robotToCamera);
+        Translation3d camTrans = cameraPose.getTranslation();
+        double maxDist = maxRange.in(Meters);
+
         return Arrays.stream(SimulatedArena.getInstance().getGamePiecesArrayByType("Fuel"))
+                .filter(fuel -> fuel.getTranslation().getDistance(camTrans) <= maxDist)
                 .filter(fuel -> cameraSim.canSeeTargetPose(cameraPose, new VisionTargetSim(fuel, fuelModel)))
-                .filter(fuel -> hasLineOfSight(cameraPose.getTranslation(), fuel.getTranslation()))
+                .filter(fuel -> hasLineOfSight(camTrans, fuel.getTranslation()))
                 .toArray(Pose3d[]::new);
     }
 

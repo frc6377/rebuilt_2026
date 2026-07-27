@@ -120,7 +120,7 @@ public class RobotContainer {
         RobotState.create();
         PathGenerator.registerTrenchZones();
 
-        usingController = true;
+        usingController = false;
 
         if (usingController || Constants.currentMode != Constants.Mode.SIM) {
             OIController = new OIXbox();
@@ -393,8 +393,8 @@ public class RobotContainer {
                 // The lambda () -> ensures this check happens every loop
                 this::driveTranslationYInput,
                 this::driveTranslationXInput,
-                () -> OIController.driveRotation().getAsDouble(),
-                () -> OIController.xDrive().getAsBoolean()));
+                OIController.driveRotation(),
+                OIController.xDrive()));
         // // Lock to 0° when butn is
         // OIController.driveLock0()
         // .whileTrue(DriveCommands.joystickDriveAtAngle(
@@ -541,6 +541,8 @@ public class RobotContainer {
                                         .until(() -> superstructure.isReadyToShoot(drive.getRotation()))
                                         .withTimeout(0.7),
                                 Commands.parallel(
+                                        superstructure.simAutoFireHoldCommand(
+                                                () -> superstructure.isReadyToShoot(drive.getRotation())),
                                         superstructure.fireCommand(),
                                         indexer.index(),
                                         intake.siftFuelCommand(),
@@ -613,6 +615,9 @@ public class RobotContainer {
 
     private static final Pose2d kSimStartPose = new Pose2d(3.0, 3.0, Rotation2d.kZero);
     private boolean simPoseSet = false;
+    private int simLoopCounter = 0;
+    private Pose3d[] cachedFuelPoses = new Pose3d[0];
+    private Pose3d[] cachedVisibleFuel = new Pose3d[0];
 
     public void resetSimulationField() {
         if (Constants.currentMode != Constants.Mode.SIM) return;
@@ -639,17 +644,6 @@ public class RobotContainer {
             }
         }
 
-        // Toggle collisions for game pieces when on a bump
-        for (GamePieceOnFieldSimulation gamePiece : SimulatedArena.getInstance().gamePiecesOnField()) {
-            boolean onBump = drive.getElevation(new Translation2d(
-                            gamePiece.getTransform().getTranslation().x,
-                            gamePiece.getTransform().getTranslation().y))
-                    > 0;
-            for (BodyFixture fixture : gamePiece.getFixtures()) {
-                fixture.setSensor(onBump);
-            }
-        }
-
         if (intake.isRollerRunningSupplier().getAsBoolean()
                 && intake.isExtendedSupplier().getAsBoolean()) {
             intakeSimulation.startIntake();
@@ -657,23 +651,43 @@ public class RobotContainer {
             intakeSimulation.stopIntake();
         }
 
-        Pose3d[] fuel = SimulatedArena.getInstance().getGamePiecesArrayByType("Fuel");
-        for (int i = 0; i < fuel.length; i++) {
-            fuel[i] = new Pose3d(
-                    fuel[i].getX(),
-                    fuel[i].getY(),
-                    drive.getElevation(fuel[i].getTranslation().toTranslation2d()),
-                    fuel[i].getRotation());
+        simLoopCounter++;
+        // Downsample heavy game piece sweeps & AdvantageKit array logging to 10 Hz (every 5th loop) to prevent
+        // simulation lag
+        if (simLoopCounter % 5 == 0) {
+            // Toggle collisions for game pieces when on a bump (solid on flat ground so fuel collides with robot)
+            for (GamePieceOnFieldSimulation gamePiece :
+                    SimulatedArena.getInstance().gamePiecesOnField()) {
+                boolean onBump = drive.getElevation(new Translation2d(
+                                gamePiece.getTransform().getTranslation().x,
+                                gamePiece.getTransform().getTranslation().y))
+                        > 0;
+                for (BodyFixture fixture : gamePiece.getFixtures()) {
+                    fixture.setSensor(onBump);
+                }
+            }
+
+            Pose3d[] fuel = SimulatedArena.getInstance().getGamePiecesArrayByType("Fuel");
+            cachedFuelPoses = new Pose3d[fuel.length];
+            for (int i = 0; i < fuel.length; i++) {
+                cachedFuelPoses[i] = new Pose3d(
+                        fuel[i].getX(),
+                        fuel[i].getY(),
+                        Math.max(drive.getElevation(fuel[i].getTranslation().toTranslation2d()), fuel[i].getZ()),
+                        fuel[i].getRotation());
+            }
+            cachedVisibleFuel = gamePieceCamera != null ? gamePieceCamera.getVisiblePieces() : new Pose3d[0];
+
+            Logger.recordOutput("FieldSimulation/Fuel", cachedFuelPoses);
+            Logger.recordOutput("FieldSimulation/VisibleFuel", cachedVisibleFuel);
+            Logger.recordOutput("FieldSimulation/FuelCount", cachedFuelPoses.length);
+            Logger.recordOutput("FieldSimulation/VisibleFuelCount", cachedVisibleFuel.length);
         }
-        Pose3d[] visibleFuel = gamePieceCamera.getVisiblePieces();
+
         if (driveSimulation != null) {
             Logger.recordOutput(
                     "FieldSimulation/RobotPosition", drive.getPose3d(driveSimulation.getSimulatedDriveTrainPose()));
         }
-        Logger.recordOutput("FieldSimulation/Fuel", fuel);
-        Logger.recordOutput("FieldSimulation/VisibleFuel", visibleFuel);
-        Logger.recordOutput("FieldSimulation/FuelCount", fuel.length);
-        Logger.recordOutput("FieldSimulation/VisibleFuelCount", visibleFuel.length);
         Logger.recordOutput("FieldSimulation/Intake/IntakedGamepieces", intakeSimulation.getGamePiecesAmount());
         Logger.recordOutput(
                 "Shooting/WhoWonAuton",

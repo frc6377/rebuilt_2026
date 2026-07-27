@@ -8,6 +8,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
+import frc.robot.Constants;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
@@ -19,6 +20,7 @@ public class BaseShooter extends SubsystemBase {
     private final ShooterConstants.ShooterConfig config;
 
     private final SysIdRoutine sysIdRoutine;
+    private int loopCounter = 0;
 
     // Setpoints
     private AngularVelocity flywheelSetpoint = RPM.of(0.0);
@@ -43,16 +45,17 @@ public class BaseShooter extends SubsystemBase {
     @Override
     public void periodic() {
         io.updateInputs(inputs);
-        Logger.processInputs(config.name(), inputs);
-        Logger.recordOutput(config.name() + "/Enabled", config.enabled());
-        Logger.recordOutput(config.name() + "/FollowerEnabled", config.followerEnabled());
-        Logger.recordOutput(config.name() + "/FlywheelFailed", flywheelFailed);
-        Logger.recordOutput(config.name() + "/FlywheelSetpoint", flywheelSetpoint);
-        if (getCurrentCommand() != null) {
-            Logger.recordOutput(
-                    config.name() + "/CurrentCommand", getCurrentCommand().getName());
-        } else {
-            Logger.recordOutput(config.name() + "/CurrentCommand", "None");
+        loopCounter++;
+        if (Constants.currentMode != Constants.Mode.SIM || loopCounter % 2 == 0) {
+            Logger.processInputs(config.name(), inputs);
+            Logger.recordOutput(config.name() + "/FlywheelFailed", flywheelFailed);
+            Logger.recordOutput(config.name() + "/FlywheelSetpoint", flywheelSetpoint);
+            if (getCurrentCommand() != null) {
+                Logger.recordOutput(
+                        config.name() + "/CurrentCommand", getCurrentCommand().getName());
+            } else {
+                Logger.recordOutput(config.name() + "/CurrentCommand", "None");
+            }
         }
     }
 

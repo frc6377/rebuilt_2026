@@ -2,17 +2,14 @@ package frc.robot.FullAuto;
 
 import static edu.wpi.first.units.Units.*;
 
-import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.path.GoalEndState;
-import com.pathplanner.lib.path.IdealStartingState;
-import com.pathplanner.lib.path.PathConstraints;
-import com.pathplanner.lib.path.PathPlannerPath;
+import com.therekrab.autopilot.APTarget;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.Time;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.FieldConstants;
@@ -23,8 +20,10 @@ import frc.robot.subsystems.intake.Intake;
 import frc.robot.subsystems.intake.IntakeConstants;
 import frc.robot.subsystems.superstructure.Superstructure;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 import org.littletonrobotics.junction.Logger;
 
 public abstract class FullAutoIO extends Command {
@@ -34,17 +33,34 @@ public abstract class FullAutoIO extends Command {
         SCORING
     }
 
+    // --- Configuration Constants ---
     private static final double kIntakeTimeoutSeconds = 12.0;
+    private static final double kMaxIntakeWindowSeconds = 10.0;
     private static final double kApproachStandoffMeters = 0.35;
+    private static final double kOvershootMeters = 0.50;
     private static final double kIntakeFuelPercent = 0.9;
     private static final double kVisibleFuelLimit = 8;
     private static final Time kSearchRotateTimeout = Seconds.of(4.5);
     private static final double kMaxValidFuelHeightInches = 4.0;
     private static final double kFuelClusterGapMeters = 0.9;
-    private static final double kSearchRotatePercent = 0.1;
-    private static final double fuelFindLimit = 10.0;
+    private static final double kSearchRotatePercent = 0.25;
+    private static final double kFuelFindLimit = 10.0;
+    private static final double kFuelClearDistanceMeters = 0.6;
+    private static final double kHubExclusionRadiusMeters = 1.2;
 
+    // Extracted Magic Numbers
+    private static final double kPruneMaxDistanceMeters = 2.0;
+    private static final double kPruneFOVAngleDegrees = 45.0;
+    private static final double kAutopilotVelocity = 1.5;
+    private static final double kScoringTimeoutSeconds = 10.0;
+    private static final double kShootStopTimeSeconds = 0.25;
+
+    // --- State Variables ---
     private int estimatedFuel = 0;
+    private double intakeStageStartTime = 0.0;
+    private double totalSpinAngleRad = 0.0;
+    private Rotation2d lastSpinRotation = new Rotation2d();
+    private boolean isSpinSearching = false;
 
     protected final Drive drive;
     protected final Intake intake;
@@ -53,18 +69,20 @@ public abstract class FullAutoIO extends Command {
     protected final RobotContainer robot;
 
     private final Pose2d scoringPose = new Pose2d(2.5, 4.0, Rotation2d.kZero);
+
+    // UPDATED: Search poses restricted strictly to the center line of the Neutral Zone
     private final Pose2d[] searchPoses = {
-        new Pose2d(FieldConstants.fieldLength / 2.0, FieldConstants.fieldWidth * 0.1, Rotation2d.fromDegrees(90)),
-        new Pose2d(FieldConstants.fieldLength / 2.0, FieldConstants.fieldWidth * 0.9, Rotation2d.fromDegrees(-90)),
-        new Pose2d(2.5, 4.0, Rotation2d.kZero),
-        new Pose2d(FieldConstants.fieldLength / 2.0, FieldConstants.fieldWidth / 2.0, new Rotation2d())
+        new Pose2d(FieldConstants.LinesVertical.center, FieldConstants.fieldWidth * 0.2, Rotation2d.fromDegrees(90)),
+        new Pose2d(FieldConstants.LinesVertical.center, FieldConstants.fieldWidth * 0.8, Rotation2d.fromDegrees(-90)),
+        new Pose2d(FieldConstants.LinesVertical.center, FieldConstants.fieldWidth * 0.5, Rotation2d.kZero)
     };
-    private final PathConstraints intakeConstraints = new PathConstraints(0.5, 0.5, 0.5, 0.5);
 
     private Stage stage = Stage.FINDING;
     private int searchIndex;
     private Command action;
     private boolean actionRunning;
+
+    private final List<Translation2d> trackedFuelMap = new ArrayList<>();
 
     protected FullAutoIO(RobotContainer robot) {
         this.robot = robot;
@@ -89,15 +107,21 @@ public abstract class FullAutoIO extends Command {
     @Override
     public void initialize() {
         searchIndex = 0;
+        estimatedFuel = 0;
+        trackedFuelMap.clear();
         setStage(Stage.FINDING);
     }
 
     @Override
     public void execute() {
-        logStatus(getValidFuel());
+        Pose3d[] visibleFuel = getValidFuel();
+        updateFuelMemory(visibleFuel);
+        pruneClearedFuel(visibleFuel);
+        logStatus(visibleFuel);
+
         switch (stage) {
             case FINDING -> finding();
-            case INTAKING -> intaking();
+            case INTAKING -> intaking(visibleFuel);
             case SCORING -> scoring();
         }
     }
@@ -110,44 +134,60 @@ public abstract class FullAutoIO extends Command {
     }
 
     private void setStage(Stage next) {
-        if (next == Stage.SCORING && estimatedFuel <= 0) {
-            next = Stage.FINDING;
-        }
-
         cancelAction(true);
         stage = next;
+        isSpinSearching = false;
         Logger.recordOutput("FullAuto/Stage", stage.name());
+
         switch (stage) {
             case FINDING -> startSearch();
-            case INTAKING -> startIntake();
+            case INTAKING -> {
+                intakeStageStartTime = Timer.getFPGATimestamp();
+                startIntake();
+            }
             case SCORING -> startScoring();
         }
     }
 
     private void finding() {
-        if (estimatedFuel > fuelFindLimit) {
+        if (hasAnyFuel() && estimatedFuel > kFuelFindLimit) {
             setStage(Stage.SCORING);
             return;
         }
 
-        runAction();
-        if (!actionFinished()) {
-            return;
-        }
-
-        Pose3d[] validFuel = getValidFuel();
-        if (enoughVisibleFuel()
-                || (validFuel.length > 0 && validFuel.length > IntakeConstants.kIntakeCapacity * kIntakeFuelPercent)) {
+        if (enoughVisibleFuel() || !trackedFuelMap.isEmpty()) {
             setStage(Stage.INTAKING);
             return;
         }
 
-        searchIndex = (searchIndex + 1) % searchPoses.length;
-        startSearch();
+        runAction();
+
+        if (actionFinished()) {
+            searchIndex = (searchIndex + 1) % searchPoses.length;
+            startSearch();
+        }
     }
 
     private void startSearch() {
-        Pose2d waypoint = FieldConstants.toCurrentAlliancePose(searchPoses[searchIndex]);
+        Pose2d waypoint;
+
+        if (!trackedFuelMap.isEmpty()) {
+            double meanX = trackedFuelMap.stream()
+                    .mapToDouble(Translation2d::getX)
+                    .average()
+                    .orElse(0.0);
+            double meanY = trackedFuelMap.stream()
+                    .mapToDouble(Translation2d::getY)
+                    .average()
+                    .orElse(0.0);
+
+            Translation2d meanPos = new Translation2d(meanX, meanY);
+            Rotation2d heading = meanPos.minus(drive.getPose().getTranslation()).getAngle();
+            waypoint = new Pose2d(meanPos, heading);
+        } else {
+            waypoint = FieldConstants.toCurrentAlliancePose(searchPoses[searchIndex]);
+        }
+
         Logger.recordOutput("FullAuto/SearchPose", waypoint);
         startAction(drive.smartAlign(waypoint)
                 .andThen(Commands.run(
@@ -159,46 +199,153 @@ public abstract class FullAutoIO extends Command {
                 .withName("FullAutoSearch"));
     }
 
-    private boolean enoughVisibleFuel() {
-        return getValidFuel().length >= kVisibleFuelLimit;
-    }
+    private void updateFuelMemory(Pose3d[] validFuel) {
+        for (Pose3d p : validFuel) {
+            Translation2d pos = p.toPose2d().getTranslation();
+            if (isNearHub(pos)) continue;
 
-    private void intaking() {
-        runAction();
-        if (action == null || actionFinished()) {
-            if (estimatedFuel > 0) {
-                setStage(Stage.SCORING);
-            } else if (getValidFuel().length > 0) {
-                startIntake();
-            } else {
-                setStage(Stage.FINDING);
+            boolean isAlreadyTracked =
+                    trackedFuelMap.stream().anyMatch(tracked -> tracked.getDistance(pos) < kFuelClearDistanceMeters);
+
+            if (!isAlreadyTracked) {
+                trackedFuelMap.add(pos);
             }
         }
     }
 
-    private void startIntake() {
-        Pose3d[] validFuel = getValidFuel();
-        Optional<PathPlannerPath> pathOpt = pathFromFuel(validFuel);
-        if (pathOpt.isEmpty()) {
-            action = null;
-            actionRunning = false;
+    private void pruneClearedFuel(Pose3d[] currentlyVisible) {
+        Pose2d robotPose = drive.getPose();
+        Translation2d robotTrans = robotPose.getTranslation();
+
+        Iterator<Translation2d> iterator = trackedFuelMap.iterator();
+        while (iterator.hasNext()) {
+            Translation2d tracked = iterator.next();
+
+            if (tracked.getDistance(robotTrans) < kFuelClearDistanceMeters) {
+                iterator.remove();
+                continue;
+            }
+
+            boolean sawInVision = Arrays.stream(currentlyVisible)
+                    .anyMatch(vis -> vis.toPose2d().getTranslation().getDistance(tracked) < kFuelClearDistanceMeters);
+
+            if (!sawInVision && tracked.getDistance(robotTrans) < kPruneMaxDistanceMeters) {
+                Rotation2d angleToTarget = tracked.minus(robotTrans).getAngle();
+                if (Math.abs(angleToTarget.minus(robotPose.getRotation()).getDegrees()) < kPruneFOVAngleDegrees) {
+                    iterator.remove();
+                }
+            }
+        }
+    }
+
+    private boolean enoughVisibleFuel() {
+        return getValidFuel().length >= kVisibleFuelLimit;
+    }
+
+    private boolean hasAnyFuel() {
+        return estimatedFuel > 0 || getActualIntakeFuel() > 0 || intakeHasFuel();
+    }
+
+    private void intaking(Pose3d[] visibleFuel) {
+        boolean isHopperFull = estimatedFuel >= IntakeConstants.kIntakeCapacity
+                || getActualIntakeFuel() >= IntakeConstants.kIntakeCapacity;
+        boolean isTimeUp = (Timer.getFPGATimestamp() - intakeStageStartTime) >= kMaxIntakeWindowSeconds;
+
+        if (isHopperFull || isTimeUp) {
+            setStage(hasAnyFuel() ? Stage.SCORING : Stage.FINDING);
             return;
         }
 
-        PathPlannerPath path = pathOpt.get();
-        estimatedFuel += estimateFuelOnPath(path, validFuel);
-        Pose2d start = path.getStartingHolonomicPose().orElseThrow();
+        if (actionRunning && action != null && !isSpinSearching) {
+            runAction();
+            return;
+        }
+
+        if (visibleFuel.length >= kVisibleFuelLimit) {
+            isSpinSearching = false;
+            if (!startIntake()) setStage(hasAnyFuel() ? Stage.SCORING : Stage.FINDING);
+            return;
+        }
+
+        handleSpinSearch(visibleFuel);
+    }
+
+    private void handleSpinSearch(Pose3d[] visibleFuel) {
+        if (!isSpinSearching) {
+            isSpinSearching = true;
+            totalSpinAngleRad = 0.0;
+            lastSpinRotation = drive.getPose().getRotation();
+            cancelAction(true);
+        }
+
+        drive.runVelocity(new ChassisSpeeds(0, 0, drive.getMaxAngularSpeedRadPerSec() * kSearchRotatePercent));
+        intake.intakeRollerCommand().execute();
+
+        Rotation2d currentRot = drive.getPose().getRotation();
+        totalSpinAngleRad += Math.abs(currentRot.minus(lastSpinRotation).getRadians());
+        lastSpinRotation = currentRot;
+
+        if (totalSpinAngleRad >= (2.0 * Math.PI - 0.2)) {
+            isSpinSearching = false;
+            drive.stop();
+
+            if (visibleFuel.length > 0 || !trackedFuelMap.isEmpty()) {
+                if (!startIntake()) {
+                    if (!trackedFuelMap.isEmpty()) trackedFuelMap.remove(0);
+                    setStage(hasAnyFuel() ? Stage.SCORING : Stage.FINDING);
+                }
+            } else {
+                setStage(hasAnyFuel() ? Stage.SCORING : Stage.FINDING);
+            }
+        }
+    }
+
+    private boolean startIntake() {
+        Pose3d[] validFuel = getValidFuel();
+        List<FuelCluster> clusters = getVisibleClusters(validFuel);
+
+        Translation2d targetCentroid = null;
+        if (!clusters.isEmpty()) {
+            List<Pose3d> clusterPoses = selectBestCluster(clusters).poses();
+
+            double meanX =
+                    clusterPoses.stream().mapToDouble(Pose3d::getX).average().orElse(0.0);
+            double meanY =
+                    clusterPoses.stream().mapToDouble(Pose3d::getY).average().orElse(0.0);
+            targetCentroid = new Translation2d(meanX, meanY);
+
+        } else if (!trackedFuelMap.isEmpty()) {
+            targetCentroid = trackedFuelMap.get(0);
+        }
+
+        if (targetCentroid == null) {
+            cancelAction(true);
+            return false;
+        }
+
+        Translation2d robotTrans = drive.getPose().getTranslation();
+        Rotation2d heading = targetCentroid.minus(robotTrans).getAngle();
+
+        Translation2d overshootTarget = targetCentroid.plus(new Translation2d(kOvershootMeters, heading));
+        Pose2d targetPose = new Pose2d(overshootTarget, heading);
+
+        APTarget apTarget =
+                new APTarget(targetPose).withVelocity(kAutopilotVelocity).withEntryAngle(heading);
+
+        estimatedFuel += Math.max(1, clusters.isEmpty() ? 1 : clusters.get(0).fuelAmount());
 
         startAction(intake.extendIntake()
-                .andThen(Commands.parallel(
-                        drive.smartAlign(start).andThen(AutoBuilder.followPath(path)), intake.intakeRollerCommand()))
+                .andThen(Commands.parallel(drive.align(apTarget), intake.intakeRollerCommand()))
                 .withTimeout(kIntakeTimeoutSeconds)
-                .withName("FullAutoIntake"));
+                .withName("FullAutoIntakeAutopilot"));
+        return true;
     }
 
     private void scoring() {
         runAction();
-        if (action == null || actionFinished()) {
+        if (actionFinished()) {
+            estimatedFuel = 0;
+            trackedFuelMap.clear();
             setStage(Stage.FINDING);
         }
     }
@@ -208,8 +355,9 @@ public abstract class FullAutoIO extends Command {
         startAction(drive.smartAlign(FieldConstants.toCurrentAlliancePose(scoringPose))
                 .andThen(Commands.parallel(robot.shootAutoModeCommand(drive), scoringFireCommand())
                         .until(() -> !intakeHasFuel())
-                        .withTimeout(15.0))
-                .andThen(robot.shootAutoStopCommand().withTimeout(0.25))
+                        .withTimeout(kScoringTimeoutSeconds))
+                .andThen(robot.shootAutoStopCommand().withTimeout(kShootStopTimeSeconds))
+                .finallyDo(() -> estimatedFuel = 0)
                 .withName("FullAutoScore"));
     }
 
@@ -217,113 +365,34 @@ public abstract class FullAutoIO extends Command {
         Logger.recordOutput("FullAuto/ValidVisibleFuel", validFuel.length);
         Logger.recordOutput("FullAuto/EstimatedFuel", estimatedFuel);
         Logger.recordOutput("FullAuto/ActualIntakeFuel", getActualIntakeFuel());
+        Logger.recordOutput("FullAuto/TrackedFuelCount", trackedFuelMap.size());
+        Logger.recordOutput("FullAuto/TrackedFuelLocations", trackedFuelMap.toArray(new Translation2d[0]));
     }
 
+    // UPDATED: Now filters out any fuel not inside the neutral zone box.
     protected Pose3d[] getValidFuel() {
-        Pose3d[] pieces = getVisiblePieces();
-        List<Pose3d> valid = new ArrayList<>(pieces.length);
-        for (Pose3d piece : pieces) {
-            if (piece.getMeasureZ().in(Inches) < kMaxValidFuelHeightInches) {
-                valid.add(piece);
-            }
-        }
-        return valid.toArray(Pose3d[]::new);
+        return Arrays.stream(getVisiblePieces())
+                .filter(piece -> piece.getMeasureZ().in(Inches) < kMaxValidFuelHeightInches)
+                .filter(piece -> !isNearHub(piece.toPose2d().getTranslation()))
+                .filter(piece -> isInNeutralZone(piece.toPose2d().getTranslation())) // <-- New Check
+                .toArray(Pose3d[]::new);
     }
 
-    private int estimateFuelOnPath(PathPlannerPath path, Pose3d[] visibleFuel) {
-        double halfWidth = IntakeConstants.kIntakeWidth.div(2.0).in(Meters);
-        int count = 0;
-        for (Pose3d pose : visibleFuel) {
-            if (distanceToPath(path, pose.toPose2d()) <= halfWidth) {
-                count++;
-            }
-        }
-        return count;
+    // NEW: Enforces the neutral zone bounds derived from FieldConstants
+    private boolean isInNeutralZone(Translation2d point) {
+        double x = point.getX();
+        double minX =
+                Math.min(FieldConstants.LinesVertical.neutralZoneNear, FieldConstants.LinesVertical.neutralZoneFar);
+        double maxX =
+                Math.max(FieldConstants.LinesVertical.neutralZoneNear, FieldConstants.LinesVertical.neutralZoneFar);
+
+        return x >= minX && x <= maxX;
     }
 
-    private double distanceToPath(PathPlannerPath path, Pose2d target) {
-        double min = Double.MAX_VALUE;
-        for (Pose2d pathPose : path.getPathPoses()) {
-            min = Math.min(min, pathPose.getTranslation().getDistance(target.getTranslation()));
-        }
-        return min;
-    }
-
-    private Optional<PathPlannerPath> pathFromFuel(Pose3d[] fuel) {
-        List<FuelCluster> clusters = getVisibleClusters(fuel);
-        if (clusters.isEmpty()) {
-            return Optional.empty();
-        }
-
-        List<Pose3d> cluster = selectBestCluster(clusters).poses();
-        Pose2d start;
-        Pose2d end;
-
-        if (cluster.size() == 1) {
-            Translation2d p = cluster.get(0).toPose2d().getTranslation();
-            Rotation2d heading = p.minus(drive.getPose().getTranslation()).getAngle();
-            start = new Pose2d(p.minus(new Translation2d(kApproachStandoffMeters, heading)), heading);
-            end = new Pose2d(p, heading);
-        } else {
-            int n = cluster.size();
-            double sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
-            for (Pose3d piece : cluster) {
-                sumX += piece.getX();
-                sumY += piece.getY();
-                sumXY += piece.getX() * piece.getY();
-                sumX2 += piece.getX() * piece.getX();
-                sumY2 += piece.getY() * piece.getY();
-            }
-
-            double denomX = n * sumX2 - sumX * sumX;
-            double denomY = n * sumY2 - sumY * sumY;
-            Translation2d a;
-            Translation2d b;
-
-            if (Math.abs(denomX) >= Math.abs(denomY)) {
-                double m = (n * sumXY - sumX * sumY) / denomX;
-                double intercept = (sumY - m * sumX) / n;
-                double minX = Double.POSITIVE_INFINITY, maxX = Double.NEGATIVE_INFINITY;
-                for (Pose3d piece : cluster) {
-                    minX = Math.min(minX, piece.getX());
-                    maxX = Math.max(maxX, piece.getX());
-                }
-                a = new Translation2d(minX, m * minX + intercept);
-                b = new Translation2d(maxX, m * maxX + intercept);
-            } else {
-                double m = (n * sumXY - sumX * sumY) / denomY;
-                double intercept = (sumX - m * sumY) / n;
-                double minY = Double.POSITIVE_INFINITY, maxY = Double.NEGATIVE_INFINITY;
-                for (Pose3d piece : cluster) {
-                    minY = Math.min(minY, piece.getY());
-                    maxY = Math.max(maxY, piece.getY());
-                }
-                a = new Translation2d(m * minY + intercept, minY);
-                b = new Translation2d(m * maxY + intercept, maxY);
-            }
-
-            if (a.getDistance(b) < 1e-3) {
-                Rotation2d heading = a.minus(drive.getPose().getTranslation()).getAngle();
-                start = new Pose2d(a.minus(new Translation2d(kApproachStandoffMeters, heading)), heading);
-                end = new Pose2d(a, heading);
-            } else {
-                Translation2d robotPose = drive.getPose().getTranslation();
-                boolean aCloser = a.getDistance(robotPose) <= b.getDistance(robotPose);
-                Translation2d from = aCloser ? a : b;
-                Translation2d to = aCloser ? b : a;
-                Rotation2d heading = to.minus(from).getAngle();
-                start = new Pose2d(from.minus(new Translation2d(kApproachStandoffMeters, heading)), heading);
-                end = new Pose2d(to, heading);
-            }
-        }
-
-        PathPlannerPath path = new PathPlannerPath(
-                PathPlannerPath.waypointsFromPoses(start, end),
-                intakeConstraints,
-                new IdealStartingState(0.0, start.getRotation()),
-                new GoalEndState(0.0, end.getRotation()));
-        path.preventFlipping = true;
-        return Optional.of(path);
+    private boolean isNearHub(Translation2d point) {
+        Translation2d hubCenter =
+                new Translation2d(FieldConstants.LinesVertical.hubCenter, FieldConstants.fieldWidth / 2.0);
+        return point.getDistance(hubCenter) <= kHubExclusionRadiusMeters;
     }
 
     private record FuelCluster(int fuelAmount, double distance, List<Pose3d> poses) {}
@@ -333,32 +402,31 @@ public abstract class FullAutoIO extends Command {
     }
 
     private List<FuelCluster> getVisibleClusters(Pose3d[] fuel) {
-        List<Pose3d> remaining = new ArrayList<>(List.of(fuel));
+        List<Pose3d> remaining = new ArrayList<>(Arrays.asList(fuel));
         List<FuelCluster> clusters = new ArrayList<>();
         Pose2d robotPose = drive.getPose();
 
         while (!remaining.isEmpty()) {
-            int seedIndex = 0;
-            for (int i = 1; i < remaining.size(); i++) {
-                if (distanceFrom(robotPose, remaining.get(i).toPose2d())
-                        < distanceFrom(robotPose, remaining.get(seedIndex).toPose2d())) {
-                    seedIndex = i;
-                }
-            }
+            Pose3d seed = remaining.stream()
+                    .min(Comparator.comparingDouble(p -> distanceFrom(robotPose, p.toPose2d())))
+                    .orElse(remaining.get(0));
+            remaining.remove(seed);
 
             List<Pose3d> poses = new ArrayList<>();
-            poses.add(remaining.remove(seedIndex));
+            poses.add(seed);
+
             boolean added = true;
             while (added) {
                 added = false;
                 for (int i = remaining.size() - 1; i >= 0; i--) {
                     Pose3d ball = remaining.get(i);
-                    for (Pose3d inCluster : poses) {
-                        if (distanceFrom(inCluster.toPose2d(), ball.toPose2d()) <= kFuelClusterGapMeters) {
-                            poses.add(remaining.remove(i));
-                            added = true;
-                            break;
-                        }
+                    boolean isNearCluster = poses.stream()
+                            .anyMatch(inCluster ->
+                                    distanceFrom(inCluster.toPose2d(), ball.toPose2d()) <= kFuelClusterGapMeters);
+
+                    if (isNearCluster) {
+                        poses.add(remaining.remove(i));
+                        added = true;
                     }
                 }
             }
@@ -371,17 +439,14 @@ public abstract class FullAutoIO extends Command {
     }
 
     private FuelCluster selectBestCluster(List<FuelCluster> clusters) {
-        FuelCluster best = clusters.get(0);
-        for (int i = 1; i < clusters.size(); i++) {
-            FuelCluster c = clusters.get(i);
-            if (c.fuelAmount() > best.fuelAmount()
-                    || (c.fuelAmount() == best.fuelAmount() && c.distance() < best.distance())) {
-                best = c;
-            }
-        }
-        return best;
+        return clusters.stream()
+                .max(Comparator.comparingInt(FuelCluster::fuelAmount)
+                        .thenComparing(Comparator.comparingDouble(FuelCluster::distance)
+                                .reversed()))
+                .orElse(clusters.get(0));
     }
 
+    // --- Manual Command Scheduler Logic ---
     private void startAction(Command command) {
         cancelAction(true);
         action = command;
@@ -390,9 +455,8 @@ public abstract class FullAutoIO extends Command {
     }
 
     private void runAction() {
-        if (!actionRunning || action == null) {
-            return;
-        }
+        if (!actionRunning || action == null) return;
+
         action.execute();
         if (action.isFinished()) {
             action.end(false);
