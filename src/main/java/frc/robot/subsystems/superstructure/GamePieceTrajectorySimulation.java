@@ -266,21 +266,28 @@ public class GamePieceTrajectorySimulation {
                         FieldConstants.Hub.topCenterPoint.getMeasureZ()))
                 .withTargetTolerance(new Translation3d(FieldConstants.Hub.width, FieldConstants.Hub.width, 1.0))
                 .withHitTargetCallBack(() -> {
-                    // Start from the middle of the hub
+                    // Dynamically get whichever hub we are currently aiming at (Red or Blue)
                     Translation2d hubPos = FieldConstants.getHubPosition();
-                    // neutral zone is towards the center of the field
+
+                    // Point towards the center of the field so it doesn't shoot out of bounds
                     Rotation2d spitDirection =
                             Rotation2d.fromDegrees(hubPos.getX() < FieldConstants.fieldLength / 2.0 ? 0 : 180);
 
                     GamePieceProjectile spitBall = new GamePieceProjectile(
-                            gamePieceInfo,
-                            hubPos,
-                            new Translation2d(),
-                            new ChassisSpeeds(),
-                            spitDirection,
-                            Feet.of(2),
-                            MetersPerSecond.of(4.0),
-                            Degrees.of(15.0));
+                                    gamePieceInfo,
+                                    hubPos,
+                                    new Translation2d(),
+                                    new ChassisSpeeds(),
+                                    spitDirection,
+                                    Meters.of(
+                                            FieldConstants.Hub
+                                                    .innerHeight), // 1. Spawn at the funnel exit height so it drops
+                                    MetersPerSecond.of(2.5), // 2. Gentle velocity
+                                    Degrees.of(-20.0) // 3. Aim downwards to ensure it hits the floor
+                                    )
+                            .enableBecomesGamePieceOnFieldAfterTouchGround(); // 4. CRITICAL: This stops it from falling
+                    // into the void!
+
                     SimulatedArena.getInstance().addGamePieceProjectile(spitBall);
                 });
 

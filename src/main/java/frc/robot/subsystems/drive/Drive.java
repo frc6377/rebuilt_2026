@@ -45,7 +45,6 @@ import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.system.plant.DCMotor;
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -76,10 +75,8 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
     private Supplier<Pose2d> poseSupplier;
 
     // TunerConstants doesn't include these constants, so they are declared locally
-    static final double ODOMETRY_FREQUENCY = 125; // TODO: We should figure out a more permanent solution than this but
-    // for now it's ok
-    // new CANBus(TunerConstants.DrivetrainConstants.CANBusName).isNetworkFD() ?
-    // 250.0 : 100.0;
+    static final double ODOMETRY_FREQUENCY = 125;
+
     public static final double DRIVE_BASE_RADIUS = Math.max(
             Math.max(
                     Math.hypot(TunerConstants.FrontLeft.LocationX, TunerConstants.FrontLeft.LocationY),
@@ -155,8 +152,8 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
     private final SwerveDrivePoseEstimator poseEstimator =
             new SwerveDrivePoseEstimator(kinematics, rawGyroRotation, lastModulePositions, new Pose2d());
 
-    private Pose3d[] smartAlignWaypoints = new Pose3d[] {};
-    private final Consumer<Pose2d> resetSimulationPoseCallBack; // TODO: Needs io interface sim should not be here
+    private Pose2d[] smartAlignPath = new Pose2d[] {};
+    private final Consumer<Pose2d> resetSimulationPoseCallBack;
 
     public Drive(
             GyroIO gyroIO,
@@ -173,13 +170,10 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
         modules[2] = new Module(blModuleIO, 2, TunerConstants.BackLeft);
         modules[3] = new Module(brModuleIO, 3, TunerConstants.BackRight);
 
-        // Usage reporting for swerve template
         HAL.report(tResourceType.kResourceType_RobotDrive, tInstances.kRobotDriveSwerve_AdvantageKit);
 
-        // Start odometry thread
         PhoenixOdometryThread.getInstance().start();
 
-        // Configure AutoBuilder for PathPlanner
         AutoBuilder.configure(
                 () -> poseSupplier.get(),
                 this::setPose,
@@ -189,6 +183,7 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
                 PP_CONFIG,
                 () -> DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red,
                 this);
+
         Pathfinding.setPathfinder(new LocalADStarAK());
         PathPlannerLogging.setLogActivePathCallback((activePath) -> {
             Logger.recordOutput("Odometry/Trajectory", activePath.toArray(new Pose2d[0]));
@@ -197,7 +192,6 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
             Logger.recordOutput("Odometry/TrajectorySetpoint", targetPose);
         });
 
-        // Configure SysId
         sysId = new SysIdRoutine(
                 new SysIdRoutine.Config(
                         null, null, null, (state) -> SignalLogger.writeString("Drive/SysIdState", state.toString())),
@@ -216,10 +210,12 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
         Logger.recordOutput(
                 "Drive/CurrentCommand",
                 this.getCurrentCommand() != null ? this.getCurrentCommand().getName() : "None");
-        Logger.recordOutput("Drive/SmartAlignWaypoints", smartAlignWaypoints);
+
+        // Log the full planned path so it draws a continuous line in AdvantageScope
+        Logger.recordOutput("Drive/SmartAlignPath", smartAlignPath);
         Logger.recordOutput("Odometry/Robot3d", getPose3d(getPose()));
 
-        odometryLock.lock(); // Prevents odometry updates while reading data
+        odometryLock.lock();
         gyroIO.updateInputs(gyroInputs);
         Logger.processInputs("Drive/Gyro", gyroInputs);
         for (var module : modules) {
@@ -227,24 +223,21 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
         }
         odometryLock.unlock();
 
-        // Stop moving when disabled
         if (DriverStation.isDisabled()) {
             for (var module : modules) {
                 module.stop();
             }
-        }
-
-        // Log empty setpoint states when disabled
-        if (DriverStation.isDisabled()) {
             Logger.recordOutput("SwerveStates/Setpoints", new SwerveModuleState[] {});
             Logger.recordOutput("SwerveStates/SetpointsOptimized", new SwerveModuleState[] {});
+
+            // Clear trajectories when disabled
+            smartAlignPath = new Pose2d[] {};
+            Logger.recordOutput("Drive/ActiveTarget", new Pose2d());
         }
 
-        // Update odometry
-        double[] sampleTimestamps = modules[0].getOdometryTimestamps(); // All signals are sampled together
+        double[] sampleTimestamps = modules[0].getOdometryTimestamps();
         int sampleCount = sampleTimestamps.length;
         for (int i = 0; i < sampleCount; i++) {
-            // Read wheel positions and deltas from each module
             SwerveModulePosition[] modulePositions = new SwerveModulePosition[4];
             SwerveModulePosition[] moduleDeltas = new SwerveModulePosition[4];
             for (int moduleIndex = 0; moduleIndex < 4; moduleIndex++) {
@@ -255,49 +248,33 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
                 lastModulePositions[moduleIndex] = modulePositions[moduleIndex];
             }
 
-            // Update gyro angle
             if (gyroInputs.connected) {
-                // Use the real gyro angle
                 rawGyroRotation = gyroInputs.odometryYawPositions[i];
             } else {
-                // Use the angle delta from the kinematics and module deltas
                 Twist2d twist = kinematics.toTwist2d(moduleDeltas);
                 rawGyroRotation = rawGyroRotation.plus(new Rotation2d(twist.dtheta));
             }
 
-            // Apply update
             poseEstimator.updateWithTime(sampleTimestamps[i], rawGyroRotation, modulePositions);
         }
 
-        // Update gyro alert
         gyroDisconnectedAlert.set(!gyroInputs.connected && Constants.currentMode != Mode.SIM);
     }
 
-    /**
-     * Runs the drive at the desired velocity.
-     *
-     * @param speeds Speeds in meters/sec
-     */
     public void runVelocity(ChassisSpeeds speeds) {
-        // Calculate module setpoints
         speeds = ChassisSpeeds.discretize(speeds, 0.02);
         SwerveModuleState[] setpointStates = kinematics.toSwerveModuleStates(speeds);
         SwerveDriveKinematics.desaturateWheelSpeeds(setpointStates, TunerConstants.kSpeedAt12Volts);
 
-        // Log unoptimized setpoints and setpoint speeds
         Logger.recordOutput("SwerveStates/Setpoints", setpointStates);
         Logger.recordOutput("SwerveChassisSpeeds/Setpoints", speeds);
 
-        // Send setpoints to modules
         for (int i = 0; i < 4; i++) {
             modules[i].runSetpoint(setpointStates[i]);
         }
-
-        // Log optimized setpoints (runSetpoint mutates each state)
         Logger.recordOutput("SwerveStates/SetpointsOptimized", setpointStates);
     }
 
-    /** Runs the drive in a straight line with the specified drive output. */
     public void runCharacterization(double output) {
         for (int i = 0; i < 4; i++) {
             modules[i].runCharacterization(output);
@@ -310,13 +287,13 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
         }
     }
 
-    /** Stops the drive. */
     public void stop() {
         runVelocity(new ChassisSpeeds());
     }
 
     public Command align(APTarget target) {
         return this.run(() -> {
+                    Logger.recordOutput("Drive/ActiveTarget", target.getReference()); // Log the immediate active target
                     Pose2d currentPose = getPose();
                     ChassisSpeeds robotRelativeSpeeds = getChassisSpeeds();
 
@@ -336,15 +313,13 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
                 .until(() -> autopilot.atTarget(getPose(), target))
                 .finallyDo(this::stop);
     }
-    /**
-     * * Dynamically aligns to a target that updates continuously. Perfect for sweeping through clusters of moving or
-     * disappearing objects.
-     */
+
     public Command swoop(Supplier<APTarget> targetSupplier) {
         return this.run(() -> {
-                    Pose2d currentPose = getPose();
                     APTarget target = targetSupplier.get();
+                    Logger.recordOutput("Drive/ActiveTarget", target.getReference()); // Log the dynamic target
 
+                    Pose2d currentPose = getPose();
                     var result = autopilot.calculate(currentPose, getChassisSpeeds(), target);
 
                     ChassisSpeeds fieldRelativeSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(
@@ -358,13 +333,13 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
 
                     runVelocity(fieldRelativeSpeeds);
                 })
-                // Stop when we reach the final target (or if the supplier returns our current pose)
                 .until(() -> autopilot.atTarget(getPose(), targetSupplier.get()))
                 .finallyDo(this::stop);
     }
-    /** Aligns to target while spinning continuously, suppressing spin when entering trench or bump zones. */
+
     public Command alignWithSpin(APTarget target, Supplier<Boolean> allowSpin) {
         return this.run(() -> {
+                    Logger.recordOutput("Drive/ActiveTarget", target.getReference());
                     Pose2d currentPose = getPose();
                     ChassisSpeeds robotRelativeSpeeds = getChassisSpeeds();
 
@@ -392,7 +367,6 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
                 .finallyDo(this::stop);
     }
 
-    /** Helper to check if robot translation is inside or approaching a trench or bump obstacle zone. */
     public boolean isInsideTrenchOrBump(Translation2d translation) {
         if (isNearBump(translation)) {
             return true;
@@ -415,9 +389,25 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
         return false;
     }
 
-    public Command smartAlign(Pose2d target) {
+    /**
+     * * NEW Helper Method: Clamps a Pose2d so that the robot's mathematical center is not allowed to be placed closer
+     * to the wall than its physical bumper radius.
+     */
+    public Pose2d clampPoseToField(Pose2d pose) {
+        double margin = DRIVE_BASE_RADIUS + 0.15; // 15cm safety buffer from the wall
+
+        double clampedX = Math.max(margin, Math.min(FieldConstants.fieldLength - margin, pose.getX()));
+        double clampedY = Math.max(margin, Math.min(FieldConstants.fieldWidth - margin, pose.getY()));
+
+        return new Pose2d(clampedX, clampedY, pose.getRotation());
+    }
+
+    public Command smartAlign(Pose2d rawTarget) {
         return Commands.defer(
                 () -> {
+                    // Pre-clamp the target so it's physically reachable, preventing the robot from crashing into walls
+                    Pose2d target = clampPoseToField(rawTarget);
+
                     Pose2d current = getPose();
                     Translation2d currentTrans = current.getTranslation();
                     Translation2d targetTrans = target.getTranslation();
@@ -426,12 +416,10 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
                     double oppHubX = FieldConstants.LinesVertical.oppHubCenter;
                     double centerDeltaY = FieldConstants.fieldWidth / 2.0;
 
-                    double hubHalfY = FieldConstants.Hub.width / 2.0;
                     double bumpDepth = FieldConstants.LeftBump.depth;
                     double obsHalfY = 3.5;
 
                     double obstacleX = -1;
-                    boolean intersectsHub = false;
 
                     if (pathIntersectsRect(
                             currentTrans,
@@ -441,13 +429,6 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
                             centerDeltaY - obsHalfY,
                             centerDeltaY + obsHalfY)) {
                         obstacleX = hubX;
-                        intersectsHub = pathIntersectsRect(
-                                currentTrans,
-                                targetTrans,
-                                hubX - bumpDepth / 2.0,
-                                hubX + bumpDepth / 2.0,
-                                centerDeltaY - hubHalfY,
-                                centerDeltaY + hubHalfY);
                     } else if (pathIntersectsRect(
                             currentTrans,
                             targetTrans,
@@ -456,47 +437,36 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
                             centerDeltaY - obsHalfY,
                             centerDeltaY + obsHalfY)) {
                         obstacleX = oppHubX;
-                        intersectsHub = pathIntersectsRect(
-                                currentTrans,
-                                targetTrans,
-                                oppHubX - bumpDepth / 2.0,
-                                oppHubX + bumpDepth / 2.0,
-                                centerDeltaY - hubHalfY,
-                                centerDeltaY + hubHalfY);
                     }
 
                     if (obstacleX != -1) {
-                        double bottomTrenchY = 0.6;
-                        double bottomBumpY = 2.5;
-                        double topBumpY = FieldConstants.fieldWidth - 2.5;
-                        double topTrenchY = FieldConstants.fieldWidth - 0.6;
+                        // Updated to exactly center the waypoints in the open zones based on 2026 CAD
+                        double bottomTrenchY = 0.68;
+                        double bottomBumpY = 2.58;
+                        double topBumpY = FieldConstants.fieldWidth - 2.58;
+                        double topTrenchY = FieldConstants.fieldWidth - 0.68;
 
-                        double[][] candidatePaths;
-                        if (intersectsHub) {
-                            candidatePaths = new double[][] {
-                                {bottomTrenchY, 1.0},
-                                {topTrenchY, 1.0}
-                            };
-                        } else {
-                            candidatePaths = new double[][] {
-                                {bottomTrenchY, 1.0},
-                                {bottomBumpY, 0.0},
-                                {topBumpY, 0.0},
-                                {topTrenchY, 1.0}
-                            };
-                        }
+                        // ALWAYS evaluate all 4 safe paths. No more forcing the trench.
+                        double[][] candidatePaths = new double[][] {
+                            {bottomTrenchY, 1.0},
+                            {bottomBumpY, 0.0},
+                            {topBumpY, 0.0},
+                            {topTrenchY, 1.0}
+                        };
 
                         double bestY = candidatePaths[0][0];
-                        boolean bestIsTrench = candidatePaths[0][1] == 1.0;
                         double minDistance = Double.MAX_VALUE;
 
                         for (double[] candidate : candidatePaths) {
                             double y = candidate[0];
-                            double dist = Math.abs(current.getY() - y) + Math.abs(target.getY() - y);
+
+                            // BUG FIX: True Euclidean distance to calculate the actual V-shaped path length
+                            double dist = Math.hypot(obstacleX - current.getX(), y - current.getY())
+                                    + Math.hypot(target.getX() - obstacleX, target.getY() - y);
+
                             if (dist < minDistance) {
                                 minDistance = dist;
                                 bestY = y;
-                                bestIsTrench = candidate[1] == 1.0;
                             }
                         }
 
@@ -507,41 +477,30 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
                         double entryX = (beforeX + current.getX()) / 2.0;
                         double exitX = (afterX + target.getX()) / 2.0;
 
-                        double zHeight = bestIsTrench ? 0.0 : Units.inchesToMeters(5.02);
+                        Rotation2d rot = target.getRotation();
 
-                        Pose3d w1 = new Pose3d(
-                                entryX,
-                                bestY,
-                                0.0,
-                                new Rotation3d(0, 0, target.getRotation().getRadians()));
-                        Pose3d w2 = new Pose3d(
-                                obstacleX,
-                                bestY,
-                                zHeight,
-                                new Rotation3d(0, 0, target.getRotation().getRadians()));
-                        Pose3d w3 = new Pose3d(
-                                exitX,
-                                bestY,
-                                0.0,
-                                new Rotation3d(0, 0, target.getRotation().getRadians()));
+                        Pose2d w1 = new Pose2d(entryX, bestY, rot);
+                        Pose2d w2 = new Pose2d(obstacleX, bestY, rot);
+                        Pose2d w3 = new Pose2d(exitX, bestY, rot);
 
-                        smartAlignWaypoints = new Pose3d[] {getPose3d(getPose()), w1, w2, w3, new Pose3d(target)};
+                        // Publish to array so AdvantageScope renders it as a continuous line
+                        smartAlignPath = new Pose2d[] {current, w1, w2, w3, target};
 
-                        return align(new APTarget(w1.toPose2d()))
-                                .andThen(align(new APTarget(w2.toPose2d())))
-                                .andThen(align(new APTarget(w3.toPose2d())))
-                                .andThen(align(new APTarget(target)));
+                        return align(new APTarget(w1))
+                                .andThen(align(new APTarget(w2)))
+                                .andThen(align(new APTarget(w3)))
+                                .andThen(align(new APTarget(target)))
+                                .finallyDo(() -> smartAlignPath = new Pose2d[] {}); // Clear line when finished
                     }
 
-                    smartAlignWaypoints = new Pose3d[] {new Pose3d(target)};
-                    return align(new APTarget(target));
+                    smartAlignPath = new Pose2d[] {current, target};
+                    return align(new APTarget(target)).finallyDo(() -> smartAlignPath = new Pose2d[] {});
                 },
                 Set.of(this));
     }
-    /** Helper to check if a line segment intersects an axis-aligned bounding box. */
+
     private boolean pathIntersectsRect(
             Translation2d start, Translation2d end, double minX, double maxX, double minY, double maxY) {
-        // Liang-Barsky or simple Cohen-Sutherland like check for segment-AABB intersection
         double x1 = start.getX();
         double y1 = start.getY();
         double x2 = end.getX();
@@ -573,10 +532,6 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
         return tmax >= tmin;
     }
 
-    /**
-     * Stops the drive and turns the modules to an X arrangement to resist movement. The modules will return to their
-     * normal orientations the next time a nonzero velocity is requested.
-     */
     public void stopWithX() {
         SwerveModuleState[] states = new SwerveModuleState[] {
             new SwerveModuleState(0, Rotation2d.fromDegrees(45)),
@@ -589,12 +544,10 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
         }
     }
 
-    /** Returns a command to run a quasistatic test in the specified direction. */
     public Command sysIdQuasistatic(SysIdRoutine.Direction direction) {
         return run(() -> runCharacterization(0.0)).withTimeout(5.0).andThen(sysId.quasistatic(direction));
     }
 
-    /** Returns a command to run a dynamic test in the specified direction. */
     public Command sysIdDynamic(SysIdRoutine.Direction direction) {
         return run(() -> runCharacterization(0.0)).withTimeout(5.0).andThen(sysId.dynamic(direction));
     }
@@ -607,7 +560,6 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
         return run(() -> runCharacterizationTurning(0.0)).withTimeout(1.0).andThen(sysIdTurning.dynamic(direction));
     }
 
-    /** Returns the module states (turn angles and drive velocities) for all of the modules. */
     @AutoLogOutput(key = "SwerveStates/Measured")
     private SwerveModuleState[] getModuleStates() {
         SwerveModuleState[] states = new SwerveModuleState[4];
@@ -617,7 +569,6 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
         return states;
     }
 
-    /** Returns the module positions (turn angles and drive positions) for all of the modules. */
     private SwerveModulePosition[] getModulePositions() {
         SwerveModulePosition[] states = new SwerveModulePosition[4];
         for (int i = 0; i < 4; i++) {
@@ -626,13 +577,11 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
         return states;
     }
 
-    /** Returns the measured chassis speeds of the robot. */
     @AutoLogOutput(key = "SwerveChassisSpeeds/Measured")
     public ChassisSpeeds getChassisSpeeds() {
         return kinematics.toChassisSpeeds(getModuleStates());
     }
 
-    /** Returns the position of each module in radians. */
     public double[] getWheelRadiusCharacterizationPositions() {
         double[] values = new double[4];
         for (int i = 0; i < 4; i++) {
@@ -641,7 +590,6 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
         return values;
     }
 
-    /** Returns the average velocity of the modules in rotations/sec (Phoenix native units). */
     public double getFFCharacterizationVelocity() {
         double output = 0.0;
         for (int i = 0; i < 4; i++) {
@@ -650,18 +598,15 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
         return output;
     }
 
-    /** Returns the current odometry pose. */
     @AutoLogOutput(key = "Odometry/Robot")
     public Pose2d getPose() {
         return poseEstimator.getEstimatedPosition();
     }
 
-    /** Returns the current odometry rotation. */
     public Rotation2d getRotation() {
         return getPose().getRotation();
     }
 
-    /** Resets the current odometry pose. */
     public void setPose(Pose2d pose) {
         if (pose == null) {
             return;
@@ -670,28 +615,23 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
         poseEstimator.resetPosition(rawGyroRotation, getModulePositions(), pose);
     }
 
-    /** Sets the pose supplier used by PathPlanner AutoBuilder. */
     public void setPoseSupplier(Supplier<Pose2d> poseSupplier) {
         this.poseSupplier = poseSupplier;
     }
 
-    /** Adds a new timestamped vision measurement. */
     @Override
     public void accept(Pose2d visionRobotPoseMeters, double timestampSeconds, Matrix<N3, N1> visionMeasurementStdDevs) {
         poseEstimator.addVisionMeasurement(visionRobotPoseMeters, timestampSeconds, visionMeasurementStdDevs);
     }
 
-    /** Returns the maximum linear speed in meters per sec. */
     public double getMaxLinearSpeedMetersPerSec() {
         return TunerConstants.kSpeedAt12Volts.in(MetersPerSecond);
     }
 
-    /** Returns the maximum angular speed in radians per sec. */
     public double getMaxAngularSpeedRadPerSec() {
         return getMaxLinearSpeedMetersPerSec() / DRIVE_BASE_RADIUS;
     }
 
-    /** Returns the elevation of the field at the specified translation. */
     public double getElevation(Translation2d translation) {
         double hubX = FieldConstants.LinesVertical.hubCenter;
         double oppHubX = FieldConstants.LinesVertical.oppHubCenter;
@@ -708,7 +648,6 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
         double dx = Math.min(distanceToHubX, distanceToOppHubX);
 
         if (dx < bumpDepth / 2.0 && Math.abs(translation.getY() - centerDeltaY) < obsHalfY) {
-            // It's in the Hub + Bump zone. If it's NOT in the Hub's Y-extent, it's on a bump.
             if (Math.abs(translation.getY() - centerDeltaY) > hubHalfY) {
                 if (dx < bumpTopWidth / 2.0) {
                     return bumpHeight;
@@ -722,7 +661,6 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
         return 0.0;
     }
 
-    /** Returns true if the robot pose is on or approaching a bump zone. */
     public boolean isNearBump(Translation2d translation) {
         double hubX = FieldConstants.LinesVertical.hubCenter;
         double oppHubX = FieldConstants.LinesVertical.oppHubCenter;
@@ -736,7 +674,6 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
         double distanceToOppHubX = Math.abs(translation.getX() - oppHubX);
         double dx = Math.min(distanceToHubX, distanceToOppHubX);
 
-        // Bumper offset margin so sensor toggles before front bumper collides with bump obstacle
         double marginX = DRIVE_BASE_RADIUS + 0.15;
 
         if (dx < (bumpDepth / 2.0 + marginX) && Math.abs(translation.getY() - centerDeltaY) < obsHalfY) {
@@ -748,7 +685,6 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
         return false;
     }
 
-    /** Returns the 3D pose of the robot at the specified 2D pose, accounting for field elevation. */
     public Pose3d getPose3d(Pose2d pose) {
         Translation2d[] moduleTranslations = getModuleTranslations();
         double[] moduleElevations = new double[4];
@@ -774,7 +710,6 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
                 new Rotation3d(roll, pitch, pose.getRotation().getRadians()));
     }
 
-    /** Returns an array of module translations. */
     public static Translation2d[] getModuleTranslations() {
         return new Translation2d[] {
             new Translation2d(TunerConstants.FrontLeft.LocationX, TunerConstants.FrontLeft.LocationY),
