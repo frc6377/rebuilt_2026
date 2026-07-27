@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
 
 public abstract class FullAutoIO extends Command {
@@ -70,7 +71,7 @@ public abstract class FullAutoIO extends Command {
 
     private final Pose2d scoringPose = new Pose2d(2.5, 4.0, Rotation2d.kZero);
 
-    // UPDATED: Search poses restricted strictly to the center line of the Neutral Zone
+    // Search poses restricted strictly to the center line of the Neutral Zone
     private final Pose2d[] searchPoses = {
         new Pose2d(FieldConstants.LinesVertical.center, FieldConstants.fieldWidth * 0.2, Rotation2d.fromDegrees(90)),
         new Pose2d(FieldConstants.LinesVertical.center, FieldConstants.fieldWidth * 0.8, Rotation2d.fromDegrees(-90)),
@@ -301,43 +302,66 @@ public abstract class FullAutoIO extends Command {
     }
 
     private boolean startIntake() {
-        Pose3d[] validFuel = getValidFuel();
-        List<FuelCluster> clusters = getVisibleClusters(validFuel);
+        // Create a dynamic supplier that recalculates the "swoop" target every 20ms
+        Supplier<APTarget> targetSupplier = () -> {
+            Pose3d[] validFuel = getValidFuel();
+            List<FuelCluster> clusters = getVisibleClusters(validFuel);
 
-        Translation2d targetCentroid = null;
-        if (!clusters.isEmpty()) {
-            List<Pose3d> clusterPoses = selectBestCluster(clusters).poses();
+            Translation2d robotTrans = drive.getPose().getTranslation();
+            Translation2d targetTrans;
+            Rotation2d heading;
 
-            double meanX =
-                    clusterPoses.stream().mapToDouble(Pose3d::getX).average().orElse(0.0);
-            double meanY =
-                    clusterPoses.stream().mapToDouble(Pose3d::getY).average().orElse(0.0);
-            targetCentroid = new Translation2d(meanX, meanY);
+            if (!clusters.isEmpty()) {
+                FuelCluster bestCluster = selectBestCluster(clusters);
+                List<Pose3d> poses = bestCluster.poses();
 
-        } else if (!trackedFuelMap.isEmpty()) {
-            targetCentroid = trackedFuelMap.get(0);
-        }
+                // 1. Find the Center of Mass (Centroid) of the cluster
+                double meanX =
+                        poses.stream().mapToDouble(Pose3d::getX).average().orElse(robotTrans.getX());
+                double meanY =
+                        poses.stream().mapToDouble(Pose3d::getY).average().orElse(robotTrans.getY());
+                Translation2d centroid = new Translation2d(meanX, meanY);
 
-        if (targetCentroid == null) {
+                // 2. Find the "Radius" (distance from centroid to the furthest piece)
+                double radius = poses.stream()
+                        .mapToDouble(p -> p.toPose2d().getTranslation().getDistance(centroid))
+                        .max()
+                        .orElse(0.0);
+
+                // 3. Aim directly at the centroid
+                heading = centroid.minus(robotTrans).getAngle();
+
+                // 4. Push the target point COMPLETELY through the cluster
+                double totalPushThroughDistance = radius + kOvershootMeters;
+                targetTrans = centroid.plus(new Translation2d(totalPushThroughDistance, heading));
+
+            } else if (!trackedFuelMap.isEmpty()) {
+                // Fallback to tracking memory
+                targetTrans = trackedFuelMap.get(0);
+                heading = targetTrans.minus(robotTrans).getAngle();
+            } else {
+                // If vision is lost and memory is empty, set target to current pose to immediately stop
+                return new APTarget(drive.getPose());
+            }
+
+            Pose2d targetPose = new Pose2d(targetTrans, heading);
+            return new APTarget(targetPose).withVelocity(kAutopilotVelocity).withEntryAngle(heading);
+        };
+
+        // Check if we have a valid initial target
+        if (targetSupplier.get().getReference().equals(drive.getPose())) {
             cancelAction(true);
             return false;
         }
 
-        Translation2d robotTrans = drive.getPose().getTranslation();
-        Rotation2d heading = targetCentroid.minus(robotTrans).getAngle();
+        // Add 1 to estimated fuel immediately as we are committing to a swoop
+        estimatedFuel += 1;
 
-        Translation2d overshootTarget = targetCentroid.plus(new Translation2d(kOvershootMeters, heading));
-        Pose2d targetPose = new Pose2d(overshootTarget, heading);
-
-        APTarget apTarget =
-                new APTarget(targetPose).withVelocity(kAutopilotVelocity).withEntryAngle(heading);
-
-        estimatedFuel += Math.max(1, clusters.isEmpty() ? 1 : clusters.get(0).fuelAmount());
-
+        // Run the dynamic swoop command in parallel with the intake roller
         startAction(intake.extendIntake()
-                .andThen(Commands.parallel(drive.align(apTarget), intake.intakeRollerCommand()))
+                .andThen(Commands.parallel(drive.swoop(targetSupplier), intake.intakeRollerCommand()))
                 .withTimeout(kIntakeTimeoutSeconds)
-                .withName("FullAutoIntakeAutopilot"));
+                .withName("FullAutoIntakeDynamicSwoop"));
         return true;
     }
 
@@ -369,16 +393,16 @@ public abstract class FullAutoIO extends Command {
         Logger.recordOutput("FullAuto/TrackedFuelLocations", trackedFuelMap.toArray(new Translation2d[0]));
     }
 
-    // UPDATED: Now filters out any fuel not inside the neutral zone box.
+    // Filters out any fuel not inside the neutral zone box or near the hub
     protected Pose3d[] getValidFuel() {
         return Arrays.stream(getVisiblePieces())
                 .filter(piece -> piece.getMeasureZ().in(Inches) < kMaxValidFuelHeightInches)
                 .filter(piece -> !isNearHub(piece.toPose2d().getTranslation()))
-                .filter(piece -> isInNeutralZone(piece.toPose2d().getTranslation())) // <-- New Check
+                .filter(piece -> isInNeutralZone(piece.toPose2d().getTranslation()))
                 .toArray(Pose3d[]::new);
     }
 
-    // NEW: Enforces the neutral zone bounds derived from FieldConstants
+    // Enforces the neutral zone bounds derived from FieldConstants
     private boolean isInNeutralZone(Translation2d point) {
         double x = point.getX();
         double minX =

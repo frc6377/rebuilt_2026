@@ -336,7 +336,32 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
                 .until(() -> autopilot.atTarget(getPose(), target))
                 .finallyDo(this::stop);
     }
+    /**
+     * * Dynamically aligns to a target that updates continuously. Perfect for sweeping through clusters of moving or
+     * disappearing objects.
+     */
+    public Command swoop(Supplier<APTarget> targetSupplier) {
+        return this.run(() -> {
+                    Pose2d currentPose = getPose();
+                    APTarget target = targetSupplier.get();
 
+                    var result = autopilot.calculate(currentPose, getChassisSpeeds(), target);
+
+                    ChassisSpeeds fieldRelativeSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(
+                            result.vx().in(MetersPerSecond),
+                            result.vy().in(MetersPerSecond),
+                            result.targetAngle()
+                                            .minus(currentPose.getRotation())
+                                            .getRadians()
+                                    * 8.0,
+                            currentPose.getRotation());
+
+                    runVelocity(fieldRelativeSpeeds);
+                })
+                // Stop when we reach the final target (or if the supplier returns our current pose)
+                .until(() -> autopilot.atTarget(getPose(), targetSupplier.get()))
+                .finallyDo(this::stop);
+    }
     /** Aligns to target while spinning continuously, suppressing spin when entering trench or bump zones. */
     public Command alignWithSpin(APTarget target, Supplier<Boolean> allowSpin) {
         return this.run(() -> {
