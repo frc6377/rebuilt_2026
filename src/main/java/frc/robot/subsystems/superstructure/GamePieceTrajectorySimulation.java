@@ -107,6 +107,7 @@ public class GamePieceTrajectorySimulation {
     private final LoggedNetworkNumber shooterHeightMeters;
     private final LoggedNetworkNumber flywheelRadiusMeters;
     private final LoggedNetworkNumber launchEfficiency;
+    public int score = 0;
 
     /**
      * Creates a new GamePieceTrajectorySimulation with independent left/right launch channels.
@@ -266,12 +267,16 @@ public class GamePieceTrajectorySimulation {
                         FieldConstants.Hub.topCenterPoint.getMeasureZ()))
                 .withTargetTolerance(new Translation3d(FieldConstants.Hub.width, FieldConstants.Hub.width, 1.0))
                 .withHitTargetCallBack(() -> {
+                    score++;
                     // Dynamically get whichever hub we are currently aiming at (Red or Blue)
                     Translation2d hubPos = FieldConstants.getHubPosition();
 
-                    // Point towards the center of the field so it doesn't shoot out of bounds
-                    Rotation2d spitDirection =
-                            Rotation2d.fromDegrees(hubPos.getX() < FieldConstants.fieldLength / 2.0 ? 0 : 180);
+                    // Calculate base direction towards the center of the field
+                    double baseAngle = hubPos.getX() < FieldConstants.fieldLength / 2.0 ? 0.0 : 180.0;
+
+                    // Add a random offset (+/- 20 degrees) to scatter the balls
+                    double randomSpread = (Math.random() * 40.0) - 20.0;
+                    Rotation2d spitDirection = Rotation2d.fromDegrees(baseAngle + randomSpread);
 
                     GamePieceProjectile spitBall = new GamePieceProjectile(
                                     gamePieceInfo,

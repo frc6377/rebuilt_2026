@@ -360,7 +360,10 @@ public abstract class FullAutoIO extends Command {
         // Run the dynamic swoop command in parallel with the intake roller
         startAction(intake.extendIntake()
                 .andThen(Commands.parallel(drive.swoop(targetSupplier), intake.intakeRollerCommand()))
-                .withTimeout(kIntakeTimeoutSeconds)
+                .withDeadline(Commands.waitUntil(() -> {
+                    return getActualIntakeFuel() > 55;
+                }))
+                .withTimeout(20)
                 .withName("FullAutoIntakeDynamicSwoop"));
         return true;
     }
@@ -378,11 +381,12 @@ public abstract class FullAutoIO extends Command {
         estimatedFuel = 0;
         startAction(drive.smartAlign(FieldConstants.toCurrentAlliancePose(scoringPose))
                 .andThen(Commands.parallel(robot.shootAutoModeCommand(drive), scoringFireCommand())
-                        .until(() -> !intakeHasFuel())
-                        .withTimeout(kScoringTimeoutSeconds))
-                .andThen(robot.shootAutoStopCommand().withTimeout(kShootStopTimeSeconds))
-                .finallyDo(() -> estimatedFuel = 0)
-                .withName("FullAutoScore"));
+                        .until(() -> {
+                            return getActualIntakeFuel() == 0;
+                        })
+                        .andThen(robot.shootAutoStopCommand().withTimeout(kShootStopTimeSeconds))
+                        .finallyDo(() -> estimatedFuel = 0)
+                        .withName("FullAutoScore")));
     }
 
     private void logStatus(Pose3d[] validFuel) {

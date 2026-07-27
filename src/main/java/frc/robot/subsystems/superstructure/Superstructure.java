@@ -142,6 +142,8 @@ public class Superstructure extends SubsystemBase {
     @Override
     public void periodic() {
         // Log hub active state from game data
+        Logger.recordOutput(
+                "Shooting/Score", gamePieceTrajectorySimulation != null ? gamePieceTrajectorySimulation.score : 0);
 
         boolean isHubActive = FieldConstants.isHubActive();
         Logger.recordOutput("Shooting/HubActive", isHubActive);
@@ -216,7 +218,7 @@ public class Superstructure extends SubsystemBase {
 
         return Commands.startEnd(
                         () -> gamePieceTrajectorySimulation.enableAutoFireFromExternalAmmo(
-                                indexerRunningSupplier, intakeHasFuel, consumeIntakeFuel, Seconds.of(1.0 / 3.0)),
+                                indexerRunningSupplier, intakeHasFuel, consumeIntakeFuel, Seconds.of(1.0 / 6)),
                         () -> {
                             gamePieceTrajectorySimulation.setAutoFireEnabled(false);
                             gamePieceTrajectorySimulation.setIndexerRunningSupplier(() -> false);

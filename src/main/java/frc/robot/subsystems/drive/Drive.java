@@ -93,13 +93,15 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
     private static final double BUMPER_WIDTH = 37.75;
 
     // Autopilot constants
-    private static final APConstraints kAutopilotConstraints =
-            new APConstraints().withAcceleration(8.0).withJerk(4);
+    private static final APConstraints kAutopilotConstraints = new APConstraints()
+            .withAcceleration(7)
+            .withJerk(4)
+            .withVelocity(TunerConstants.kSpeedAt12Volts.in(MetersPerSecond));
 
     private static final APProfile kAutopilotProfile = new APProfile(kAutopilotConstraints)
-            .withErrorXY(Meters.of(0.03))
-            .withErrorTheta(Degrees.of(1.0))
-            .withBeelineRadius(Meters.of(0.15));
+            .withErrorXY(Meters.of(0.09))
+            .withErrorTheta(Degrees.of(2.0))
+            .withBeelineRadius(Meters.of(0.2));
 
     private final Autopilot autopilot = new Autopilot(kAutopilotProfile);
 
@@ -486,9 +488,9 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
                         // Publish to array so AdvantageScope renders it as a continuous line
                         smartAlignPath = new Pose2d[] {current, w1, w2, w3, target};
 
-                        return align(new APTarget(w1))
+                        return align(new APTarget(w1).withVelocity(5.0))
                                 .andThen(align(new APTarget(w2)))
-                                .andThen(align(new APTarget(w3)))
+                                .andThen(align(new APTarget(w3).withVelocity(5.0)))
                                 .andThen(align(new APTarget(target)))
                                 .finallyDo(() -> smartAlignPath = new Pose2d[] {}); // Clear line when finished
                     }

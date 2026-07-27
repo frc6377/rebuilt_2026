@@ -24,9 +24,9 @@ import org.ironmaple.simulation.IntakeSimulation.IntakeSide;
 public class IntakeConstants {
 
     public static final Distance kIntakeWidth = Inches.of(30);
-    public static final Distance kIntakeExtension = Inches.of(7);
+    public static final Distance kIntakeExtension = Inches.of(2);
     public static final IntakeSide kIntakeSide = IntakeSide.FRONT;
-    public static final int kIntakeCapacity = 50;
+    public static final int kIntakeCapacity = 60;
 
     public static class RollerConstants {
 
