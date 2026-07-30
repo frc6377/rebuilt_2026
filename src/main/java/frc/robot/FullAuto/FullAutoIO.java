@@ -39,20 +39,26 @@ public abstract class FullAutoIO extends Command {
     private static final double kMaxIntakeWindowSeconds = 10.0;
     private static final double kApproachStandoffMeters = 0.35;
     private static final double kOvershootMeters = 0.50;
+    private static final double kFieldMarginMeters = 0.50; // Safety buffer to prevent driving into walls
     private static final double kIntakeFuelPercent = 0.9;
     private static final double kVisibleFuelLimit = 8;
+    private static final int kMinTrackedFuelToStart = 3;
     private static final Time kSearchRotateTimeout = Seconds.of(4.5);
     private static final double kMaxValidFuelHeightInches = 4.0;
     private static final double kFuelClusterGapMeters = 0.9;
     private static final double kSearchRotatePercent = 0.25;
     private static final double kFuelFindLimit = 10.0;
-    private static final double kFuelClearDistanceMeters = 0.6;
-    private static final double kHubExclusionRadiusMeters = 1.2;
+    private static final double kFuelClearDistanceMeters = 0.4;
+    private static final double kHubExclusionRadiusMeters = 0;
+
+    // --- NEW: Stuck Detection Constants ---
+    private static final double kStuckTimeWindowSeconds = 1.0;
+    private static final double kStuckDistanceThresholdMeters = 0.05;
 
     // Extracted Magic Numbers
     private static final double kPruneMaxDistanceMeters = 2.0;
     private static final double kPruneFOVAngleDegrees = 45.0;
-    private static final double kAutopilotVelocity = 1.5;
+    private static final double kAutopilotVelocity = 1;
     private static final double kScoringTimeoutSeconds = 10.0;
     private static final double kShootStopTimeSeconds = 0.25;
 
@@ -62,6 +68,10 @@ public abstract class FullAutoIO extends Command {
     private double totalSpinAngleRad = 0.0;
     private Rotation2d lastSpinRotation = new Rotation2d();
     private boolean isSpinSearching = false;
+
+    // --- NEW: Stuck Detection Variables ---
+    private double lastStuckCheckTime = 0.0;
+    private Pose2d lastStuckCheckPose = new Pose2d();
 
     protected final Drive drive;
     protected final Intake intake;
@@ -83,7 +93,7 @@ public abstract class FullAutoIO extends Command {
     private Command action;
     private boolean actionRunning;
 
-    private final List<Translation2d> trackedFuelMap = new ArrayList<>();
+    private final List<Pose3d> trackedFuelMap = new ArrayList<>();
 
     protected FullAutoIO(RobotContainer robot) {
         this.robot = robot;
@@ -120,11 +130,15 @@ public abstract class FullAutoIO extends Command {
         pruneClearedFuel(visibleFuel);
         logStatus(visibleFuel);
 
+        // 1. Evaluate logic and determine if a state transition/new action is needed
         switch (stage) {
             case FINDING -> finding();
-            case INTAKING -> intaking(visibleFuel);
+            case INTAKING -> intaking(trackedFuelMap.toArray(new Pose3d[0]));
             case SCORING -> scoring();
         }
+
+        // 2. Centralized Execution: Tick the active action (if any) immediately
+        runAction();
     }
 
     @Override
@@ -132,6 +146,7 @@ public abstract class FullAutoIO extends Command {
         cancelAction(interrupted);
         drive.stop();
         Logger.recordOutput("FullAuto/Stage", "None");
+        Logger.recordOutput("FullAuto/IntakeStatus", "Ended");
     }
 
     private void setStage(Stage next) {
@@ -139,12 +154,15 @@ public abstract class FullAutoIO extends Command {
         stage = next;
         isSpinSearching = false;
         Logger.recordOutput("FullAuto/Stage", stage.name());
+        Logger.recordOutput("FullAuto/IntakeStatus", "Running normally");
 
         switch (stage) {
             case FINDING -> startSearch();
             case INTAKING -> {
                 intakeStageStartTime = Timer.getFPGATimestamp();
-                startIntake();
+                if (enoughVisibleFuel() || trackedFuelMap.size() >= kMinTrackedFuelToStart) {
+                    startIntake();
+                }
             }
             case SCORING -> startScoring();
         }
@@ -156,12 +174,10 @@ public abstract class FullAutoIO extends Command {
             return;
         }
 
-        if (enoughVisibleFuel() || !trackedFuelMap.isEmpty()) {
+        if (enoughVisibleFuel() || trackedFuelMap.size() >= kMinTrackedFuelToStart) {
             setStage(Stage.INTAKING);
             return;
         }
-
-        runAction();
 
         if (actionFinished()) {
             searchIndex = (searchIndex + 1) % searchPoses.length;
@@ -172,17 +188,17 @@ public abstract class FullAutoIO extends Command {
     private void startSearch() {
         Pose2d waypoint;
 
-        if (!trackedFuelMap.isEmpty()) {
+        if (trackedFuelMap.size() >= kMinTrackedFuelToStart) {
             double meanX = trackedFuelMap.stream()
-                    .mapToDouble(Translation2d::getX)
+                    .mapToDouble(p -> p.toPose2d().getTranslation().getX())
                     .average()
                     .orElse(0.0);
             double meanY = trackedFuelMap.stream()
-                    .mapToDouble(Translation2d::getY)
+                    .mapToDouble(p -> p.toPose2d().getTranslation().getY())
                     .average()
                     .orElse(0.0);
 
-            Translation2d meanPos = new Translation2d(meanX, meanY);
+            Translation2d meanPos = clampToFieldBounds(new Translation2d(meanX, meanY));
             Rotation2d heading = meanPos.minus(drive.getPose().getTranslation()).getAngle();
             waypoint = new Pose2d(meanPos, heading);
         } else {
@@ -190,14 +206,7 @@ public abstract class FullAutoIO extends Command {
         }
 
         Logger.recordOutput("FullAuto/SearchPose", waypoint);
-        startAction(drive.smartAlign(waypoint)
-                .andThen(Commands.run(
-                                () -> drive.runVelocity(new ChassisSpeeds(
-                                        0, 0, drive.getMaxAngularSpeedRadPerSec() * kSearchRotatePercent)),
-                                drive)
-                        .until(this::enoughVisibleFuel)
-                        .withTimeout(kSearchRotateTimeout))
-                .withName("FullAutoSearch"));
+        startAction(drive.smartAlign(waypoint).withName("FullAutoSearch"));
     }
 
     private void updateFuelMemory(Pose3d[] validFuel) {
@@ -205,11 +214,12 @@ public abstract class FullAutoIO extends Command {
             Translation2d pos = p.toPose2d().getTranslation();
             if (isNearHub(pos)) continue;
 
-            boolean isAlreadyTracked =
-                    trackedFuelMap.stream().anyMatch(tracked -> tracked.getDistance(pos) < kFuelClearDistanceMeters);
+            boolean isAlreadyTracked = trackedFuelMap.stream()
+                    .anyMatch(
+                            tracked -> tracked.toPose2d().getTranslation().getDistance(pos) < kFuelClearDistanceMeters);
 
             if (!isAlreadyTracked) {
-                trackedFuelMap.add(pos);
+                trackedFuelMap.add(p);
             }
         }
     }
@@ -218,20 +228,24 @@ public abstract class FullAutoIO extends Command {
         Pose2d robotPose = drive.getPose();
         Translation2d robotTrans = robotPose.getTranslation();
 
-        Iterator<Translation2d> iterator = trackedFuelMap.iterator();
+        Iterator<Pose3d> iterator = trackedFuelMap.iterator();
         while (iterator.hasNext()) {
-            Translation2d tracked = iterator.next();
+            Pose3d tracked = iterator.next();
 
-            if (tracked.getDistance(robotTrans) < kFuelClearDistanceMeters) {
+            if (tracked.toPose2d().getTranslation().getDistance(robotTrans) < kFuelClearDistanceMeters) {
                 iterator.remove();
                 continue;
             }
 
             boolean sawInVision = Arrays.stream(currentlyVisible)
-                    .anyMatch(vis -> vis.toPose2d().getTranslation().getDistance(tracked) < kFuelClearDistanceMeters);
+                    .anyMatch(vis -> vis.toPose2d()
+                                    .getTranslation()
+                                    .getDistance(tracked.toPose2d().getTranslation())
+                            < kFuelClearDistanceMeters);
 
-            if (!sawInVision && tracked.getDistance(robotTrans) < kPruneMaxDistanceMeters) {
-                Rotation2d angleToTarget = tracked.minus(robotTrans).getAngle();
+            if (!sawInVision && tracked.toPose2d().getTranslation().getDistance(robotTrans) < kPruneMaxDistanceMeters) {
+                Rotation2d angleToTarget =
+                        tracked.toPose2d().getTranslation().minus(robotTrans).getAngle();
                 if (Math.abs(angleToTarget.minus(robotPose.getRotation()).getDegrees()) < kPruneFOVAngleDegrees) {
                     iterator.remove();
                 }
@@ -258,7 +272,23 @@ public abstract class FullAutoIO extends Command {
         }
 
         if (actionRunning && action != null && !isSpinSearching) {
-            runAction();
+            // --- NEW: Check if we are stuck ---
+            double currentTime = Timer.getFPGATimestamp();
+            if (currentTime - lastStuckCheckTime > kStuckTimeWindowSeconds) {
+                double distanceMoved =
+                        drive.getPose().getTranslation().getDistance(lastStuckCheckPose.getTranslation());
+
+                // If we haven't moved at least 5cm in the last 1.0 seconds, we hit a wall
+                if (distanceMoved < kStuckDistanceThresholdMeters) {
+                    Logger.recordOutput("FullAuto/IntakeStatus", "STUCK! Bailing early.");
+                    setStage(hasAnyFuel() ? Stage.SCORING : Stage.FINDING);
+                    return;
+                }
+
+                // Reset anchor for the next check
+                lastStuckCheckTime = currentTime;
+                lastStuckCheckPose = drive.getPose();
+            }
             return;
         }
 
@@ -276,11 +306,11 @@ public abstract class FullAutoIO extends Command {
             isSpinSearching = true;
             totalSpinAngleRad = 0.0;
             lastSpinRotation = drive.getPose().getRotation();
-            cancelAction(true);
+
+            startAction(intake.intakeRollerCommand());
         }
 
         drive.runVelocity(new ChassisSpeeds(0, 0, drive.getMaxAngularSpeedRadPerSec() * kSearchRotatePercent));
-        intake.intakeRollerCommand().execute();
 
         Rotation2d currentRot = drive.getPose().getRotation();
         totalSpinAngleRad += Math.abs(currentRot.minus(lastSpinRotation).getRadians());
@@ -289,8 +319,9 @@ public abstract class FullAutoIO extends Command {
         if (totalSpinAngleRad >= (2.0 * Math.PI - 0.2)) {
             isSpinSearching = false;
             drive.stop();
+            cancelAction(true);
 
-            if (visibleFuel.length > 0 || !trackedFuelMap.isEmpty()) {
+            if (visibleFuel.length > 0 || trackedFuelMap.size() >= kMinTrackedFuelToStart) {
                 if (!startIntake()) {
                     if (!trackedFuelMap.isEmpty()) trackedFuelMap.remove(0);
                     setStage(hasAnyFuel() ? Stage.SCORING : Stage.FINDING);
@@ -302,7 +333,6 @@ public abstract class FullAutoIO extends Command {
     }
 
     private boolean startIntake() {
-        // Create a dynamic supplier that recalculates the "swoop" target every 20ms
         Supplier<APTarget> targetSupplier = () -> {
             Pose3d[] validFuel = getValidFuel();
             List<FuelCluster> clusters = getVisibleClusters(validFuel);
@@ -315,32 +345,28 @@ public abstract class FullAutoIO extends Command {
                 FuelCluster bestCluster = selectBestCluster(clusters);
                 List<Pose3d> poses = bestCluster.poses();
 
-                // 1. Find the Center of Mass (Centroid) of the cluster
                 double meanX =
                         poses.stream().mapToDouble(Pose3d::getX).average().orElse(robotTrans.getX());
                 double meanY =
                         poses.stream().mapToDouble(Pose3d::getY).average().orElse(robotTrans.getY());
                 Translation2d centroid = new Translation2d(meanX, meanY);
 
-                // 2. Find the "Radius" (distance from centroid to the furthest piece)
                 double radius = poses.stream()
                         .mapToDouble(p -> p.toPose2d().getTranslation().getDistance(centroid))
                         .max()
                         .orElse(0.0);
 
-                // 3. Aim directly at the centroid
                 heading = centroid.minus(robotTrans).getAngle();
-
-                // 4. Push the target point COMPLETELY through the cluster
                 double totalPushThroughDistance = radius + kOvershootMeters;
-                targetTrans = centroid.plus(new Translation2d(totalPushThroughDistance, heading));
 
-            } else if (!trackedFuelMap.isEmpty()) {
-                // Fallback to tracking memory
-                targetTrans = trackedFuelMap.get(0);
+                // Overshoot calculation safely clamped within field boundary limits
+                targetTrans = clampToFieldBounds(centroid.plus(new Translation2d(totalPushThroughDistance, heading)));
+
+            } else if (trackedFuelMap.size() >= kMinTrackedFuelToStart) {
+                Pose3d tracked = trackedFuelMap.get(0);
+                targetTrans = clampToFieldBounds(tracked.toPose2d().getTranslation());
                 heading = targetTrans.minus(robotTrans).getAngle();
             } else {
-                // If vision is lost and memory is empty, set target to current pose to immediately stop
                 return new APTarget(drive.getPose());
             }
 
@@ -348,28 +374,27 @@ public abstract class FullAutoIO extends Command {
             return new APTarget(targetPose).withVelocity(kAutopilotVelocity).withEntryAngle(heading);
         };
 
-        // Check if we have a valid initial target
         if (targetSupplier.get().getReference().equals(drive.getPose())) {
             cancelAction(true);
             return false;
         }
 
-        // Add 1 to estimated fuel immediately as we are committing to a swoop
         estimatedFuel += 1;
 
-        // Run the dynamic swoop command in parallel with the intake roller
+        // --- NEW: Reset Stuck Detector when starting a new swoop ---
+        lastStuckCheckTime = Timer.getFPGATimestamp();
+        lastStuckCheckPose = drive.getPose();
+        Logger.recordOutput("FullAuto/IntakeStatus", "Swooping");
+
         startAction(intake.extendIntake()
                 .andThen(Commands.parallel(drive.swoop(targetSupplier), intake.intakeRollerCommand()))
-                .withDeadline(Commands.waitUntil(() -> {
-                    return getActualIntakeFuel() > 55;
-                }))
+                .withDeadline(Commands.waitUntil(() -> getActualIntakeFuel() > 55))
                 .withTimeout(20)
                 .withName("FullAutoIntakeDynamicSwoop"));
         return true;
     }
 
     private void scoring() {
-        runAction();
         if (actionFinished()) {
             estimatedFuel = 0;
             trackedFuelMap.clear();
@@ -378,12 +403,10 @@ public abstract class FullAutoIO extends Command {
     }
 
     private void startScoring() {
-        estimatedFuel = 0;
         startAction(drive.smartAlign(FieldConstants.toCurrentAlliancePose(scoringPose))
+                .andThen(Commands.waitSeconds(0.4))
                 .andThen(Commands.parallel(robot.shootAutoModeCommand(drive), scoringFireCommand())
-                        .until(() -> {
-                            return getActualIntakeFuel() == 0;
-                        })
+                        .until(() -> getActualIntakeFuel() == 0)
                         .andThen(robot.shootAutoStopCommand().withTimeout(kShootStopTimeSeconds))
                         .finallyDo(() -> estimatedFuel = 0)
                         .withName("FullAutoScore")));
@@ -394,10 +417,9 @@ public abstract class FullAutoIO extends Command {
         Logger.recordOutput("FullAuto/EstimatedFuel", estimatedFuel);
         Logger.recordOutput("FullAuto/ActualIntakeFuel", getActualIntakeFuel());
         Logger.recordOutput("FullAuto/TrackedFuelCount", trackedFuelMap.size());
-        Logger.recordOutput("FullAuto/TrackedFuelLocations", trackedFuelMap.toArray(new Translation2d[0]));
+        Logger.recordOutput("FullAuto/TrackedFuelLocations", trackedFuelMap.toArray(new Pose3d[0]));
     }
 
-    // Filters out any fuel not inside the neutral zone box or near the hub
     protected Pose3d[] getValidFuel() {
         return Arrays.stream(getVisiblePieces())
                 .filter(piece -> piece.getMeasureZ().in(Inches) < kMaxValidFuelHeightInches)
@@ -406,15 +428,37 @@ public abstract class FullAutoIO extends Command {
                 .toArray(Pose3d[]::new);
     }
 
-    // Enforces the neutral zone bounds derived from FieldConstants
+    // Ensures point is inside neutral zone and safely away from side guardrails
     private boolean isInNeutralZone(Translation2d point) {
         double x = point.getX();
+        double y = point.getY();
         double minX =
-                Math.min(FieldConstants.LinesVertical.neutralZoneNear, FieldConstants.LinesVertical.neutralZoneFar);
+                Math.min(FieldConstants.LinesVertical.neutralZoneNear, FieldConstants.LinesVertical.neutralZoneFar)
+                        + kFieldMarginMeters;
         double maxX =
-                Math.max(FieldConstants.LinesVertical.neutralZoneNear, FieldConstants.LinesVertical.neutralZoneFar);
+                Math.max(FieldConstants.LinesVertical.neutralZoneNear, FieldConstants.LinesVertical.neutralZoneFar)
+                        - kFieldMarginMeters;
 
-        return x >= minX && x <= maxX;
+        boolean insideX = x >= minX && x <= maxX;
+        boolean insideY = y >= kFieldMarginMeters && y <= (FieldConstants.fieldWidth - kFieldMarginMeters);
+
+        return insideX && insideY;
+    }
+
+    // Clamps target positions to safe field boundaries
+    private Translation2d clampToFieldBounds(Translation2d point) {
+        double minX =
+                Math.min(FieldConstants.LinesVertical.neutralZoneNear, FieldConstants.LinesVertical.neutralZoneFar)
+                        + kFieldMarginMeters;
+        double maxX =
+                Math.max(FieldConstants.LinesVertical.neutralZoneNear, FieldConstants.LinesVertical.neutralZoneFar)
+                        - kFieldMarginMeters;
+
+        double clampedX = Math.max(minX, Math.min(maxX, point.getX()));
+        double clampedY =
+                Math.max(kFieldMarginMeters, Math.min(FieldConstants.fieldWidth - kFieldMarginMeters, point.getY()));
+
+        return new Translation2d(clampedX, clampedY);
     }
 
     private boolean isNearHub(Translation2d point) {

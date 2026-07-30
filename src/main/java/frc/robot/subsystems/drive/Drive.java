@@ -263,7 +263,46 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
         gyroDisconnectedAlert.set(!gyroInputs.connected && Constants.currentMode != Mode.SIM);
     }
 
+    /**
+     * Prevents teleop and direct driver alignment controls from driving the physical robot bumper into the Hub
+     * structure when traveling across or near the bump zone.
+     */
+    private ChassisSpeeds preventHubCollision(ChassisSpeeds speeds) {
+        Pose2d currentPose = getPose();
+        double hubX = FieldConstants.LinesVertical.hubCenter;
+        double oppHubX = FieldConstants.LinesVertical.oppHubCenter;
+        double centerDeltaY = FieldConstants.fieldWidth / 2.0;
+
+        double hubHalfY = FieldConstants.Hub.width / 2.0;
+        double bumpDepth = FieldConstants.LeftBump.depth;
+        double safeYMargin = hubHalfY + DRIVE_BASE_RADIUS + 0.05; // 5cm safety clearance for full chassis
+
+        double distanceToHubX = Math.abs(currentPose.getX() - hubX);
+        double distanceToOppHubX = Math.abs(currentPose.getX() - oppHubX);
+        double dx = Math.min(distanceToHubX, distanceToOppHubX);
+
+        // Check if the robot is along the Hub's X-corridor (including bump approaches)
+        if (dx < (bumpDepth / 2.0 + DRIVE_BASE_RADIUS + 0.10)) {
+            double currentY = currentPose.getY();
+
+            // If robot is in top half near Hub edge and moving downwards into the Hub
+            if (currentY > centerDeltaY && currentY < (centerDeltaY + safeYMargin)) {
+                if (speeds.vyMetersPerSecond < 0) {
+                    speeds.vyMetersPerSecond = 0;
+                }
+            }
+            // If robot is in bottom half near Hub edge and moving upwards into the Hub
+            else if (currentY < centerDeltaY && currentY > (centerDeltaY - safeYMargin)) {
+                if (speeds.vyMetersPerSecond > 0) {
+                    speeds.vyMetersPerSecond = 0;
+                }
+            }
+        }
+        return speeds;
+    }
+
     public void runVelocity(ChassisSpeeds speeds) {
+        speeds = preventHubCollision(speeds);
         speeds = ChassisSpeeds.discretize(speeds, 0.02);
         SwerveModuleState[] setpointStates = kinematics.toSwerveModuleStates(speeds);
         SwerveDriveKinematics.desaturateWheelSpeeds(setpointStates, TunerConstants.kSpeedAt12Volts);
@@ -335,8 +374,7 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
 
                     runVelocity(fieldRelativeSpeeds);
                 })
-                .until(() -> autopilot.atTarget(getPose(), targetSupplier.get()))
-                .finallyDo(this::stop);
+                .until(() -> autopilot.atTarget(getPose(), targetSupplier.get()));
     }
 
     public Command alignWithSpin(APTarget target, Supplier<Boolean> allowSpin) {
@@ -392,8 +430,8 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
     }
 
     /**
-     * * NEW Helper Method: Clamps a Pose2d so that the robot's mathematical center is not allowed to be placed closer
-     * to the wall than its physical bumper radius.
+     * Clamps a Pose2d so that the robot's mathematical center is not allowed to be placed closer to the wall than its
+     * physical bumper radius.
      */
     public Pose2d clampPoseToField(Pose2d pose) {
         double margin = DRIVE_BASE_RADIUS + 0.15; // 15cm safety buffer from the wall
@@ -407,7 +445,7 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
     public Command smartAlign(Pose2d rawTarget) {
         return Commands.defer(
                 () -> {
-                    // Pre-clamp the target so it's physically reachable, preventing the robot from crashing into walls
+                    // Pre-clamp the target so it's physically reachable
                     Pose2d target = clampPoseToField(rawTarget);
 
                     Pose2d current = getPose();
@@ -419,36 +457,37 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
                     double centerDeltaY = FieldConstants.fieldWidth / 2.0;
 
                     double bumpDepth = FieldConstants.LeftBump.depth;
-                    double obsHalfY = 3.5;
+                    double hubHalfY = FieldConstants.Hub.width / 2.0;
+                    double obsHalfY = hubHalfY + FieldConstants.LeftBump.width + DRIVE_BASE_RADIUS;
 
                     double obstacleX = -1;
 
                     if (pathIntersectsRect(
                             currentTrans,
                             targetTrans,
-                            hubX - bumpDepth / 2.0,
-                            hubX + bumpDepth / 2.0,
+                            hubX - bumpDepth / 2.0 - DRIVE_BASE_RADIUS,
+                            hubX + bumpDepth / 2.0 + DRIVE_BASE_RADIUS,
                             centerDeltaY - obsHalfY,
                             centerDeltaY + obsHalfY)) {
                         obstacleX = hubX;
                     } else if (pathIntersectsRect(
                             currentTrans,
                             targetTrans,
-                            oppHubX - bumpDepth / 2.0,
-                            oppHubX + bumpDepth / 2.0,
+                            oppHubX - bumpDepth / 2.0 - DRIVE_BASE_RADIUS,
+                            oppHubX + bumpDepth / 2.0 + DRIVE_BASE_RADIUS,
                             centerDeltaY - obsHalfY,
                             centerDeltaY + obsHalfY)) {
                         obstacleX = oppHubX;
                     }
 
                     if (obstacleX != -1) {
-                        // Updated to exactly center the waypoints in the open zones based on 2026 CAD
+                        // Dynamically calculate bump center Y coordinates keeping robot fully clear of the Hub
+                        double bottomBumpY = (centerDeltaY - hubHalfY) - (FieldConstants.LeftBump.width / 2.0);
+                        double topBumpY = (centerDeltaY + hubHalfY) + (FieldConstants.LeftBump.width / 2.0);
                         double bottomTrenchY = 0.68;
-                        double bottomBumpY = 2.58;
-                        double topBumpY = FieldConstants.fieldWidth - 2.58;
                         double topTrenchY = FieldConstants.fieldWidth - 0.68;
 
-                        // ALWAYS evaluate all 4 safe paths. No more forcing the trench.
+                        // ALWAYS evaluate all 4 safe paths
                         double[][] candidatePaths = new double[][] {
                             {bottomTrenchY, 1.0},
                             {bottomBumpY, 0.0},
@@ -462,7 +501,7 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
                         for (double[] candidate : candidatePaths) {
                             double y = candidate[0];
 
-                            // BUG FIX: True Euclidean distance to calculate the actual V-shaped path length
+                            // True Euclidean distance to calculate actual path length
                             double dist = Math.hypot(obstacleX - current.getX(), y - current.getY())
                                     + Math.hypot(target.getX() - obstacleX, target.getY() - y);
 
@@ -472,27 +511,40 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
                             }
                         }
 
-                        double marginX = 1.0;
+                        double marginX = (bumpDepth / 2.0) + DRIVE_BASE_RADIUS + 0.15;
                         double beforeX = obstacleX - (current.getX() < obstacleX ? marginX : -marginX);
                         double afterX = obstacleX + (target.getX() > obstacleX ? marginX : -marginX);
 
-                        double entryX = (beforeX + current.getX()) / 2.0;
-                        double exitX = (afterX + target.getX()) / 2.0;
+                        double entryX = (beforeX * 2 + current.getX()) / 3;
+                        double exitX = (afterX * 2 + target.getX()) / 3;
 
                         Rotation2d rot = target.getRotation();
 
-                        Pose2d w1 = new Pose2d(entryX, bestY, rot);
                         Pose2d w2 = new Pose2d(obstacleX, bestY, rot);
                         Pose2d w3 = new Pose2d(exitX, bestY, rot);
 
-                        // Publish to array so AdvantageScope renders it as a continuous line
-                        smartAlignPath = new Pose2d[] {current, w1, w2, w3, target};
+                        double kAlignmentToleranceMeters = 0.25;
+                        boolean alreadyAligned = Math.abs(current.getY() - bestY) < kAlignmentToleranceMeters;
 
-                        return align(new APTarget(w1).withVelocity(5.0))
-                                .andThen(align(new APTarget(w2)))
-                                .andThen(align(new APTarget(w3).withVelocity(5.0)))
-                                .andThen(align(new APTarget(target)))
-                                .finallyDo(() -> smartAlignPath = new Pose2d[] {}); // Clear line when finished
+                        Command sequence;
+
+                        if (alreadyAligned) {
+                            smartAlignPath = new Pose2d[] {current, w2, w3, target};
+
+                            sequence = align(new APTarget(w2))
+                                    .andThen(align(new APTarget(w3).withVelocity(5.0)))
+                                    .andThen(align(new APTarget(target)));
+                        } else {
+                            Pose2d w1 = new Pose2d(entryX, bestY, rot);
+                            smartAlignPath = new Pose2d[] {current, w1, w2, w3, target};
+
+                            sequence = align(new APTarget(w1).withVelocity(5.0))
+                                    .andThen(align(new APTarget(w2)))
+                                    .andThen(align(new APTarget(w3).withVelocity(5.0)))
+                                    .andThen(align(new APTarget(target)));
+                        }
+
+                        return sequence.finallyDo(() -> smartAlignPath = new Pose2d[] {});
                     }
 
                     smartAlignPath = new Pose2d[] {current, target};
@@ -650,7 +702,8 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
         double dx = Math.min(distanceToHubX, distanceToOppHubX);
 
         if (dx < bumpDepth / 2.0 && Math.abs(translation.getY() - centerDeltaY) < obsHalfY) {
-            if (Math.abs(translation.getY() - centerDeltaY) > hubHalfY) {
+            // Require full bumper clearance outside the Hub edge
+            if (Math.abs(translation.getY() - centerDeltaY) > (hubHalfY + DRIVE_BASE_RADIUS)) {
                 if (dx < bumpTopWidth / 2.0) {
                     return bumpHeight;
                 } else {
@@ -679,7 +732,8 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
         double marginX = DRIVE_BASE_RADIUS + 0.15;
 
         if (dx < (bumpDepth / 2.0 + marginX) && Math.abs(translation.getY() - centerDeltaY) < obsHalfY) {
-            if (Math.abs(translation.getY() - centerDeltaY) > hubHalfY) {
+            // Ensure whole robot bumper is outside the Hub region
+            if (Math.abs(translation.getY() - centerDeltaY) > (hubHalfY + DRIVE_BASE_RADIUS)) {
                 return true;
             }
         }

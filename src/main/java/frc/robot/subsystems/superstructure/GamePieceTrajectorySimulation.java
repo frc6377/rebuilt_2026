@@ -280,7 +280,13 @@ public class GamePieceTrajectorySimulation {
 
                     GamePieceProjectile spitBall = new GamePieceProjectile(
                                     gamePieceInfo,
-                                    hubPos,
+                                    new Translation2d(
+                                            hubPos.getX(),
+                                            projectile
+                                                    .getPose3d()
+                                                    .getTranslation()
+                                                    .getY()), // Spawn at the hub's X position, but keep the Y position
+                                    // of the projectile
                                     new Translation2d(),
                                     new ChassisSpeeds(),
                                     spitDirection,

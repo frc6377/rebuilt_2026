@@ -127,6 +127,7 @@ public class Robot extends LoggedRobot {
             autonomousCommand.cancel();
         }
         robotContainer.intake.setNeutralMode(NeutralModeValue.Brake);
+        robotContainer.resetSimulationField();
         CommandScheduler.getInstance().schedule(robotContainer.superstructure.stopUpgoerCommand());
         CommandScheduler.getInstance().schedule(robotContainer.superstructure.stopShooterCommand());
     }

@@ -651,22 +651,39 @@ public class RobotContainer {
             intakeSimulation.stopIntake();
         }
 
-        simLoopCounter++;
-        // Downsample heavy game piece sweeps & AdvantageKit array logging to 10 Hz (every 5th loop) to prevent
-        // simulation lag
-        if (simLoopCounter % 5 == 0) {
-            // Toggle collisions for game pieces when on a bump (solid on flat ground so fuel collides with robot)
-            for (GamePieceOnFieldSimulation gamePiece :
-                    SimulatedArena.getInstance().gamePiecesOnField()) {
-                boolean onBump = drive.getElevation(new Translation2d(
-                                gamePiece.getTransform().getTranslation().x,
-                                gamePiece.getTransform().getTranslation().y))
-                        > 0;
-                for (BodyFixture fixture : gamePiece.getFixtures()) {
-                    fixture.setSensor(onBump);
-                }
+        // --- NEW: Handle Fuel Physics & Collisions (Every 20ms Tick) ---
+        for (GamePieceOnFieldSimulation gamePiece : SimulatedArena.getInstance().gamePiecesOnField()) {
+            Translation2d pos = new Translation2d(
+                    gamePiece.getTransform().getTranslation().x,
+                    gamePiece.getTransform().getTranslation().y);
+
+            double elevation = drive.getElevation(pos);
+            boolean onBump = elevation > 0;
+
+            // 1. Toggle collisions (sensor true = pass through physical bump barriers)
+            for (BodyFixture fixture : gamePiece.getFixtures()) {
+                fixture.setSensor(onBump);
             }
 
+            // 2. Apply simulated gravity based on the slope of the bump
+            if (onBump) {
+                // Sample points 5cm around the ball to find which way is downhill
+                double epsilon = 0.05;
+                double dX = drive.getElevation(pos.plus(new Translation2d(epsilon, 0)))
+                        - drive.getElevation(pos.plus(new Translation2d(-epsilon, 0)));
+                double dY = drive.getElevation(pos.plus(new Translation2d(0, epsilon)))
+                        - drive.getElevation(pos.plus(new Translation2d(0, -epsilon)));
+
+                // The gradient (dX, dY) points uphill. We negate it to push downhill.
+                // You will need to tune this multiplier to make it roll at realistic speeds.
+                double gravityMultiplier = 30.0;
+                gamePiece.applyForce(new org.dyn4j.geometry.Vector2(-dX * gravityMultiplier, -dY * gravityMultiplier));
+            }
+        }
+
+        simLoopCounter++;
+        // Downsample heavy game piece sweeps & AdvantageKit array logging to 10 Hz (every 5th loop)
+        if (simLoopCounter % 3 == 0) {
             Pose3d[] fuel = SimulatedArena.getInstance().getGamePiecesArrayByType("Fuel");
             cachedFuelPoses = new Pose3d[fuel.length];
             for (int i = 0; i < fuel.length; i++) {
