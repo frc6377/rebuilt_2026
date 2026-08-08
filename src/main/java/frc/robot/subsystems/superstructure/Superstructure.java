@@ -198,7 +198,9 @@ public class Superstructure extends SubsystemBase {
                         && FieldConstants.getTimeUntilHubStateChange() > 4
                         && FieldConstants.getTimeUntilHubStateChange() <= 7
                         && DriverStation.isTeleopEnabled())
-                || DriverStation.getMatchTime() <= 10 && DriverStation.isTeleopEnabled()) {
+                || DriverStation.getMatchTime() <= 10
+                        && DriverStation.isTeleopEnabled()
+                        && DriverStation.isFMSAttached()) {
             oi.setRumble(1, 1);
         } else {
             oi.setRumble(0, 0);
