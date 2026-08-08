@@ -17,6 +17,8 @@ import static edu.wpi.first.units.Units.Meters;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.filter.Debouncer;
+import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -60,6 +62,8 @@ public class Vision extends SubsystemBase {
     private final String[] logKeyRobotPoses;
     private final String[] logKeyRobotPosesAccepted;
     private final String[] logKeyRobotPosesRejected;
+
+    private final Debouncer hasTagDebounce = new Debouncer(0.1, DebounceType.kFalling);
 
     public Vision(
             VisionConsumer consumer, QuestNavIO questNavIO, NerfModeController nerfModeController, VisionIO... io) {
@@ -373,6 +377,7 @@ public class Vision extends SubsystemBase {
             }
 
             // Log camera data
+            Logger.recordOutput("Vision/HasTag", hasTagDebounce.calculate(!tagPoses.isEmpty()));
             Logger.recordOutput(logKeyTagPoses[cameraIndex], tagPoses.toArray(new Pose3d[0]));
             Logger.recordOutput(logKeyRobotPoses[cameraIndex], robotPoses.toArray(new Pose3d[robotPoses.size()]));
             Logger.recordOutput(
