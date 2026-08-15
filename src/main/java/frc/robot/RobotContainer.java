@@ -92,6 +92,7 @@ public class RobotContainer {
     private final NerfModeController nerfModeController;
     // Dashboard inputs
     private final LoggedDashboardChooser<Command> autoChooser;
+
     /** The container for the robot. Contains subsystems, OI devices, and commands. */
     public RobotContainer() {
         RobotState.create();
@@ -107,13 +108,12 @@ public class RobotContainer {
         nerfSwitch = new DigitalInput(Constants.CANIDs.SensorIDs.kNerfModeEncoderDIOID);
         boolean isSwitchOpen = nerfSwitch.get();
 
-        boolean isFMSConnected = DriverStation.isFMSAttached();
-
-        if (isSwitchOpen || isFMSConnected) {
+        if (isSwitchOpen) {
             nerfModeController = new NerfModeController(Constants.NerfMode.FIELD);
         } else {
             nerfModeController = new NerfModeController(Constants.NerfMode.NERFED);
         }
+        Logger.recordOutput("isNerfed", isSwitchOpen);
 
         switch (Constants.currentMode) {
             case REAL:
@@ -485,7 +485,7 @@ public class RobotContainer {
                                         ? Degrees.zero()
                                         : Degrees.of(180))));
         OIController.zeroDrivebase().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
-        //        OIController.manualHold().onTrue(Commands.runOnce(drive::stopWithX, drive));
+        // OIController.manualHold().onTrue(Commands.runOnce(drive::stopWithX, drive));
         // OIController.start().onTrue(Commands.runOnce(resetGyro,
         // drive).ignoringDisable(true));
 
