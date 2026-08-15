@@ -115,11 +115,10 @@ public class RobotContainer {
 
                 if (isSwitchOpen) {
                         nerfModeController = new NerfModeController(Constants.NerfMode.FIELD);
-                        Logger.recordOutput("isNerfed", false);
                 } else {
                         nerfModeController = new NerfModeController(Constants.NerfMode.NERFED);
-                        Logger.recordOutput("isNerfed", true);
                 }
+                Logger.recordOutput("isNerfed", isSwitchOpen);
 
                 switch (Constants.currentMode) {
                         case REAL:
