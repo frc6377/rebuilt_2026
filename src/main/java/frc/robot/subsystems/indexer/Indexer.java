@@ -5,12 +5,14 @@ import static edu.wpi.first.units.Units.*;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.energy.FinanceDepartment;
+import frc.robot.energy.MechanismStates;
+import frc.robot.util.FullSubsystem;
 import frc.robot.util.NerfModeController;
 import java.util.function.BooleanSupplier;
 import org.littletonrobotics.junction.Logger;
 
-public class Indexer extends SubsystemBase {
+public class Indexer extends FullSubsystem {
     private final NerfModeController nerfModeController;
     private final IndexerIO indexerIO;
     private final IndexerIOInputsAutoLogged inputs = new IndexerIOInputsAutoLogged();
@@ -24,20 +26,34 @@ public class Indexer extends SubsystemBase {
 
     public Command index() {
         return run(() -> {
+                    setpoint = nerfModeController.getIndexerConstants().kCollectorRPM();
                     indexerIO.setCustomSpeed(
                             nerfModeController.getIndexerConstants().kCollectorSpeed()
                                     + nerfModeController.getIndexerConstants().kCollectorVariableSpeed()
                                             * Math.sin(Timer.getFPGATimestamp() * Math.PI / 8));
                 })
-                .finallyDo(() -> indexerIO.stop());
+                .finallyDo(() -> {
+                    setpoint = RotationsPerSecond.zero();
+                    indexerIO.stop();
+                });
     }
 
     public Command setCustomSpeed(double speed) {
-        return runOnce(() -> indexerIO.setCustomSpeed(speed));
+        return runOnce(() -> {
+            setpoint = speed == 0.0
+                    ? RotationsPerSecond.zero()
+                    : nerfModeController.getIndexerConstants().kCollectorRPM();
+            indexerIO.setCustomSpeed(speed);
+        });
     }
 
     public Command runPercentOutput(double percent) {
-        return run(() -> indexerIO.setCustomSpeed(percent));
+        return run(() -> {
+            setpoint = percent == 0.0
+                    ? RotationsPerSecond.zero()
+                    : nerfModeController.getIndexerConstants().kCollectorRPM();
+            indexerIO.setCustomSpeed(percent);
+        });
     }
 
     public Command indexReverse() {
@@ -49,10 +65,10 @@ public class Indexer extends SubsystemBase {
 
     public Command index(BooleanSupplier supplier) {
         return run(() -> {
-            indexerIO.setVelocity(
-                    supplier.getAsBoolean()
-                            ? nerfModeController.getIndexerConstants().kCollectorRPM()
-                            : RotationsPerSecond.zero());
+            setpoint = supplier.getAsBoolean()
+                    ? nerfModeController.getIndexerConstants().kCollectorRPM()
+                    : RotationsPerSecond.zero();
+            indexerIO.setVelocity(setpoint);
         });
     }
 
@@ -84,5 +100,17 @@ public class Indexer extends SubsystemBase {
                 nerfModeController.getIndexerConstants().kCollectorSpeed()
                         + (nerfModeController.getIndexerConstants().kCollectorVariableSpeed()
                                 * Math.sin(Timer.getFPGATimestamp() * Math.PI / 2)));
+
+        FinanceDepartment finance = FinanceDepartment.getInstance();
+        finance.reportCurrentUsage("Indexer", true, inputs.supplyCurrent.in(Amps));
+        finance.reportState(
+                Math.abs(setpoint.in(RotationsPerSecond)) > 0.1
+                        ? MechanismStates.Indexer.ACTIVE
+                        : MechanismStates.Indexer.OFF);
+    }
+
+    @Override
+    public void periodicAfterScheduler() {
+        indexerIO.setSupplyCurrentLimit(FinanceDepartment.getInstance().getIndexerLimit());
     }
 }

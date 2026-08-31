@@ -3,7 +3,9 @@ package frc.robot.subsystems.shooter;
 import static edu.wpi.first.units.Units.*;
 
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
+import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Distance;
+import java.util.HashMap;
 
 public class NerfShooterConstants {
     public static final ShooterConstants DATA;
@@ -56,10 +58,12 @@ public class NerfShooterConstants {
                 base.rightConfig().flywheelCurrentLimitSupplyEnable(),
                 base.rightConfig().outputConfigs());
         InterpolatingDoubleTreeMap distanceToAngularVelocityMapRPM = new InterpolatingDoubleTreeMap();
+        HashMap<Distance, AngularVelocity> nerfedDistanceMap = new HashMap<>();
         for (Distance distance : base.distanceToAngularVelocityMapRPM().keySet()) {
-            distanceToAngularVelocityMapRPM.put(
-                    distance.in(Meters),
-                    base.distanceToAngularVelocityMapRPM().get(distance).in(RPM) * 0.7);
+            AngularVelocity nerfedRpm =
+                    base.distanceToAngularVelocityMapRPM().get(distance).times(0.7);
+            nerfedDistanceMap.put(distance, nerfedRpm);
+            distanceToAngularVelocityMapRPM.put(distance.in(Meters) + base.offsetM(), nerfedRpm.in(RPM));
         }
         DATA = new ShooterConstants(
                 base.kSotfEnabled(),
@@ -91,7 +95,7 @@ public class NerfShooterConstants {
                 base.defaultBenchModeDistanceMeters(),
                 base.offsetM(),
                 distanceToAngularVelocityMapRPM,
-                base.distanceToAngularVelocityMapRPM(),
+                nerfedDistanceMap,
                 nerfedLeftConfig,
                 nerfedRightConfig);
     }

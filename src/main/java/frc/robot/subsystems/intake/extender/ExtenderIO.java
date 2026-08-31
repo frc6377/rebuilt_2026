@@ -26,6 +26,7 @@ public interface ExtenderIO {
         public AngularVelocity velocity = RotationsPerSecond.zero();
         public Voltage motorVoltage = Volts.zero();
         public Current motorCurrent = Amps.zero();
+        public Current supplyCurrent = Amps.zero();
         public Temperature motorTemp = Celsius.zero();
         public boolean atTarget = false;
         public double rawEncoderDegrees = 0.0;
@@ -68,6 +69,10 @@ public interface ExtenderIO {
 
     default void setPidEnabled(boolean enabled) {}
 
+    default boolean isPidEnabled() {
+        return false;
+    }
+
     default void setMode(NeutralModeValue mode) {}
 
     default void setMotorPercentage(double percent) {}
@@ -77,4 +82,6 @@ public interface ExtenderIO {
     default Current getCurrent() {
         return Amps.of(0.0);
     }
+
+    default void setSupplyCurrentLimit(double amps) {}
 }

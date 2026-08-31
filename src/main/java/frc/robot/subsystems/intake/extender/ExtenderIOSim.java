@@ -106,12 +106,12 @@ public class ExtenderIOSim implements ExtenderIO {
 
     @Override
     public void extend() {
-        setPosition(Degrees.of(extenderStowAngle.get()));
+        setPosition(Degrees.of(extenderIntakeAngle.get()));
     }
 
     @Override
     public void retract() {
-        setPosition(Degrees.of(extenderIntakeAngle.get()));
+        setPosition(Degrees.of(extenderStowAngle.get()));
     }
 
     @Override
@@ -143,6 +143,11 @@ public class ExtenderIOSim implements ExtenderIO {
     @Override
     public void setPidEnabled(boolean enabled) {
         pidEnabled = enabled;
+    }
+
+    @Override
+    public boolean isPidEnabled() {
+        return pidEnabled;
     }
 
     @Override
@@ -186,6 +191,7 @@ public class ExtenderIOSim implements ExtenderIO {
         inputs.velocity = RadiansPerSecond.of(armSim.getVelocityRadPerSec());
         inputs.motorVoltage = Volts.of(appliedVolts);
         inputs.motorCurrent = Amps.of(armSim.getCurrentDrawAmps());
+        inputs.supplyCurrent = inputs.motorCurrent;
         inputs.motorTemp = Celsius.of(25.0);
 
         armLigament.setAngle(getPosition());

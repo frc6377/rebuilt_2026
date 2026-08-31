@@ -25,7 +25,7 @@ public class Intake {
     public Intake(ExtenderIO extenderIO, BaseShooterIO rollerIO, NerfModeController nerfModeController) {
         this.nerfModeController = nerfModeController;
         IntakeConstants constants = nerfModeController.getIntakeConstants();
-        this.extender = new Extender(extenderIO, nerfModeController);
+        this.extender = new Extender(extenderIO);
         this.roller = new BaseShooter(rollerIO, constants.rollerConfig(), nerfModeController.getShooterConstants());
 
         this.tunableIntakeSpeed = new LoggedNetworkNumber(

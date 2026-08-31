@@ -44,12 +44,14 @@ import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants;
 import frc.robot.Constants.Mode;
+import frc.robot.energy.FinanceDepartment;
+import frc.robot.energy.MechanismStates;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.vision.Vision;
+import frc.robot.util.FullSubsystem;
 import frc.robot.util.LocalADStarAK;
 import frc.robot.util.NerfModeController;
 import java.util.concurrent.locks.Lock;
@@ -62,7 +64,7 @@ import org.ironmaple.simulation.drivesims.configs.SwerveModuleSimulationConfig;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
-public class Drive extends SubsystemBase implements Vision.VisionConsumer {
+public class Drive extends FullSubsystem implements Vision.VisionConsumer {
     private Supplier<Pose2d> poseSupplier;
 
     // TunerConstants doesn't include these constants, so they are declared locally
@@ -83,17 +85,20 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
     private static final double WHEEL_COF = 1.2;
     private static final double BUMPER_LENGTH = 30.0;
     private static final double BUMPER_WIDTH = 30.0;
-    private static final RobotConfig PP_CONFIG = new RobotConfig(
-            ROBOT_MASS_KG,
-            ROBOT_MOI,
-            new ModuleConfig(
-                    TunerConstants.FrontLeft.WheelRadius,
-                    TunerConstants.kSpeedAt12Volts.in(MetersPerSecond),
-                    WHEEL_COF,
-                    DCMotor.getKrakenX60Foc(1).withReduction(TunerConstants.FrontLeft.DriveMotorGearRatio),
-                    TunerConstants.FrontLeft.SlipCurrent,
-                    1),
-            getModuleTranslations());
+
+    private static RobotConfig buildPathPlannerConfig(double maxLinearSpeedMetersPerSec) {
+        return new RobotConfig(
+                ROBOT_MASS_KG,
+                ROBOT_MOI,
+                new ModuleConfig(
+                        TunerConstants.FrontLeft.WheelRadius,
+                        maxLinearSpeedMetersPerSec,
+                        WHEEL_COF,
+                        DCMotor.getKrakenX60Foc(1).withReduction(TunerConstants.FrontLeft.DriveMotorGearRatio),
+                        TunerConstants.FrontLeft.SlipCurrent,
+                        1),
+                getModuleTranslations());
+    }
 
     public static final DriveTrainSimulationConfig mapleSimConfig = DriveTrainSimulationConfig.Default()
             .withRobotMass(Kilograms.of(ROBOT_MASS_KG))
@@ -132,6 +137,8 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
     private final SwerveDrivePoseEstimator poseEstimator =
             new SwerveDrivePoseEstimator(kinematics, rawGyroRotation, lastModulePositions, new Pose2d());
 
+    private ChassisSpeeds lastCommandedSpeeds = new ChassisSpeeds();
+
     private final Consumer<Pose2d> resetSimulationPoseCallBack; // TODO: Needs io interface sim should not be here
     private final NerfModeController nerfModeController;
 
@@ -165,7 +172,8 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
                 this::getChassisSpeeds,
                 this::runVelocity,
                 new PPHolonomicDriveController(new PIDConstants(5.0, 0.0, 0.0), new PIDConstants(5.0, 0.0, 0.0)),
-                PP_CONFIG,
+                buildPathPlannerConfig(
+                        nerfModeController.getDriveConstants().maxLinearSpeed().in(MetersPerSecond)),
                 () -> DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red,
                 this);
         Pathfinding.setPathfinder(new LocalADStarAK());
@@ -248,6 +256,22 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
 
         // Update gyro alert
         gyroDisconnectedAlert.set(!gyroInputs.connected && Constants.currentMode != Mode.SIM);
+
+        if (DriverStation.isDisabled()) {
+            FinanceDepartment.getInstance().reportState(MechanismStates.Drive.DISABLED);
+        } else {
+            double commanded = Math.hypot(lastCommandedSpeeds.vxMetersPerSecond, lastCommandedSpeeds.vyMetersPerSecond)
+                    + Math.abs(lastCommandedSpeeds.omegaRadiansPerSecond);
+            FinanceDepartment.getInstance()
+                    .reportState(commanded > 0.05 ? MechanismStates.Drive.ACTIVE : MechanismStates.Drive.IDLE);
+        }
+    }
+
+    @Override
+    public void periodicAfterScheduler() {
+        for (var module : modules) {
+            module.periodicAfterScheduler();
+        }
     }
 
     /**
@@ -258,6 +282,7 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
     public void runVelocity(ChassisSpeeds speeds) {
         // Calculate module setpoints
         speeds = ChassisSpeeds.discretize(speeds, 0.02);
+        lastCommandedSpeeds = speeds;
         SwerveModuleState[] setpointStates = kinematics.toSwerveModuleStates(speeds);
         SwerveDriveKinematics.desaturateWheelSpeeds(
                 setpointStates, nerfModeController.getDriveConstants().maxLinearSpeed());
@@ -403,12 +428,12 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
 
     /** Returns the maximum linear speed in meters per sec. */
     public double getMaxLinearSpeedMetersPerSec() {
-        return TunerConstants.kSpeedAt12Volts.in(MetersPerSecond);
+        return nerfModeController.getDriveConstants().maxLinearSpeed().in(MetersPerSecond);
     }
 
     /** Returns the maximum angular speed in radians per sec. */
     public double getMaxAngularSpeedRadPerSec() {
-        return getMaxLinearSpeedMetersPerSec() / DRIVE_BASE_RADIUS;
+        return nerfModeController.getDriveConstants().maxAngularSpeedRadPerSec();
     }
 
     /** Returns an array of module translations. */

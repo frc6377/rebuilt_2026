@@ -10,11 +10,14 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.units.measure.AngularVelocity;
 import frc.robot.Constants;
 import frc.robot.subsystems.indexer.constants.IndexerConstants;
+import frc.robot.util.TalonFXCurrentConfigurator;
 import frc.robot.util.TunableTalonFX;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 public class IndexerIOReal implements IndexerIO {
     private final TunableTalonFX indexerMotor;
+    private final TalonFXCurrentConfigurator supplyConfigurator;
+    private final CurrentLimitsConfigs currentLimits;
     private final LoggedNetworkNumber indexerMotorOutput;
     private final LoggedNetworkNumber indexerMotorReverseOutput;
     private final TalonFXConfiguration indexerMotorConfig;
@@ -31,6 +34,7 @@ public class IndexerIOReal implements IndexerIO {
                 constants.canBus(),
                 "Indexer/IndexerMotor",
                 indexerPIDConfigs);
+        supplyConfigurator = new TalonFXCurrentConfigurator(indexerMotor.getConfigurator());
         indexerMotorConfig = new TalonFXConfiguration();
 
         indexerMotorConfig.ClosedLoopRamps.VoltageClosedLoopRampPeriod = constants.voltageClosedLoopRampPeriod();
@@ -39,12 +43,21 @@ public class IndexerIOReal implements IndexerIO {
         indexerMotorConfig.MotorOutput.Inverted = constants.motorInverted();
         indexerMotorConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
         indexerMotorConfig.Slot0 = indexerPIDConfigs;
-        indexerMotor.applyConfiguration(indexerMotorConfig.withCurrentLimits(new CurrentLimitsConfigs()
+        currentLimits = new CurrentLimitsConfigs()
                 .withStatorCurrentLimitEnable(true)
-                .withStatorCurrentLimit(constants.kStatorCurrentLimit())));
+                .withStatorCurrentLimit(constants.kStatorCurrentLimit())
+                .withSupplyCurrentLimitEnable(true)
+                .withSupplyCurrentLimit(constants.kSupplyCurrentLimit());
+        indexerMotor.applyConfiguration(indexerMotorConfig.withCurrentLimits(currentLimits));
 
         indexerMotorOutput = new LoggedNetworkNumber("Indexer/IndexerMotorOutput", constants.kCollectorSpeed());
         indexerMotorReverseOutput = new LoggedNetworkNumber("Indexer/IndexerMotorReverseOutput", 0);
+    }
+
+    @Override
+    public void setSupplyCurrentLimit(double amps) {
+        currentLimits.SupplyCurrentLimit = amps;
+        supplyConfigurator.setConfig(currentLimits);
     }
 
     @Override
@@ -66,5 +79,6 @@ public class IndexerIOReal implements IndexerIO {
     public void updateInputs(IndexerIOInputs indexerInputs) {
         indexerMotor.updateTunableGains();
         indexerInputs.motorOutput = Volts.of(indexerMotor.getMotorVoltage().getValueAsDouble());
+        indexerInputs.supplyCurrent = indexerMotor.getSupplyCurrent().getValue();
     }
 }

@@ -24,6 +24,7 @@ public interface ModuleIO {
         public double driveVelocityRadPerSec = 0.0;
         public double driveAppliedVolts = 0.0;
         public double driveCurrentAmps = 0.0;
+        public double driveSupplyCurrentAmps = 0.0;
 
         public boolean turnConnected = false;
         public boolean turnEncoderConnected = false;
@@ -51,4 +52,6 @@ public interface ModuleIO {
 
     /** Run the turn motor to the specified rotation. */
     default void setTurnPosition(Rotation2d rotation) {}
+
+    default void setDriveSupplyCurrentLimit(double amps) {}
 }

@@ -1,21 +1,22 @@
 package frc.robot.subsystems.intake.extender;
 
+import static edu.wpi.first.units.Units.*;
+
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.util.NerfModeController;
+import frc.robot.energy.FinanceDepartment;
+import frc.robot.energy.MechanismStates;
+import frc.robot.util.FullSubsystem;
 import java.util.function.BooleanSupplier;
 import org.littletonrobotics.junction.Logger;
 
-public class Extender extends SubsystemBase {
+public class Extender extends FullSubsystem {
     private final ExtenderIO io;
     private final ExtenderIOInputsAutoLogged inputs = new ExtenderIOInputsAutoLogged();
-    private final NerfModeController nerfModeController;
 
-    public Extender(ExtenderIO io, NerfModeController nerfModeController) {
+    public Extender(ExtenderIO io) {
         this.io = io;
-        this.nerfModeController = nerfModeController;
     }
 
     @Override
@@ -26,6 +27,15 @@ public class Extender extends SubsystemBase {
         Logger.recordOutput(
                 "Intake/Extender/CurrentCommand",
                 getCurrentCommand() == null ? "null" : getCurrentCommand().toString());
+
+        FinanceDepartment finance = FinanceDepartment.getInstance();
+        finance.reportCurrentUsage("Intake/Extender", true, inputs.supplyCurrent.in(Amps));
+        finance.reportState(inputs.atTarget ? MechanismStates.Extender.IDLE : MechanismStates.Extender.MOVING);
+    }
+
+    @Override
+    public void periodicAfterScheduler() {
+        io.setSupplyCurrentLimit(FinanceDepartment.getInstance().getExtenderLimit());
     }
 
     public BooleanSupplier isAtTarget() {

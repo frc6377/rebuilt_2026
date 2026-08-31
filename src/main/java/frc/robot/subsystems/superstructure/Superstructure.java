@@ -33,10 +33,6 @@ import frc.robot.FieldConstants;
 import frc.robot.commands.DriveCommands;
 import frc.robot.commands.ShooterCalibrationCommand;
 import frc.robot.subsystems.drive.Drive;
-import frc.robot.subsystems.indexer.Indexer;
-import frc.robot.subsystems.indexer.IndexerIO;
-import frc.robot.subsystems.indexer.IndexerIOReal;
-import frc.robot.subsystems.indexer.IndexerIOSim;
 import frc.robot.subsystems.shooter.BaseShooter;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.ShooterConstants;
@@ -74,7 +70,6 @@ public class Superstructure extends SubsystemBase {
     private final Shooter shooter;
     private final Upgoer leftUpgoer;
     private final Upgoer rightUpgoer;
-    private final Indexer indexer;
     private final Vision vision;
     private final OI oi;
     private final RobotState robotState;
@@ -129,7 +124,6 @@ public class Superstructure extends SubsystemBase {
         this.oi = oi;
         UpgoerIO leftUpgoerIO;
         UpgoerIO rightUpgoerIO;
-        IndexerIO indexerIO;
 
         switch (Constants.currentMode) {
             case REAL:
@@ -147,9 +141,6 @@ public class Superstructure extends SubsystemBase {
                                 1,
                                 nerfModeController.getUpgoerConstants())
                         : new UpgoerIO() {};
-                indexerIO = Constants.EnabledSubsystems.kIndexer
-                        ? new IndexerIOReal(nerfModeController.getIndexerConstants())
-                        : new IndexerIO() {};
                 break;
             case SIM:
                 leftUpgoerIO = Constants.EnabledSubsystems.kShooterUpgoerLeft
@@ -164,20 +155,15 @@ public class Superstructure extends SubsystemBase {
                                 "RightShooterUpgoer",
                                 nerfModeController.getUpgoerConstants())
                         : new UpgoerIO() {};
-                indexerIO = Constants.EnabledSubsystems.kIndexer
-                        ? new IndexerIOSim(nerfModeController.getIndexerConstants())
-                        : new IndexerIO() {};
                 break;
             default:
                 leftUpgoerIO = new UpgoerIO() {};
                 rightUpgoerIO = new UpgoerIO() {};
-                indexerIO = new IndexerIO() {};
                 break;
         }
 
         this.leftUpgoer = new Upgoer(leftUpgoerIO, "LeftShooterUpgoer", 1, nerfModeController);
         this.rightUpgoer = new Upgoer(rightUpgoerIO, "RightShooterUpgoer", 1, nerfModeController);
-        this.indexer = new Indexer(indexerIO, nerfModeController);
         this.currentShootingCommand = this.runFlywheelVelocityManual();
     }
 

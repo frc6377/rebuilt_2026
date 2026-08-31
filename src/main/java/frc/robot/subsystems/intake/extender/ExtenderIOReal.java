@@ -13,6 +13,7 @@ import edu.wpi.first.wpilibj.DutyCycleEncoder;
 import frc.robot.Constants;
 import frc.robot.subsystems.intake.IntakeConstants;
 import frc.robot.util.NerfModeController;
+import frc.robot.util.TalonFXCurrentConfigurator;
 import frc.robot.util.TunablePIDController;
 import frc.robot.util.TunableTalonFX;
 import java.util.function.BooleanSupplier;
@@ -21,6 +22,8 @@ import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 public class ExtenderIOReal implements ExtenderIO {
 
     private final TunableTalonFX extenderMotor;
+    private final TalonFXCurrentConfigurator supplyConfigurator;
+    private final CurrentLimitsConfigs currentLimits;
     private final DutyCycleEncoder extenderEncoder;
     private final TunablePIDController extenderPid;
     private boolean pidEnabled = true;
@@ -37,19 +40,22 @@ public class ExtenderIOReal implements ExtenderIO {
         this.nerfModeController = nerfModeController;
         IntakeConstants constants = nerfModeController.getIntakeConstants();
 
+        currentLimits = new CurrentLimitsConfigs()
+                .withStatorCurrentLimitEnable(true)
+                .withStatorCurrentLimit(constants.extenderStatorCurrentLimit())
+                .withSupplyCurrentLimitEnable(true)
+                .withSupplyCurrentLimit(constants.extenderSupplyCurrentLimit());
         var config = new TalonFXConfiguration()
                 .withMotorOutput(new MotorOutputConfigs()
                         .withInverted(constants.extenderInverted())
                         .withNeutralMode(constants.extenderNeutralMode()))
                 .withClosedLoopRamps(
                         new ClosedLoopRampsConfigs().withVoltageClosedLoopRampPeriod(constants.extenderRampPeriod()))
-                .withCurrentLimits(new CurrentLimitsConfigs()
-                        .withStatorCurrentLimitEnable(true)
-                        .withStatorCurrentLimit(constants.extenderStatorCurrentLimit())
-                        .withSupplyCurrentLimit(constants.extenderSupplyCurrentLimit()));
+                .withCurrentLimits(currentLimits);
 
         extenderMotor = new TunableTalonFX(Constants.CANIDs.MotorIDs.kExtenderMotorID, "rio", "Extender");
         extenderMotor.getConfigurator().apply(config);
+        supplyConfigurator = new TalonFXCurrentConfigurator(extenderMotor.getConfigurator());
 
         extenderEncoder = new DutyCycleEncoder(
                 Constants.CANIDs.SensorIDs.kExtenderEncoderCANID,
@@ -194,6 +200,11 @@ public class ExtenderIOReal implements ExtenderIO {
     }
 
     @Override
+    public boolean isPidEnabled() {
+        return pidEnabled;
+    }
+
+    @Override
     public void setMode(NeutralModeValue mode) {
         extenderMotor.getConfigurator().apply(new MotorOutputConfigs().withNeutralMode(mode));
     }
@@ -228,6 +239,7 @@ public class ExtenderIOReal implements ExtenderIO {
         inputs.velocity = extenderMotor.getVelocity().getValue();
         inputs.motorVoltage = Volts.of(extenderMotor.getMotorVoltage().getValueAsDouble());
         inputs.motorCurrent = extenderMotor.getStatorCurrent().getValue();
+        inputs.supplyCurrent = extenderMotor.getSupplyCurrent().getValue();
         inputs.motorTemp = extenderMotor.getDeviceTemp().getValue();
         inputs.atTarget = atTarget().getAsBoolean();
         inputs.rawEncoderDegrees = Rotations.of(extenderEncoder.get()).in(Degrees);
@@ -246,5 +258,11 @@ public class ExtenderIOReal implements ExtenderIO {
                 setMode(NeutralModeValue.Coast);
             }
         }
+    }
+
+    @Override
+    public void setSupplyCurrentLimit(double amps) {
+        currentLimits.SupplyCurrentLimit = amps;
+        supplyConfigurator.setConfig(currentLimits);
     }
 }

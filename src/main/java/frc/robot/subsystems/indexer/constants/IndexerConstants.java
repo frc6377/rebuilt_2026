@@ -16,6 +16,7 @@ public record IndexerConstants(
         InvertedValue motorInverted,
         NeutralModeValue motorNeutralMode,
         Current kStatorCurrentLimit,
+        Current kSupplyCurrentLimit,
         double kP,
         double kI,
         double kD,

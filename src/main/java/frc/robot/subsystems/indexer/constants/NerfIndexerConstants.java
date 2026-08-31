@@ -12,6 +12,7 @@ public class NerfIndexerConstants {
             BaseIndexerConstants.DATA.motorInverted(),
             BaseIndexerConstants.DATA.motorNeutralMode(),
             BaseIndexerConstants.DATA.kStatorCurrentLimit(),
+            BaseIndexerConstants.DATA.kSupplyCurrentLimit(),
             BaseIndexerConstants.DATA.kP(),
             BaseIndexerConstants.DATA.kI(),
             BaseIndexerConstants.DATA.kD(),

@@ -19,6 +19,8 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.energy.FinanceDepartment;
+import frc.robot.energy.MechanismStates;
 import frc.robot.util.NerfModeController;
 import org.littletonrobotics.junction.Logger;
 
@@ -53,6 +55,10 @@ public class Upgoer extends SubsystemBase {
         Logger.recordOutput(
                 logName + "/CurrentCommand",
                 getCurrentCommand() != null ? getCurrentCommand().getName() : "None");
+        FinanceDepartment finance = FinanceDepartment.getInstance();
+        finance.reportCurrentUsage(logName, false, inputs.supplyCurrent.in(Amps));
+        finance.reportState(
+                Math.abs(setpoint.in(RPM)) > 1.0 ? MechanismStates.Upgoer.RUNNING : MechanismStates.Upgoer.OFF);
     }
 
     /** Set the feeder velocity. */

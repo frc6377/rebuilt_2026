@@ -13,8 +13,9 @@
 
 package frc.robot.subsystems.vision;
 
-import static frc.robot.subsystems.vision.VisionConstants.aprilTagLayout;
+import static frc.robot.subsystems.vision.constants.BaseVisionConstants.DATA;
 
+import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform3d;
@@ -27,6 +28,7 @@ import org.photonvision.PhotonCamera;
 /** IO implementation for real PhotonVision hardware. */
 public class VisionIOPhotonVision implements VisionIO {
     protected final PhotonCamera camera;
+    private static final AprilTagFieldLayout aprilTagLayout = DATA.aprilTagLayout();
     protected final Transform3d robotToCamera;
 
     /**

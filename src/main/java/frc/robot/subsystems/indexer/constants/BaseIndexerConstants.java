@@ -18,6 +18,7 @@ public class BaseIndexerConstants {
             InvertedValue.Clockwise_Positive, // motorInverted
             NeutralModeValue.Brake, // motorNeutralMode
             Amps.of(25), // kStatorCurrentLimit
+            Amps.of(25), // kSupplyCurrentLimit
             0.0, // kP
             0.0, // kI
             0.0, // kD

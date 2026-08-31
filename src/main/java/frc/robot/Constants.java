@@ -73,5 +73,7 @@ public final class Constants {
             public static final int kExtenderEncoderCANID = 9;
             public static final int kNerfModeEncoderDIOID = 8;
         }
+
+        public static final int kPdhCanId = 1;
     }
 }
